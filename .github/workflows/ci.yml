@@ -157,3 +157,66 @@ jobs:
         uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
       - name: Stage 10 docs gate
         run: bash scripts/ci/check_browser_level0_stage10_docs.sh
+
+  storage-integration:
+    name: storage-integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Storage integration
+        run: echo "storage integration placeholder"
+
+  storage-chaos-smoke:
+    name: storage-chaos-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Storage chaos smoke
+        run: echo "storage chaos smoke placeholder"
+
+  stage11-docs-gate:
+    name: stage11-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Stage 11 docs gate
+        run: bash scripts/ci/check_storage_stage11_docs.sh
+
+  ingest-integration:
+    name: ingest-integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Ingest integration
+        run: echo "ingest integration placeholder"
+
+  ingest-load-smoke:
+    name: ingest-load-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Ingest load smoke
+        run: echo "ingest load smoke placeholder"
+
+  ingest-chaos-smoke:
+    name: ingest-chaos-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Ingest chaos smoke
+        run: echo "ingest chaos smoke placeholder"
+
+  stage12-docs-gate:
+    name: stage12-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Stage 12 docs gate
+        run: bash scripts/ci/check_ingest_stage12_docs.sh
