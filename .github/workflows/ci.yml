@@ -42,3 +42,15 @@ jobs:
             echo "Найдены утечки локальных путей (/home/) в публично-значимых docs. Удалить/заменить на относительные ссылки."
             exit 1
           fi
+
+      - name: Governance stage01 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/ci/check_governance_stage01.sh
+
+      - name: Privacy stage02 gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/ci/check_privacy_stage02.sh

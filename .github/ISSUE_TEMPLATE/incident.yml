@@ -1,0 +1,41 @@
+name: Incident
+about: Регистрация инцидента
+labels: ["incident"]
+body:
+  - type: input
+    id: severity
+    attributes:
+      label: severity
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: impact
+    validations:
+      required: true
+  - type: textarea
+    id: timeline
+    attributes:
+      label: timeline
+    validations:
+      required: true
+  - type: input
+    id: action_ref
+    attributes:
+      label: action_ref
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: evidence
+    validations:
+      required: true
+  - type: input
+    id: related_gap
+    attributes:
+      label: related_gap
+      description: имя события из observability_gap_registry.md или none
+    validations:
+      required: true
