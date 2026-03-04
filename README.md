@@ -14,6 +14,13 @@
 - `docs/` — спецификации контрактов, runbooks, integration guides (ссылки на `REGART - ... описание`).
 - `scripts/` — утилиты для генерации RawEvent/backup и тестирования.
 
+## Импортированная документация
+- `docs/source/Art_v1_spec_final.md` — мастер-спецификация Art v1.
+- `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md` — описание интеграции REGART и Art.
+- `docs/source/checklists/` — полный набор чек-листов (00..26).
+
+Навигация по всей документации: `docs/README.md`.
+
 ## Следующие шаги
 1. В `core/` описать API Contract и поступающие RawEvent/Incident flow; подготовить mocks и SQL (как описано в `Art_v1_spec_final.md` разделы 5-10).
 2. В `agent/` реализовать сборщики journald/systemd и OTLP, а также `spool/outbox` с гарантией `never_drop_unacked` (раздел 7 спецификации).

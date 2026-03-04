@@ -1,0 +1,37 @@
+# Документация Art
+
+Этот каталог — единая точка входа в документацию проекта `Art`.
+
+## 1. Канонические источники
+
+- `docs/source/Art_v1_spec_final.md` — нормативная мастер-спецификация Art v1.
+- `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md` — целевая модель интеграции REGART с Art.
+- `docs/source/checklists/` — полный набор чек-листов реализации и приёмки.
+
+Подробный индекс исходников: `docs/source/README.md`.
+
+## 2. Рабочие документы проекта
+
+- `docs/ARCHITECTURE.md` — сжатая архитектурная проекция по компонентам Core/Agent/Browser.
+- `docs/INTEGRATION.md` — рабочий план интеграции REGART с Art по этапам.
+
+## 3. Карта чек-листов
+
+- `00` — мастер-план Art+REGART.
+- `01..04` — governance, SRE, privacy, региональные профили.
+- `05..06` — готовность REGART (UI/Graph/Run/Debugger и bridge в Art).
+- `07..16` — репозиторий Art, контракты, Core, pipeline, Panel 0.
+- `17..18` — Agent: spool/outbox и receivers.
+- `19..20` — framework паков и pack REGART.
+- `21..26` — self-observability, тестирование, ops, release, compliance, RU-профиль.
+
+Подробный индекс чек-листов: `docs/source/checklists/README.md`.
+
+## 4. Правило актуальности
+
+1. Канон: `docs/source/*` (копии из внешней папки документации).
+2. Рабочая синхронизация: `docs/*.md` (архитектура, интеграция, планы).
+3. Любое изменение в каноне должно сопровождаться обновлением:
+   - `docs/ARCHITECTURE.md`
+   - `docs/INTEGRATION.md`
+   - индексов `docs/source/README.md` и `docs/source/checklists/README.md`
