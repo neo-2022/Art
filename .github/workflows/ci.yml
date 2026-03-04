@@ -73,6 +73,15 @@ jobs:
       - name: Stage 03 profile tests
         run: cargo test -p art-core profile
 
+  stage03-profile-switch-integration:
+    name: stage03-profile-switch-integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 03 profile switch integration
+        run: bash scripts/tests/profile_switch_integration.sh
+
   stage05-wrapper-gate:
     name: stage05-wrapper-gate
     runs-on: ubuntu-latest

@@ -6,5 +6,5 @@
 - airgapped update без подписи отклоняется
 - airgapped update при несовместимости отклоняется
 - profile violation генерирует `observability_gap.profile_violation`
-- пути тестов: `tests/stage03/*`
-- запуск в CI: job `stage03-docs-gate` + integration stage03
+- пути тестов: `core/src/main.rs` (unit), `scripts/tests/profile_switch_integration.sh` (integration)
+- запуск в CI: `stage03-docs-gate`, `stage03-profile-tests`, `stage03-profile-switch-integration`
