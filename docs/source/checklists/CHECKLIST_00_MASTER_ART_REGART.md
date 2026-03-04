@@ -1,14 +1,19 @@
-A) Полный запрет опциональности:# CHECKLIST 00 — MASTER (Art v1 + REGART) + STANDARD (единые правила)
+A) Полный запрет опциональности:
+# CHECKLIST 00 — MASTER (Art v1 + REGART) + STANDARD (единые правила)
 Файл: CHECKLIST_00_MASTER_ART_REGART.md  
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: ________  
-Триггер пересмотра: любые изменения в Art_v1_spec_final.md / REGART↔Art описание / CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md / CHECKLIST_REGART_ART_INTEGRATION.md
+Триггер пересмотра: любые изменения в Art_v1_spec_final.md / REGART↔Art описание / CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md / CHECKLIST_06_REGART_ART_BRIDGE.md / внешние источники в my_langgraph_agent
 
 Источники требований:
-- Art: `Art_v1_spec_final.md`
-- REGART ↔ Art: `REGART - LangGraph взаимодействие с Art описание`
-- REGART UI/Debugger: `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` (источник правды)
-- REGART Bridge readiness: `CHECKLIST_REGART_ART_INTEGRATION.md` (источник правды)
+- Art: `docs/source/Art_v1_spec_final.md`
+- REGART ↔ Art: `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
+- REGART UI/Debugger wrapper (в Art): `docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`
+- REGART Bridge wrapper (в Art): `docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`
+- REGART UI/Debugger source-of-truth (внешний репозиторий): `my_langgraph_agent/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`  
+  GitHub: `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`
+- REGART Bridge source-of-truth (внешний репозиторий): `my_langgraph_agent/CHECKLIST_REGART_ART_INTEGRATION.md`  
+  GitHub: `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_REGART_ART_INTEGRATION.md`
 
 ⚠️ ПРАВИЛО: переход к следующему этапу возможен только после полного закрытия предыдущего.  
 ⚠️ ПРАВИЛО: запрещено удалять пункты из чек-листов без согласования с владельцем проекта.  
@@ -80,9 +85,9 @@ A) Полный запрет опциональности:# CHECKLIST 00 — MAS
 | 01 | CHECKLIST_01_GOVERNANCE_SRE.md | Governance/SRE | incident/postmortem/change mgmt + gap escalation + SLO | |
 | 02 | CHECKLIST_02_PRIVACY_BASELINE_GLOBAL.md | Privacy baseline | PII surface + redaction_applied + attachments PII retention | |
 | 03 | CHECKLIST_03_REGIONAL_PROFILES.md | Региональные профили | profile switch + airgapped packs update | |
-| 04 | CHECKLIST_04_SECURE_SDLC_SUPPLY_CHAIN.md | Secure SDLC | clean builds + branch policy + signed commits + sigstore/cosign | |
-| 05 | CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md | REGART UI/Debugger | wrapper → CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md + trace_id/ui.graph.empty/multi-tab | |
-| 06 | CHECKLIST_06_REGART_ART_BRIDGE.md | REGART→Art bridge | wrapper → CHECKLIST_REGART_ART_INTEGRATION.md + overflow/actions/TLS/error format/retry_count/audit | |
+| 04 | CHECKLIST_04 _Secure SDLC + Supply-chain.md | Secure SDLC | clean builds + branch policy + signed commits + sigstore/cosign | |
+| 05 | CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md | REGART UI/Debugger | wrapper → external source-of-truth `my_langgraph_agent/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` | |
+| 06 | CHECKLIST_06_REGART_ART_BRIDGE.md | REGART→Art bridge | wrapper → external source-of-truth `my_langgraph_agent/CHECKLIST_REGART_ART_INTEGRATION.md` | |
 | 07 | CHECKLIST_07_ART_REPO_CI_DOCS.md | Art repo WP0 | CI включает gitleaks + licenses + RU dev docs | |
 | 08 | CHECKLIST_08_ART_CONTRACTS_OPENAPI_CODEGEN.md | Contracts | schema registry + spec compliance + unknown-fields tests | |
 | 09 | CHECKLIST_09_TELEMETRY_OTEL_OTLP.md | Telemetry | unknown attrs→payload.otel_attributes + severity tests + OTLP rate-limit | |

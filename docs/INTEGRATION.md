@@ -8,6 +8,9 @@
 - `docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`
 - `docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`
 - `docs/source/checklists/CHECKLIST_20_PACK_REGART.md`
+- внешние source-of-truth REGART:
+  - `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`
+  - `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_REGART_ART_INTEGRATION.md`
 
 ## 1. Контуры интеграции
 

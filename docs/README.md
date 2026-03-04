@@ -26,6 +26,7 @@
 - `21..26` — self-observability, тестирование, ops, release, compliance, RU-профиль.
 
 Подробный индекс чек-листов: `docs/source/checklists/README.md`.
+Детализация этапов `05..06` хранится в репозитории REGART: `https://github.com/neo-2022/my_langgraph_agent`.
 
 ## 4. Правило актуальности
 

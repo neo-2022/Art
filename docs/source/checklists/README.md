@@ -14,6 +14,9 @@
 
 - `CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md` — readiness UI/Graph/Run/Debugger.
 - `CHECKLIST_06_REGART_ART_BRIDGE.md` — readiness bridge REGART → Art.
+- Источник правды для деталей реализации 05/06 находится в репозитории REGART:
+  - `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`
+  - `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_REGART_ART_INTEGRATION.md`
 
 ## Art platform (Core/Contracts/Panel0)
 

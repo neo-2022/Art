@@ -5,6 +5,10 @@ A) Полный запрет опциональности:
 Дата последней проверки: ________  
 Триггер пересмотра: изменения в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`; изменения требований `trace_id`; изменения требований `ui.graph.empty`; изменения требований multi-tab дедуп; изменения поведения UI Proxy / transport
 
+Внешний source-of-truth (REGART):
+- Локально (если репозитории рядом): `../my_langgraph_agent/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`
+- GitHub: `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`
+
 ## Цель
 Закрыть REGART UI/Debugger по источнику правды `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` и обеспечить обязательные доработки: `subscribe(listener)`, `trace_id` всегда, `ui.graph.empty`, multi-tab дедуп, `observability_gap.ui_proxy_unavailable`.
 
@@ -100,4 +104,3 @@ CHECKLIST 04 — Secure SDLC + Supply-chain
 - [ ] Соответствующие пункты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` отмечены `[x]` с evidence.
 - [ ] Тесты из раздела “Тестирование” зелёные в CI.
 - [ ] CI gate из раздела “CI gate” зелёный в CI.
-

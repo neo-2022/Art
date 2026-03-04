@@ -5,6 +5,10 @@ A) Полный запрет опциональности:
 Дата последней проверки: ________  
 Триггер пересмотра: изменения в `CHECKLIST_REGART_ART_INTEGRATION.md`; изменения TLS/actions/overflow policies; изменения схем RawEvent/UiError/Audit
 
+Внешний source-of-truth (REGART):
+- Локально (если репозитории рядом): `../my_langgraph_agent/CHECKLIST_REGART_ART_INTEGRATION.md`
+- GitHub: `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_REGART_ART_INTEGRATION.md`
+
 ## Цель
 Закрыть готовность REGART к Art по источнику правды `CHECKLIST_REGART_ART_INTEGRATION.md` и обеспечить обязательные требования: overflow policies, управление только через Art Actions, TLS всегда, upstream error format, `retry_count`, audit immutability.
 
@@ -89,4 +93,3 @@ CHECKLIST 05 — REGART: UI/Graph/Run/Debugger (обёртка)
 - [ ] Соответствующие пункты в `CHECKLIST_REGART_ART_INTEGRATION.md` добавлены и отмечены `[x]` с evidence.
 - [ ] Тесты из раздела “Тестирование” зелёные в CI.
 - [ ] CI gate из раздела “CI gate” зелёный в CI.
-

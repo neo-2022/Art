@@ -15,6 +15,9 @@
 
 - Каталог: `checklists/`
 - Индекс: `checklists/README.md`
+- Внешние source-of-truth для REGART-части (этапы 05/06):
+  - `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`
+  - `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_REGART_ART_INTEGRATION.md`
 
 ## Политика изменений
 
