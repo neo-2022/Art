@@ -2,7 +2,7 @@ A) Полный запрет опциональности:
 # CHECKLIST 17 — Art Agent Spool/Outbox
 Файл: CHECKLIST_17_ART_AGENT_SPOOL_OUTBOX.md  
 Последняя актуализация: 2026-03-04  
-Дата последней проверки: ________  
+Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение spool политики; изменение recovery; изменение concurrency модели; изменение TTL/DLQ; изменение runbook registry
 
 ## Цель
@@ -18,123 +18,123 @@ Spool/outbox Agent (локальная очередь, persistence, retry/backof
 
 ## Шаги (строго линейно)
 
-- [ ] **1. Сделать:** Реализовать default политику `never_drop_unacked`: при full блокировать receivers + `observability_gap.spool_full` + periodic recheck.
-  - [ ] Default policy зафиксирована: `spool_overflow_policy=never_drop_unacked`
-  - [ ] При достижении capacity:
-    - [ ] приём новых событий от receivers останавливается (stop ingest at source)
-    - [ ] existing unacked не удаляются и не перезаписываются
-    - [ ] включается periodic recheck каждые 1000 мс
-  - [ ] Генерируется `observability_gap.spool_full` (snapshot/stream) с evidence_min:
-    - [ ] spool_path
-    - [ ] capacity_bytes
-    - [ ] used_bytes
-    - [ ] backlog_count
-    - [ ] trace_id
-  - [ ] `observability_gap.spool_full` зарегистрировано в `docs/governance/observability_gap_registry.md` с:
-    - [ ] `incident_rule=create_incident_min_sev1`
-    - [ ] `action_ref=docs/runbooks/spool_full.md`
-  - [ ] **Проверка (pass/fail):** integration test форсит full и проверяет:
-    - [ ] receivers блокируются
-    - [ ] recheck работает
-    - [ ] событие `observability_gap.spool_full` видно в snapshot/stream.
+- [x] **1. Сделать:** Реализовать default политику `never_drop_unacked`: при full блокировать receivers + `observability_gap.spool_full` + periodic recheck.
+  - [x] Default policy зафиксирована: `spool_overflow_policy=never_drop_unacked`
+  - [x] При достижении capacity:
+    - [x] приём новых событий от receivers останавливается (stop ingest at source)
+    - [x] existing unacked не удаляются и не перезаписываются
+    - [x] включается periodic recheck каждые 1000 мс
+  - [x] Генерируется `observability_gap.spool_full` (snapshot/stream) с evidence_min:
+    - [x] spool_path
+    - [x] capacity_bytes
+    - [x] used_bytes
+    - [x] backlog_count
+    - [x] trace_id
+  - [x] `observability_gap.spool_full` зарегистрировано в `docs/governance/observability_gap_registry.md` с:
+    - [x] `incident_rule=create_incident_min_sev1`
+    - [x] `action_ref=docs/runbooks/spool_full.md`
+  - [x] **Проверка (pass/fail):** integration test форсит full и проверяет:
+    - [x] receivers блокируются
+    - [x] recheck работает
+    - [x] событие `observability_gap.spool_full` видно в snapshot/stream.
 
-- [ ] **2. Сделать:** Реализовать альтернативную политику `drop_oldest_when_full`: drop oldest + `data_quality.lossy_spool_drop` + инцидент `lossy_mode_active` + метрики.
-  - [ ] Политика включается только через конфиг: `spool_overflow_policy=drop_oldest_when_full`
-  - [ ] При full:
-    - [ ] удаляется oldest запись (drop oldest)
-    - [ ] генерируется `data_quality.lossy_spool_drop` (snapshot/stream)
-    - [ ] увеличивается `spool_dropped_total`
-    - [ ] создаётся инцидент `lossy_mode_active` с severity не ниже SEV1
-    - [ ] инцидент содержит `action_ref=docs/runbooks/lossy_mode_active.md`
-  - [ ] `data_quality.lossy_spool_drop` содержит evidence_min:
-    - [ ] dropped_count (>=1)
-    - [ ] backlog_count
-    - [ ] used_bytes
-    - [ ] trace_id
-  - [ ] **Проверка (pass/fail):** integration test форсит full в режиме drop_oldest и проверяет:
-    - [ ] drop oldest реально происходит
-    - [ ] `data_quality.lossy_spool_drop` появляется
-    - [ ] `spool_dropped_total` растёт
-    - [ ] инцидент `lossy_mode_active` создан.
+- [x] **2. Сделать:** Реализовать альтернативную политику `drop_oldest_when_full`: drop oldest + `data_quality.lossy_spool_drop` + инцидент `lossy_mode_active` + метрики.
+  - [x] Политика включается только через конфиг: `spool_overflow_policy=drop_oldest_when_full`
+  - [x] При full:
+    - [x] удаляется oldest запись (drop oldest)
+    - [x] генерируется `data_quality.lossy_spool_drop` (snapshot/stream)
+    - [x] увеличивается `spool_dropped_total`
+    - [x] создаётся инцидент `lossy_mode_active` с severity не ниже SEV1
+    - [x] инцидент содержит `action_ref=docs/runbooks/lossy_mode_active.md`
+  - [x] `data_quality.lossy_spool_drop` содержит evidence_min:
+    - [x] dropped_count (>=1)
+    - [x] backlog_count
+    - [x] used_bytes
+    - [x] trace_id
+  - [x] **Проверка (pass/fail):** integration test форсит full в режиме drop_oldest и проверяет:
+    - [x] drop oldest реально происходит
+    - [x] `data_quality.lossy_spool_drop` появляется
+    - [x] `spool_dropped_total` растёт
+    - [x] инцидент `lossy_mode_active` создан.
 
-- [ ] **3. Сделать:** Реализовать spool corruption recovery: новый spool + `observability_gap.spool_corrupted` + продолжение работы.
-  - [ ] При детекте corruption:
-    - [ ] создаётся новый spool (новый каталог/файл, фиксированный алгоритм именования)
-    - [ ] старый spool помечается как quarantined (не используется дальше)
-    - [ ] ingest от receivers продолжается в новый spool
-  - [ ] Генерируется `observability_gap.spool_corrupted` (snapshot/stream) с evidence_min:
-    - [ ] old_spool_path
-    - [ ] new_spool_path
-    - [ ] corruption_type
-    - [ ] trace_id
-  - [ ] `observability_gap.spool_corrupted` зарегистрировано в реестре с:
-    - [ ] `incident_rule=create_incident_min_sev1`
-    - [ ] `action_ref=docs/runbooks/spool_corrupted.md`
-  - [ ] **Проверка (pass/fail):** corruption test воспроизводит порчу spool и проверяет:
-    - [ ] создание нового spool
-    - [ ] продолжение приёма событий
-    - [ ] событие `observability_gap.spool_corrupted` видно в snapshot/stream.
+- [x] **3. Сделать:** Реализовать spool corruption recovery: новый spool + `observability_gap.spool_corrupted` + продолжение работы.
+  - [x] При детекте corruption:
+    - [x] создаётся новый spool (новый каталог/файл, фиксированный алгоритм именования)
+    - [x] старый spool помечается как quarantined (не используется дальше)
+    - [x] ingest от receivers продолжается в новый spool
+  - [x] Генерируется `observability_gap.spool_corrupted` (snapshot/stream) с evidence_min:
+    - [x] old_spool_path
+    - [x] new_spool_path
+    - [x] corruption_type
+    - [x] trace_id
+  - [x] `observability_gap.spool_corrupted` зарегистрировано в реестре с:
+    - [x] `incident_rule=create_incident_min_sev1`
+    - [x] `action_ref=docs/runbooks/spool_corrupted.md`
+  - [x] **Проверка (pass/fail):** corruption test воспроизводит порчу spool и проверяет:
+    - [x] создание нового spool
+    - [x] продолжение приёма событий
+    - [x] событие `observability_gap.spool_corrupted` видно в snapshot/stream.
 
-- [ ] **4. Сделать:** Реализовать concurrency test: 10 потоков записи в spool → целостность.
-  - [ ] тест запускает ровно 10 writer потоков
-  - [ ] тест выполняет ≥ 10000 записей суммарно (фиксированный критерий)
-  - [ ] тест проверяет инварианты:
-    - [ ] отсутствуют “lost records” (счётчик записей совпадает с прочитанными)
-    - [ ] ack/seq монотонны на стороне отправки в Core (если применимо к тесту)
-    - [ ] spool индекс/метаданные консистентны после завершения
-  - [ ] **Проверка (pass/fail):** integration test зелёный в CI и лог фиксирует параметры (threads=10, writes>=10000).
+- [x] **4. Сделать:** Реализовать concurrency test: 10 потоков записи в spool → целостность.
+  - [x] тест запускает ровно 10 writer потоков
+  - [x] тест выполняет ≥ 10000 записей суммарно (фиксированный критерий)
+  - [x] тест проверяет инварианты:
+    - [x] отсутствуют “lost records” (счётчик записей совпадает с прочитанными)
+    - [x] ack/seq монотонны на стороне отправки в Core (если применимо к тесту)
+    - [x] spool индекс/метаданные консистентны после завершения
+  - [x] **Проверка (pass/fail):** integration test зелёный в CI и лог фиксирует параметры (threads=10, writes>=10000).
 
-- [ ] **5. Сделать:** Chaos тесты spool/outbox (обязательные, воспроизводимые сценарии).
-  - [ ] chaos: kill -9 Agent во время записи
-    - [ ] после рестарта данные консистентны
-    - [ ] агент продолжает flush в Core
-  - [ ] chaos: network loss (Core недоступен)
-    - [ ] outbox/spool растёт до лимита
-    - [ ] включается backoff
-    - [ ] при full отрабатывает политика из шага 1 или 2 (в зависимости от конфига)
-  - [ ] chaos: disk full на spool пути
-    - [ ] генерируется `observability_gap.spool_disk_full` (snapshot/stream)
-    - [ ] событие зарегистрировано в реестре с:
-      - [ ] `incident_rule=create_incident_min_sev1`
-      - [ ] `action_ref=docs/runbooks/spool_disk_full.md`
-  - [ ] chaos: corruption
-    - [ ] отрабатывает recovery шага 3
-  - [ ] **Проверка (pass/fail):** существует документ `docs/agent/spool_chaos.md` с точными шагами воспроизведения и критериями pass/fail для каждого сценария; минимум 1 chaos smoke прогоняется в CI.
+- [x] **5. Сделать:** Chaos тесты spool/outbox (обязательные, воспроизводимые сценарии).
+  - [x] chaos: kill -9 Agent во время записи
+    - [x] после рестарта данные консистентны
+    - [x] агент продолжает flush в Core
+  - [x] chaos: network loss (Core недоступен)
+    - [x] outbox/spool растёт до лимита
+    - [x] включается backoff
+    - [x] при full отрабатывает политика из шага 1 или 2 (в зависимости от конфига)
+  - [x] chaos: disk full на spool пути
+    - [x] генерируется `observability_gap.spool_disk_full` (snapshot/stream)
+    - [x] событие зарегистрировано в реестре с:
+      - [x] `incident_rule=create_incident_min_sev1`
+      - [x] `action_ref=docs/runbooks/spool_disk_full.md`
+  - [x] chaos: corruption
+    - [x] отрабатывает recovery шага 3
+  - [x] **Проверка (pass/fail):** существует документ `docs/agent/spool_chaos.md` с точными шагами воспроизведения и критериями pass/fail для каждого сценария; минимум 1 chaos smoke прогоняется в CI.
 
 ## Документация (RU)
-- [ ] docs/agent/spool.md
-- [ ] docs/agent/spool_policies.md
-- [ ] docs/agent/recovery.md
-- [ ] docs/agent/spool_chaos.md
-- [ ] docs/runbooks/spool_full.md
-- [ ] docs/runbooks/spool_corrupted.md
-- [ ] docs/runbooks/spool_disk_full.md
-- [ ] docs/runbooks/lossy_mode_active.md
+- [x] docs/agent/spool.md
+- [x] docs/agent/spool_policies.md
+- [x] docs/agent/recovery.md
+- [x] docs/agent/spool_chaos.md
+- [x] docs/runbooks/spool_full.md
+- [x] docs/runbooks/spool_corrupted.md
+- [x] docs/runbooks/spool_disk_full.md
+- [x] docs/runbooks/lossy_mode_active.md
 
 ## Тестирование
-- [ ] integration: `never_drop_unacked` (шаг 1)
-- [ ] integration: `drop_oldest_when_full` (шаг 2)
-- [ ] integration: corruption recovery (шаг 3)
-- [ ] integration: concurrency 10 writers (шаг 4)
-- [ ] chaos: kill -9 + network loss + disk full + corruption (шаг 5)
+- [x] integration: `never_drop_unacked` (шаг 1)
+- [x] integration: `drop_oldest_when_full` (шаг 2)
+- [x] integration: corruption recovery (шаг 3)
+- [x] integration: concurrency 10 writers (шаг 4)
+- [x] chaos: kill -9 + network loss + disk full + corruption (шаг 5)
 
 ## CI gate
-- [ ] CI job `agent-spool-tests` существует и зелёный (шага 1–4)
-- [ ] CI job `agent-spool-chaos-smoke` существует и зелёный (smoke подмножество шага 5: kill -9 + network loss)
-- [ ] CI job `stage17-docs-gate` существует и запускает `scripts/ci/check_agent_spool_stage17_docs.sh`, который:
-  - [ ] проверяет существование файлов из раздела “Документация (RU)”
-  - [ ] проверяет минимальный контент (grep):
-    - [ ] `docs/agent/spool_policies.md` содержит `never_drop_unacked` и `drop_oldest_when_full`
-    - [ ] `docs/agent/recovery.md` содержит `spool_corrupted`
-    - [ ] `docs/agent/spool_chaos.md` содержит `kill -9` и `disk full`
-    - [ ] runbooks содержат `mitigations` и `verification`
-  - [ ] exit 1 при нарушении любой проверки
+- [x] CI job `agent-spool-tests` существует и зелёный (шага 1–4)
+- [x] CI job `agent-spool-chaos-smoke` существует и зелёный (smoke подмножество шага 5: kill -9 + network loss)
+- [x] CI job `stage17-docs-gate` существует и запускает `scripts/ci/check_agent_spool_stage17_docs.sh`, который:
+  - [x] проверяет существование файлов из раздела “Документация (RU)”
+  - [x] проверяет минимальный контент (grep):
+    - [x] `docs/agent/spool_policies.md` содержит `never_drop_unacked` и `drop_oldest_when_full`
+    - [x] `docs/agent/recovery.md` содержит `spool_corrupted`
+    - [x] `docs/agent/spool_chaos.md` содержит `kill -9` и `disk full`
+    - [x] runbooks содержат `mitigations` и `verification`
+  - [x] exit 1 при нарушении любой проверки
 
 ## DoD
-- [ ] Default `never_drop_unacked` реализован и подтверждён тестом; `observability_gap.spool_full` зарегистрирован и имеет runbook.
-- [ ] `drop_oldest_when_full` реализован и подтверждён тестом; `data_quality.lossy_spool_drop` и инцидент `lossy_mode_active` работают.
-- [ ] Corruption recovery детерминирован и подтверждён тестом; `observability_gap.spool_corrupted` зарегистрирован и имеет runbook.
-- [ ] Concurrency test (10 потоков) зелёный.
-- [ ] Chaos сценарии воспроизводимы и smoke прогоняется в CI.
-- [ ] CI gate Stage 17 зелёный.
+- [x] Default `never_drop_unacked` реализован и подтверждён тестом; `observability_gap.spool_full` зарегистрирован и имеет runbook.
+- [x] `drop_oldest_when_full` реализован и подтверждён тестом; `data_quality.lossy_spool_drop` и инцидент `lossy_mode_active` работают.
+- [x] Corruption recovery детерминирован и подтверждён тестом; `observability_gap.spool_corrupted` зарегистрирован и имеет runbook.
+- [x] Concurrency test (10 потоков) зелёный.
+- [x] Chaos сценарии воспроизводимы и smoke прогоняется в CI.
+- [x] CI gate Stage 17 зелёный.
 

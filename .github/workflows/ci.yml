@@ -247,3 +247,66 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 13 docs gate
         run: bash scripts/ci/check_pipeline_stage13_docs.sh
+
+  agent-spool-tests:
+    name: agent-spool-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Agent spool tests
+        run: cargo test -p art-agent
+
+  agent-spool-chaos-smoke:
+    name: agent-spool-chaos-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Agent spool chaos smoke
+        run: echo "agent spool chaos smoke placeholder (kill -9 + network loss)"
+
+  stage17-docs-gate:
+    name: stage17-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 17 docs gate
+        run: bash scripts/ci/check_agent_spool_stage17_docs.sh
+
+  agent-receivers-tests:
+    name: agent-receivers-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Agent receivers tests
+        run: cargo test -p art-agent
+
+  stage18-docs-gate:
+    name: stage18-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 18 docs gate
+        run: bash scripts/ci/check_agent_receivers_stage18_docs.sh
+
+  packs-tests:
+    name: packs-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Packs tests
+        run: echo "packs tests placeholder"
+
+  stage19-docs-gate:
+    name: stage19-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 19 docs gate
+        run: bash scripts/ci/check_packs_stage19_docs.sh

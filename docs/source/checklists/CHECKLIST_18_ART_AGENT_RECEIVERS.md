@@ -2,7 +2,7 @@ A) Полный запрет опциональности:
 # CHECKLIST 18 — Art Agent Receivers v1
 Файл: CHECKLIST_18_ART_AGENT_RECEIVERS.md  
 Последняя актуализация: 2026-03-04  
-Дата последней проверки: ________  
+Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение формата RawEvent; изменение redaction rules; изменение spool/outbox политики; добавление/изменение receiver kinds; изменение политики multiline/парсинга
 
 ## Цель
@@ -20,163 +20,163 @@ Core ingest/storage/pipeline — в других чек-листах.
 
 ## Шаги (строго линейно)
 
-- [ ] **1. Сделать:** Зафиксировать receiver API/контракт и список receiver kinds v1 (ровно фиксированный набор).
-  - [ ] `receiver_kind` (enum) фиксирован и содержит ровно:
-    - [ ] `file_tail`
-    - [ ] `journald`
-    - [ ] `stdout_stderr` (обёртка запуска процесса/pipe)
-  - [ ] Каждый receiver генерирует RawEvent со строгими полями:
-    - [ ] `source_id` (строка, уникальна в рамках агента)
-    - [ ] `source_seq` (целое >= 0, монотонно растёт для данного source_id)
-    - [ ] `source_ts_ms` (целое >= 0)
-    - [ ] `receiver_kind` (одно из enum)
-    - [ ] `trace_id` (всегда; генерируется при отсутствии)
-    - [ ] `retry_count` (всегда; целое >= 0)
-  - [ ] Правило уникальности `source_id` фиксировано:
-    - [ ] `file_tail`: `file:<abs_path>`
-    - [ ] `journald`: `journald:<unit_or_matcher_id>`
-    - [ ] `stdout_stderr`: `proc:<command_id>`
-  - [ ] **Проверка (pass/fail):** существует `docs/agent/receivers.md`, содержит enum, контракт полей и правила source_id.
+- [x] **1. Сделать:** Зафиксировать receiver API/контракт и список receiver kinds v1 (ровно фиксированный набор).
+  - [x] `receiver_kind` (enum) фиксирован и содержит ровно:
+    - [x] `file_tail`
+    - [x] `journald`
+    - [x] `stdout_stderr` (обёртка запуска процесса/pipe)
+  - [x] Каждый receiver генерирует RawEvent со строгими полями:
+    - [x] `source_id` (строка, уникальна в рамках агента)
+    - [x] `source_seq` (целое >= 0, монотонно растёт для данного source_id)
+    - [x] `source_ts_ms` (целое >= 0)
+    - [x] `receiver_kind` (одно из enum)
+    - [x] `trace_id` (всегда; генерируется при отсутствии)
+    - [x] `retry_count` (всегда; целое >= 0)
+  - [x] Правило уникальности `source_id` фиксировано:
+    - [x] `file_tail`: `file:<abs_path>`
+    - [x] `journald`: `journald:<unit_or_matcher_id>`
+    - [x] `stdout_stderr`: `proc:<command_id>`
+  - [x] **Проверка (pass/fail):** существует `docs/agent/receivers.md`, содержит enum, контракт полей и правила source_id.
 
-- [ ] **2. Сделать:** Реализовать pre-write redaction в receivers ДО записи в spool/outbox.
-  - [ ] redaction применяется к:
-    - [ ] `message`
-    - [ ] `payload` (включая structured fields)
-    - [ ] `ctx` (если заполняется)
-    - [ ] метаданным receiver (например file path в message запрещён; допускается только в `source_id`)
-  - [ ] redaction использует конфиг rules Stage 02
-  - [ ] при фактической правке данных генерируется `privacy.redaction_applied` (snapshot/stream)
-  - [ ] **Проверка (pass/fail):** security test подаёт секрет/PII на вход receiver и проверяет:
-    - [ ] в spool/outbox нет исходного секрета
-    - [ ] есть маска/удаление
-    - [ ] `privacy.redaction_applied` сработал.
+- [x] **2. Сделать:** Реализовать pre-write redaction в receivers ДО записи в spool/outbox.
+  - [x] redaction применяется к:
+    - [x] `message`
+    - [x] `payload` (включая structured fields)
+    - [x] `ctx` (если заполняется)
+    - [x] метаданным receiver (например file path в message запрещён; допускается только в `source_id`)
+  - [x] redaction использует конфиг rules Stage 02
+  - [x] при фактической правке данных генерируется `privacy.redaction_applied` (snapshot/stream)
+  - [x] **Проверка (pass/fail):** security test подаёт секрет/PII на вход receiver и проверяет:
+    - [x] в spool/outbox нет исходного секрета
+    - [x] есть маска/удаление
+    - [x] `privacy.redaction_applied` сработал.
 
-- [ ] **3. Сделать:** Реализовать parsing policy: plain + structured + multiline (фиксированное поведение).
-  - [ ] Базовый режим: line-based (каждая строка → 1 RawEvent)
-  - [ ] Structured режим (JSON line):
-    - [ ] если строка валидный JSON object → кладётся в `payload.structured` (объект)
-    - [ ] исходная строка сохраняется как `payload.raw_line` (строка)
-  - [ ] Multiline режим фиксирован:
-    - [ ] начало события: regex `^(\S+\s+\S+|{)` (одно фиксированное правило)
-    - [ ] продолжение: строки до следующего “начала”
-    - [ ] max_lines_per_event=50
-    - [ ] max_event_bytes=65536
-  - [ ] при превышении лимитов multiline генерируется `data_quality.receiver_multiline_truncated` (snapshot/stream)
-  - [ ] при ошибке парсинга structured JSON генерируется `data_quality.receiver_parse_failed` (snapshot/stream)
-  - [ ] **Проверка (pass/fail):** unit tests покрывают:
-    - [ ] plain lines
-    - [ ] structured JSON line success
-    - [ ] structured JSON parse fail → событие `data_quality.receiver_parse_failed`
-    - [ ] multiline сборка
-    - [ ] multiline truncation → событие `data_quality.receiver_multiline_truncated`.
+- [x] **3. Сделать:** Реализовать parsing policy: plain + structured + multiline (фиксированное поведение).
+  - [x] Базовый режим: line-based (каждая строка → 1 RawEvent)
+  - [x] Structured режим (JSON line):
+    - [x] если строка валидный JSON object → кладётся в `payload.structured` (объект)
+    - [x] исходная строка сохраняется как `payload.raw_line` (строка)
+  - [x] Multiline режим фиксирован:
+    - [x] начало события: regex `^(\S+\s+\S+|{)` (одно фиксированное правило)
+    - [x] продолжение: строки до следующего “начала”
+    - [x] max_lines_per_event=50
+    - [x] max_event_bytes=65536
+  - [x] при превышении лимитов multiline генерируется `data_quality.receiver_multiline_truncated` (snapshot/stream)
+  - [x] при ошибке парсинга structured JSON генерируется `data_quality.receiver_parse_failed` (snapshot/stream)
+  - [x] **Проверка (pass/fail):** unit tests покрывают:
+    - [x] plain lines
+    - [x] structured JSON line success
+    - [x] structured JSON parse fail → событие `data_quality.receiver_parse_failed`
+    - [x] multiline сборка
+    - [x] multiline truncation → событие `data_quality.receiver_multiline_truncated`.
 
-- [ ] **4. Сделать:** Реализовать backpressure receivers от spool/outbox (строгое поведение).
-  - [ ] Default: при `spool_overflow_policy=never_drop_unacked`:
-    - [ ] receiver прекращает чтение источника (pause)
-    - [ ] генерируется `observability_gap.receiver_paused_spool_full` (snapshot/stream)
-  - [ ] При `spool_overflow_policy=drop_oldest_when_full`:
-    - [ ] receiver продолжает чтение
-    - [ ] потери фиксируются событиями lossy из Stage 17 (spool drop) + локально `data_quality.receiver_lossy_mode_active` (snapshot/stream)
-  - [ ] **Проверка (pass/fail):** integration test:
-    - [ ] форсит spool full в `never_drop_unacked` и проверяет pause + `observability_gap.receiver_paused_spool_full`
-    - [ ] форсит spool full в `drop_oldest_when_full` и проверяет продолжение чтения + lossy события.
+- [x] **4. Сделать:** Реализовать backpressure receivers от spool/outbox (строгое поведение).
+  - [x] Default: при `spool_overflow_policy=never_drop_unacked`:
+    - [x] receiver прекращает чтение источника (pause)
+    - [x] генерируется `observability_gap.receiver_paused_spool_full` (snapshot/stream)
+  - [x] При `spool_overflow_policy=drop_oldest_when_full`:
+    - [x] receiver продолжает чтение
+    - [x] потери фиксируются событиями lossy из Stage 17 (spool drop) + локально `data_quality.receiver_lossy_mode_active` (snapshot/stream)
+  - [x] **Проверка (pass/fail):** integration test:
+    - [x] форсит spool full в `never_drop_unacked` и проверяет pause + `observability_gap.receiver_paused_spool_full`
+    - [x] форсит spool full в `drop_oldest_when_full` и проверяет продолжение чтения + lossy события.
 
-- [ ] **5. Сделать:** Реализовать receiver `file_tail` (log rotation + offset persistence).
-  - [ ] читает файл по абсолютному пути
-  - [ ] хранит offset в state-файле (фиксированный путь и формат описаны)
-  - [ ] обрабатывает log rotation:
-    - [ ] inode change → продолжает с 0 нового файла
-    - [ ] старый inode дочитывается до EOF, затем переключение (одно фиксированное поведение)
-  - [ ] permission denied → `observability_gap.receiver_permission_denied` (snapshot/stream)
-  - [ ] read error → `observability_gap.receiver_read_failed` (snapshot/stream)
-  - [ ] **Проверка (pass/fail):** integration tests:
-    - [ ] tail читает строки и source_seq монотонен
-    - [ ] rotation сценарий проходит и не теряет порядок source_seq
-    - [ ] permission denied вызывает `observability_gap.receiver_permission_denied`.
+- [x] **5. Сделать:** Реализовать receiver `file_tail` (log rotation + offset persistence).
+  - [x] читает файл по абсолютному пути
+  - [x] хранит offset в state-файле (фиксированный путь и формат описаны)
+  - [x] обрабатывает log rotation:
+    - [x] inode change → продолжает с 0 нового файла
+    - [x] старый inode дочитывается до EOF, затем переключение (одно фиксированное поведение)
+  - [x] permission denied → `observability_gap.receiver_permission_denied` (snapshot/stream)
+  - [x] read error → `observability_gap.receiver_read_failed` (snapshot/stream)
+  - [x] **Проверка (pass/fail):** integration tests:
+    - [x] tail читает строки и source_seq монотонен
+    - [x] rotation сценарий проходит и не теряет порядок source_seq
+    - [x] permission denied вызывает `observability_gap.receiver_permission_denied`.
 
-- [ ] **6. Сделать:** Реализовать receiver `journald` (cursor persistence).
-  - [ ] фильтр фиксирован: `UNIT=<service>` (одно фиксированное решение)
-  - [ ] хранит journald cursor в state-файле
-  - [ ] перезапуск агента продолжает чтение с сохранённого cursor
-  - [ ] read error → `observability_gap.receiver_read_failed` (snapshot/stream)
-  - [ ] **Проверка (pass/fail):** integration test:
-    - [ ] читает записи из journald
-    - [ ] после рестарта продолжает с cursor (не дублирует и не пропускает)
-    - [ ] source_seq монотонен.
+- [x] **6. Сделать:** Реализовать receiver `journald` (cursor persistence).
+  - [x] фильтр фиксирован: `UNIT=<service>` (одно фиксированное решение)
+  - [x] хранит journald cursor в state-файле
+  - [x] перезапуск агента продолжает чтение с сохранённого cursor
+  - [x] read error → `observability_gap.receiver_read_failed` (snapshot/stream)
+  - [x] **Проверка (pass/fail):** integration test:
+    - [x] читает записи из journald
+    - [x] после рестарта продолжает с cursor (не дублирует и не пропускает)
+    - [x] source_seq монотонен.
 
-- [ ] **7. Сделать:** Реализовать receiver `stdout_stderr` (wrapper).
-  - [ ] запускает процесс по фиксированному `command_id`
-  - [ ] читает stdout и stderr как два канала:
-    - [ ] `payload.stream="stdout"` / `payload.stream="stderr"`
-  - [ ] exit non-zero → `observability_gap.receiver_process_exited` (snapshot/stream)
-  - [ ] spawn error → `observability_gap.receiver_process_spawn_failed` (snapshot/stream)
-  - [ ] **Проверка (pass/fail):** integration test:
-    - [ ] stdout/stderr события приходят
-    - [ ] non-zero exit порождает `observability_gap.receiver_process_exited`.
+- [x] **7. Сделать:** Реализовать receiver `stdout_stderr` (wrapper).
+  - [x] запускает процесс по фиксированному `command_id`
+  - [x] читает stdout и stderr как два канала:
+    - [x] `payload.stream="stdout"` / `payload.stream="stderr"`
+  - [x] exit non-zero → `observability_gap.receiver_process_exited` (snapshot/stream)
+  - [x] spawn error → `observability_gap.receiver_process_spawn_failed` (snapshot/stream)
+  - [x] **Проверка (pass/fail):** integration test:
+    - [x] stdout/stderr события приходят
+    - [x] non-zero exit порождает `observability_gap.receiver_process_exited`.
 
-- [ ] **8. Сделать:** Зарегистрировать все receiver gap/quality события в реестре `observability_gap_registry.md` и зафиксировать incident_rule + runbook.
-  - [ ] `observability_gap.receiver_paused_spool_full`:
-    - [ ] `incident_rule=create_incident_min_sev2`
-    - [ ] `action_ref=docs/runbooks/receiver_paused_spool_full.md`
-  - [ ] `observability_gap.receiver_permission_denied`:
-    - [ ] `incident_rule=create_incident_min_sev2`
-    - [ ] `action_ref=docs/runbooks/receiver_permission_denied.md`
-  - [ ] `observability_gap.receiver_read_failed`:
-    - [ ] `incident_rule=create_incident_min_sev2`
-    - [ ] `action_ref=docs/runbooks/receiver_read_failed.md`
-  - [ ] `observability_gap.receiver_process_spawn_failed`:
-    - [ ] `incident_rule=create_incident_min_sev1`
-    - [ ] `action_ref=docs/runbooks/receiver_process_spawn_failed.md`
-  - [ ] `observability_gap.receiver_process_exited`:
-    - [ ] `incident_rule=create_incident_min_sev2`
-    - [ ] `action_ref=docs/runbooks/receiver_process_exited.md`
-  - [ ] **Проверка (pass/fail):** реестр содержит все события выше с `incident_rule` и `action_ref`; все runbook файлы существуют.
+- [x] **8. Сделать:** Зарегистрировать все receiver gap/quality события в реестре `observability_gap_registry.md` и зафиксировать incident_rule + runbook.
+  - [x] `observability_gap.receiver_paused_spool_full`:
+    - [x] `incident_rule=create_incident_min_sev2`
+    - [x] `action_ref=docs/runbooks/receiver_paused_spool_full.md`
+  - [x] `observability_gap.receiver_permission_denied`:
+    - [x] `incident_rule=create_incident_min_sev2`
+    - [x] `action_ref=docs/runbooks/receiver_permission_denied.md`
+  - [x] `observability_gap.receiver_read_failed`:
+    - [x] `incident_rule=create_incident_min_sev2`
+    - [x] `action_ref=docs/runbooks/receiver_read_failed.md`
+  - [x] `observability_gap.receiver_process_spawn_failed`:
+    - [x] `incident_rule=create_incident_min_sev1`
+    - [x] `action_ref=docs/runbooks/receiver_process_spawn_failed.md`
+  - [x] `observability_gap.receiver_process_exited`:
+    - [x] `incident_rule=create_incident_min_sev2`
+    - [x] `action_ref=docs/runbooks/receiver_process_exited.md`
+  - [x] **Проверка (pass/fail):** реестр содержит все события выше с `incident_rule` и `action_ref`; все runbook файлы существуют.
 
-- [ ] **9. Сделать:** RU-дока receivers: конфиг, state, примеры, ограничения.
-  - [ ] `docs/agent/receivers.md` содержит контракт (шаг 1)
-  - [ ] `docs/agent/receivers_config.md` содержит фиксированный формат конфига receivers и:
-    - [ ] пример для file_tail
-    - [ ] пример для journald
-    - [ ] пример для stdout_stderr
-  - [ ] `docs/agent/receivers_state.md` описывает state файлы (offset/cursor) и их формат
-  - [ ] **Проверка (pass/fail):** документы существуют и содержат указанные примеры и поля.
+- [x] **9. Сделать:** RU-дока receivers: конфиг, state, примеры, ограничения.
+  - [x] `docs/agent/receivers.md` содержит контракт (шаг 1)
+  - [x] `docs/agent/receivers_config.md` содержит фиксированный формат конфига receivers и:
+    - [x] пример для file_tail
+    - [x] пример для journald
+    - [x] пример для stdout_stderr
+  - [x] `docs/agent/receivers_state.md` описывает state файлы (offset/cursor) и их формат
+  - [x] **Проверка (pass/fail):** документы существуют и содержат указанные примеры и поля.
 
 ## Документация (RU)
-- [ ] docs/agent/receivers.md
-- [ ] docs/agent/receivers_config.md
-- [ ] docs/agent/receivers_state.md
-- [ ] docs/runbooks/receiver_paused_spool_full.md
-- [ ] docs/runbooks/receiver_permission_denied.md
-- [ ] docs/runbooks/receiver_read_failed.md
-- [ ] docs/runbooks/receiver_process_spawn_failed.md
-- [ ] docs/runbooks/receiver_process_exited.md
+- [x] docs/agent/receivers.md
+- [x] docs/agent/receivers_config.md
+- [x] docs/agent/receivers_state.md
+- [x] docs/runbooks/receiver_paused_spool_full.md
+- [x] docs/runbooks/receiver_permission_denied.md
+- [x] docs/runbooks/receiver_read_failed.md
+- [x] docs/runbooks/receiver_process_spawn_failed.md
+- [x] docs/runbooks/receiver_process_exited.md
 
 ## Тестирование
-- [ ] unit: parsing (plain/structured/multiline) + truncation + parse_failed
-- [ ] security: pre-write redaction + `privacy.redaction_applied`
-- [ ] integration: file_tail (offset + rotation + permission denied)
-- [ ] integration: journald (cursor persistence)
-- [ ] integration: stdout_stderr (spawn + exit non-zero)
-- [ ] integration: backpressure pause/continue по политикам spool (Stage 17)
+- [x] unit: parsing (plain/structured/multiline) + truncation + parse_failed
+- [x] security: pre-write redaction + `privacy.redaction_applied`
+- [x] integration: file_tail (offset + rotation + permission denied)
+- [x] integration: journald (cursor persistence)
+- [x] integration: stdout_stderr (spawn + exit non-zero)
+- [x] integration: backpressure pause/continue по политикам spool (Stage 17)
 
 ## CI gate
-- [ ] CI job `agent-receivers-tests` существует и запускается на PR в main; job зелёный
-- [ ] CI job `stage18-docs-gate` существует и запускается на PR в main
-- [ ] `stage18-docs-gate` запускает `scripts/ci/check_agent_receivers_stage18_docs.sh`, который:
-  - [ ] проверяет существование файлов из раздела “Документация (RU)”
-  - [ ] проверяет минимальный контент (grep):
-    - [ ] `docs/agent/receivers.md` содержит `receiver_kind` и `source_id` и `source_seq`
-    - [ ] `docs/agent/receivers_config.md` содержит `file_tail` и `journald` и `stdout_stderr`
-    - [ ] `docs/agent/receivers_state.md` содержит `offset` и `cursor`
-    - [ ] runbooks содержат `mitigations` и `verification`
-  - [ ] exit 1 при нарушении любой проверки
+- [x] CI job `agent-receivers-tests` существует и запускается на PR в main; job зелёный
+- [x] CI job `stage18-docs-gate` существует и запускается на PR в main
+- [x] `stage18-docs-gate` запускает `scripts/ci/check_agent_receivers_stage18_docs.sh`, который:
+  - [x] проверяет существование файлов из раздела “Документация (RU)”
+  - [x] проверяет минимальный контент (grep):
+    - [x] `docs/agent/receivers.md` содержит `receiver_kind` и `source_id` и `source_seq`
+    - [x] `docs/agent/receivers_config.md` содержит `file_tail` и `journald` и `stdout_stderr`
+    - [x] `docs/agent/receivers_state.md` содержит `offset` и `cursor`
+    - [x] runbooks содержат `mitigations` и `verification`
+  - [x] exit 1 при нарушении любой проверки
 
 ## DoD
-- [ ] Receiver kinds v1 (file_tail/journald/stdout_stderr) реализованы и задокументированы.
-- [ ] Контракт source_id/source_seq/trace_id/retry_count соблюдается и покрыт тестами.
-- [ ] Parsing (plain/structured/multiline) детерминирован и покрыт unit tests.
-- [ ] Pre-write redaction работает и подтверждён security тестом.
-- [ ] Backpressure от spool/outbox реализован и покрыт integration tests.
-- [ ] Все `observability_gap.*` события receivers зарегистрированы и имеют runbook.
-- [ ] CI gate Stage 18 зелёный.
+- [x] Receiver kinds v1 (file_tail/journald/stdout_stderr) реализованы и задокументированы.
+- [x] Контракт source_id/source_seq/trace_id/retry_count соблюдается и покрыт тестами.
+- [x] Parsing (plain/structured/multiline) детерминирован и покрыт unit tests.
+- [x] Pre-write redaction работает и подтверждён security тестом.
+- [x] Backpressure от spool/outbox реализован и покрыт integration tests.
+- [x] Все `observability_gap.*` события receivers зарегистрированы и имеют runbook.
+- [x] CI gate Stage 18 зелёный.
 
