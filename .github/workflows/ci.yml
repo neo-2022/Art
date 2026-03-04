@@ -220,3 +220,30 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 12 docs gate
         run: bash scripts/ci/check_ingest_stage12_docs.sh
+
+  pipeline-tests:
+    name: pipeline-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Pipeline tests
+        run: echo "pipeline tests placeholder"
+
+  pipeline-security-tests:
+    name: pipeline-security-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Pipeline security tests
+        run: echo "pipeline security tests placeholder"
+
+  stage13-docs-gate:
+    name: stage13-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 13 docs gate
+        run: bash scripts/ci/check_pipeline_stage13_docs.sh
