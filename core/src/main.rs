@@ -257,10 +257,17 @@ async fn apply_profile(
                 .duration_since(UNIX_EPOCH)
                 .map(|d| d.as_millis() as u64)
                 .unwrap_or(0);
+            let details = profile_violation_details(&req);
             let event = json!({
                 "kind": "observability_gap.profile_violation",
                 "reason": err.to_string(),
                 "profile_id": req.profile_id,
+                "violated_rule": details.violated_rule,
+                "parameter": details.parameter,
+                "current_values": {
+                    "current": details.current,
+                    "expected": details.expected
+                },
                 "ts_ms": now_ms
             });
             let seq = s.next_seq;
@@ -477,45 +484,86 @@ fn parse_core_config(raw: &str) -> anyhow::Result<CoreConfig> {
 }
 
 fn validate_profile_guardrails(cfg: &CoreConfig) -> anyhow::Result<String> {
-    let baseline = profile_baseline(&cfg.profile_id)
-        .with_context(|| format!("unsupported profile_id '{}'", cfg.profile_id))?;
-
-    if cfg.retention_days != baseline.retention_days {
+    let details = profile_violation_details(cfg);
+    if details.violated_rule != "none" {
         anyhow::bail!(
-            "profile guard failed: retention_days={} expected={}",
-            cfg.retention_days,
-            baseline.retention_days
-        );
-    }
-    if cfg.export_mode != baseline.export_mode {
-        anyhow::bail!(
-            "profile guard failed: export_mode='{}' expected='{}'",
-            cfg.export_mode,
-            baseline.export_mode
-        );
-    }
-    if cfg.egress_policy != baseline.egress_policy {
-        anyhow::bail!(
-            "profile guard failed: egress_policy='{}' expected='{}'",
-            cfg.egress_policy,
-            baseline.egress_policy
-        );
-    }
-    if cfg.residency != baseline.residency {
-        anyhow::bail!(
-            "profile guard failed: residency='{}' expected='{}'",
-            cfg.residency,
-            baseline.residency
-        );
-    }
-    if cfg.updates_mode != baseline.updates_mode {
-        anyhow::bail!(
-            "profile guard failed: updates_mode='{}' expected='{}'",
-            cfg.updates_mode,
-            baseline.updates_mode
+            "profile guard failed: {} current='{}' expected='{}'",
+            details.parameter,
+            details.current,
+            details.expected
         );
     }
     Ok(cfg.profile_id.clone())
+}
+
+#[derive(Debug, Clone)]
+struct ProfileViolationDetails {
+    violated_rule: String,
+    parameter: String,
+    current: String,
+    expected: String,
+}
+
+fn profile_violation_details(cfg: &CoreConfig) -> ProfileViolationDetails {
+    let baseline = match profile_baseline(&cfg.profile_id) {
+        Some(v) => v,
+        None => {
+            return ProfileViolationDetails {
+                violated_rule: "unsupported_profile_id".to_string(),
+                parameter: "profile_id".to_string(),
+                current: cfg.profile_id.clone(),
+                expected: "global|eu|ru|airgapped".to_string(),
+            };
+        }
+    };
+
+    if cfg.retention_days != baseline.retention_days {
+        return ProfileViolationDetails {
+            violated_rule: "retention_mismatch".to_string(),
+            parameter: "retention_days".to_string(),
+            current: cfg.retention_days.to_string(),
+            expected: baseline.retention_days.to_string(),
+        };
+    }
+    if cfg.export_mode != baseline.export_mode {
+        return ProfileViolationDetails {
+            violated_rule: "export_mismatch".to_string(),
+            parameter: "export_mode".to_string(),
+            current: cfg.export_mode.clone(),
+            expected: baseline.export_mode.to_string(),
+        };
+    }
+    if cfg.egress_policy != baseline.egress_policy {
+        return ProfileViolationDetails {
+            violated_rule: "egress_mismatch".to_string(),
+            parameter: "egress_policy".to_string(),
+            current: cfg.egress_policy.clone(),
+            expected: baseline.egress_policy.to_string(),
+        };
+    }
+    if cfg.residency != baseline.residency {
+        return ProfileViolationDetails {
+            violated_rule: "residency_mismatch".to_string(),
+            parameter: "residency".to_string(),
+            current: cfg.residency.clone(),
+            expected: baseline.residency.to_string(),
+        };
+    }
+    if cfg.updates_mode != baseline.updates_mode {
+        return ProfileViolationDetails {
+            violated_rule: "updates_mismatch".to_string(),
+            parameter: "updates_mode".to_string(),
+            current: cfg.updates_mode.clone(),
+            expected: baseline.updates_mode.to_string(),
+        };
+    }
+
+    ProfileViolationDetails {
+        violated_rule: "none".to_string(),
+        parameter: "none".to_string(),
+        current: "none".to_string(),
+        expected: "none".to_string(),
+    }
 }
 
 fn profile_baseline(profile_id: &str) -> Option<ProfileBaseline> {
@@ -730,14 +778,16 @@ updates_mode = "online"
             .to_bytes();
         let json: Value = serde_json::from_slice(&body).expect("json");
         let events = json["events"].as_array().expect("events");
-        assert!(
-            events.iter().any(|e| {
-                e["event"]["kind"]
-                    .as_str()
-                    .map(|k| k == "observability_gap.profile_violation")
-                    .unwrap_or(false)
-            }),
-            "expected observability_gap.profile_violation in snapshot"
-        );
+        let violation = events.iter().find(|e| {
+            e["event"]["kind"]
+                .as_str()
+                .map(|k| k == "observability_gap.profile_violation")
+                .unwrap_or(false)
+        });
+        let violation = violation.expect("expected observability_gap.profile_violation in snapshot");
+        assert!(violation["event"]["violated_rule"].is_string());
+        assert!(violation["event"]["parameter"].is_string());
+        assert!(violation["event"]["current_values"]["current"].is_string());
+        assert!(violation["event"]["current_values"]["expected"].is_string());
     }
 }

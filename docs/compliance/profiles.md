@@ -1,32 +1,40 @@
 # Regional profiles
 
 ## profile: global
+- storage_class: primary
+- storage_data_residency: any
 - retention_days: 30
 - export_mode: standard
 - egress_policy: controlled
-- residency: any
 - updates_mode: online
+- telemetry_mode: full
 
 ## profile: eu
+- storage_class: primary
+- storage_data_residency: eu-only
 - retention_days: 30
 - export_mode: restricted
 - egress_policy: strict
-- residency: eu-only
 - updates_mode: controlled
+- telemetry_mode: restricted
 
 ## profile: ru
+- storage_class: primary
+- storage_data_residency: ru-only
 - retention_days: 30
 - export_mode: restricted
 - egress_policy: strict
-- residency: ru-only
 - updates_mode: controlled
+- telemetry_mode: restricted
 
 ## profile: airgapped
+- storage_class: isolated-local
+- storage_data_residency: local-only
 - retention_days: 30
 - export_mode: offline-only
 - egress_policy: blocked
-- residency: local-only
 - updates_mode: manual-offline
+- telemetry_mode: local-only
 
 ## profile selection
 - Конфиг-поле: `profile_id`

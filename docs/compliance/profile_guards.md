@@ -15,6 +15,6 @@
 
 ## observability_gap.profile_violation
 - Событие обязательно попадает в snapshot/stream.
-- evidence_min: profile_id, reason, ts_ms.
+- evidence_min: violated_rule, profile_id, parameter, current_values.
 - Реестр: `docs/governance/observability_gap_registry.md`.
 - action_ref: `docs/runbooks/profile_violation.md`.

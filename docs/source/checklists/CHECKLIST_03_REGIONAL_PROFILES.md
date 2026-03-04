@@ -21,16 +21,16 @@ A) Полный запрет опциональности:
 
 ## Шаги (строго линейно)
 
-- [ ] **1. Сделать:** Определить состав профилей `global`, `eu`, `ru`, `airgapped` как набор детерминированных параметров с фиксированными значениями.
-  - [ ] Каждый параметр профиля задаётся конкретным значением (число/строка/enum/список), например `retention_days = 30`
-  - [ ] Запрещены ссылки вида “как в global/как в другом профиле” и любые непрямые значения
-  - [ ] storage/data-residency constraints
-  - [ ] retention overrides
-  - [ ] export constraints
-  - [ ] network egress constraints
-  - [ ] updates/packs policy
-  - [ ] logging/telemetry constraints
-  - [ ] **Проверка (pass/fail):** существует `docs/compliance/profiles.md`, содержит разделы `profile: global/eu/ru/airgapped`, и для каждого профиля перечислены параметры из списка выше в явном виде с конкретными значениями (без ссылок на другие профили).
+- [x] **1. Сделать:** Определить состав профилей `global`, `eu`, `ru`, `airgapped` как набор детерминированных параметров с фиксированными значениями.
+  - [x] Каждый параметр профиля задаётся конкретным значением (число/строка/enum/список), например `retention_days = 30`
+  - [x] Запрещены ссылки вида “как в global/как в другом профиле” и любые непрямые значения
+  - [x] storage/data-residency constraints
+  - [x] retention overrides
+  - [x] export constraints
+  - [x] network egress constraints
+  - [x] updates/packs policy
+  - [x] logging/telemetry constraints
+  - [x] **Проверка (pass/fail):** существует `docs/compliance/profiles.md`, содержит разделы `profile: global/eu/ru/airgapped`, и для каждого профиля перечислены параметры из списка выше в явном виде с конкретными значениями (без ссылок на другие профили).
 
 - [x] **2. Сделать:** Зафиксировать единый идентификатор профиля и способ выбора профиля при запуске.
   - [x] `profile_id` выбирается только через конфиг (имя ключа фиксировано)
@@ -74,12 +74,12 @@ A) Полный запрет опциональности:
   - [x] правило “fail closed” (блокировать запуск/применение)
   - [x] **Проверка (pass/fail):** существует `docs/compliance/profile_guards.md`, содержит список проверок и правило “fail closed”.
 
-- [ ] **7. Сделать:** Описать событие `observability_gap.profile_violation` для любого несоответствия профиля.
+- [x] **7. Сделать:** Описать событие `observability_gap.profile_violation` для любого несоответствия профиля.
   - [x] событие регистрируется в snapshot/stream
-  - [ ] evidence_min: что нарушено, профиль, параметр, текущие значения
+  - [x] evidence_min: что нарушено, профиль, параметр, текущие значения
   - [x] зарегистрировано в реестре `observability_gap.*` (Stage 01) с `incident_rule` и `action_ref`
   - [x] `action_ref` указывает на конкретный runbook в репозитории: `docs/runbooks/profile_violation.md`
-  - [ ] **Проверка (pass/fail):** `docs/compliance/profile_guards.md` содержит раздел `observability_gap.profile_violation` с перечисленными требованиями; `docs/runbooks/profile_violation.md` существует.
+  - [x] **Проверка (pass/fail):** `docs/compliance/profile_guards.md` содержит раздел `observability_gap.profile_violation` с перечисленными требованиями; `docs/runbooks/profile_violation.md` существует.
 
 - [x] **8. Сделать:** Зафиксировать связку Stage 03 ↔ Stage 02 (privacy).
   - [x] retention/DSR различия по профилям в compliance-доках ссылаются на `docs/privacy/regional_profiles.md`
@@ -143,10 +143,10 @@ A) Полный запрет опциональности:
 - [ ] автотесты Stage 03 включены в CI и зелёные
 
 ## DoD
-- [ ] Профили и параметры заданы однозначно (без ссылок “как в другом профиле”)
+- [x] Профили и параметры заданы однозначно (без ссылок “как в другом профиле”)
 - [x] Выбор/смена профиля детерминированы и защищены guardrails
 - [x] `effective_profile_id` доступен для диагностики через API/метрику
 - [x] Матрица переходов определена и проверяется
-- [ ] `observability_gap.profile_violation` определён и зарегистрирован; runbook `docs/runbooks/profile_violation.md` существует
+- [x] `observability_gap.profile_violation` определён и зарегистрирован; runbook `docs/runbooks/profile_violation.md` существует
 - [ ] Airgapped packs update (подпись/совместимость) определён
 - [ ] CI gate Stage 03 проходит
