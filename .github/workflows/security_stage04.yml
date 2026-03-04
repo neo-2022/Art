@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 04 gate
         run: bash scripts/ci/check_secure_sdlc_stage04.sh
 
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: semgrep
         run: echo "semgrep placeholder"
 
@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: osv-scanner
         run: echo "osv-scanner placeholder"
 
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: license
         run: echo "cargo deny + license-checker placeholder"
 
@@ -46,6 +46,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: gitleaks
         run: echo "gitleaks placeholder"

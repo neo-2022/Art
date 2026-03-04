@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Basic docs presence
         shell: bash
@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 03 gate
         run: bash scripts/ci/check_regional_profiles_stage03.sh
 
@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 05 wrapper gate
         run: bash scripts/ci/check_stage05_wrapper.sh
 
@@ -78,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 06 wrapper gate
         run: bash scripts/ci/check_stage06_wrapper.sh
 
@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 07 gate
         run: bash scripts/ci/check_art_repo_stage07.sh
 
@@ -96,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: OpenAPI validate
         run: test -s docs/api/openapi.yaml
 
@@ -105,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Contract tests
         run: make test-contracts
 
@@ -114,7 +114,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Generate clients
         run: |
           make generate
@@ -125,7 +125,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Generate schemas doc
         run: |
           make generate-schemas-md
@@ -136,7 +136,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Telemetry tests
         run: make test-telemetry
 
@@ -145,7 +145,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 09 docs gate
         run: bash scripts/ci/check_telemetry_stage09_docs.sh
 
@@ -154,7 +154,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 10 docs gate
         run: bash scripts/ci/check_browser_level0_stage10_docs.sh
 
@@ -163,7 +163,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Storage integration
         run: echo "storage integration placeholder"
 
@@ -172,7 +172,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Storage chaos smoke
         run: echo "storage chaos smoke placeholder"
 
@@ -181,7 +181,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 11 docs gate
         run: bash scripts/ci/check_storage_stage11_docs.sh
 
@@ -190,7 +190,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Ingest integration
         run: echo "ingest integration placeholder"
 
@@ -199,7 +199,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Ingest load smoke
         run: echo "ingest load smoke placeholder"
 
@@ -208,7 +208,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Ingest chaos smoke
         run: echo "ingest chaos smoke placeholder"
 
@@ -217,6 +217,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 12 docs gate
         run: bash scripts/ci/check_ingest_stage12_docs.sh
