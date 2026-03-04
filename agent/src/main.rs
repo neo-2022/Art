@@ -58,13 +58,7 @@ async fn main() -> anyhow::Result<()> {
         mode: "never_drop_unacked".to_string(),
     }));
 
-    let app = Router::new()
-        .route("/health", get(health))
-        .route("/metrics", get(metrics))
-        .route("/api/v1/agent/receivers", get(receivers))
-        .route("/api/v1/agent/spool/status", get(spool_status))
-        .route("/api/v1/agent/spool/enqueue", post(spool_enqueue))
-        .with_state(state);
+    let app = build_app(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     info!("art-agent listening on {}", addr);
@@ -73,6 +67,16 @@ async fn main() -> anyhow::Result<()> {
         .with_context(|| format!("failed to bind {}", addr))?;
     axum::serve(listener, app).await.context("agent server failed")?;
     Ok(())
+}
+
+fn build_app(state: Shared) -> Router {
+    Router::new()
+        .route("/health", get(health))
+        .route("/metrics", get(metrics))
+        .route("/api/v1/agent/receivers", get(receivers))
+        .route("/api/v1/agent/spool/status", get(spool_status))
+        .route("/api/v1/agent/spool/enqueue", post(spool_enqueue))
+        .with_state(state)
 }
 
 async fn health() -> impl IntoResponse {
@@ -115,4 +119,69 @@ async fn spool_enqueue(
     let mut s = state.write().await;
     s.spool_pending += req.count.unwrap_or(1);
     Json(json!({"ok": true, "pending": s.spool_pending}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode};
+    use http_body_util::BodyExt;
+    use serde_json::Value;
+    use tower::ServiceExt;
+
+    fn test_state() -> Shared {
+        Arc::new(RwLock::new(AgentState {
+            spool_pending: 0,
+            spool_dlq: 0,
+            mode: "never_drop_unacked".to_string(),
+        }))
+    }
+
+    #[tokio::test]
+    async fn spool_enqueue_increments_pending() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/agent/spool/enqueue")
+            .header("content-type", "application/json")
+            .body(Body::from(r#"{"count":3}"#))
+            .expect("request");
+
+        let resp = app.oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["ok"], true);
+        assert_eq!(json["pending"], 3);
+    }
+
+    #[tokio::test]
+    async fn spool_status_reflects_enqueue() {
+        let app = build_app(test_state());
+        let enqueue = Request::builder()
+            .method("POST")
+            .uri("/api/v1/agent/spool/enqueue")
+            .header("content-type", "application/json")
+            .body(Body::from(r#"{"count":2}"#))
+            .expect("enqueue");
+        app.clone().oneshot(enqueue).await.expect("enqueue response");
+
+        let status_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/agent/spool/status")
+            .body(Body::empty())
+            .expect("status request");
+        let status_resp = app.oneshot(status_req).await.expect("status response");
+        assert_eq!(status_resp.status(), StatusCode::OK);
+        let body = status_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("status body")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("status json");
+        assert_eq!(json["pending"], 2);
+        assert_eq!(json["mode"], "never_drop_unacked");
+    }
 }

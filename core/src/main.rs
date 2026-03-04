@@ -148,7 +148,19 @@ async fn main() -> anyhow::Result<()> {
         max_payload_bytes,
     )));
 
-    let app = Router::new()
+    let app = build_app(state);
+
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    info!("art-core listening on {}", addr);
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .with_context(|| format!("failed to bind {}", addr))?;
+    axum::serve(listener, app).await.context("core server failed")?;
+    Ok(())
+}
+
+fn build_app(state: Shared) -> Router {
+    Router::new()
         .route("/health", get(health))
         .route("/metrics", get(metrics))
         .route("/api/v1/ingest", post(ingest))
@@ -158,15 +170,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/v1/incidents/:id/ack", post(incident_ack))
         .route("/api/v1/incidents/:id/resolve", post(incident_resolve))
         .route("/api/v1/actions/execute", post(actions_execute))
-        .with_state(state);
-
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    info!("art-core listening on {}", addr);
-    let listener = tokio::net::TcpListener::bind(addr)
-        .await
-        .with_context(|| format!("failed to bind {}", addr))?;
-    axum::serve(listener, app).await.context("core server failed")?;
-    Ok(())
+        .with_state(state)
 }
 
 async fn health() -> impl IntoResponse {
@@ -350,4 +354,60 @@ async fn actions_execute(Json(req): Json<ActionExecuteRequest>) -> impl IntoResp
         target: req.target,
     };
     (StatusCode::OK, Json(response))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::Body;
+    use axum::http::{Request, StatusCode};
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+
+    fn test_state() -> Shared {
+        Arc::new(RwLock::new(CoreState::new(10_000, 200, 524_288)))
+    }
+
+    #[tokio::test]
+    async fn ingest_returns_invalid_details_for_bad_event() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                r#"{"events":[{"severity":"info","msg":"ok"},{"msg":"missing"}]}"#,
+            ))
+            .expect("request");
+
+        let resp = app.oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["accepted"], 1);
+        assert_eq!(json["invalid"], 1);
+        assert!(json["ack"]["upto_seq"].as_u64().is_some());
+        assert!(json["invalid_details"].as_array().is_some());
+    }
+
+    #[tokio::test]
+    async fn ingest_returns_429_for_large_batch() {
+        let app = build_app(test_state());
+        let events: Vec<Value> = (0..201)
+            .map(|_| json!({"severity":"info","msg":"x"}))
+            .collect();
+        let payload = json!({ "events": events });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+
+        let resp = app.oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::TOO_MANY_REQUESTS);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert!(json["retry_after_ms"].as_u64().is_some());
+    }
 }
