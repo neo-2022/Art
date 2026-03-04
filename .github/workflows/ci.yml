@@ -82,6 +82,15 @@ jobs:
       - name: Stage 03 profile switch integration
         run: bash scripts/tests/profile_switch_integration.sh
 
+  stage03-airgapped-update-integration:
+    name: stage03-airgapped-update-integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 03 airgapped update integration
+        run: bash scripts/tests/airgapped_pack_update_integration.sh
+
   stage05-wrapper-gate:
     name: stage05-wrapper-gate
     runs-on: ubuntu-latest
