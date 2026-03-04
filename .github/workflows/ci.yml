@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  docs-gate:
+    name: docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+
+      - name: Basic docs presence
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s README.md
+          test -s docs/README.md
+          test -s docs/source/Art_v1_spec_final.md
+          test -s "docs/source/REGART -  LangGraph  взаимодействие с Art описание.md"
+          test -d docs/source/checklists
+          test -s docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
+
+          COUNT=$(find docs/source/checklists -maxdepth 1 -type f -name "CHECKLIST_*.md" | wc -l | tr -d ' ')
+          if [ "$COUNT" -lt 10 ]; then
+            echo "Недостаточно чек-листов в docs/source/checklists. Найдено: $COUNT"
+            exit 1
+          fi
+
+      - name: Prevent local-path leaks in README
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RIn --line-number "/home/" README.md docs/README.md; then
+            echo "Найдены утечки локальных путей (/home/) в публично-значимых docs. Удалить/заменить на относительные ссылки."
+            exit 1
+          fi

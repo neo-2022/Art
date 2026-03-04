@@ -1,31 +1,39 @@
-# Art v1: 100% observability platform
+# Art v1 — платформа 100% наблюдаемости (Observability)
 
-Документ и код нового репозитория Art основаны на спецификации `Art_v1_spec_final.md` и `REGART -  LangGraph  взаимодействие с Art описание` из `/home/art/Документы/Art`.
+Art v1 — платформа наблюдаемости с жёсткими контрактами событий и управляемой деградацией: **Core (Rust)**, **Agent (Rust)**, **Browser Level0 (JS)** и **Packs**.
 
-## Цели
-1. Реализовать архитектуру Art v1: Core (Rust), Agent (Rust), Browser Level0 (JS). Core обеспечивает ingest/snapshot/stream/incidents, Agent собирает journald/systemd/net/OTLP и доставляет RawEvent, а Browser Level0 отправляет события из REGART.
-2. Обеспечить контракт ingest/stream (POST `/api/v1/ingest`, GET `/api/v1/stream`, etc.) с надежной семантикой ack/seq/dedup/backpressure и spool/outbox.
-3. Создать onboarding-документацию для интеграции `REGART` (my_langgraph_agent) через UI Proxy и Level0, включая мост Level0→Art Agent и Rich Errors, как описано в `REGART - ... описание`.
+Репозиторий ведётся **docs-first**: сначала фиксируются требования/контракты/чек-листы, затем по ним добавляется реализация.
+
+## Source of Truth
+- Мастер-спецификация: `docs/source/Art_v1_spec_final.md`
+- Интеграция REGART ↔ Art: `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
+- Чек-листы (00..26): `docs/source/checklists/`
+
+## Архитектура (кратко)
+- **Core (Rust)** — ingest/pipeline/snapshot/stream (SSE)/incidents/actions/audit.
+- **Agent (Rust)** — receivers (journald/file/process/OTLP), spool/outbox, доставка в Core с backpressure/ack/seq.
+- **Browser Level0 (JS)** — локальная очередь (IndexedDB), multi-tab дедуп, доставка событий из браузера/REGART.
+- **Packs** — расширения (rules/enrich/fixtures), установка вручную с подписью и проверкой совместимости.
 
 ## Структура репозитория
-- `core/` — Rust-бинарник Art Core (ingest/pipeline/snapshot/stream). Пока шаблонное описание, позже добавим реализацию.
-- `agent/` — Rust Agent/Sidecar (journald/systemd, ports, spool/outbox). Содержит спецификации receivers, spool, delivery semantics.
-- `browser/` — JavaScript Level0/Level1 bridge, следующий за спецификацией Browser Level0.
-- `docs/` — спецификации контрактов, runbooks, integration guides (ссылки на `REGART - ... описание`).
-- `scripts/` — утилиты для генерации RawEvent/backup и тестирования.
+- `core/` — Art Core (Rust)
+- `agent/` — Art Agent (Rust)
+- `browser/` — Browser Level0 (JS)
+- `docs/` — документация, контракты, runbooks
+- `scripts/` — утилиты и CI-gates
 
-## Импортированная документация
-- `docs/source/Art_v1_spec_final.md` — мастер-спецификация Art v1.
-- `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md` — описание интеграции REGART и Art.
-- `docs/source/checklists/` — полный набор чек-листов (00..26).
+## Навигация
+- Главный индекс документации: `docs/README.md`
+- Старт: `docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`
+- Контракты/схемы и codegen: см. чек-лист 08 в `docs/source/checklists/`
+- CI/безопасность поставок (supply-chain): см. чек-лист 04 в `docs/source/checklists/`
 
-Навигация по всей документации: `docs/README.md`.
+## Текущее состояние
+- В репозитории уже загружены спецификации и полный набор чек-листов.
+- Реализация будет добавляться этапами строго по чек-листам, начиная с контрактов/схем/ingest.
 
-## Следующие шаги
-1. В `core/` описать API Contract и поступающие RawEvent/Incident flow; подготовить mocks и SQL (как описано в `Art_v1_spec_final.md` разделы 5-10).
-2. В `agent/` реализовать сборщики journald/systemd и OTLP, а также `spool/outbox` с гарантией `never_drop_unacked` (раздел 7 спецификации).
-3. В `browser/` описать мост между Level0 и Art Agent, включая backlog (IndexedDB) и отправку RawEvent с `observability_gap.*` (раздел 3.3 и 6).
-4. Подготовить интеграцию с REGART: инструкции по проксированию `/ui/art/stream`, форворду ошибок из UI Proxy и методы инспекции, описанные в `REGART - ... описание`.
-5. Описать процесс тестирования (pytest/rs tests) и CI (через GitHub Actions). 
+## Безопасность
+Правила репорта уязвимостей: `SECURITY.md`.
 
-Документы `Art_v1_spec_final.md` и `REGART -  LangGraph  взаимодействие с Art описание` следует держать рядом для детализации архитектуры и требований к интеграции.
+## Лицензия
+Лицензия будет зафиксирована перед публичным релизом.
