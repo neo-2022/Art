@@ -4,6 +4,7 @@
 - `cargo fmt --check`
 - `cargo clippy`
 - `cargo test`
+- `CORE_CONFIG_PATH=config/core.toml cargo run -p art-core`
 
 ## Browser/Node
 - `npm ci`

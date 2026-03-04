@@ -30,6 +30,7 @@
 
 ## profile selection
 - Конфиг-поле: `profile_id`
+- Файл конфига Core: `config/core.toml` (можно переопределить через `CORE_CONFIG_PATH`)
 - Автодетект профиля запрещён
 - `effective_profile_id` вычисляется детерминированно из `profile_id`
 - `effective_profile_id` логируется без PII

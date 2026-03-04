@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use std::env;
+use std::fs;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -43,18 +44,25 @@ struct CoreState {
     events: VecDeque<StoredEvent>,
     incidents: Vec<Incident>,
     counters: Counters,
+    effective_profile_id: String,
     queue_depth_limit: usize,
     max_batch_events: usize,
     max_payload_bytes: usize,
 }
 
 impl CoreState {
-    fn new(queue_depth_limit: usize, max_batch_events: usize, max_payload_bytes: usize) -> Self {
+    fn new(
+        effective_profile_id: String,
+        queue_depth_limit: usize,
+        max_batch_events: usize,
+        max_payload_bytes: usize,
+    ) -> Self {
         Self {
             next_seq: 1,
             events: VecDeque::new(),
             incidents: Vec::new(),
             counters: Counters::default(),
+            effective_profile_id,
             queue_depth_limit,
             max_batch_events,
             max_payload_bytes,
@@ -116,6 +124,30 @@ struct ActionExecuteResponse {
     target: Option<String>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+struct CoreConfig {
+    profile_id: String,
+    retention_days: u32,
+    export_mode: String,
+    egress_policy: String,
+    residency: String,
+    updates_mode: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct EffectiveProfileResponse {
+    effective_profile_id: String,
+}
+
+#[derive(Debug, Clone)]
+struct ProfileBaseline {
+    retention_days: u32,
+    export_mode: &'static str,
+    egress_policy: &'static str,
+    residency: &'static str,
+    updates_mode: &'static str,
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
@@ -129,6 +161,11 @@ async fn main() -> anyhow::Result<()> {
         .ok()
         .and_then(|v| v.parse::<u16>().ok())
         .unwrap_or(7070);
+    let config_path = env::var("CORE_CONFIG_PATH").unwrap_or_else(|_| "config/core.toml".to_string());
+    let config = load_core_config(&config_path)
+        .with_context(|| format!("failed to load core config from {}", config_path))?;
+    let effective_profile_id = validate_profile_guardrails(&config)?;
+    info!("effective_profile_id={}", effective_profile_id);
     let queue_depth_limit = env::var("CORE_QUEUE_DEPTH_LIMIT")
         .ok()
         .and_then(|v| v.parse::<usize>().ok())
@@ -143,6 +180,7 @@ async fn main() -> anyhow::Result<()> {
         .unwrap_or(524_288);
 
     let state = Arc::new(RwLock::new(CoreState::new(
+        effective_profile_id,
         queue_depth_limit,
         max_batch_events,
         max_payload_bytes,
@@ -162,6 +200,7 @@ async fn main() -> anyhow::Result<()> {
 fn build_app(state: Shared) -> Router {
     Router::new()
         .route("/health", get(health))
+        .route("/api/v1/profile/effective", get(effective_profile))
         .route("/metrics", get(metrics))
         .route("/api/v1/ingest", post(ingest))
         .route("/api/v1/snapshot", get(snapshot))
@@ -175,6 +214,16 @@ fn build_app(state: Shared) -> Router {
 
 async fn health() -> impl IntoResponse {
     (StatusCode::OK, Json(json!({"status":"ok","service":"art-core"})))
+}
+
+async fn effective_profile(State(state): State<Shared>) -> impl IntoResponse {
+    let s = state.read().await;
+    (
+        StatusCode::OK,
+        Json(EffectiveProfileResponse {
+            effective_profile_id: s.effective_profile_id.clone(),
+        }),
+    )
 }
 
 async fn metrics(State(state): State<Shared>) -> impl IntoResponse {
@@ -356,6 +405,92 @@ async fn actions_execute(Json(req): Json<ActionExecuteRequest>) -> impl IntoResp
     (StatusCode::OK, Json(response))
 }
 
+fn load_core_config(path: &str) -> anyhow::Result<CoreConfig> {
+    let raw = fs::read_to_string(path)?;
+    parse_core_config(&raw)
+}
+
+fn parse_core_config(raw: &str) -> anyhow::Result<CoreConfig> {
+    let cfg: CoreConfig = toml::from_str(raw)?;
+    Ok(cfg)
+}
+
+fn validate_profile_guardrails(cfg: &CoreConfig) -> anyhow::Result<String> {
+    let baseline = profile_baseline(&cfg.profile_id)
+        .with_context(|| format!("unsupported profile_id '{}'", cfg.profile_id))?;
+
+    if cfg.retention_days != baseline.retention_days {
+        anyhow::bail!(
+            "profile guard failed: retention_days={} expected={}",
+            cfg.retention_days,
+            baseline.retention_days
+        );
+    }
+    if cfg.export_mode != baseline.export_mode {
+        anyhow::bail!(
+            "profile guard failed: export_mode='{}' expected='{}'",
+            cfg.export_mode,
+            baseline.export_mode
+        );
+    }
+    if cfg.egress_policy != baseline.egress_policy {
+        anyhow::bail!(
+            "profile guard failed: egress_policy='{}' expected='{}'",
+            cfg.egress_policy,
+            baseline.egress_policy
+        );
+    }
+    if cfg.residency != baseline.residency {
+        anyhow::bail!(
+            "profile guard failed: residency='{}' expected='{}'",
+            cfg.residency,
+            baseline.residency
+        );
+    }
+    if cfg.updates_mode != baseline.updates_mode {
+        anyhow::bail!(
+            "profile guard failed: updates_mode='{}' expected='{}'",
+            cfg.updates_mode,
+            baseline.updates_mode
+        );
+    }
+    Ok(cfg.profile_id.clone())
+}
+
+fn profile_baseline(profile_id: &str) -> Option<ProfileBaseline> {
+    match profile_id {
+        "global" => Some(ProfileBaseline {
+            retention_days: 30,
+            export_mode: "standard",
+            egress_policy: "controlled",
+            residency: "any",
+            updates_mode: "online",
+        }),
+        "eu" => Some(ProfileBaseline {
+            retention_days: 30,
+            export_mode: "restricted",
+            egress_policy: "strict",
+            residency: "eu-only",
+            updates_mode: "controlled",
+        }),
+        "ru" => Some(ProfileBaseline {
+            retention_days: 30,
+            export_mode: "restricted",
+            egress_policy: "strict",
+            residency: "ru-only",
+            updates_mode: "controlled",
+        }),
+        "airgapped" => Some(ProfileBaseline {
+            retention_days: 30,
+            export_mode: "offline-only",
+            egress_policy: "blocked",
+            residency: "local-only",
+            updates_mode: "manual-offline",
+        }),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -365,7 +500,12 @@ mod tests {
     use tower::ServiceExt;
 
     fn test_state() -> Shared {
-        Arc::new(RwLock::new(CoreState::new(10_000, 200, 524_288)))
+        Arc::new(RwLock::new(CoreState::new(
+            "global".to_string(),
+            10_000,
+            200,
+            524_288,
+        )))
     }
 
     #[tokio::test]
@@ -409,5 +549,51 @@ mod tests {
         let body = resp.into_body().collect().await.expect("body").to_bytes();
         let json: Value = serde_json::from_slice(&body).expect("json");
         assert!(json["retry_after_ms"].as_u64().is_some());
+    }
+
+    #[test]
+    fn profile_guardrails_reject_mismatch() {
+        let cfg = CoreConfig {
+            profile_id: "airgapped".to_string(),
+            retention_days: 30,
+            export_mode: "offline-only".to_string(),
+            egress_policy: "controlled".to_string(),
+            residency: "local-only".to_string(),
+            updates_mode: "manual-offline".to_string(),
+        };
+
+        let err = validate_profile_guardrails(&cfg).expect_err("must fail");
+        assert!(err.to_string().contains("egress_policy"));
+    }
+
+    #[test]
+    fn parse_config_and_validate_global_profile() {
+        let raw = r#"
+profile_id = "global"
+retention_days = 30
+export_mode = "standard"
+egress_policy = "controlled"
+residency = "any"
+updates_mode = "online"
+"#;
+        let cfg = parse_core_config(raw).expect("parse");
+        let effective = validate_profile_guardrails(&cfg).expect("validate");
+        assert_eq!(effective, "global");
+    }
+
+    #[tokio::test]
+    async fn effective_profile_endpoint_returns_value() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/profile/effective")
+            .body(Body::empty())
+            .expect("request");
+
+        let resp = app.oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["effective_profile_id"], "global");
     }
 }

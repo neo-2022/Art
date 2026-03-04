@@ -1,0 +1,6 @@
+profile_id = "global"
+retention_days = 30
+export_mode = "standard"
+egress_policy = "controlled"
+residency = "any"
+updates_mode = "online"
