@@ -35,6 +35,7 @@
 - `effective_profile_id` вычисляется детерминированно из `profile_id`
 - `effective_profile_id` логируется без PII
 - Диагностика: API поле `effective_profile_id`
+- Runtime apply: `POST /api/v1/profile/apply` (на нарушении guardrails профиль не применяется)
 
 ## profile switch procedure
 1. stop ingest

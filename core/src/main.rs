@@ -3,6 +3,7 @@ use std::env;
 use std::fs;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Context;
 use async_stream::stream;
@@ -139,6 +140,12 @@ struct EffectiveProfileResponse {
     effective_profile_id: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ApplyProfileResponse {
+    ok: bool,
+    effective_profile_id: String,
+}
+
 #[derive(Debug, Clone)]
 struct ProfileBaseline {
     retention_days: u32,
@@ -201,6 +208,7 @@ fn build_app(state: Shared) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/api/v1/profile/effective", get(effective_profile))
+        .route("/api/v1/profile/apply", post(apply_profile))
         .route("/metrics", get(metrics))
         .route("/api/v1/ingest", post(ingest))
         .route("/api/v1/snapshot", get(snapshot))
@@ -224,6 +232,59 @@ async fn effective_profile(State(state): State<Shared>) -> impl IntoResponse {
             effective_profile_id: s.effective_profile_id.clone(),
         }),
     )
+}
+
+async fn apply_profile(
+    State(state): State<Shared>,
+    Json(req): Json<CoreConfig>,
+) -> impl IntoResponse {
+    match validate_profile_guardrails(&req) {
+        Ok(effective_profile_id) => {
+            let mut s = state.write().await;
+            s.effective_profile_id = effective_profile_id.clone();
+            (
+                StatusCode::OK,
+                Json(ApplyProfileResponse {
+                    ok: true,
+                    effective_profile_id,
+                }),
+            )
+                .into_response()
+        }
+        Err(err) => {
+            let mut s = state.write().await;
+            let now_ms = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_millis() as u64)
+                .unwrap_or(0);
+            let event = json!({
+                "kind": "observability_gap.profile_violation",
+                "reason": err.to_string(),
+                "profile_id": req.profile_id,
+                "ts_ms": now_ms
+            });
+            let seq = s.next_seq;
+            s.next_seq += 1;
+            s.events.push_back(StoredEvent { seq, event });
+            if s.events.len() > 5_000 {
+                s.events.pop_front();
+            }
+            s.incidents.push(Incident {
+                id: format!("profile-violation-{}", seq),
+                status: "open".to_string(),
+                trace_id: None,
+            });
+            (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "ok": false,
+                    "error": "profile_violation",
+                    "message": err.to_string()
+                })),
+            )
+                .into_response()
+        }
+    }
 }
 
 async fn metrics(State(state): State<Shared>) -> impl IntoResponse {
@@ -595,5 +656,88 @@ updates_mode = "online"
         let body = resp.into_body().collect().await.expect("body").to_bytes();
         let json: Value = serde_json::from_slice(&body).expect("json");
         assert_eq!(json["effective_profile_id"], "global");
+    }
+
+    #[tokio::test]
+    async fn apply_profile_updates_effective_profile() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/profile/apply")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                r#"{
+                    "profile_id":"eu",
+                    "retention_days":30,
+                    "export_mode":"restricted",
+                    "egress_policy":"strict",
+                    "residency":"eu-only",
+                    "updates_mode":"controlled"
+                }"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let effective_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/profile/effective")
+            .body(Body::empty())
+            .expect("request");
+        let effective_resp = app.oneshot(effective_req).await.expect("response");
+        let body = effective_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["effective_profile_id"], "eu");
+    }
+
+    #[tokio::test]
+    async fn apply_profile_invalid_generates_profile_violation_event() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/profile/apply")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                r#"{
+                    "profile_id":"airgapped",
+                    "retention_days":30,
+                    "export_mode":"offline-only",
+                    "egress_policy":"controlled",
+                    "residency":"local-only",
+                    "updates_mode":"manual-offline"
+                }"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.oneshot(snapshot_req).await.expect("response");
+        let body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        let events = json["events"].as_array().expect("events");
+        assert!(
+            events.iter().any(|e| {
+                e["event"]["kind"]
+                    .as_str()
+                    .map(|k| k == "observability_gap.profile_violation")
+                    .unwrap_or(false)
+            }),
+            "expected observability_gap.profile_violation in snapshot"
+        );
     }
 }
