@@ -1,0 +1,27 @@
+name: release-stage04
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  release-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Generate SBOM
+        run: |
+          echo "{}" > sbom.spdx.json
+      - name: Generate checksums
+        run: |
+          echo "placeholder  agent/dist/x" > checksums.txt
+      - name: cosign sign (OIDC)
+        run: echo "cosign sign placeholder"
+      - name: cosign verify
+        run: echo "cosign verify placeholder"

@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IngestResponse",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {"invalid_details": {"type": "array"}, "ack": {"type": "object"}}
+}

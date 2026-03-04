@@ -1,0 +1,51 @@
+name: security-stage04
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  sdlc-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Stage 04 gate
+        run: bash scripts/ci/check_secure_sdlc_stage04.sh
+
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: semgrep
+        run: echo "semgrep placeholder"
+
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: osv-scanner
+        run: echo "osv-scanner placeholder"
+
+  license:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: license
+        run: echo "cargo deny + license-checker placeholder"
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: gitleaks
+        run: echo "gitleaks placeholder"

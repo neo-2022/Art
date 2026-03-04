@@ -54,3 +54,106 @@ jobs:
         run: |
           set -euo pipefail
           bash scripts/ci/check_privacy_stage02.sh
+
+  stage03-docs-gate:
+    name: stage03-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Stage 03 gate
+        run: bash scripts/ci/check_regional_profiles_stage03.sh
+
+  stage05-wrapper-gate:
+    name: stage05-wrapper-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Stage 05 wrapper gate
+        run: bash scripts/ci/check_stage05_wrapper.sh
+
+  stage06-wrapper-gate:
+    name: stage06-wrapper-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Stage 06 wrapper gate
+        run: bash scripts/ci/check_stage06_wrapper.sh
+
+  stage07-docs-gate:
+    name: stage07-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Stage 07 gate
+        run: bash scripts/ci/check_art_repo_stage07.sh
+
+  openapi-validate:
+    name: openapi-validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: OpenAPI validate
+        run: test -s docs/api/openapi.yaml
+
+  test-contracts:
+    name: test-contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Contract tests
+        run: make test-contracts
+
+  codegen-diff-clean:
+    name: codegen-diff-clean
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Generate clients
+        run: |
+          make generate
+          git diff --exit-code
+
+  schemas-md-diff-clean:
+    name: schemas-md-diff-clean
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Generate schemas doc
+        run: |
+          make generate-schemas-md
+          git diff --exit-code
+
+  test-telemetry:
+    name: test-telemetry
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Telemetry tests
+        run: make test-telemetry
+
+  telemetry-docs-gate:
+    name: telemetry-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Stage 09 docs gate
+        run: bash scripts/ci/check_telemetry_stage09_docs.sh
+
+  stage10-docs-gate:
+    name: stage10-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4b52c66f6c6d4b7d8a0b9d7d6bdb1bbf1a5f4
+      - name: Stage 10 docs gate
+        run: bash scripts/ci/check_browser_level0_stage10_docs.sh

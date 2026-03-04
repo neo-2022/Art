@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RawEvent",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {"severity": {"type": "string"}, "schema_version": {"type": "string"}},
+  "required": ["severity"]
+}

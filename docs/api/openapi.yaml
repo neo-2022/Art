@@ -1,0 +1,42 @@
+openapi: 3.0.3
+info:
+  title: Art API
+  version: 1.0.0
+paths:
+  /api/v1/ingest:
+    post:
+      responses:
+        '200': {description: ok}
+        '413':
+          description: too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackpressureError'
+        '429':
+          description: rate limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackpressureError'
+        '503':
+          description: unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackpressureError'
+  /api/v1/snapshot: {get: {responses: {'200': {description: ok}}}}
+  /api/v1/stream: {get: {responses: {'200': {description: ok}}}}
+  /api/v1/incidents: {get: {responses: {'200': {description: ok}}}}
+  /api/v1/incidents/{id}/ack: {post: {responses: {'200': {description: ok}}}}
+  /api/v1/incidents/{id}/resolve: {post: {responses: {'200': {description: ok}}}}
+  /api/v1/actions/execute: {post: {responses: {'200': {description: ok}}}}
+  /health: {get: {responses: {'200': {description: ok}}}}
+  /metrics: {get: {responses: {'200': {description: ok}}}}
+components:
+  schemas:
+    BackpressureError:
+      type: object
+      properties:
+        retry_after_ms:
+          type: integer
