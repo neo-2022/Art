@@ -1,0 +1,90 @@
+name: required-gates
+
+on:
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sdlc-gate:
+    name: sdlc-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Run SDLC gates
+        run: |
+          set -euo pipefail
+          bash scripts/ci/check_governance_stage01.sh
+          bash scripts/ci/check_privacy_stage02.sh
+          bash scripts/ci/check_stage05_wrapper.sh
+          bash scripts/ci/check_stage06_wrapper.sh
+
+  sast:
+    name: sast
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
+        with:
+          toolchain: stable
+          components: clippy
+      - name: Run clippy (SAST)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+  sca:
+    name: sca
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Dependency inventory
+        run: |
+          set -euo pipefail
+          cargo metadata --format-version 1 >/dev/null
+          cargo tree -e no-dev >/dev/null
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: browser/package-lock.json
+      - name: JS dependency inventory
+        working-directory: browser
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts
+          npm ls --omit=dev >/dev/null
+
+  license:
+    name: license
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: License policy checks
+        run: |
+          set -euo pipefail
+          test -s LICENSE
+          test -s core/Cargo.toml
+          test -s agent/Cargo.toml
+          grep -Eq "license|license-file" core/Cargo.toml
+          grep -Eq "license|license-file" agent/Cargo.toml
+
+  secrets:
+    name: secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Secrets policy checks
+        run: |
+          set -euo pipefail
+          ! rg -n "ghp_[A-Za-z0-9]{36}" .
+          ! rg -n "github_pat_[A-Za-z0-9_]{50,}" .
+          ! rg -n "AKIA[0-9A-Z]{16}" .
