@@ -1,10 +1,11 @@
-# Schemas index
+# Art schemas v1
 
-| schema_id | schema_version | file | status |
-|---|---|---|---|
-| art://schemas/raw_event.json | 1.0 | docs/schemas/v1/raw_event.json | active |
-| art://schemas/ingest_envelope.json | 1.0 | docs/schemas/v1/ingest_envelope.json | active |
-| art://schemas/ingest_response.json | 1.0 | docs/schemas/v1/ingest_response.json | active |
-| art://schemas/incident.json | 1.0 | docs/schemas/v1/incident.json | active |
+Source index: `docs/schemas/index.md`
 
-Generated from docs/schemas/v1/*.json
+## Schemas
+- `docs/schemas/v1/raw_event.json` — `RawEvent`: fields `schema_version, severity`.
+- `docs/schemas/v1/ingest_envelope.json` — `IngestEnvelope`: fields `events`.
+- `docs/schemas/v1/ingest_response.json` — `IngestResponse`: fields `accepted, ack, invalid_details`.
+- `docs/schemas/v1/incident.json` — `Incident`: fields `id, severity, status`.
+
+Generated from docs/schemas/index.md and docs/schemas/v1/*.json.

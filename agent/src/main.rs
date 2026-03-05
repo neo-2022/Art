@@ -42,8 +42,7 @@ struct EnqueueRequest {
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
         )
         .init();
 
@@ -65,7 +64,9 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .with_context(|| format!("failed to bind {}", addr))?;
-    axum::serve(listener, app).await.context("agent server failed")?;
+    axum::serve(listener, app)
+        .await
+        .context("agent server failed")?;
     Ok(())
 }
 
@@ -165,7 +166,10 @@ mod tests {
             .header("content-type", "application/json")
             .body(Body::from(r#"{"count":2}"#))
             .expect("enqueue");
-        app.clone().oneshot(enqueue).await.expect("enqueue response");
+        app.clone()
+            .oneshot(enqueue)
+            .await
+            .expect("enqueue response");
 
         let status_req = Request::builder()
             .method("GET")

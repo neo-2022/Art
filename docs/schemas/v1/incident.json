@@ -3,5 +3,10 @@
   "title": "Incident",
   "type": "object",
   "additionalProperties": true,
-  "properties": {"id": {"type": "string"}, "severity": {"type": "string"}}
+  "properties": {
+    "id": {"type": "string"},
+    "severity": {"type": "string"},
+    "status": {"type": "string", "enum": ["open", "acked", "resolved"]}
+  },
+  "required": ["id", "severity", "status"]
 }

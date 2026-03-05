@@ -20,6 +20,7 @@ A) Полный запрет опциональности:
 ⚠️ ПРАВИЛО: отметка [x] ставится ТОЛЬКО после реальной проверки (команда/тест/сценарий) и фиксации результата (дата+commit/PR).  
 ⚠️ ПРАВИЛО: запрещены “временные решения” в репозитории — только финальные реализации (временное — только локально и сразу удалить).  
 ⚠️ ПРАВИЛО: полный запрет опциональности — запрещены формулировки “опционально/где применимо/если нужно/решение зафиксировано/либо A либо B”.
+⚠️ ПРАВИЛО: запрещено создавать и хранить копии чек-листов (`*.bak`, `*_copy*`, `*_old*` и аналоги). Разрешён только один актуальный файл каждого чек-листа.
 
 ---
 
@@ -87,8 +88,8 @@ A) Полный запрет опциональности:
 | [x] 03 | CHECKLIST_03_REGIONAL_PROFILES.md | Региональные профили | profile switch + airgapped packs update | 2026-03-05, neo-2022, stage03 runtime+tests |
 | [x] 04 | CHECKLIST_04 _Secure SDLC + Supply-chain.md | Secure SDLC | clean builds + branch policy + signed commits + sigstore/cosign | 2026-03-05, neo-2022, stage04 runs:22705479817+22705930171 |
 | [x] 05 | CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md | REGART UI/Debugger | wrapper → external source-of-truth `my_langgraph_agent/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` | 2026-03-05, neo-2022, PR#4 approved + stage05-wrapper-gate |
-| [ ] 06 | CHECKLIST_06_REGART_ART_BRIDGE.md | REGART→Art bridge | wrapper → external source-of-truth `my_langgraph_agent/CHECKLIST_REGART_ART_INTEGRATION.md` | |
-| [ ] 07 | CHECKLIST_07_ART_REPO_CI_DOCS.md | Art repo WP0 | CI включает gitleaks + licenses + RU dev docs | |
+| [x] 06 | CHECKLIST_06_REGART_ART_BRIDGE.md | REGART→Art bridge | wrapper → external source-of-truth `my_langgraph_agent/CHECKLIST_REGART_ART_INTEGRATION.md` | 2026-03-05, neo-2022, stage06 wrapper+ci gate |
+| [x] 07 | CHECKLIST_07_ART_REPO_CI_DOCS.md | Art repo WP0 | CI включает gitleaks + licenses + RU dev docs | 2026-03-05, neo-2022, stage07 ci+docs+gate |
 | [ ] 08 | CHECKLIST_08_ART_CONTRACTS_OPENAPI_CODEGEN.md | Contracts | schema registry + spec compliance + unknown-fields tests | |
 | [ ] 09 | CHECKLIST_09_TELEMETRY_OTEL_OTLP.md | Telemetry | unknown attrs→payload.otel_attributes + severity tests + OTLP rate-limit | |
 | [ ] 10 | CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md | Browser Level0 | CORS gap + gzip>1KB + TTL 7d→DLQ + worker+fallback | |
