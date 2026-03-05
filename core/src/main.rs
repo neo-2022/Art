@@ -407,7 +407,28 @@ async fn apply_profile(
     }
 }
 
-async fn metrics(State(state): State<Shared>) -> impl IntoResponse {
+async fn metrics(State(state): State<Shared>, headers: HeaderMap) -> impl IntoResponse {
+    let force_unavailable = headers
+        .get("x-core-metrics-force-unavailable")
+        .and_then(|h| h.to_str().ok())
+        .map(|v| v == "1")
+        .unwrap_or(false)
+        || env::var("CORE_METRICS_FORCE_UNAVAILABLE").ok().as_deref() == Some("1");
+    if force_unavailable {
+        let mut s = state.write().await;
+        push_gap_event_locked(
+            &mut s,
+            "observability_gap.metrics_unavailable",
+            json!({
+                "endpoint": "/metrics",
+                "status": 503,
+                "retry_count": 1,
+                "backoff_ms": 1000,
+                "trace_id": format!("trace-{}", now_ms())
+            }),
+        );
+        return (StatusCode::SERVICE_UNAVAILABLE, "metrics unavailable").into_response();
+    }
     let s = state.read().await;
     let body = format!(
         concat!(
@@ -419,7 +440,7 @@ async fn metrics(State(state): State<Shared>) -> impl IntoResponse {
         s.counters.ingest_invalid_total,
         s.counters.ingest_dropped_total
     );
-    (StatusCode::OK, body)
+    (StatusCode::OK, body).into_response()
 }
 
 async fn ingest(
@@ -2425,6 +2446,37 @@ updates_mode = "online"
         assert!(violation["event"]["parameter"].is_string());
         assert!(violation["event"]["current_values"]["current"].is_string());
         assert!(violation["event"]["current_values"]["expected"].is_string());
+    }
+
+    #[tokio::test]
+    async fn metrics_unavailable_emits_gap_event() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("GET")
+            .uri("/metrics")
+            .header("x-core-metrics-force-unavailable", "1")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+
+        let snap_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let snap = app.oneshot(snap_req).await.expect("response");
+        let body = snap.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert!(json["events"]
+            .as_array()
+            .unwrap_or(&Vec::new())
+            .iter()
+            .any(
+                |e| e["event"]["kind"] == "observability_gap.metrics_unavailable"
+                    && e["event"]["details"]["endpoint"] == "/metrics"
+            ));
     }
 
     #[tokio::test]

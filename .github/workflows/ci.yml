@@ -503,7 +503,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Packs tests
-        run: echo "packs tests placeholder"
+        run: python3 -m unittest scripts/tests/test_packs.py -k PacksFrameworkTests
 
   stage19-docs-gate:
     name: stage19-docs-gate
@@ -513,3 +513,39 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 19 docs gate
         run: bash scripts/ci/check_packs_stage19_docs.sh
+
+  pack-regart-tests:
+    name: pack-regart-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 20 pack-regart tests
+        run: python3 -m unittest scripts/tests/test_packs.py -k PackRegartTests
+
+  stage20-docs-gate:
+    name: stage20-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 20 docs gate
+        run: bash scripts/ci/check_pack_regart_stage20_docs.sh
+
+  self-obs-tests:
+    name: self-obs-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 21 self-observability tests
+        run: python3 -m unittest scripts/tests/test_self_observability.py
+
+  stage21-docs-gate:
+    name: stage21-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 21 docs gate
+        run: bash scripts/ci/check_self_observability_stage21_docs.sh

@@ -1,0 +1,19 @@
+[[receivers]]
+kind = "journald"
+source_id = "journald:ui-proxy.service"
+unit = "ui-proxy.service"
+
+[[receivers]]
+kind = "file_tail"
+source_id = "file:/var/log/regart/ui-proxy.log"
+path = "/var/log/regart/ui-proxy.log"
+
+[[receivers]]
+kind = "stdout_stderr"
+source_id = "proc:regart-ui-proxy"
+command_id = "regart-ui-proxy"
+
+[[receivers]]
+kind = "net_probe"
+source_id = "net_probe:http://127.0.0.1:8090/health"
+endpoint = "http://127.0.0.1:8090/health"
