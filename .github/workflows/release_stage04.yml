@@ -80,7 +80,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for f in agent/dist/* ui/dist/* sbom.spdx.json checksums.txt attestation.txt; do
+          for f in agent/dist/agent.txt ui/dist/ui.txt sbom.spdx.json checksums.txt attestation.txt; do
             cosign sign-blob --yes \
               --output-signature "${f}.sig" \
               --output-certificate "${f}.pem" \
@@ -92,7 +92,7 @@ jobs:
         run: |
           set -euo pipefail
           ID_RE="https://github.com/neo-2022/Art/.github/workflows/release_stage04.yml@.*"
-          for f in agent/dist/* ui/dist/* sbom.spdx.json checksums.txt attestation.txt; do
+          for f in agent/dist/agent.txt ui/dist/ui.txt sbom.spdx.json checksums.txt attestation.txt; do
             cosign verify-blob \
               --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
               --certificate-identity-regexp "$ID_RE" \
