@@ -14,4 +14,5 @@ export {
   InMemoryOutboxStore,
   browserGzipCodec,
   outboxCompressionConfig,
+  outboxRuntimeConfig,
 } from "./outbox.js";

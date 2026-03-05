@@ -13,3 +13,17 @@ Multi-tab protocol:
 - локальные события публикуются в `BroadcastChannel` `art:l0:events`.
 - dedup key: `sha256(canonical_json(normalized_event))`.
 - `canonical_json` использует сортировку ключей и удаляет поля `ts_ms`.
+
+Outbox runtime:
+- compression threshold: `1024` bytes (`gzip` if payload is larger).
+- outbox TTL: `7 суток` (`604800000` ms) -> move to DLQ.
+- DLQ retention: `30 суток` (`2592000000` ms) -> hard delete.
+- cleanup starts on init and then each `300000` ms.
+- overflow policies:
+  - `never_drop_unacked`: reject new + `observability_gap.outbox_full`.
+  - `drop_oldest_when_full`: drop oldest + `data_quality.lossy_outbox_drop` + `incident.lossy_mode_active` (SEV1).
+
+Worker/fallback:
+- operations `enqueue`, `flushAll`, `cleanup` go through worker-first executor.
+- when worker path is unavailable, main-thread fallback remains functional.
+- fallback always emits `observability_gap.worker_unavailable`.

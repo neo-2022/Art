@@ -92,7 +92,7 @@ A) Полный запрет опциональности:
 | [x] 07 | CHECKLIST_07_ART_REPO_CI_DOCS.md | Art repo WP0 | CI включает gitleaks + licenses + RU dev docs | 2026-03-05, neo-2022, stage07 ci+docs+gate |
 | [x] 08 | CHECKLIST_08_ART_CONTRACTS_OPENAPI_CODEGEN.md | Contracts | schema registry + spec compliance + unknown-fields tests | 2026-03-05, neo-2022, PR#6 + ci:22716780559 |
 | [x] 09 | CHECKLIST_09_TELEMETRY_OTEL_OTLP.md | Telemetry | unknown attrs→payload.otel_attributes + severity tests + OTLP rate-limit | 2026-03-05, neo-2022, PR#8 + ci:22717440634 |
-| [ ] 10 | CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md | Browser Level0 | CORS gap + gzip>1KB + TTL 7d→DLQ + worker+fallback | |
+| [x] 10 | CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md | Browser Level0 | CORS gap + gzip>1KB + TTL 7d→DLQ + worker+fallback | 2026-03-05, neo-2022, stage10 runtime+tests+docs-gate |
 | [ ] 11 | CHECKLIST_11_ART_CORE_STORAGE_SQLITE.md | Core Storage | WAL corruption recovery + concurrency + VACUUM timer weekly | |
 | [ ] 12 | CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md | Core Ingest | invalid_details + overload 503 + ingest_dropped_total | |
 | [ ] 13 | CHECKLIST_13_ART_CORE_PIPELINE_ENRICH_RULES.md | Pipeline | correlation→Incident + collision + template injection security | |
