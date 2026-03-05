@@ -46,7 +46,7 @@ A) Полный запрет опциональности:
   - [x] JS license job: выбран и зафиксирован единый инструмент: `license-checker` (npm пакет)
   - [x] JS license job выполняет команду: `npx license-checker --production --summary`
   - [x] оба job’а blocking (падение блокирует merge)
-  - [x] **Проверка (pass/fail):** job `stage07-license-checks` добавлен в `.github/workflows/ci.yml`; локально `cargo deny check licenses` = `licenses ok`, `npx license-checker --production --summary` = `MIT: 1`.
+  - [x] **Проверка (pass/fail):** job `stage07-license-checks` добавлен в `.github/workflows/ci.yml`; локально `cargo deny check licenses` = `licenses ok`, `npx license-checker --production --summary` = `ok`.
 
 - [x] **5. Сделать:** В README закрепить контракты как источник правды (декларация Stage 07) и указать, что сами файлы контрактов добавляются на Stage 08.
   - [x] README содержит раздел `Contracts`

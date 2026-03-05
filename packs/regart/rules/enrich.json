@@ -1,0 +1,4 @@
+{
+  "preserve_correlation": ["run_id", "trace_id", "span_id"],
+  "missing_to_null": true
+}

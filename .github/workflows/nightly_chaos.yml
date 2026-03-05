@@ -1,0 +1,17 @@
+name: nightly-chaos
+
+on:
+  schedule:
+    - cron: "15 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  e2e-chaos-nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Network chaos 50% 10 minutes
+        run: bash scripts/tests/e2e_chaos.sh --full
+      - name: Power loss recovery
+        run: python3 -m unittest scripts/tests/test_stage22_e2e.py -k power_loss

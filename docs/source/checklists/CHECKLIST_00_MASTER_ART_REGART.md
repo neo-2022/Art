@@ -2,8 +2,9 @@ A) Полный запрет опциональности:
 # CHECKLIST 00 — MASTER (Art v1 + REGART) + STANDARD (единые правила)
 Файл: CHECKLIST_00_MASTER_ART_REGART.md  
 Последняя актуализация: 2026-03-04  
-Дата последней проверки: ________  
+Дата последней проверки: 2026-03-05 (аудит соответствия)  
 Триггер пересмотра: любые изменения в Art_v1_spec_final.md / REGART↔Art описание / CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md / CHECKLIST_06_REGART_ART_BRIDGE.md / внешние источники в my_langgraph_agent
+Отчёт аудита: docs/source/checklists/CHECKLIST_27_AUDIT_REMEDIATION_PLAN.md
 
 Источники требований:
 - Art: `docs/source/Art_v1_spec_final.md`
@@ -92,20 +93,20 @@ A) Полный запрет опциональности:
 | [x] 07 | CHECKLIST_07_ART_REPO_CI_DOCS.md | Art repo WP0 | CI включает gitleaks + licenses + RU dev docs | 2026-03-05, neo-2022, stage07 ci+docs+gate |
 | [x] 08 | CHECKLIST_08_ART_CONTRACTS_OPENAPI_CODEGEN.md | Contracts | schema registry + spec compliance + unknown-fields tests | 2026-03-05, neo-2022, PR#6 + ci:22716780559 |
 | [x] 09 | CHECKLIST_09_TELEMETRY_OTEL_OTLP.md | Telemetry | unknown attrs→payload.otel_attributes + severity tests + OTLP rate-limit | 2026-03-05, neo-2022, PR#8 + ci:22717440634 |
-| [ ] 10 | CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md | Browser Level0 | CORS gap + gzip>1KB + TTL 7d→DLQ + worker+fallback | |
-| [ ] 11 | CHECKLIST_11_ART_CORE_STORAGE_SQLITE.md | Core Storage | WAL corruption recovery + concurrency + VACUUM timer weekly | |
-| [ ] 12 | CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md | Core Ingest | invalid_details + overload 503 + ingest_dropped_total | |
-| [ ] 13 | CHECKLIST_13_ART_CORE_PIPELINE_ENRICH_RULES.md | Pipeline | correlation→Incident + collision + template injection security | |
-| [ ] 14 | CHECKLIST_14_ART_CORE_STREAM_SNAPSHOT_SSE.md | Stream/Snapshot | Last-Event-ID too old→snapshot + 10k events + 1000 subs + gzip | |
-| [ ] 15 | CHECKLIST_15_ART_CORE_ACTIONS_AUDIT_RBAC_PII.md | Actions/Audit/RBAC/PII | client_ip/user_agent + access_denied event + immutability | |
-| [ ] 16 | CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md | Panel0 | gap highlight + core-down placeholder + SW cache | |
-| [ ] 17 | CHECKLIST_17_ART_AGENT_SPOOL_OUTBOX.md | Agent Spool | block receivers on full + spool_corrupted recovery + concurrency + chaos | |
-| [ ] 18 | CHECKLIST_18_ART_AGENT_RECEIVERS.md | Agent Receivers | per-receiver buffer policy+gap + SIGHUP tests + journald perms gap | |
-| [ ] 19 | CHECKLIST_19_PACKS_FRAMEWORK.md | Packs | manual updates only + cosign signature verify + dependencies | |
-| [ ] 20 | CHECKLIST_20_PACK_REGART.md | Pack REGART | fixtures всех событий + correlation + receivers.toml examples | |
-| [ ] 21 | CHECKLIST_21_SELF_OBSERVABILITY_ART.md | Self-obs | required internal incidents + grafana/ + alert tests | |
-| [ ] 22 | CHECKLIST_22_E2E_STRESS_CHAOS_SOAK_PERF.md | E2E/Chaos/Soak | 50% packet loss + memory profiling + power loss + nightly chaos | |
-| [ ] 23 | CHECKLIST_23_OPS_DEPLOY_RUNBOOKS_DR.md | Ops/DR | cert-manager + systemd TLS reload SIGHUP + DB migration runbook + WAL backups | |
-| [ ] 24 | CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md | Release | downgrade with data + cosign sign images + RELEASE_CHECKLIST + manual releases | |
-| [ ] 25 | CHECKLIST_25_COMPLIANCE_AUDIT_READY.md | Compliance | export scripts + immutable evidence + data destruction policy | |
-| [ ] 26 | CHECKLIST_26_RU_PROFILE.md | RU profile | PDn fields list + PII access audit + block cross-border export | |
+| [x] 10 | CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md | Browser Level0 | CORS gap + gzip>1KB + TTL 7d→DLQ + worker+fallback | 2026-03-05, neo-2022, stage10 runtime+tests+docs-gate |
+| [x] 11 | CHECKLIST_11_ART_CORE_STORAGE_SQLITE.md | Core Storage | WAL corruption recovery + concurrency + VACUUM timer weekly | 2026-03-05, neo-2022, stage11 runtime+tests+docs-gate |
+| [x] 12 | CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md | Core Ingest | invalid_details + overload 503 + ingest_dropped_total | 2026-03-05, neo-2022, stage12 runtime+tests+docs-gate |
+| [x] 13 | CHECKLIST_13_ART_CORE_PIPELINE_ENRICH_RULES.md | Pipeline | correlation→Incident + collision + template injection security | 2026-03-05, neo-2022, stage13 runtime+tests+docs-gate |
+| [x] 14 | CHECKLIST_14_ART_CORE_STREAM_SNAPSHOT_SSE.md | Stream/Snapshot | Last-Event-ID too old→snapshot + 10k events + 1000 subs + gzip | 2026-03-05, neo-2022, stream-integration+stream-load-smoke+stage14-docs-gate (local recheck) |
+| [x] 15 | CHECKLIST_15_ART_CORE_ACTIONS_AUDIT_RBAC_PII.md | Actions/Audit/RBAC/PII | client_ip/user_agent + access_denied event + immutability | 2026-03-05, neo-2022, actions-audit-tests+stage15-docs-gate (local recheck) |
+| [x] 16 | CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md | Panel0 | gap highlight + core-down placeholder + SW cache | 2026-03-05, neo-2022, panel0-e2e+stage16-docs-gate (local recheck) |
+| [x] 17 | CHECKLIST_17_ART_AGENT_SPOOL_OUTBOX.md | Agent Spool | block receivers on full + spool_corrupted recovery + concurrency + chaos | 2026-03-05, neo-2022, agent-spool-tests+agent-spool-chaos-smoke+stage17-docs-gate |
+| [x] 18 | CHECKLIST_18_ART_AGENT_RECEIVERS.md | Agent Receivers | per-receiver buffer policy+gap + SIGHUP tests + journald perms gap | 2026-03-05, neo-2022, agent-receivers-tests+stage18-docs-gate |
+| [x] 19 | CHECKLIST_19_PACKS_FRAMEWORK.md | Packs | manual updates only + cosign signature verify + dependencies | 2026-03-05, neo-2022, packs-tests+stage19-docs-gate |
+| [x] 20 | CHECKLIST_20_PACK_REGART.md | Pack REGART | fixtures всех событий + correlation + receivers.toml examples | 2026-03-05, neo-2022, pack-regart-tests+stage20-docs-gate |
+| [x] 21 | CHECKLIST_21_SELF_OBSERVABILITY_ART.md | Self-obs | required internal incidents + grafana/ + alert tests | 2026-03-05, neo-2022, self-obs-tests+stage21-docs-gate |
+| [x] 22 | CHECKLIST_22_E2E_STRESS_CHAOS_SOAK_PERF.md | E2E/Chaos/Soak | 50% packet loss + memory profiling + power loss + nightly chaos | 2026-03-05, neo-2022, e2e-smoke+e2e-chaos+stage22-docs-gate |
+| [x] 23 | CHECKLIST_23_OPS_DEPLOY_RUNBOOKS_DR.md | Ops/DR | cert-manager + systemd TLS reload SIGHUP + DB migration runbook + WAL backups | 2026-03-05, neo-2022, ops-smoke+ops-docs-gate |
+| [x] 24 | CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md | Release | downgrade with data + cosign sign images + RELEASE_CHECKLIST + manual releases | 2026-03-05, neo-2022, release-regression+release-signing-verify+stage24-docs-gate |
+| [x] 25 | CHECKLIST_25_COMPLIANCE_AUDIT_READY.md | Compliance | export scripts + immutable evidence + data destruction policy | 2026-03-05, neo-2022, compliance-export+stage25-docs-gate |
+| [x] 26 | CHECKLIST_26_RU_PROFILE.md | RU profile | PDn fields list + PII access audit + block cross-border export | 2026-03-05, neo-2022, ru-profile-tests+stage26-docs-gate |

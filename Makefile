@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: generate generate-schemas-md test-contracts test-telemetry smoke security-smoke
+.PHONY: generate generate-schemas-md test-contracts test-telemetry test-upgrade-downgrade smoke security-smoke
 
 generate:
 	@python3 scripts/generate/generate_clients.py
@@ -28,6 +28,10 @@ test-telemetry:
 	@python3 scripts/tests/test_telemetry.py
 	@bash scripts/ci/check_telemetry_stage09_docs.sh
 	@echo "telemetry tests: OK"
+
+test-upgrade-downgrade:
+	@python3 -m unittest scripts/tests/test_upgrade_downgrade.py
+	@echo "upgrade/downgrade tests: OK"
 
 smoke:
 	cargo fmt --all --check

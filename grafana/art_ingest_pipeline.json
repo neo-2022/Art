@@ -1,0 +1,1 @@
+{"title":"art_ingest_pipeline","panels":["ingest latency p95","stream lag p95","spool usage ratio","dlq size","source stale count"]}

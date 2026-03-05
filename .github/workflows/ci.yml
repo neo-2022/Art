@@ -269,7 +269,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Storage integration
-        run: echo "storage integration placeholder"
+        run: |
+          python3 scripts/tests/test_storage_stage11.py -k test_concurrency_writers_readers_10000_ops
+          python3 scripts/tests/test_storage_stage11.py -k test_vacuum_safe_runs_when_ingest_inactive
 
   storage-chaos-smoke:
     name: storage-chaos-smoke
@@ -278,7 +280,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Storage chaos smoke
-        run: echo "storage chaos smoke placeholder"
+        run: |
+          python3 scripts/tests/test_storage_stage11.py -k test_corruption_recovery_restore_success
+          python3 scripts/tests/test_storage_stage11.py -k test_corruption_recovery_restore_fail_goes_read_only
+          python3 scripts/tests/test_storage_stage11.py -k test_chaos_smoke_scenarios
 
   stage11-docs-gate:
     name: stage11-docs-gate
@@ -296,7 +301,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Ingest integration
-        run: echo "ingest integration placeholder"
+        run: |
+          cargo test --package art-core ingest_returns_invalid_details_for_bad_event
+          cargo test --package art-core ingest_returns_413_and_pushes_payload_too_large_gap
+          cargo test --package art-core ingest_storage_error_increments_dropped_and_pushes_unavailable_gap
 
   ingest-load-smoke:
     name: ingest-load-smoke
@@ -305,7 +313,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Ingest load smoke
-        run: echo "ingest load smoke placeholder"
+        run: |
+          cargo test --package art-core ingest_returns_503_and_pushes_ingest_overloaded_gap
 
   ingest-chaos-smoke:
     name: ingest-chaos-smoke
@@ -314,7 +323,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Ingest chaos smoke
-        run: echo "ingest chaos smoke placeholder"
+        run: |
+          cargo test --package art-core ingest_ack_upto_seq_is_monotonic_after_error_recovery
 
   stage12-docs-gate:
     name: stage12-docs-gate
@@ -332,7 +342,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Pipeline tests
-        run: echo "pipeline tests placeholder"
+        run: |
+          cargo test --package art-core pipeline_correlation_transfers_to_incident_and_missing_is_null
+          cargo test --package art-core pipeline_collision_detection_emits_data_quality_event
+          cargo test --package art-core pipeline_induced_failure_emits_stage_failed_gap
+          cargo test --package art-core pipeline_source_stale_emits_gap_after_10_minutes
 
   pipeline-security-tests:
     name: pipeline-security-tests
@@ -341,7 +355,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Pipeline security tests
-        run: echo "pipeline security tests placeholder"
+        run: |
+          cargo test --package art-core pipeline_template_injection_is_escaped_and_gap_emitted
 
   stage13-docs-gate:
     name: stage13-docs-gate
@@ -384,6 +399,58 @@ jobs:
       - name: Stage 14 docs gate
         run: bash scripts/ci/check_stream_stage14_docs.sh
 
+  actions-audit-tests:
+    name: actions-audit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 15 actions/audit tests
+        run: |
+          cargo test -p art-core rbac_matrix_enforced_for_actions_and_audit
+          cargo test -p art-core mcp_modes_enforced_for_actions
+          cargo test -p art-core audit_contains_normalized_client_ip_and_user_agent
+          cargo test -p art-core access_denied_event_emitted_for_forbidden_action
+          cargo test -p art-core actions_secret_redaction_happens_pre_write
+          cargo test -p art-core audit_is_append_only_update_delete_forbidden
+
+  stage15-docs-gate:
+    name: stage15-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 15 docs gate
+        run: bash scripts/ci/check_actions_stage15_docs.sh
+
+  panel0-e2e:
+    name: panel0-e2e
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: browser/package-lock.json
+      - name: npm ci
+        working-directory: browser
+        run: npm ci
+      - name: Stage 16 panel0 e2e
+        working-directory: browser
+        run: node --test test/panel0.e2e.test.js
+
+  stage16-docs-gate:
+    name: stage16-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 16 docs gate
+        run: bash scripts/ci/check_panel0_stage16_docs.sh
+
   agent-spool-tests:
     name: agent-spool-tests
     runs-on: ubuntu-latest
@@ -400,7 +467,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Agent spool chaos smoke
-        run: echo "agent spool chaos smoke placeholder (kill -9 + network loss)"
+        run: bash scripts/tests/agent_spool_chaos_smoke.sh
 
   stage17-docs-gate:
     name: stage17-docs-gate
@@ -436,7 +503,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Packs tests
-        run: echo "packs tests placeholder"
+        run: python3 -m unittest scripts/tests/test_packs.py -k PacksFrameworkTests
 
   stage19-docs-gate:
     name: stage19-docs-gate
@@ -446,3 +513,147 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 19 docs gate
         run: bash scripts/ci/check_packs_stage19_docs.sh
+
+  pack-regart-tests:
+    name: pack-regart-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 20 pack-regart tests
+        run: python3 -m unittest scripts/tests/test_packs.py -k PackRegartTests
+
+  stage20-docs-gate:
+    name: stage20-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 20 docs gate
+        run: bash scripts/ci/check_pack_regart_stage20_docs.sh
+
+  self-obs-tests:
+    name: self-obs-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 21 self-observability tests
+        run: bash scripts/tests/self_observability_runtime_smoke.sh
+
+  stage21-docs-gate:
+    name: stage21-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 21 docs gate
+        run: bash scripts/ci/check_self_observability_stage21_docs.sh
+
+  e2e-smoke:
+    name: e2e-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 22 e2e smoke
+        run: bash scripts/tests/e2e_smoke.sh
+
+  e2e-chaos:
+    name: e2e-chaos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 22 chaos checks
+        run: bash scripts/tests/e2e_chaos.sh
+
+  stage22-docs-gate:
+    name: stage22-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 22 docs gate
+        run: bash scripts/ci/check_e2e_stage22_docs.sh
+
+  ops-smoke:
+    name: ops-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 23 ops smoke
+        run: bash scripts/tests/ops_stage23_smoke.sh
+
+  ops-docs-gate:
+    name: ops-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 23 docs gate
+        run: bash scripts/ci/check_ops_stage23_docs.sh
+
+  release-regression:
+    name: release-regression
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 24 upgrade/downgrade tests
+        run: python3 -m unittest scripts/tests/test_upgrade_downgrade.py
+
+  release-signing-verify:
+    name: release-signing-verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 24 signing verify smoke
+        run: bash scripts/ci/check_release_signing_pipeline.sh
+
+  stage24-docs-gate:
+    name: stage24-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 24 docs gate
+        run: bash scripts/ci/check_release_stage24_docs.sh
+
+  compliance-export:
+    name: compliance-export
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 25 export test
+        run: python3 -m unittest scripts/tests/test_export_audit_pack.py
+
+  stage25-docs-gate:
+    name: stage25-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 25 docs gate
+        run: bash scripts/ci/check_compliance_stage25_docs.sh
+
+  ru-profile-tests:
+    name: ru-profile-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 26 RU profile tests
+        run: python3 -m unittest scripts/tests/test_ru_profile.py
+
+  stage26-docs-gate:
+    name: stage26-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 26 docs gate
+        run: bash scripts/ci/check_ru_profile_stage26_docs.sh

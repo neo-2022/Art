@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule weekly Art Core SQLite VACUUM
+
+[Timer]
+OnCalendar=Sun *-*-* 03:30:00
+Persistent=true
+Unit=art-vacuum.service
+
+[Install]
+WantedBy=timers.target
