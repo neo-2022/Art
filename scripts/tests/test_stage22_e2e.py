@@ -1,29 +1,60 @@
+import os
+import subprocess
 import unittest
+from pathlib import Path
 
 
-def gap_event(component: str, reason: str, stage: str, trace_id: str):
-    return {
-        "event_name": "observability_gap.e2e_environment_failed",
-        "component": component,
-        "reason": reason,
-        "stage": stage,
-        "trace_id": trace_id,
-    }
+ROOT = Path(__file__).resolve().parents[2]
 
 
 class Stage22Tests(unittest.TestCase):
+    def run_cargo_test(self, package: str, test_name: str):
+        cmd = [
+            "cargo",
+            "test",
+            "-p",
+            package,
+            test_name,
+            "--",
+            "--exact",
+            "--nocapture",
+        ]
+        env = os.environ.copy()
+        env.setdefault("RUST_BACKTRACE", "1")
+        result = subprocess.run(
+            cmd,
+            cwd=ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        output = f"{result.stdout}\n{result.stderr}"
+        self.assertEqual(
+            result.returncode,
+            0,
+            msg=f"Команда завершилась с ошибкой: {' '.join(cmd)}\n{output}",
+        )
+        self.assertIn(
+            "test result: ok",
+            output,
+            msg=f"Не найден признак успешного теста в выводе:\n{output}",
+        )
+
     def test_gap_event_has_required_evidence(self):
-        ev = gap_event("network", "port unreachable", "setup", "tr-1")
-        self.assertEqual(ev["event_name"], "observability_gap.e2e_environment_failed")
-        for k in ("component", "reason", "stage", "trace_id"):
-            self.assertTrue(ev[k])
+        self.run_cargo_test(
+            "art-core", "e2e_environment_failed_gap_emits_incident_with_evidence"
+        )
 
     def test_power_loss_recovery_contract(self):
-        ack_before = 100
-        confirmed_after_restart = 100
-        resent = 12
-        self.assertEqual(ack_before, confirmed_after_restart)
-        self.assertGreater(resent, 0)
+        self.run_cargo_test(
+            "art-agent", "spool_corruption_recovery_creates_new_spool_and_gap"
+        )
+
+    def test_ack_is_monotonic_after_recovery(self):
+        self.run_cargo_test(
+            "art-core", "ingest_ack_upto_seq_is_monotonic_after_error_recovery"
+        )
 
 
 if __name__ == "__main__":

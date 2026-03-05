@@ -27,7 +27,7 @@
 - 19 — Условно: runtime install тестируется из реального pack layout (manifest/payload/signatures)
 - 20 — Условно: fixture/examples тестируются через реальный pack dir; усилить e2e через runtime API
 - 21 — OK: есть runtime e2e по 4 internal incidents + induced test `metrics_unavailable`
-- 22 — Проблема: e2e/chaos/perf проверяются grep/заглушками
+- 22 — OK: synthetic-заглушки заменены runtime smoke (`scripts/tests/test_stage22_e2e.py`, `e2e_smoke.sh`, `e2e_chaos.sh`)
 - 23 — Проблема: ops/dr smoke не выполняет реальные сценарии
 - 24 — Проблема: signing/upgrade-downgrade не проверяются end-to-end
 - 25 — Проблема: export synthetic вместо реального compliance export
@@ -37,7 +37,7 @@
 1. Stage 06 — усилить gate до кодового/интеграционного уровня (без grep-only).
 2. Stage 17 — заменить placeholder job на реальные chaos smoke сценарии.
 3. Stage 19-21 — убрать synthetic-only тесты, добавить runtime integration.
-4. Stage 22-26 — заменить docs/grep smoke на реальные e2e/ops/release/compliance/ru проверки.
+4. Stage 22-26 — заменить synthetic/grep smoke на реальные e2e/ops/release/compliance/ru проверки.
 5. После каждого stage: evidence, обновление DoD, только потом [x].
 
 ## Минимальные критерии «можно ставить [x]»
@@ -47,8 +47,8 @@
 - Для incident/gap сценариев: событие реально генерируется и проверяется.
 
 ## Критичные исправления по файлам
-- `.github/workflows/ci.yml`: убрать placeholder и grep-only jobs для 17,22,23,24,25,26.
-- `scripts/tests/*stage22*`, `test_upgrade_downgrade.py`: перейти от synthetic констант к runtime проверкам.
+- `.github/workflows/ci.yml`: убрать placeholder и grep-only jobs для 17,23,24,25,26.
+- `test_upgrade_downgrade.py`: перейти от synthetic констант к runtime проверкам.
 - `test_self_observability.py`: поддерживать связку с runtime smoke (`scripts/tests/self_observability_runtime_smoke.sh`) и не допускать отката к synthetic-only.
 - `scripts/export_audit_pack.sh`: экспорт из реальных данных, не synthetic JSON.
 - `docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`: закрытие только после реального integration evidence.
