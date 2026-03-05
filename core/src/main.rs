@@ -348,8 +348,12 @@ async fn main() -> anyhow::Result<()> {
 }
 
 fn load_tls_config_from_env() -> Option<(PathBuf, PathBuf)> {
-    let cert = env::var("CORE_TLS_CERT_PATH").ok().map(|v| v.trim().to_string());
-    let key = env::var("CORE_TLS_KEY_PATH").ok().map(|v| v.trim().to_string());
+    let cert = env::var("CORE_TLS_CERT_PATH")
+        .ok()
+        .map(|v| v.trim().to_string());
+    let key = env::var("CORE_TLS_KEY_PATH")
+        .ok()
+        .map(|v| v.trim().to_string());
     match (cert, key) {
         (Some(cert_path), Some(key_path)) if !cert_path.is_empty() && !key_path.is_empty() => {
             Some((PathBuf::from(cert_path), PathBuf::from(key_path)))
