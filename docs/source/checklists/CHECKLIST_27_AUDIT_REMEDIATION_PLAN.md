@@ -25,7 +25,7 @@
 - 17 — OK: placeholder удалён, CI smoke выполняет runtime chaos (`scripts/tests/agent_spool_chaos_runtime.sh`)
 - 18 — OK: усилена receiver chaos matrix (`scripts/tests/agent_receivers_chaos_runtime.sh`, CI job `agent-receivers-chaos-runtime`)
 - 19 — OK: runtime install тестируется из реального pack layout (`scripts/tests/pack_install_runtime.sh`, CI job `packs-runtime-install`)
-- 20 — Условно: fixture/examples тестируются через реальный pack dir; усилить e2e через runtime API
+- 20 — OK: fixture/examples тестируются через реальный pack dir + runtime API (`scripts/tests/pack_regart_runtime_api.sh`, CI job `pack-regart-runtime-api`)
 - 21 — OK: есть runtime e2e по 4 internal incidents + induced test `metrics_unavailable`
 - 22 — OK: synthetic-заглушки заменены runtime smoke (`scripts/tests/test_stage22_e2e.py`, `e2e_smoke.sh`, `e2e_chaos.sh`)
 - 23 — Проблема: ops/dr smoke не выполняет реальные сценарии

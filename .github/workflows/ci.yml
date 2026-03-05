@@ -574,6 +574,15 @@ jobs:
       - name: Stage 20 pack-regart tests
         run: python3 -m unittest scripts/tests/test_packs.py -k PackRegartTests
 
+  pack-regart-runtime-api:
+    name: pack-regart-runtime-api
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 20 runtime API validation
+        run: bash scripts/tests/pack_regart_runtime_api.sh
+
   stage20-docs-gate:
     name: stage20-docs-gate
     runs-on: ubuntu-latest

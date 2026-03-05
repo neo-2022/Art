@@ -9,8 +9,11 @@ for f in \
   test -f "$f"
 done
 
+test -x scripts/tests/pack_regart_runtime_api.sh
+
 grep -q "fixtures" docs/packs/regart/README.md
 grep -q "correlation" docs/packs/regart/README.md
+grep -q "pack_regart_runtime_api.sh" docs/packs/regart/README.md
 grep -q "journald" docs/packs/regart/receivers_examples.md
 grep -q "file_tail" docs/packs/regart/receivers_examples.md
 grep -q "stdout_stderr" docs/packs/regart/receivers_examples.md

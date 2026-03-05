@@ -79,12 +79,15 @@ Pack REGART полностью покрывает события REGART (UI Prox
 - [x] unit/integration: fixtures → pipeline → incident (покрывает шаги 1–2)
 - [x] unit: validate examples `receivers.toml` (шаг 3)
 - [x] induced: incompatible pack install → `observability_gap.pack_incompatible` (шаг 4)
+- [x] runtime API: `scripts/tests/pack_regart_runtime_api.sh` проверяет ingest fixtures из `packs/regart/fixtures` и сохранение correlation в `/api/v1/incidents`
 
 ## CI gate
 - [x] CI job `pack-regart-tests` существует и запускается на PR в main; job зелёный
+- [x] CI job `pack-regart-runtime-api` существует и запускается на PR в main; job зелёный
 - [x] CI job `stage20-docs-gate` существует и запускается на PR в main
 - [x] `stage20-docs-gate` запускает `scripts/ci/check_pack_regart_stage20_docs.sh`, который:
   - [x] проверяет существование файлов из раздела “Документация (RU)”
+  - [x] проверяет наличие runtime harness `scripts/tests/pack_regart_runtime_api.sh`
   - [x] проверяет минимальный контент (grep):
     - [x] `docs/packs/regart/README.md` содержит `fixtures` и `correlation`
     - [x] `docs/packs/regart/receivers_examples.md` содержит `journald` и `file_tail` и `stdout_stderr` и `net_probe`
@@ -98,4 +101,3 @@ Pack REGART полностью покрывает события REGART (UI Prox
 - [x] Examples receivers (4 секции) существуют и валидируются тестом.
 - [x] `observability_gap.pack_incompatible` реализован, зарегистрирован и имеет runbook; induced test зелёный.
 - [x] CI gate Stage 20 зелёный.
-
