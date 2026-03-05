@@ -28,7 +28,7 @@
 - 20 — OK: fixture/examples тестируются через реальный pack dir + runtime API (`scripts/tests/pack_regart_runtime_api.sh`, CI job `pack-regart-runtime-api`)
 - 21 — OK: есть runtime e2e по 4 internal incidents + induced test `metrics_unavailable`
 - 22 — OK: synthetic-заглушки заменены runtime smoke (`scripts/tests/test_stage22_e2e.py`, `e2e_smoke.sh`, `e2e_chaos.sh`)
-- 23 — Проблема: ops/dr smoke не выполняет реальные сценарии
+- 23 — OK: ops/dr smoke переведён в runtime (`scripts/tests/ops_stage23_smoke.sh`: backup/restore + ingest→snapshot + SIGHUP stream survival)
 - 24 — Проблема: signing/upgrade-downgrade не проверяются end-to-end
 - 25 — Проблема: export synthetic вместо реального compliance export
 - 26 — Проблема: RU policy enforcement не серверный

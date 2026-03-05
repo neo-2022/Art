@@ -112,17 +112,19 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
 - [x] integration: TLS reload smoke (SSE держится, шаг 2)
 - [x] integration: DR drill smoke (restore + integrity + ingest→snapshot, шаг 5)
 - [x] induced: tls_config_invalid (fail closed + startup backlog публикация, шаг 6)
+- [x] runtime smoke: `scripts/tests/ops_stage23_smoke.sh` (backup/restore + ingest→snapshot + SIGHUP stream survival)
 
 ## CI gate
+- [x] CI job `ops-smoke` существует и запускается на PR в main
 - [x] CI job `ops-docs-gate` существует и запускается на PR в main
 - [x] `ops-docs-gate` запускает `scripts/ci/check_ops_stage23_docs.sh`, который:
   - [x] проверяет существование файлов из раздела “Документация (RU)”
   - [x] проверяет минимальный контент (grep):
     - [x] `docs/ops/deploy_k8s.md` содержит `cert-manager` и `ClusterIssuer` и `art-tls`
-    - [x] `docs/ops/tls_rotation.md` содержит `SIGHUP` и `stream`
+    - [x] `docs/ops/tls_rotation.md` содержит `SIGHUP` и `stream` и `ops_stage23_smoke.sh`
     - [x] `docs/ops/db_migration_runbook.md` содержит `integrity` и `rollback`
     - [x] `docs/ops/backup_restore.md` содержит `sqlite3` и `.backup` и `integrity`
-    - [x] `docs/ops/dr_drill.md` содержит `ingest` и `snapshot` и `pass/fail`
+    - [x] `docs/ops/dr_drill.md` содержит `ingest` и `snapshot` и `pass/fail` и `ops_stage23_smoke.sh`
     - [x] `docs/runbooks/tls_config_invalid.md` содержит `mitigations` и `verification`
     - [x] `docs/governance/observability_gap_registry.md` содержит `tls_config_invalid`
   - [x] exit 1 при нарушении любой проверки
@@ -135,4 +137,3 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
 - [x] DR drill выполнен и зафиксирован отчётом с pass/fail.
 - [x] `observability_gap.tls_config_invalid` реализован, зарегистрирован и покрыт induced test (включая публикацию startup backlog в snapshot/stream).
 - [x] CI gate Stage 23 зелёный.
-

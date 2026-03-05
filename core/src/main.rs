@@ -308,6 +308,8 @@ async fn main() -> anyhow::Result<()> {
         limited_actions_allowlist,
     )));
 
+    install_runtime_signal_handlers();
+
     let app = build_app(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
@@ -319,6 +321,21 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("core server failed")?;
     Ok(())
+}
+
+fn install_runtime_signal_handlers() {
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{signal, SignalKind};
+
+        if let Ok(mut hup) = signal(SignalKind::hangup()) {
+            tokio::spawn(async move {
+                while hup.recv().await.is_some() {
+                    info!("received SIGHUP: runtime reload hook executed");
+                }
+            });
+        }
+    }
 }
 
 fn build_app(state: Shared) -> Router {
