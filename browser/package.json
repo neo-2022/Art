@@ -1,7 +1,7 @@
 {
   "name": "art-browser-level0",
   "version": "0.1.0",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "lint": "node ./scripts/lint.mjs",
