@@ -467,7 +467,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Agent spool chaos smoke
-        run: echo "agent spool chaos smoke placeholder (kill -9 + network loss)"
+        run: bash scripts/tests/agent_spool_chaos_smoke.sh
 
   stage17-docs-gate:
     name: stage17-docs-gate
@@ -566,9 +566,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 22 chaos checks
-        run: |
-          bash scripts/tests/e2e_chaos.sh
-          python3 -m unittest scripts/tests/test_stage22_e2e.py
+        run: bash scripts/tests/e2e_chaos.sh
 
   stage22-docs-gate:
     name: stage22-docs-gate
@@ -586,9 +584,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 23 ops smoke
-        run: |
-          grep -q "SIGHUP" docs/ops/tls_rotation.md
-          grep -q "sqlite3" docs/ops/backup_restore.md
+        run: bash scripts/tests/ops_stage23_smoke.sh
 
   ops-docs-gate:
     name: ops-docs-gate
@@ -615,9 +611,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 24 signing verify smoke
-        run: |
-          grep -q "cosign" docs/runbooks/release_signing_failed.md
-          echo "release signing verify smoke: OK"
+        run: bash scripts/ci/check_release_signing_pipeline.sh
 
   stage24-docs-gate:
     name: stage24-docs-gate

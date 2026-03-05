@@ -123,7 +123,7 @@ Spool/outbox Agent (локальная очередь, persistence, retry/backof
 
 ## CI gate
 - [x] CI job `agent-spool-tests` существует и зелёный (шага 1–4)
-- [x] CI job `agent-spool-chaos-smoke` существует и зелёный (smoke подмножество шага 5: kill -9 + network loss)
+- [x] CI job `agent-spool-chaos-smoke (real cargo chaos smoke)` существует и зелёный (smoke подмножество шага 5: kill -9 + network loss)
 - [x] CI job `stage17-docs-gate` существует и запускает `scripts/ci/check_agent_spool_stage17_docs.sh`, который:
   - [x] проверяет существование файлов из раздела “Документация (RU)”
   - [x] проверяет минимальный контент (grep):

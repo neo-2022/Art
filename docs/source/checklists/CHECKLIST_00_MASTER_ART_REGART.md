@@ -2,8 +2,9 @@ A) Полный запрет опциональности:
 # CHECKLIST 00 — MASTER (Art v1 + REGART) + STANDARD (единые правила)
 Файл: CHECKLIST_00_MASTER_ART_REGART.md  
 Последняя актуализация: 2026-03-04  
-Дата последней проверки: ________  
+Дата последней проверки: 2026-03-05 (аудит соответствия)  
 Триггер пересмотра: любые изменения в Art_v1_spec_final.md / REGART↔Art описание / CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md / CHECKLIST_06_REGART_ART_BRIDGE.md / внешние источники в my_langgraph_agent
+Отчёт аудита: docs/source/checklists/CHECKLIST_27_AUDIT_REMEDIATION_PLAN.md
 
 Источники требований:
 - Art: `docs/source/Art_v1_spec_final.md`

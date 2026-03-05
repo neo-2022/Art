@@ -101,7 +101,7 @@ A) Полный запрет опциональности:
 
 ## CI gate
 - [x] CI job `e2e-smoke` существует и зелёный (короткий e2e прогон без chaos)
-- [x] CI job `e2e-chaos` существует и зелёный (включает шаги 1 и 3 в полном виде для ручного запуска; nightly использует свой workflow)
+- [x] CI job `e2e-chaos` существует и зелёный (включает runtime chaos smoke по потере/восстановлению и проверке gap событий; nightly использует свой workflow)
 - [x] CI job `stage22-docs-gate` существует и запускается на PR в main
 - [x] `stage22-docs-gate` запускает `scripts/ci/check_e2e_stage22_docs.sh`, который:
   - [x] проверяет существование файлов из раздела “Документация (RU)”
