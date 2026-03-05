@@ -8,6 +8,7 @@ required_files=(
   "docs/runbooks/console_boot_failed.md"
   "docs/governance/observability_gap_registry.md"
   "docs/source/checklists/CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md"
+  "docs/ops/panel0_linux_prod_readiness.md"
 )
 
 for f in "${required_files[@]}"; do
@@ -30,6 +31,11 @@ grep -q "secure context" docs/ui/panel0_sw_cache.md
 grep -q "^## Symptoms" docs/runbooks/console_boot_failed.md
 grep -q "^## Diagnosis" docs/runbooks/console_boot_failed.md
 grep -q "^## Resolution" docs/runbooks/console_boot_failed.md
+grep -q "^## Rollback" docs/runbooks/console_boot_failed.md
+
+grep -q "scripts/tests/panel0_linux_prod_readiness.sh" docs/ops/panel0_linux_prod_readiness.md
+grep -q "Console UP" docs/ops/panel0_linux_prod_readiness.md
+grep -q "Core DOWN + Console DOWN" docs/ops/panel0_linux_prod_readiness.md
 
 registry_row="$(grep '^\| observability_gap.console_boot_failed \|' docs/governance/observability_gap_registry.md || true)"
 if [[ -z "${registry_row}" ]]; then

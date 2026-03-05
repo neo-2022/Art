@@ -65,6 +65,7 @@ A) Полный запрет опциональности:
 - [x] docs/ui/panel0_sw_cache.md
 - [x] docs/runbooks/console_boot_failed.md
 - [x] docs/governance/observability_gap_registry.md
+- [x] docs/ops/panel0_linux_prod_readiness.md
 
 ## Тестирование
 - [x] e2e: gap highlight (историческое покрытие panel0-e2e)
@@ -74,6 +75,7 @@ A) Полный запрет опциональности:
 - [x] e2e: observability_gap.console_boot_failed появляется в snapshot/stream
 - [x] e2e: hotkey Ctrl+Shift+P открывает Panel0
 - [x] e2e: Core DOWN + Console DOWN -> core-down placeholder
+- [x] linux prod-readiness: `bash scripts/tests/panel0_linux_prod_readiness.sh` (Console UP/HTTP error/timeout/hotkey/backlog/Core DOWN recovery)
 
 ## CI gate
 - [x] `panel0-e2e` запускает `node --test test/panel0.e2e.test.js`

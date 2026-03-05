@@ -50,3 +50,10 @@
    - открыть `GET /panel0` и дождаться доступности Core
    - убедиться, что backlog доставлен и событие видно в snapshot/stream
 4. Зафиксировать причину и corrective action в postmortem/ops-журнале (если повторяется).
+
+## Rollback
+
+- Если после релиза частота `observability_gap.console_boot_failed` превышает порог (`>5/5m` на инстанс), выполнить rollback на предыдущий стабильный tag.
+- После rollback запустить Linux readiness прогон:
+  - `bash scripts/tests/panel0_linux_prod_readiness.sh`
+- До повторного rollout убедиться, что порог больше не превышается.
