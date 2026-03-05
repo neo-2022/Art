@@ -128,6 +128,7 @@ struct BackpressureError {
 struct SnapshotResponse {
     cursor: u64,
     min_retained_seq: u64,
+    effective_profile_id: String,
     events: Vec<StoredEvent>,
     incidents: Vec<Incident>,
 }
@@ -793,6 +794,7 @@ async fn snapshot(State(state): State<Shared>, headers: HeaderMap) -> impl IntoR
     let body = SnapshotResponse {
         cursor,
         min_retained_seq,
+        effective_profile_id: s.effective_profile_id.clone(),
         events,
         incidents: s.incidents.clone(),
     };
@@ -882,6 +884,7 @@ async fn stream_events(State(state): State<Shared>, headers: HeaderMap) -> Respo
                 SnapshotResponse {
                     cursor: s.next_seq.saturating_sub(1),
                     min_retained_seq,
+                    effective_profile_id: s.effective_profile_id.clone(),
                     events: s.events.iter().rev().take(200).cloned().collect(),
                     incidents: s.incidents.clone(),
                 }
