@@ -90,12 +90,20 @@ export class Level0MultiTabCoordinator {
     localStorage,
     broadcastChannelFactory,
     ingestFn,
+    emitGapFn = async () => {},
+    ingestEndpoint = "/api/v1/ingest",
+    browserOrigin = globalThis.location?.origin || "unknown",
+    maxRetries = 0,
     now = () => Date.now(),
     tabId,
   }) {
     this._sessionStorage = sessionStorage;
     this._localStorage = localStorage;
     this._ingestFn = ingestFn;
+    this._emitGapFn = emitGapFn;
+    this._ingestEndpoint = ingestEndpoint;
+    this._browserOrigin = browserOrigin;
+    this._maxRetries = maxRetries;
     this._now = now;
     this._localListeners = new Set();
     this._dedupTable = new Map();
@@ -199,7 +207,57 @@ export class Level0MultiTabCoordinator {
       return;
     }
     this._dedupTable.set(dedupKey, this._now() + DEDUP_TTL_MS);
-    await this._ingestFn({ event, dedup_key: dedupKey });
+    try {
+      await this._ingestFn({ event, dedup_key: dedupKey });
+    } catch (error) {
+      if (this._isCorsBlockedError(error)) {
+        await this._emitGapFn(
+          this._buildCorsBlockedEvent({
+            error,
+            retryCount: this._maxRetries,
+          })
+        );
+      }
+      throw error;
+    }
+  }
+
+  _isCorsBlockedError(error) {
+    if (!error || typeof error !== "object") {
+      return false;
+    }
+    const name = String(error.name || "");
+    const message = String(error.message || "");
+    if (name === "TypeError") {
+      return true;
+    }
+    return /cors|failed to fetch|networkerror/i.test(message);
+  }
+
+  _buildCorsBlockedEvent({ error, retryCount }) {
+    const traceId = ensureCrypto().randomUUID();
+    return {
+      kind: "observability_gap.cors_blocked",
+      ts_ms: this._now(),
+      trace_id: traceId,
+      what: "CORS blocked request to ingest",
+      where: "browser.level0.ingest",
+      why: "cors_blocked",
+      evidence: {
+        endpoint: this._ingestEndpoint,
+        browser_origin: this._browserOrigin,
+        block_type: String(error?.name || "unknown_error"),
+        retry_count: Number.isInteger(retryCount) && retryCount >= 0 ? retryCount : 0,
+        error_message: String(error?.message || "unknown"),
+      },
+      actions: [
+        {
+          rel: "runbook",
+          action_ref: "docs/runbooks/cors_blocked.md",
+          description: "Проверить CORS allowlist и preflight policy.",
+        },
+      ],
+    };
   }
 }
 

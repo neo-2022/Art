@@ -37,18 +37,18 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
     - [x] TTL дедуп-таблицы: 300000 мс
   - [x] **Проверка (pass/fail):** e2e multi-tab тест зелёный: `browser/test/multitab.e2e.test.js` (2 вкладки → локально видно в обеих → в Art доставлено ровно 1 раз по `dedup_key`).
 
-- [ ] **2. Сделать:** Реализовать CORS blocked → `observability_gap.cors_blocked`.
-  - [ ] При любой CORS-блокировке сеть/ingest фиксируется событие `observability_gap.cors_blocked` и оно попадает в snapshot/stream
-  - [ ] Событие содержит `what/where/why/evidence/actions` и `trace_id`
-  - [ ] evidence_min включает:
-    - [ ] endpoint
-    - [ ] browser origin
-    - [ ] тип блокировки (строка)
-    - [ ] retry_count (целое >= 0)
-  - [ ] Событие зарегистрировано в `docs/governance/observability_gap_registry.md` с:
-    - [ ] `incident_rule=create_incident_min_sev2`
-    - [ ] `action_ref=docs/runbooks/cors_blocked.md`
-  - [ ] **Проверка (pass/fail):** integration/e2e тест форсит CORS blocked и проверяет наличие события в snapshot/stream.
+- [x] **2. Сделать:** Реализовать CORS blocked → `observability_gap.cors_blocked`.
+  - [x] При любой CORS-блокировке сеть/ingest фиксируется событие `observability_gap.cors_blocked` и оно попадает в snapshot/stream
+  - [x] Событие содержит `what/where/why/evidence/actions` и `trace_id`
+  - [x] evidence_min включает:
+    - [x] endpoint
+    - [x] browser origin
+    - [x] тип блокировки (строка)
+    - [x] retry_count (целое >= 0)
+  - [x] Событие зарегистрировано в `docs/governance/observability_gap_registry.md` с:
+    - [x] `incident_rule=create_incident_min_sev2`
+    - [x] `action_ref=docs/runbooks/cors_blocked.md`
+  - [x] **Проверка (pass/fail):** integration/e2e тест форсит CORS blocked и проверяет наличие события в snapshot/stream (`browser/test/multitab.e2e.test.js`: `cors blocked: генерируется observability_gap.cors_blocked c обязательным evidence`).
 
 - [ ] **3. Сделать:** Реализовать gzip compression при `payload_size_bytes > 1024` перед записью в IndexedDB.
   - [ ] Порог сжатия фиксирован: 1024 байта
@@ -133,10 +133,10 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
 ## Документация (RU)
 - [ ] docs/browser/level0_api.md
 - [ ] docs/browser/outbox_limits.md
-- [ ] docs/browser/cors_gap.md
+- [x] docs/browser/cors_gap.md
 - [ ] docs/browser/compression.md
 - [ ] docs/browser/dlq.md
-- [ ] docs/runbooks/cors_blocked.md
+- [x] docs/runbooks/cors_blocked.md
 - [ ] docs/runbooks/outbox_decompress_failed.md
 - [ ] docs/runbooks/outbox_event_expired.md
 - [ ] docs/runbooks/worker_unavailable.md
@@ -146,7 +146,7 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
 ## Тестирование
 - [ ] unit: outbox (insert/read/ack), dedup (TTL/prune), gzip (compress/decompress), TTL→DLQ, DLQ purge, cleanup timer
 - [ ] integration/e2e: multi-tab лидерство + “2 вкладки → 1 доставка”
-- [ ] integration/e2e: CORS blocked → `observability_gap.cors_blocked`
+- [x] integration/e2e: CORS blocked → `observability_gap.cors_blocked`
 - [ ] integration: payload>1024 → gzip хранение + корректная доставка
 - [ ] integration: Worker unavailable → fallback + `observability_gap.worker_unavailable`
 - [ ] integration: overflow политики outbox (never_drop_unacked / drop_oldest_when_full) + события/метрики/инцидент
