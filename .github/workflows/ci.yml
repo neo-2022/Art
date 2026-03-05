@@ -275,6 +275,38 @@ jobs:
       - name: Stage 13 docs gate
         run: bash scripts/ci/check_pipeline_stage13_docs.sh
 
+  stream-integration:
+    name: stream-integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 14 stream integration
+        run: |
+          cargo test -p art-core stream_returns_snapshot_with_cursor_when_last_event_id_too_old
+          cargo test -p art-core stream_returns_sse_for_valid_cursor
+          cargo test -p art-core stream_supports_gzip_when_requested
+          cargo test -p art-core stream_unavailable_pushes_gap_event
+          cargo test -p art-core stream_lag_pushes_gap_event
+
+  stream-load-smoke:
+    name: stream-load-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 14 load smoke (1000 events + 50 subs)
+        run: bash scripts/tests/stream_load_smoke.sh
+
+  stage14-docs-gate:
+    name: stage14-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 14 docs gate
+        run: bash scripts/ci/check_stream_stage14_docs.sh
+
   agent-spool-tests:
     name: agent-spool-tests
     runs-on: ubuntu-latest

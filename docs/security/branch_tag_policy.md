@@ -7,6 +7,7 @@
 - force-push в `main` запрещён
 - release tags защищены от перезаписи
 - Verified commits only in main
+- merge блокируется, если коммит не Verified
 
 Required checks:
 - security-stage04 / sdlc-gate
