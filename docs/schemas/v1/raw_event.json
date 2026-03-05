@@ -3,6 +3,15 @@
   "title": "RawEvent",
   "type": "object",
   "additionalProperties": true,
-  "properties": {"severity": {"type": "string"}, "schema_version": {"type": "string"}},
+  "properties": {
+    "severity": {
+      "type": "string",
+      "enum": ["info", "warn", "error", "critical"]
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    }
+  },
   "required": ["severity"]
 }

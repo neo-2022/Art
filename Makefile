@@ -3,21 +3,21 @@ SHELL := /bin/bash
 .PHONY: generate generate-schemas-md test-contracts test-telemetry smoke security-smoke
 
 generate:
-	@mkdir -p generated/rust generated/ts
-	@echo "generated client placeholder" > generated/rust/README.md
-	@echo "generated client placeholder" > generated/ts/README.md
+	@python3 scripts/generate/generate_clients.py
 
 generate-schemas-md:
-	@cat docs/schemas/index.md > docs/api/schemas.md
-	@echo "" >> docs/api/schemas.md
-	@echo "Generated from docs/schemas/v1/*.json" >> docs/api/schemas.md
+	@python3 scripts/generate/generate_schemas_md.py
 
 test-contracts:
+	@make generate >/dev/null
 	@test -s docs/api/openapi.yaml
 	@test -s docs/schemas/v1/raw_event.json
 	@test -s docs/schemas/v1/ingest_envelope.json
 	@test -s docs/schemas/v1/ingest_response.json
 	@test -s docs/schemas/v1/incident.json
+	@python3 scripts/tests/test_contracts.py
+	@cargo check --manifest-path generated/rust/Cargo.toml
+	@npx --yes -p typescript tsc -p generated/ts/tsconfig.json --noEmit
 	@echo "contract tests: OK"
 
 test-telemetry:

@@ -3,5 +3,28 @@
   "title": "IngestResponse",
   "type": "object",
   "additionalProperties": true,
-  "properties": {"invalid_details": {"type": "array"}, "ack": {"type": "object"}}
+  "properties": {
+    "accepted": {"type": "integer", "minimum": 0},
+    "invalid_details": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "index": {"type": "integer", "minimum": 0},
+          "reason": {"type": "string"}
+        },
+        "required": ["index", "reason"]
+      }
+    },
+    "ack": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "upto_seq": {"type": ["integer", "null"], "minimum": 0}
+      },
+      "required": ["upto_seq"]
+    }
+  },
+  "required": ["accepted", "invalid_details", "ack"]
 }

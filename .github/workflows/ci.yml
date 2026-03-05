@@ -202,7 +202,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: OpenAPI validate
-        run: test -s docs/api/openapi.yaml
+        run: bash scripts/ci/check_stage08_openapi.sh
 
   test-contracts:
     name: test-contracts

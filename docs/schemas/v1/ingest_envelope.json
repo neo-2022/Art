@@ -3,5 +3,11 @@
   "title": "IngestEnvelope",
   "type": "object",
   "additionalProperties": true,
-  "properties": {"events": {"type": "array"}}
+  "properties": {
+    "events": {
+      "type": "array",
+      "items": {"$ref": "raw_event.json"}
+    }
+  },
+  "required": ["events"]
 }

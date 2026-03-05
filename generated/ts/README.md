@@ -1,1 +1,1 @@
-generated client placeholder
+generated TypeScript client

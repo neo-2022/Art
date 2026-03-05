@@ -6,7 +6,12 @@ paths:
   /api/v1/ingest:
     post:
       responses:
-        '200': {description: ok}
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestResponse'
         '413':
           description: too large
           content:
@@ -35,8 +40,43 @@ paths:
   /metrics: {get: {responses: {'200': {description: ok}}}}
 components:
   schemas:
+    IngestInvalidDetail:
+      type: object
+      additionalProperties: true
+      required: [index, reason]
+      properties:
+        index:
+          type: integer
+          minimum: 0
+        reason:
+          type: string
+    IngestAck:
+      type: object
+      additionalProperties: true
+      required: [upto_seq]
+      properties:
+        upto_seq:
+          type: integer
+          nullable: true
+          minimum: 0
+    IngestResponse:
+      type: object
+      additionalProperties: true
+      required: [accepted, invalid_details, ack]
+      properties:
+        accepted:
+          type: integer
+          minimum: 0
+        invalid_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/IngestInvalidDetail'
+        ack:
+          $ref: '#/components/schemas/IngestAck'
     BackpressureError:
       type: object
+      required: [retry_after_ms]
       properties:
         retry_after_ms:
           type: integer
+          minimum: 0
