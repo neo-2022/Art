@@ -4,6 +4,7 @@ use std::env;
 use std::fs;
 use std::net::SocketAddr;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -313,14 +314,52 @@ async fn main() -> anyhow::Result<()> {
     let app = build_app(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    info!("art-core listening on {}", addr);
-    let listener = tokio::net::TcpListener::bind(addr)
-        .await
-        .with_context(|| format!("failed to bind {}", addr))?;
-    axum::serve(listener, app)
-        .await
-        .context("core server failed")?;
+    let tls_config = load_tls_config_from_env();
+    if let Some((cert_path, key_path)) = tls_config {
+        info!(
+            "art-core listening with TLS on {} (cert={}, key={})",
+            addr,
+            cert_path.display(),
+            key_path.display()
+        );
+        let tls = axum_server::tls_rustls::RustlsConfig::from_pem_file(&cert_path, &key_path)
+            .await
+            .with_context(|| {
+                format!(
+                    "failed to load TLS cert/key (cert={}, key={})",
+                    cert_path.display(),
+                    key_path.display()
+                )
+            })?;
+        axum_server::bind_rustls(addr, tls)
+            .serve(app.into_make_service())
+            .await
+            .context("core tls server failed")?;
+    } else {
+        info!("art-core listening on {} (plain HTTP)", addr);
+        let listener = tokio::net::TcpListener::bind(addr)
+            .await
+            .with_context(|| format!("failed to bind {}", addr))?;
+        axum::serve(listener, app)
+            .await
+            .context("core server failed")?;
+    }
     Ok(())
+}
+
+fn load_tls_config_from_env() -> Option<(PathBuf, PathBuf)> {
+    let cert = env::var("CORE_TLS_CERT_PATH")
+        .ok()
+        .map(|v| v.trim().to_string());
+    let key = env::var("CORE_TLS_KEY_PATH")
+        .ok()
+        .map(|v| v.trim().to_string());
+    match (cert, key) {
+        (Some(cert_path), Some(key_path)) if !cert_path.is_empty() && !key_path.is_empty() => {
+            Some((PathBuf::from(cert_path), PathBuf::from(key_path)))
+        }
+        _ => None,
+    }
 }
 
 fn install_runtime_signal_handlers() {

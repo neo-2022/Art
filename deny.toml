@@ -8,6 +8,8 @@ allow = [
   "MIT",
   "Unicode-3.0",
   "BSD-3-Clause",
+  "ISC",
+  "OpenSSL",
   "LicenseRef-Proprietary"
 ]
 confidence-threshold = 0.8
