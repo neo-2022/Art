@@ -88,14 +88,14 @@ CHECKLIST 04 — Secure SDLC + Supply-chain
 - [x] Автотест/интеграционный сценарий подтверждает `observability_gap.ui_proxy_unavailable` при недоступности UI Proxy (Шаг 5) (`tests/uiProxyGap.spec.js`).
 
 ## CI gate
-- [ ] В CI workflow включён запуск тестов из раздела “Тестирование” (через `scripts/ci/check_stage05_wrapper.sh`, который при необходимости клонирует `https://github.com/neo-2022/my_langgraph_agent.git` и запускает `npm --prefix .tmp/my_langgraph_agent/ui test -- --run tests/multiTabManager.spec.js tests/outbox.spec.js tests/uiProxyGap.spec.js`).
-- [ ] В CI workflow включён статический gate `scripts/ci/check_stage05_wrapper.sh`, который:
-  - [ ] проверяет, что в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` присутствуют пункты, добавляемые Шагами 1–5 (по стабильным строкам/паттернам: `multi-tab`, `ui.graph.empty`, `observability_gap.ui_proxy_unavailable`, ссылки на `tests/`), а также на `ui/src/multiTabManager.js` и `ui/src/obs/uiProxyGap.js`.
-  - [ ] проверяет, что существуют обязательные артефакты для Шага 5: `docs/runbooks/ui_proxy_unavailable.md` (как target `action_ref`) и запись `observability_gap.ui_proxy_unavailable` в `docs/governance/observability_gap_registry.md`.
-  - [ ] завершает работу с exit 1 при нарушении любой проверки
+- [x] В CI workflow включён запуск тестов из раздела “Тестирование” (через `scripts/ci/check_stage05_wrapper.sh`, который при необходимости клонирует `https://github.com/neo-2022/my_langgraph_agent.git` и запускает `npm --prefix .tmp/my_langgraph_agent/ui test -- --run tests/multiTabManager.spec.js tests/outbox.spec.js tests/uiProxyGap.spec.js`).
+- [x] В CI workflow включён статический gate `scripts/ci/check_stage05_wrapper.sh`, который:
+  - [x] проверяет, что в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` присутствуют пункты, добавляемые Шагами 1–5 (по стабильным строкам/паттернам: `multi-tab`, `ui.graph.empty`, `observability_gap.ui_proxy_unavailable`, ссылки на `tests/`), а также на `ui/src/multiTabManager.js` и `ui/src/obs/uiProxyGap.js`.
+  - [x] проверяет, что существуют обязательные артефакты для Шага 5: `docs/runbooks/ui_proxy_unavailable.md` (как target `action_ref`) и запись `observability_gap.ui_proxy_unavailable` в `docs/governance/observability_gap_registry.md`.
+  - [x] завершает работу с exit 1 при нарушении любой проверки
 
 ## DoD
-- [ ] Все шаги 1–5 этого чек-листа отмечены `[x]` после фактической проверки и упомянуты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` (разделы multi-tab, ui.graph.empty, observability gap).
-- [ ] Соответствующие пункты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` отмечены `[x]` с evidence (тексты + tests + runbook/registry).
-- [ ] Тесты из раздела “Тестирование” зелёные в CI (гарантирует `scripts/ci/check_stage05_wrapper.sh`).
-- [ ] CI gate из раздела “CI gate” зелёный в CI (напр. workflow job `stage05-wrapper-gate`).
+- [x] Все шаги 1–5 этого чек-листа отмечены `[x]` после фактической проверки и упомянуты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` (разделы multi-tab, ui.graph.empty, observability gap).
+- [x] Соответствующие пункты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` отмечены `[x]` с evidence (тексты + tests + runbook/registry).
+- [x] Тесты из раздела “Тестирование” зелёные в CI (гарантирует `scripts/ci/check_stage05_wrapper.sh`).
+- [x] CI gate из раздела “CI gate” зелёный в CI (напр. workflow job `stage05-wrapper-gate`).
