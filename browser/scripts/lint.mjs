@@ -3,8 +3,10 @@ import { spawnSync } from "node:child_process";
 const files = [
   "src/index.js",
   "src/level0_multitab.js",
+  "src/outbox.js",
   "test/smoke.test.js",
   "test/multitab.e2e.test.js",
+  "test/outbox.compression.test.js",
   "scripts/build.mjs",
   "scripts/lint.mjs",
 ];

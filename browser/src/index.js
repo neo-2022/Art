@@ -8,3 +8,10 @@ export {
   dedupKeyForEvent,
   level0MultiTabConfig,
 } from "./level0_multitab.js";
+
+export {
+  Level0Outbox,
+  InMemoryOutboxStore,
+  browserGzipCodec,
+  outboxCompressionConfig,
+} from "./outbox.js";

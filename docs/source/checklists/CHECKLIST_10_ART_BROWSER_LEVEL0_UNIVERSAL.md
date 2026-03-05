@@ -50,20 +50,20 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
     - [x] `action_ref=docs/runbooks/cors_blocked.md`
   - [x] **Проверка (pass/fail):** integration/e2e тест форсит CORS blocked и проверяет наличие события в snapshot/stream (`browser/test/multitab.e2e.test.js`: `cors blocked: генерируется observability_gap.cors_blocked c обязательным evidence`).
 
-- [ ] **3. Сделать:** Реализовать gzip compression при `payload_size_bytes > 1024` перед записью в IndexedDB.
-  - [ ] Порог сжатия фиксирован: 1024 байта
-  - [ ] Для записей outbox сохраняется метадата:
-    - [ ] `content_encoding` (значение `identity` или `gzip`)
-    - [ ] `original_size_bytes`
-    - [ ] `stored_size_bytes`
-  - [ ] При flush в сеть выполняется корректная распаковка и отправка оригинального payload
-  - [ ] При ошибке распаковки генерируется `observability_gap.outbox_decompress_failed` (snapshot/stream) с `trace_id` и evidence_min
-  - [ ] `observability_gap.outbox_decompress_failed` зарегистрировано в реестре с:
-    - [ ] `incident_rule=create_incident_min_sev2`
-    - [ ] `action_ref=docs/runbooks/outbox_decompress_failed.md`
-  - [ ] **Проверка (pass/fail):**
-    - [ ] unit тест compress/decompress зелёный
-    - [ ] integration тест: записывает payload>1024, flush доставляет валидный RawEvent и подтверждает корректность данных.
+- [x] **3. Сделать:** Реализовать gzip compression при `payload_size_bytes > 1024` перед записью в IndexedDB.
+  - [x] Порог сжатия фиксирован: 1024 байта
+  - [x] Для записей outbox сохраняется метадата:
+    - [x] `content_encoding` (значение `identity` или `gzip`)
+    - [x] `original_size_bytes`
+    - [x] `stored_size_bytes`
+  - [x] При flush в сеть выполняется корректная распаковка и отправка оригинального payload
+  - [x] При ошибке распаковки генерируется `observability_gap.outbox_decompress_failed` (snapshot/stream) с `trace_id` и evidence_min
+  - [x] `observability_gap.outbox_decompress_failed` зарегистрировано в реестре с:
+    - [x] `incident_rule=create_incident_min_sev2`
+    - [x] `action_ref=docs/runbooks/outbox_decompress_failed.md`
+  - [x] **Проверка (pass/fail):**
+    - [x] unit тест compress/decompress зелёный (`browser/test/outbox.compression.test.js`)
+    - [x] integration тест: записывает payload>1024, flush доставляет валидный RawEvent и подтверждает корректность данных (`browser/test/outbox.compression.test.js`).
 
 - [ ] **4. Сделать:** Реализовать outbox TTL: `max_age=7 суток`; истёк → перенос в DLQ + `observability_gap.outbox_event_expired`.
   - [ ] TTL фиксирован: 7 суток (604800000 мс)
@@ -134,10 +134,10 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
 - [ ] docs/browser/level0_api.md
 - [ ] docs/browser/outbox_limits.md
 - [x] docs/browser/cors_gap.md
-- [ ] docs/browser/compression.md
+- [x] docs/browser/compression.md
 - [ ] docs/browser/dlq.md
 - [x] docs/runbooks/cors_blocked.md
-- [ ] docs/runbooks/outbox_decompress_failed.md
+- [x] docs/runbooks/outbox_decompress_failed.md
 - [ ] docs/runbooks/outbox_event_expired.md
 - [ ] docs/runbooks/worker_unavailable.md
 - [ ] docs/runbooks/outbox_full.md
@@ -147,7 +147,7 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
 - [ ] unit: outbox (insert/read/ack), dedup (TTL/prune), gzip (compress/decompress), TTL→DLQ, DLQ purge, cleanup timer
 - [ ] integration/e2e: multi-tab лидерство + “2 вкладки → 1 доставка”
 - [x] integration/e2e: CORS blocked → `observability_gap.cors_blocked`
-- [ ] integration: payload>1024 → gzip хранение + корректная доставка
+- [x] integration: payload>1024 → gzip хранение + корректная доставка
 - [ ] integration: Worker unavailable → fallback + `observability_gap.worker_unavailable`
 - [ ] integration: overflow политики outbox (never_drop_unacked / drop_oldest_when_full) + события/метрики/инцидент
 
