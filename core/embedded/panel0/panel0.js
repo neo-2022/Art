@@ -264,7 +264,7 @@
     addEventListener("keydown", (event) => {
       if (event.ctrlKey && event.shiftKey && String(event.key || "").toLowerCase() === "p") {
         event.preventDefault();
-        globalThis.location.assign("/panel0");
+        globalThis.location.assign("/panel0/");
       }
     });
   }
@@ -283,7 +283,7 @@
       return;
     }
     try {
-      await navigator.serviceWorker.register("/panel0/panel0_sw.js", { scope: "/panel0" });
+      await navigator.serviceWorker.register("/panel0/panel0_sw.js", { scope: "/panel0/" });
     } catch {
       // keep panel running even if SW registration fails
     }

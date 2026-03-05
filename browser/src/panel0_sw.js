@@ -13,13 +13,28 @@ export function shouldRegisterServiceWorker(pathname, isSecureContext = true) {
   return Boolean(isSecureContext) && String(pathname || "").startsWith("/panel0");
 }
 
+function isPanel0AssetRequest(request) {
+  const rawUrl = String(request?.url || "");
+  if (rawUrl.startsWith("/panel0/")) {
+    return true;
+  }
+  if (!rawUrl) {
+    return false;
+  }
+  try {
+    return new URL(rawUrl).pathname.startsWith("/panel0/");
+  } catch {
+    return false;
+  }
+}
+
 export async function resolvePanel0Fetch({
   request,
   fetchFn,
   cacheMatchFn,
   cachePutFn,
 }) {
-  if (request?.method !== "GET") {
+  if (request?.method !== "GET" || !isPanel0AssetRequest(request)) {
     return fetchFn(request);
   }
   try {
@@ -67,6 +82,8 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
+  const url = new URL(request.url);
+  if (!url.pathname.startsWith("/panel0/")) return;
   event.respondWith(
     fetch(request)
       .then((response) => {

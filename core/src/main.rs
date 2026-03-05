@@ -2541,7 +2541,7 @@ mod tests {
         assert!(html.contains("const BOOT_TIMEOUT_MS = 5000;"));
         assert!(html.contains("const EVENT_KIND = \"observability_gap.console_boot_failed\";"));
         assert!(html.contains("Ctrl+Shift+P"));
-        assert!(html.contains("globalThis.location.replace(\"/panel0\")"));
+        assert!(html.contains("globalThis.location.replace(\"/panel0/\")"));
         assert!(!html.contains("__CONSOLE_BASE_PATH_JSON__"));
     }
 
