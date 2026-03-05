@@ -39,20 +39,21 @@ CHECKLIST 04 — Secure SDLC + Supply-chain
   - [x] Добавлен тест: при отсутствии `trace_id` в исходном событии, на выходе он присутствует и сохраняется при прохождении по слоям
   - [x] **Проверка (pass/fail):** пункт в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` закрыт `[x]` с доказательством (2026-03-05: `npm -C ui test -- --run tests/debugger_trace_id.spec.js tests/outbox.spec.js` + `npm -C ui test`).
 
-- [ ] **3. Сделать:** Внести в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` обязательный пункт про `ui.graph.empty` и реализовать генерацию события при пустом графе.
-  - [ ] В исходнике чек-листа добавлен пункт: `при пустом графе генерируется kind="ui.graph.empty"`
-  - [ ] `ui.graph.empty` содержит `ctx` со строгим набором полей:
-    - [ ] `assistant_id`
-    - [ ] `container_w`
-    - [ ] `container_h`
-    - [ ] `nodes_count`
-    - [ ] `edges_count`
-    - [ ] `in_flight` (true/false)
-    - [ ] `last_fetch_ms` (число или -1 если неизвестно)
-    - [ ] `trace_id`
-  - [ ] Событие генерируется строго при условии: контейнер имеет ненулевой размер, fetch завершён, но `nodes_count=0` и `edges_count=0`
-  - [ ] Добавлен тест/сценарий воспроизведения, который гарантированно приводит к `ui.graph.empty`
-  - [ ] **Проверка (pass/fail):** пункт в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` закрыт `[x]` и событие реально возникает при воспроизведении.
+- [x] **3. Сделать:** Внести в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` обязательный пункт про `ui.graph.empty` и реализовать генерацию события при пустом графе.
+  - [x] В исходнике чек-листа добавлен пункт: `при пустом графе генерируется kind="ui.graph.empty"`
+  - [x] Событие отправляется только когда контейнер >0, fetch завершён, nodes=0 и edges=0; `ctx` содержит `assistant_id`, `container_w/h`, `nodes_count`, `edges_count`, `in_flight`, `last_fetch_ms`, `trace_id`.
+  - [x] `ui.graph.empty` содержит `ctx` со строгим набором полей:
+    - [x] `assistant_id`
+    - [x] `container_w`
+    - [x] `container_h`
+    - [x] `nodes_count`
+    - [x] `edges_count`
+    - [x] `in_flight` (true/false)
+    - [x] `last_fetch_ms` (число или -1 если неизвестно)
+    - [x] `trace_id`
+  - [x] Событие генерируется строго при условии: контейнер имеет ненулевой размер, fetch завершён, но `nodes_count=0` и `edges_count=0`
+  - [x] Добавлен тест/сценарий воспроизведения, который гарантированно приводит к `ui.graph.empty`
+  - [x] **Проверка (pass/fail):** пункт в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` закрыт `[x]` и событие реально возникает при воспроизведении (`tests/graph_empty.spec.js` + `npm -C ui test`).
 
 - [ ] **4. Сделать:** Внести в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` обязательный пункт про multi-tab дедуп и реализовать требуемое поведение “локально видно в обеих вкладках, в Art доставляется ровно один раз”.
   - [ ] В исходнике чек-листа добавлен пункт: `multi-tab дедуп обязателен (2 вкладки → 1 доставка в Art)`
@@ -89,6 +90,7 @@ CHECKLIST 04 — Secure SDLC + Supply-chain
 - [ ] Автотест подтверждает `subscribe(listener)` и порядок доставки (Шаг 1).
 - [x] Автотест подтверждает генерацию `trace_id` при отсутствии и сохранение при прохождении по слоям (Шаг 2).
 - [ ] Автотест/интеграционный сценарий подтверждает генерацию `ui.graph.empty` при выполнении условий (Шаг 3).
+  - [x] `tests/graph_empty.spec.js` проверяет helper `buildGraphEmptyEvent` → ctx содержит все поля и `trace_id`.
 - [ ] Автотест/интеграционный сценарий подтверждает multi-tab: 2 вкладки → локально видно в обеих → в Art ровно один раз (Шаг 4).
 - [ ] Автотест/интеграционный сценарий подтверждает `observability_gap.ui_proxy_unavailable` при недоступности UI Proxy (Шаг 5).
 
