@@ -1,6 +1,6 @@
 # Индекс чек-листов
 
-Этот каталог содержит полный набор чек-листов `CHECKLIST_00..26`.
+Этот каталог содержит полный набор чек-листов `CHECKLIST_00..27`.
 
 ## Мастер и управление
 
@@ -46,6 +46,7 @@
 - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md` — release/upgrade/regression.
 - `CHECKLIST_25_COMPLIANCE_AUDIT_READY.md` — compliance/audit readiness.
 - `CHECKLIST_26_RU_PROFILE.md` — RU профиль (152-ФЗ/локализация/экспорт/аудит/air-gapped).
+- `CHECKLIST_27_AUDIT_REMEDIATION_PLAN.md` — итоговый аудит закрытия этапов и план/факт ремедиации.
 
 ## Порядок прохождения
 
@@ -54,3 +55,4 @@
 3. `05..06`
 4. `07..20`
 5. `21..26`
+6. `27`
