@@ -2,7 +2,7 @@
 set -euo pipefail
 for f in docs/telemetry/otel_mapping.md docs/telemetry/otlp_receiver.md docs/telemetry/limits.md docs/runbooks/otlp_rate_limited.md; do test -s "$f"; done
 grep -q "payload.otel_attributes" docs/telemetry/otel_mapping.md
-grep -q "base64" docs/telemetry/otel_mapping.md
+grep -q "bytes → base64" docs/telemetry/otel_mapping.md
 grep -q "otel.<key>" docs/telemetry/otel_mapping.md
 grep -q "max_events_per_sec=200" docs/telemetry/otlp_receiver.md
 grep -q "burst=400" docs/telemetry/otlp_receiver.md

@@ -24,6 +24,9 @@ test-telemetry:
 	@test -s docs/telemetry/otel_mapping.md
 	@test -s docs/telemetry/otlp_receiver.md
 	@test -s docs/telemetry/limits.md
+	@test -s docs/runbooks/otlp_rate_limited.md
+	@python3 scripts/tests/test_telemetry.py
+	@bash scripts/ci/check_telemetry_stage09_docs.sh
 	@echo "telemetry tests: OK"
 
 smoke:
