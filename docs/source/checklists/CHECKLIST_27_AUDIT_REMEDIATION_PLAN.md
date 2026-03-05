@@ -8,10 +8,10 @@
 ## Итоговая оценка по листам 01-26
 - 01 — OK (поддерживать)
 - 02 — OK (поддерживать)
-- 03 — Условно: усилить runtime/negative tests
-- 04 — Условно: усилить supply-chain attestations
-- 05 — Условно: снизить зависимость от внешнего репозитория в CI
-- 06 — Проблема: gate поверхностный
+- 03 — OK: добавлен runtime negative integration (`scripts/tests/profile_negative_runtime_integration.sh`) + CI job `stage03-profile-negative-integration`
+- 04 — OK: усилены supply-chain attestations (`provenance.attestation.json` + verify в `release_stage04.yml`)
+- 05 — OK: зависимость от внешнего репозитория снижена (Stage05 gate имеет локальный CI mode без clone + strict mode для source-of-truth)
+- 06 — OK: gate усилен (кодовые проверки strict mode + проверка консистентности parent/child чекбоксов)
 - 07 — OK
 - 08 — OK
 - 09 — Условно: усилить интеграционные OTLP проверки
@@ -34,11 +34,10 @@
 - 26 — Проблема: RU policy enforcement не серверный
 
 ## Порядок исправления (строго)
-1. Stage 06 — усилить gate до кодового/интеграционного уровня (без grep-only).
-2. Stage 17 — заменить placeholder job на реальные chaos smoke сценарии.
-3. Stage 19-21 — убрать synthetic-only тесты, добавить runtime integration.
-4. Stage 22-26 — заменить synthetic/grep smoke на реальные e2e/ops/release/compliance/ru проверки.
-5. После каждого stage: evidence, обновление DoD, только потом [x].
+1. Stage 17 — заменить placeholder job на реальные chaos smoke сценарии.
+2. Stage 19-21 — убрать synthetic-only тесты, добавить runtime integration.
+3. Stage 22-26 — заменить synthetic/grep smoke на реальные e2e/ops/release/compliance/ru проверки.
+4. После каждого stage: evidence, обновление DoD, только потом [x].
 
 ## Минимальные критерии «можно ставить [x]»
 - Есть runtime test/интеграционный сценарий с fail/pass критериями.
@@ -51,7 +50,7 @@
 - `test_upgrade_downgrade.py`: перейти от synthetic констант к runtime проверкам.
 - `test_self_observability.py`: поддерживать связку с runtime smoke (`scripts/tests/self_observability_runtime_smoke.sh`) и не допускать отката к synthetic-only.
 - `scripts/export_audit_pack.sh`: экспорт из реальных данных, не synthetic JSON.
-- `docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`: закрытие только после реального integration evidence.
+- `docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`: закрытие только после реального integration evidence (выполнено).
 
 ## Риски, если не исправлять
 - Ложное чувство готовности release.

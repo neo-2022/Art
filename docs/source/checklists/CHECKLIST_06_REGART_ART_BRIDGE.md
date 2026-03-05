@@ -82,10 +82,13 @@ CHECKLIST 05 — REGART: UI/Graph/Run/Debugger (обёртка)
 - [x] integration: audit immutability (append-only) тест зелёный (`test_audit_immutability_append_only`)
 
 ## CI gate
-- [x] В CI workflow включён запуск тестов из раздела “Тестирование” (через `scripts/ci/check_stage06_wrapper.sh`).
+- [x] В CI workflow включён запуск тестов из раздела “Тестирование” через `scripts/ci/check_stage06_wrapper.sh` в двух режимах:
+  - [x] default CI mode (`STAGE06_EXTERNAL_STRICT=0`) не зависит от внешнего репозитория и проверяет локальный wrapper + runbook/docs + непротиворечивость чек-листа
+  - [x] strict mode (`STAGE06_EXTERNAL_STRICT=1`) использует локальный checkout `my_langgraph_agent` и выполняет кодовые проверки source-of-truth (`ui_proxy.py` + integration tests patterns + AST checks)
 - [x] В CI workflow включён статический gate `scripts/ci/check_stage06_wrapper.sh`, который:
   - [x] проверяет, что в `CHECKLIST_REGART_ART_INTEGRATION.md` присутствуют пункты требований Шагов 1–6 (по стабильным строкам/паттернам)
   - [x] проверяет, что существуют `docs/regart/art_bridge_runbook.md` и `docs/regart/upstream_error_format.md`
+  - [x] валидирует, что нет противоречий вида parent `[x]` + child `[ ]` в wrapper/source-of-truth чек-листах
   - [x] завершает работу с exit 1 при нарушении любой проверки
 
 ## DoD

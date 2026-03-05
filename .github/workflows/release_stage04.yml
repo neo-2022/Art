@@ -39,11 +39,6 @@ jobs:
           mkdir -p agent/dist ui/dist
           printf "agent artifact for %s\n" "${GITHUB_SHA}" > agent/dist/agent.txt
           printf "ui artifact for %s\n" "${GITHUB_SHA}" > ui/dist/ui.txt
-          cat > attestation.txt <<'ATTEST'
-          stage04_attestation=true
-          workflow=release-stage04
-          method=cosign-keyless-oidc
-          ATTEST
 
       - name: Install syft
         shell: bash
@@ -65,7 +60,47 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sha256sum agent/dist/* ui/dist/* sbom.spdx.json attestation.txt > checksums.txt
+          sha256sum agent/dist/* ui/dist/* sbom.spdx.json > checksums.txt
+
+      - name: Generate provenance attestation payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import subprocess
+          import os
+          from datetime import datetime, timezone
+
+          def sha256(path: pathlib.Path) -> str:
+              out = subprocess.check_output(["sha256sum", str(path)], text=True)
+              return out.split()[0]
+
+          artifacts = [
+              pathlib.Path("agent/dist/agent.txt"),
+              pathlib.Path("ui/dist/ui.txt"),
+              pathlib.Path("sbom.spdx.json"),
+              pathlib.Path("checksums.txt"),
+          ]
+          payload = {
+              "type": "stage04.provenance",
+              "workflow": "release-stage04",
+              "repository": os.environ.get("GITHUB_REPOSITORY", ""),
+              "ref": os.environ.get("GITHUB_REF", ""),
+              "sha": os.environ.get("GITHUB_SHA", ""),
+              "run_id": os.environ.get("GITHUB_RUN_ID", ""),
+              "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", ""),
+              "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+              "subjects": [
+                  {"name": str(path), "sha256": sha256(path)} for path in artifacts
+              ],
+          }
+          pathlib.Path("provenance.attestation.json").write_text(
+              json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
 
       - name: Install cosign
         shell: bash
@@ -80,7 +115,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for f in agent/dist/agent.txt ui/dist/ui.txt sbom.spdx.json checksums.txt attestation.txt; do
+          for f in agent/dist/agent.txt ui/dist/ui.txt sbom.spdx.json checksums.txt provenance.attestation.json; do
             cosign sign-blob --yes \
               --output-signature "${f}.sig" \
               --output-certificate "${f}.pem" \
@@ -92,7 +127,7 @@ jobs:
         run: |
           set -euo pipefail
           ID_RE="https://github.com/neo-2022/Art/.github/workflows/release_stage04.yml@.*"
-          for f in agent/dist/agent.txt ui/dist/ui.txt sbom.spdx.json checksums.txt attestation.txt; do
+          for f in agent/dist/agent.txt ui/dist/ui.txt sbom.spdx.json checksums.txt provenance.attestation.json; do
             cosign verify-blob \
               --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
               --certificate-identity-regexp "$ID_RE" \
@@ -100,6 +135,28 @@ jobs:
               --certificate "${f}.pem" \
               "$f"
           done
+
+      - name: Verify provenance attestation payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import os
+
+          payload = json.loads(pathlib.Path("provenance.attestation.json").read_text(encoding="utf-8"))
+          assert payload["type"] == "stage04.provenance"
+          assert payload["workflow"] == "release-stage04"
+          assert payload["sha"] == os.environ["GITHUB_SHA"]
+          subjects = payload.get("subjects", [])
+          assert len(subjects) == 4
+          names = {s["name"] for s in subjects}
+          assert "agent/dist/agent.txt" in names
+          assert "ui/dist/ui.txt" in names
+          assert "sbom.spdx.json" in names
+          assert "checksums.txt" in names
+          PY
 
       - name: Publish release assets
         shell: bash
@@ -112,7 +169,7 @@ jobs:
             ui/dist/ui.txt
             sbom.spdx.json
             checksums.txt
-            attestation.txt
+            provenance.attestation.json
             agent/dist/agent.txt.sig
             agent/dist/agent.txt.pem
             ui/dist/ui.txt.sig
@@ -121,8 +178,8 @@ jobs:
             sbom.spdx.json.pem
             checksums.txt.sig
             checksums.txt.pem
-            attestation.txt.sig
-            attestation.txt.pem
+            provenance.attestation.json.sig
+            provenance.attestation.json.pem
           )
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release upload "${RELEASE_TAG}" "${ASSETS[@]}" --clobber

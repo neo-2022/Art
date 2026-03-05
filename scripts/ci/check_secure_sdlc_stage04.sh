@@ -21,6 +21,9 @@ grep -q "SPDX" docs/security/sbom_policy.md
 grep -q "cosign" docs/security/provenance_signing.md
 grep -q "OIDC" docs/security/provenance_signing.md
 for a in "agent/dist/*" "ui/dist/*" "sbom.spdx.json" "checksums.txt"; do grep -q "$a" docs/security/provenance_signing.md; done
+grep -q "provenance.attestation.json" docs/security/provenance_signing.md
+grep -q "provenance.attestation.json" .github/workflows/release_stage04.yml
+grep -q "Verify provenance attestation payload" .github/workflows/release_stage04.yml
 # pinning checks for workflows and local actions
 if grep -RInE 'uses:\s+[^ ]+@(v|main|master)' .github/workflows/*.yml; then exit 1; fi
 if grep -RInE 'uses:\s+docker://' .github/workflows/*.yml; then exit 1; fi

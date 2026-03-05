@@ -7,6 +7,11 @@
 - ui/dist/*
 - sbom.spdx.json
 - checksums.txt
+- provenance.attestation.json
 
 Verify подписи обязателен в релизном CI.
-Подписи и attestations публикуются вместе с релизными артефактами.
+Аттестация provenance формируется как `provenance.attestation.json` и содержит:
+- repository/ref/sha/run_id/run_attempt
+- subjects с SHA256 для `agent/dist/*`, `ui/dist/*`, `sbom.spdx.json`, `checksums.txt`
+
+Подписи и attestations публикуются вместе с релизными артефактами и проверяются в release workflow.
