@@ -7,3 +7,4 @@
 Лимиты:
 - max_age: 7 суток
 - dlq_retention: 30 суток
+- dedup_ttl_ms: 300000

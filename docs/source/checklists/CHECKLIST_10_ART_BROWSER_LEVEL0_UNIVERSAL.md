@@ -23,19 +23,19 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
 
 ## Шаги (строго линейно)
 
-- [ ] **1. Сделать:** Реализовать multi-tab дедуп отправки (leader tab отправляет; обе вкладки видят локально).
-  - [ ] Вкладка генерирует `tab_id` (UUIDv4) и хранит в `sessionStorage` (только текущая вкладка)
-  - [ ] Лидер определяется через `localStorage`-lock `art:l0:leader` с heartbeat:
-    - [ ] лидер пишет `{"tab_id":"...","ts_ms":...}` каждые 1000 мс
-    - [ ] лидерство считается потерянным, если `ts_ms` старше 3000 мс
-    - [ ] при потере лидерства другая вкладка захватывает lock и становится лидером
-  - [ ] Только лидер выполняет flush в сеть (в Art ingest)
-  - [ ] Все вкладки публикуют локальные события в `BroadcastChannel` `art:l0:events` и отображают/учитывают их локально
-  - [ ] Dedup-ключ фиксирован:
-    - [ ] `dedup_key = sha256(canonical_json(normalized_event))`
-    - [ ] `canonical_json` — JSON с отсортированными ключами и без полей `ts_ms`
-    - [ ] TTL дедуп-таблицы: 300000 мс
-  - [ ] **Проверка (pass/fail):** e2e multi-tab тест зелёный: 2 вкладки → локально видно в обеих → в Art доставлено ровно 1 раз (по `dedup_key`).
+- [x] **1. Сделать:** Реализовать multi-tab дедуп отправки (leader tab отправляет; обе вкладки видят локально).
+  - [x] Вкладка генерирует `tab_id` (UUIDv4) и хранит в `sessionStorage` (только текущая вкладка)
+  - [x] Лидер определяется через `localStorage`-lock `art:l0:leader` с heartbeat:
+    - [x] лидер пишет `{"tab_id":"...","ts_ms":...}` каждые 1000 мс
+    - [x] лидерство считается потерянным, если `ts_ms` старше 3000 мс
+    - [x] при потере лидерства другая вкладка захватывает lock и становится лидером
+  - [x] Только лидер выполняет flush в сеть (в Art ingest)
+  - [x] Все вкладки публикуют локальные события в `BroadcastChannel` `art:l0:events` и отображают/учитывают их локально
+  - [x] Dedup-ключ фиксирован:
+    - [x] `dedup_key = sha256(canonical_json(normalized_event))`
+    - [x] `canonical_json` — JSON с отсортированными ключами и без полей `ts_ms`
+    - [x] TTL дедуп-таблицы: 300000 мс
+  - [x] **Проверка (pass/fail):** e2e multi-tab тест зелёный: `browser/test/multitab.e2e.test.js` (2 вкладки → локально видно в обеих → в Art доставлено ровно 1 раз по `dedup_key`).
 
 - [ ] **2. Сделать:** Реализовать CORS blocked → `observability_gap.cors_blocked`.
   - [ ] При любой CORS-блокировке сеть/ingest фиксируется событие `observability_gap.cors_blocked` и оно попадает в snapshot/stream
@@ -170,4 +170,3 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
 - [ ] Все события `observability_gap.*` зарегистрированы в реестре и имеют `action_ref` на конкретные runbook.
 - [ ] Тесты (unit+integration/e2e) зелёные.
 - [ ] CI gate Stage 10 зелёный.
-

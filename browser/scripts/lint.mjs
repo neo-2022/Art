@@ -1,6 +1,13 @@
 import { spawnSync } from "node:child_process";
 
-const files = ["src/index.js", "test/smoke.test.js", "scripts/build.mjs", "scripts/lint.mjs"];
+const files = [
+  "src/index.js",
+  "src/level0_multitab.js",
+  "test/smoke.test.js",
+  "test/multitab.e2e.test.js",
+  "scripts/build.mjs",
+  "scripts/lint.mjs",
+];
 
 for (const file of files) {
   const result = spawnSync(process.execPath, ["--check", file], { stdio: "inherit" });
