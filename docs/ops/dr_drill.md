@@ -7,3 +7,9 @@
 5. snapshot после восстановления.
 
 Критерий: ingest + snapshot совпадают, pass/fail: pass.
+
+Runtime smoke команда:
+
+```bash
+bash scripts/tests/ops_stage23_smoke.sh
+```

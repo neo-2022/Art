@@ -9,6 +9,8 @@ for f in \
   test -s "$f"
 done
 
+test -x scripts/tests/pack_install_runtime.sh
+
 grep -q "автообновления запрещены" docs/packs/versioning.md
 grep -q "ручная установка" docs/packs/versioning.md
 grep -q "manifest.yaml" docs/packs/spec.md

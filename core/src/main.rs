@@ -24,6 +24,15 @@ use tokio::time::Duration;
 use tower_http::compression::CompressionLayer;
 use tracing::{info, warn};
 
+const OTLP_ENDPOINT: &str = "/otlp/v1/logs";
+const OTLP_MAX_EVENTS_PER_SEC: f64 = 200.0;
+const OTLP_BURST: f64 = 400.0;
+const OTLP_MAX_BATCH_EVENTS: usize = 200;
+const OTLP_MAX_SIZE_BYTES: usize = 524_288;
+const OTLP_RETRY_AFTER_MS: u64 = 500;
+const RESERVED_OTLP_ATTR_KEYS: [&str; 6] =
+    ["severity", "ts", "kind", "scope", "message", "trace_id"];
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct StoredEvent {
     seq: u64,
@@ -64,7 +73,10 @@ struct CoreState {
     max_payload_bytes: usize,
     audits: Vec<AuditEntry>,
     next_audit_id: u64,
+    audit_chain_head: String,
     limited_actions_allowlist: Vec<String>,
+    otlp_tokens: f64,
+    otlp_last_refill_ms: u64,
 }
 
 impl CoreState {
@@ -88,7 +100,10 @@ impl CoreState {
             max_payload_bytes,
             audits: Vec::new(),
             next_audit_id: 1,
+            audit_chain_head: "genesis".to_string(),
             limited_actions_allowlist,
+            otlp_tokens: OTLP_BURST,
+            otlp_last_refill_ms: 0,
         }
     }
 }
@@ -164,6 +179,8 @@ struct AuditEntry {
     evidence_ref: String,
     client_ip: String,
     user_agent: String,
+    prev_hash: String,
+    entry_hash: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -209,6 +226,7 @@ enum Endpoint {
     IncidentResolve,
     ActionsExecute,
     AuditGet,
+    AuditVerify,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -290,6 +308,8 @@ async fn main() -> anyhow::Result<()> {
         limited_actions_allowlist,
     )));
 
+    install_runtime_signal_handlers();
+
     let app = build_app(state);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
@@ -303,6 +323,21 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn install_runtime_signal_handlers() {
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{signal, SignalKind};
+
+        if let Ok(mut hup) = signal(SignalKind::hangup()) {
+            tokio::spawn(async move {
+                while hup.recv().await.is_some() {
+                    info!("received SIGHUP: runtime reload hook executed");
+                }
+            });
+        }
+    }
+}
+
 fn build_app(state: Shared) -> Router {
     Router::new()
         .route("/health", get(health))
@@ -310,6 +345,7 @@ fn build_app(state: Shared) -> Router {
         .route("/api/v1/profile/apply", post(apply_profile))
         .route("/metrics", get(metrics))
         .route("/api/v1/ingest", post(ingest))
+        .route(OTLP_ENDPOINT, post(otlp_logs))
         .route("/api/v1/snapshot", get(snapshot))
         .route(
             "/api/v1/stream",
@@ -320,6 +356,7 @@ fn build_app(state: Shared) -> Router {
         .route("/api/v1/incidents/:id/resolve", post(incident_resolve))
         .route("/api/v1/actions/execute", post(actions_execute))
         .route("/api/v1/audit", get(audit_list))
+        .route("/api/v1/audit/verify", get(audit_verify))
         .route(
             "/api/v1/audit/:id",
             axum::routing::put(audit_mutation_forbidden).delete(audit_mutation_forbidden),
@@ -718,6 +755,337 @@ async fn ingest(
     (StatusCode::OK, Json(response)).into_response()
 }
 
+async fn otlp_logs(
+    State(state): State<Shared>,
+    headers: HeaderMap,
+    Json(payload): Json<Value>,
+) -> impl IntoResponse {
+    let mut s = state.write().await;
+    let now = ingest_now_ms(&headers);
+    let trace_id = format!("otlp-{}", now);
+
+    if let Some(len) = content_length(&headers) {
+        if len > OTLP_MAX_SIZE_BYTES {
+            push_otlp_rate_limited_gap_locked(
+                &mut s,
+                "max_size_bytes",
+                len as u64,
+                OTLP_RETRY_AFTER_MS,
+                &trace_id,
+            );
+            let err = BackpressureError {
+                error: "payload_too_large".to_string(),
+                retry_after_ms: OTLP_RETRY_AFTER_MS,
+            };
+            return (StatusCode::PAYLOAD_TOO_LARGE, Json(json!(err))).into_response();
+        }
+    }
+
+    let events = match otlp_payload_to_raw_events(&payload, now) {
+        Ok(events) => events,
+        Err(error) => {
+            s.counters.ingest_invalid_total += 1;
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "error": "invalid_otlp_payload",
+                    "message": error
+                })),
+            )
+                .into_response();
+        }
+    };
+
+    if events.len() > OTLP_MAX_BATCH_EVENTS {
+        push_otlp_rate_limited_gap_locked(
+            &mut s,
+            "max_batch_events",
+            events.len() as u64,
+            OTLP_RETRY_AFTER_MS,
+            &trace_id,
+        );
+        let err = BackpressureError {
+            error: "batch_too_large".to_string(),
+            retry_after_ms: OTLP_RETRY_AFTER_MS,
+        };
+        return (StatusCode::PAYLOAD_TOO_LARGE, Json(json!(err))).into_response();
+    }
+
+    if !consume_otlp_tokens_locked(&mut s, now, events.len() as f64) {
+        push_otlp_rate_limited_gap_locked(
+            &mut s,
+            "max_events_per_sec",
+            events.len() as u64,
+            OTLP_RETRY_AFTER_MS,
+            &trace_id,
+        );
+        let err = BackpressureError {
+            error: "rate_limited".to_string(),
+            retry_after_ms: OTLP_RETRY_AFTER_MS,
+        };
+        return (StatusCode::TOO_MANY_REQUESTS, Json(json!(err))).into_response();
+    }
+
+    if s.events.len() >= s.queue_depth_limit {
+        let queue_depth = s.events.len() as u64;
+        push_otlp_rate_limited_gap_locked(
+            &mut s,
+            "ingest_queue_depth",
+            queue_depth,
+            1_500,
+            &trace_id,
+        );
+        let err = BackpressureError {
+            error: "ingest_overloaded".to_string(),
+            retry_after_ms: 1_500,
+        };
+        return (StatusCode::SERVICE_UNAVAILABLE, Json(json!(err))).into_response();
+    }
+
+    let mut accepted = 0usize;
+    let mut invalid_details = Vec::new();
+    let mut upto_seq = s.next_seq.saturating_sub(1);
+
+    for (idx, event) in events.into_iter().enumerate() {
+        match validate_event(&event) {
+            Some(invalid) => {
+                invalid_details.push(InvalidDetail {
+                    index: idx,
+                    reason: invalid.0,
+                    path: invalid.1,
+                    code: invalid.2,
+                });
+                s.counters.ingest_invalid_total += 1;
+            }
+            None => {
+                let seq = s.next_seq;
+                s.next_seq += 1;
+                upto_seq = seq;
+                s.events.push_back(StoredEvent {
+                    seq,
+                    ts_ms: now,
+                    event: event.clone(),
+                });
+                if s.events.len() > s.queue_depth_limit {
+                    s.events.pop_front();
+                }
+
+                if let Some((kind, severity, action_ref)) = incident_policy_for_event(&event) {
+                    push_incident_locked(
+                        &mut s,
+                        kind.to_string(),
+                        severity.to_string(),
+                        Some(action_ref.to_string()),
+                        None,
+                        string_field(&event, "trace_id"),
+                        None,
+                    );
+                }
+                accepted += 1;
+                s.counters.ingest_accepted_total += 1;
+            }
+        }
+    }
+
+    let response = IngestResponse {
+        ack: Ack { upto_seq },
+        accepted,
+        invalid: invalid_details.len(),
+        invalid_details,
+    };
+    (StatusCode::OK, Json(response)).into_response()
+}
+
+fn consume_otlp_tokens_locked(s: &mut CoreState, now_ms: u64, requested_events: f64) -> bool {
+    let last_refill = if s.otlp_last_refill_ms == 0 {
+        now_ms
+    } else {
+        s.otlp_last_refill_ms
+    };
+    let elapsed_ms = now_ms.saturating_sub(last_refill);
+    let refill = (elapsed_ms as f64 / 1000.0) * OTLP_MAX_EVENTS_PER_SEC;
+    s.otlp_tokens = (s.otlp_tokens + refill).min(OTLP_BURST);
+    s.otlp_last_refill_ms = now_ms;
+
+    if requested_events > s.otlp_tokens {
+        return false;
+    }
+
+    s.otlp_tokens -= requested_events;
+    true
+}
+
+fn push_otlp_rate_limited_gap_locked(
+    s: &mut CoreState,
+    limit_name: &str,
+    current_value: u64,
+    retry_after_ms: u64,
+    trace_id: &str,
+) {
+    push_gap_event_locked(
+        s,
+        "observability_gap.otlp_rate_limited",
+        json!({
+            "limit_name": limit_name,
+            "current_value": current_value,
+            "retry_after_ms": retry_after_ms,
+            "endpoint": OTLP_ENDPOINT,
+            "trace_id": trace_id,
+        }),
+    );
+}
+
+fn otlp_payload_to_raw_events(payload: &Value, now_ms: u64) -> Result<Vec<Value>, String> {
+    let resource_logs = payload
+        .get("resourceLogs")
+        .and_then(Value::as_array)
+        .ok_or_else(|| "resourceLogs[] is required".to_string())?;
+
+    let mut out = Vec::new();
+    for resource_log in resource_logs {
+        let scope_logs = resource_log
+            .get("scopeLogs")
+            .or_else(|| resource_log.get("scope_logs"))
+            .and_then(Value::as_array)
+            .ok_or_else(|| "scopeLogs[] is required".to_string())?;
+        for scope_log in scope_logs {
+            let log_records = scope_log
+                .get("logRecords")
+                .or_else(|| scope_log.get("log_records"))
+                .and_then(Value::as_array)
+                .ok_or_else(|| "logRecords[] is required".to_string())?;
+            for log_record in log_records {
+                out.push(otlp_log_record_to_event(log_record, now_ms)?);
+            }
+        }
+    }
+    if out.is_empty() {
+        return Err("at least one OTLP log record is required".to_string());
+    }
+    Ok(out)
+}
+
+fn otlp_log_record_to_event(log_record: &Value, now_ms: u64) -> Result<Value, String> {
+    let severity_text = log_record
+        .get("severityText")
+        .or_else(|| log_record.get("severity_text"))
+        .and_then(Value::as_str)
+        .unwrap_or("INFO");
+    let (severity, unknown_severity) = map_otel_severity(severity_text);
+    let mut event = serde_json::Map::new();
+    event.insert("severity".to_string(), Value::String(severity.to_string()));
+    event.insert("kind".to_string(), Value::String("otlp.log".to_string()));
+    event.insert(
+        "scope".to_string(),
+        Value::String("telemetry.otlp.receiver".to_string()),
+    );
+    event.insert("ts_ms".to_string(), json!(now_ms));
+    if let Some(message) = extract_otlp_body(log_record.get("body")) {
+        event.insert("message".to_string(), Value::String(message));
+    }
+    if let Some(trace_id) = log_record
+        .get("traceId")
+        .or_else(|| log_record.get("trace_id"))
+        .and_then(Value::as_str)
+    {
+        event.insert("trace_id".to_string(), Value::String(trace_id.to_string()));
+    }
+
+    let attrs = log_record
+        .get("attributes")
+        .and_then(Value::as_array)
+        .ok_or_else(|| "logRecord.attributes[] is required".to_string())?;
+    let otel_attributes = convert_otlp_attributes(attrs);
+    let mut payload = serde_json::Map::new();
+    payload.insert(
+        "otel_attributes".to_string(),
+        Value::Object(otel_attributes),
+    );
+    if unknown_severity {
+        payload.insert("otel_severity_unknown".to_string(), Value::Bool(true));
+    }
+    event.insert("payload".to_string(), Value::Object(payload));
+    Ok(Value::Object(event))
+}
+
+fn map_otel_severity(level: &str) -> (&'static str, bool) {
+    match level.to_ascii_uppercase().as_str() {
+        "DEBUG" => ("debug", false),
+        "INFO" => ("info", false),
+        "WARN" | "WARNING" => ("warn", false),
+        "ERROR" => ("error", false),
+        "FATAL" => ("fatal", false),
+        _ => ("info", true),
+    }
+}
+
+fn convert_otlp_attributes(attrs: &[Value]) -> serde_json::Map<String, Value> {
+    let mut out = serde_json::Map::new();
+    for attr in attrs {
+        let key = attr.get("key").and_then(Value::as_str).unwrap_or_default();
+        if key.is_empty() {
+            continue;
+        }
+        let mut target_key = key.to_string();
+        if RESERVED_OTLP_ATTR_KEYS.contains(&key) {
+            target_key = format!("otel.{}", key);
+        }
+
+        let value = attr
+            .get("value")
+            .and_then(convert_otlp_any_value)
+            .unwrap_or(Value::Null);
+        out.insert(target_key, value);
+    }
+    out
+}
+
+fn convert_otlp_any_value(value: &Value) -> Option<Value> {
+    if let Some(v) = value.get("stringValue").and_then(Value::as_str) {
+        return Some(Value::String(v.to_string()));
+    }
+    if let Some(v) = value.get("boolValue").and_then(Value::as_bool) {
+        return Some(Value::Bool(v));
+    }
+    if let Some(v) = value.get("doubleValue").and_then(Value::as_f64) {
+        return Some(json!(v));
+    }
+    if let Some(v) = value.get("intValue") {
+        if let Some(num) = v.as_i64() {
+            return Some(json!(num));
+        }
+        if let Some(as_str) = v.as_str() {
+            if let Ok(parsed) = as_str.parse::<i64>() {
+                return Some(json!(parsed));
+            }
+        }
+    }
+    if let Some(v) = value.get("bytesValue").and_then(Value::as_str) {
+        return Some(Value::String(v.to_string()));
+    }
+    if let Some(values) = value
+        .get("arrayValue")
+        .and_then(|nested| nested.get("values"))
+        .and_then(Value::as_array)
+    {
+        let mut out = Vec::with_capacity(values.len());
+        for item in values {
+            out.push(convert_otlp_any_value(item).unwrap_or(Value::Null));
+        }
+        return Some(Value::Array(out));
+    }
+    None
+}
+
+fn extract_otlp_body(body: Option<&Value>) -> Option<String> {
+    let body = body?;
+    let value = convert_otlp_any_value(body)?;
+    match value {
+        Value::String(v) => Some(v),
+        other => Some(other.to_string()),
+    }
+}
+
 fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
     let trace_id = details
         .get("trace_id")
@@ -847,6 +1215,11 @@ fn incident_policy_for_gap(kind: &str) -> Option<(&'static str, &'static str, &'
             "metrics_unavailable",
             "SEV2",
             "docs/runbooks/metrics_unavailable.md",
+        )),
+        "observability_gap.otlp_rate_limited" => Some((
+            "otlp_rate_limited",
+            "SEV2",
+            "docs/runbooks/otlp_rate_limited.md",
         )),
         _ => None,
     }
@@ -1128,6 +1501,34 @@ async fn audit_list(State(state): State<Shared>, headers: HeaderMap) -> impl Int
     (StatusCode::OK, Json(json!({ "items": s.audits }))).into_response()
 }
 
+async fn audit_verify(State(state): State<Shared>, headers: HeaderMap) -> impl IntoResponse {
+    if let Err(deny) = enforce_rbac(&state, &headers, Endpoint::AuditVerify, None, None).await {
+        return deny;
+    }
+    let s = state.read().await;
+    match verify_audit_chain(&s.audits) {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(json!({
+                "ok": true,
+                "count": s.audits.len(),
+                "head_hash": s.audit_chain_head.clone(),
+            })),
+        )
+            .into_response(),
+        Err(reason) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "ok": false,
+                "error": "audit_chain_broken",
+                "reason": reason,
+                "count": s.audits.len(),
+            })),
+        )
+            .into_response(),
+    }
+}
+
 async fn audit_mutation_forbidden(
     Path(_id): Path<u64>,
     State(state): State<Shared>,
@@ -1179,7 +1580,7 @@ fn rbac_allows(role: ActorRole, endpoint: Endpoint) -> bool {
         Endpoint::IncidentAck | Endpoint::IncidentResolve | Endpoint::ActionsExecute => {
             matches!(role, ActorRole::Operator | ActorRole::Admin)
         }
-        Endpoint::AuditGet => matches!(role, ActorRole::Admin),
+        Endpoint::AuditGet | Endpoint::AuditVerify => matches!(role, ActorRole::Admin),
     }
 }
 
@@ -1304,6 +1705,7 @@ fn endpoint_name(endpoint: Endpoint) -> &'static str {
         Endpoint::IncidentResolve => "/api/v1/incidents/{id}/resolve",
         Endpoint::ActionsExecute => "/api/v1/actions/execute",
         Endpoint::AuditGet => "/api/v1/audit",
+        Endpoint::AuditVerify => "/api/v1/audit/verify",
     }
 }
 
@@ -1447,13 +1849,58 @@ fn build_audit_entry_with_params(
         evidence_ref: evidence_ref.to_string(),
         client_ip: client_ip_clean,
         user_agent: user_agent_clean,
+        prev_hash: String::new(),
+        entry_hash: String::new(),
     }
 }
 
 fn append_audit_entry(state: &mut CoreState, mut entry: AuditEntry) {
     entry.id = state.next_audit_id;
+    entry.prev_hash = state.audit_chain_head.clone();
+    entry.entry_hash = sha256_hex(&audit_hash_material(&entry));
     state.next_audit_id += 1;
+    state.audit_chain_head = entry.entry_hash.clone();
     state.audits.push(entry);
+}
+
+fn audit_hash_material(entry: &AuditEntry) -> String {
+    format!(
+        "{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
+        entry.id,
+        entry.timestamp,
+        entry.actor_id,
+        entry.actor_role,
+        entry.mcp_mode,
+        entry.action,
+        entry.target,
+        entry.result,
+        entry.trace_id,
+        entry.evidence_ref,
+        entry.client_ip,
+        entry.user_agent,
+        entry.prev_hash
+    )
+}
+
+fn verify_audit_chain(entries: &[AuditEntry]) -> Result<(), String> {
+    let mut prev_hash = "genesis".to_string();
+    for entry in entries {
+        if entry.prev_hash != prev_hash {
+            return Err(format!(
+                "prev_hash_mismatch id={} expected={} actual={}",
+                entry.id, prev_hash, entry.prev_hash
+            ));
+        }
+        let expected_hash = sha256_hex(&audit_hash_material(entry));
+        if entry.entry_hash != expected_hash {
+            return Err(format!(
+                "entry_hash_mismatch id={} expected={} actual={}",
+                entry.id, expected_hash, entry.entry_hash
+            ));
+        }
+        prev_hash = entry.entry_hash.clone();
+    }
+    Ok(())
 }
 
 async fn incidents(State(state): State<Shared>, headers: HeaderMap) -> impl IntoResponse {
@@ -1807,6 +2254,34 @@ mod tests {
         }
     }
 
+    fn otlp_payload_with_count(count: usize, severity_text: &str) -> Value {
+        let log_records: Vec<Value> = (0..count)
+            .map(|idx| {
+                json!({
+                    "severityText": severity_text,
+                    "body": { "stringValue": format!("otlp-{idx}") },
+                    "attributes": [
+                        {
+                            "key": "service.name",
+                            "value": { "stringValue": "api" }
+                        }
+                    ]
+                })
+            })
+            .collect();
+        json!({
+            "resourceLogs": [
+                {
+                    "scopeLogs": [
+                        {
+                            "logRecords": log_records
+                        }
+                    ]
+                }
+            ]
+        })
+    }
+
     fn extract_sse_ids(body: &str) -> Vec<u64> {
         body.lines()
             .filter_map(|line| line.strip_prefix("id: "))
@@ -1855,6 +2330,173 @@ mod tests {
         let body = resp.into_body().collect().await.expect("body").to_bytes();
         let json: Value = serde_json::from_slice(&body).expect("json");
         assert!(json["retry_after_ms"].as_u64().is_some());
+    }
+
+    #[tokio::test]
+    async fn otlp_logs_maps_attrs_unknown_severity_and_reserved_keys() {
+        let app = build_app(test_state());
+        let payload = json!({
+            "resourceLogs": [{
+                "scopeLogs": [{
+                    "logRecords": [{
+                        "severityText": "TRACE",
+                        "body": {"stringValue": "otel message"},
+                        "traceId": "trace-otlp-1",
+                        "attributes": [
+                            {"key": "service.name", "value": {"stringValue": "api"}},
+                            {"key": "success", "value": {"boolValue": true}},
+                            {"key": "count", "value": {"intValue": "3"}},
+                            {"key": "ratio", "value": {"doubleValue": 1.5}},
+                            {"key": "arr", "value": {"arrayValue": {"values": [
+                                {"stringValue": "a"},
+                                {"intValue": "2"},
+                                {"boolValue": false}
+                            ]}}},
+                            {"key": "payload_bin", "value": {"bytesValue": "AAE="}},
+                            {"key": "severity", "value": {"stringValue": "warn"}}
+                        ]
+                    }]
+                }]
+            }]
+        });
+
+        let req = Request::builder()
+            .method("POST")
+            .uri(OTLP_ENDPOINT)
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.oneshot(snapshot_req).await.expect("response");
+        let snapshot_body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let snapshot_json: Value = serde_json::from_slice(&snapshot_body).expect("json");
+        let events = snapshot_json["events"].as_array().expect("events");
+        let otlp_event = events
+            .iter()
+            .find(|event| event["event"]["kind"] == "otlp.log")
+            .expect("expected otlp.log event");
+        assert_eq!(otlp_event["event"]["severity"], "info");
+        assert_eq!(otlp_event["event"]["message"], "otel message");
+        assert_eq!(otlp_event["event"]["trace_id"], "trace-otlp-1");
+        assert_eq!(
+            otlp_event["event"]["payload"]["otel_attributes"]["service.name"],
+            "api"
+        );
+        assert_eq!(
+            otlp_event["event"]["payload"]["otel_attributes"]["otel.severity"],
+            "warn"
+        );
+        assert_eq!(
+            otlp_event["event"]["payload"]["otel_attributes"]["payload_bin"],
+            "AAE="
+        );
+        assert_eq!(
+            otlp_event["event"]["payload"]["otel_attributes"]["arr"],
+            json!(["a", 2, false])
+        );
+        assert_eq!(
+            otlp_event["event"]["payload"]["otel_severity_unknown"],
+            Value::Bool(true)
+        );
+    }
+
+    #[tokio::test]
+    async fn otlp_logs_returns_413_and_pushes_otlp_rate_limit_gap_for_large_batch() {
+        let app = build_app(test_state());
+        let payload = otlp_payload_with_count(OTLP_MAX_BATCH_EVENTS + 1, "INFO");
+        let req = Request::builder()
+            .method("POST")
+            .uri(OTLP_ENDPOINT)
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::PAYLOAD_TOO_LARGE);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert!(json["retry_after_ms"].as_u64().is_some());
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.oneshot(snapshot_req).await.expect("response");
+        let snapshot_body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let snapshot_json: Value = serde_json::from_slice(&snapshot_body).expect("json");
+        let events = snapshot_json["events"].as_array().expect("events");
+        assert!(events.iter().any(|event| {
+            event["event"]["kind"] == "observability_gap.otlp_rate_limited"
+                && event["event"]["details"]["limit_name"] == "max_batch_events"
+                && event["event"]["details"]["endpoint"] == OTLP_ENDPOINT
+        }));
+    }
+
+    #[tokio::test]
+    async fn otlp_logs_returns_429_and_pushes_gap_when_token_bucket_exhausted() {
+        let app = build_app(test_state());
+        let payload_200 = otlp_payload_with_count(200, "INFO");
+
+        for _ in 0..2 {
+            let req = Request::builder()
+                .method("POST")
+                .uri(OTLP_ENDPOINT)
+                .header("content-type", "application/json")
+                .header("x-core-now-ms", "1000")
+                .body(Body::from(payload_200.to_string()))
+                .expect("request");
+            let resp = app.clone().oneshot(req).await.expect("response");
+            assert_eq!(resp.status(), StatusCode::OK);
+        }
+
+        let req = Request::builder()
+            .method("POST")
+            .uri(OTLP_ENDPOINT)
+            .header("content-type", "application/json")
+            .header("x-core-now-ms", "1000")
+            .body(Body::from(otlp_payload_with_count(1, "INFO").to_string()))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::TOO_MANY_REQUESTS);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert!(json["retry_after_ms"].as_u64().is_some());
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.oneshot(snapshot_req).await.expect("response");
+        let snapshot_body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let snapshot_json: Value = serde_json::from_slice(&snapshot_body).expect("json");
+        let events = snapshot_json["events"].as_array().expect("events");
+        assert!(events.iter().any(|event| {
+            event["event"]["kind"] == "observability_gap.otlp_rate_limited"
+                && event["event"]["details"]["limit_name"] == "max_events_per_sec"
+        }));
     }
 
     #[tokio::test]
@@ -3050,6 +3692,75 @@ updates_mode = "online"
         let after_count = json_after["items"].as_array().map(|a| a.len()).unwrap_or(0);
         assert_eq!(before_count, after_count);
         assert_eq!(first_before, json_after["items"][0]);
+    }
+
+    #[tokio::test]
+    async fn audit_chain_verify_endpoint_is_ok_for_intact_entries() {
+        let app = build_app(test_state());
+        let exec = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "admin")
+            .header("x-actor-id", "ops")
+            .header("x-trace-id", "trace-audit-ok")
+            .body(Body::from(
+                r#"{"action":"service.status","target":"core","params":{"k":"v"}}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(exec).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let verify = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit/verify")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.oneshot(verify).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["ok"], true);
+        assert!(json["count"].as_u64().unwrap_or(0) >= 1);
+        assert!(json["head_hash"].as_str().unwrap_or("").len() == 64);
+    }
+
+    #[tokio::test]
+    async fn audit_chain_verify_detects_tampering() {
+        let state = test_state();
+        let app = build_app(state.clone());
+        let exec = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "admin")
+            .header("x-actor-id", "ops")
+            .header("x-trace-id", "trace-audit-broken")
+            .body(Body::from(
+                r#"{"action":"service.status","target":"core","params":{"k":"v"}}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(exec).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        {
+            let mut s = state.write().await;
+            s.audits[0].target = "tampered-target".to_string();
+        }
+
+        let verify = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit/verify")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.oneshot(verify).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["ok"], false);
+        assert_eq!(json["error"], "audit_chain_broken");
     }
 
     #[tokio::test]

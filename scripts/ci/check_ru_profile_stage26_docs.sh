@@ -17,4 +17,6 @@ grep -q "checksums" docs/ru/airgapped_install.md
 grep -q "mitigations" docs/runbooks/cross_border_export_blocked.md
 grep -q "verification" docs/runbooks/cross_border_export_blocked.md
 grep -q "cross_border_export_blocked" docs/governance/observability_gap_registry.md
+grep -q "effective_profile_id" scripts/export_audit_pack.sh
+grep -q "RU_EXPORT_ALLOWLIST_ROOT" scripts/export_audit_pack.sh
 echo "stage26 docs gate: OK"

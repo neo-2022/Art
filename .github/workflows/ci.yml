@@ -250,6 +250,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
+        with:
+          toolchain: stable
       - name: Telemetry tests
         run: make test-telemetry
 
@@ -270,6 +274,24 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 10 docs gate
         run: bash scripts/ci/check_browser_level0_stage10_docs.sh
+
+  stage10-chaos-e2e:
+    name: stage10-chaos-e2e
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: browser/package-lock.json
+      - name: npm ci
+        working-directory: browser
+        run: npm ci
+      - name: Stage 10 chaos/e2e matrix
+        run: bash scripts/tests/browser_level0_chaos_e2e.sh
 
   storage-integration:
     name: storage-integration
@@ -422,6 +444,8 @@ jobs:
           cargo test -p art-core access_denied_event_emitted_for_forbidden_action
           cargo test -p art-core actions_secret_redaction_happens_pre_write
           cargo test -p art-core audit_is_append_only_update_delete_forbidden
+          cargo test -p art-core audit_chain_verify_endpoint_is_ok_for_intact_entries
+          cargo test -p art-core audit_chain_verify_detects_tampering
 
   stage15-docs-gate:
     name: stage15-docs-gate
@@ -496,6 +520,15 @@ jobs:
       - name: Agent receivers tests
         run: cargo test -p art-agent
 
+  agent-receivers-chaos-runtime:
+    name: agent-receivers-chaos-runtime
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Agent receivers runtime chaos matrix
+        run: bash scripts/tests/agent_receivers_chaos_runtime.sh
+
   stage18-docs-gate:
     name: stage18-docs-gate
     runs-on: ubuntu-latest
@@ -514,6 +547,15 @@ jobs:
       - name: Packs tests
         run: python3 -m unittest scripts/tests/test_packs.py -k PacksFrameworkTests
 
+  packs-runtime-install:
+    name: packs-runtime-install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 19 runtime install from real pack layout
+        run: bash scripts/tests/pack_install_runtime.sh
+
   stage19-docs-gate:
     name: stage19-docs-gate
     runs-on: ubuntu-latest
@@ -531,6 +573,15 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 20 pack-regart tests
         run: python3 -m unittest scripts/tests/test_packs.py -k PackRegartTests
+
+  pack-regart-runtime-api:
+    name: pack-regart-runtime-api
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 20 runtime API validation
+        run: bash scripts/tests/pack_regart_runtime_api.sh
 
   stage20-docs-gate:
     name: stage20-docs-gate

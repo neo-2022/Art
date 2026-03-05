@@ -1,0 +1,32 @@
+name: stage14-soak-artifacts
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  stage14-soak:
+    name: stage14-soak
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
+        with:
+          toolchain: stable
+
+      - name: Run stage14 soak with artifacts
+        run: bash scripts/tests/stream_soak_with_artifacts.sh artifacts/stage14-soak
+
+      - name: Upload stage14 soak artifacts
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        with:
+          name: stage14-soak-${{ github.run_id }}
+          path: artifacts/stage14-soak

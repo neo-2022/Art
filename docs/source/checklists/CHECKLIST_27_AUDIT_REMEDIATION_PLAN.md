@@ -14,27 +14,27 @@
 - 06 — OK: gate усилен (кодовые проверки strict mode + проверка консистентности parent/child чекбоксов)
 - 07 — OK
 - 08 — OK
-- 09 — Условно: усилить интеграционные OTLP проверки
-- 10 — Условно: расширить real browser chaos/e2e матрицу
+- 09 — OK: добавлен runtime OTLP integration (`/otlp/v1/logs`, tests `otlp_logs_*`, `scripts/tests/otlp_runtime_integration.sh`)
+- 10 — OK: расширена real browser chaos/e2e матрица (`browser/test/level0.chaos.e2e.test.js`, CI job `stage10-chaos-e2e`)
 - 11 — OK
 - 12 — OK
 - 13 — OK
-- 14 — Условно: добавить долгий soak с артефактами
-- 15 — Условно: углубить неизменяемость/audit at-rest
-- 16 — Условно: усилить offline/SW негативные сценарии
-- 17 — Проблема: chaos smoke placeholder в CI
-- 18 — Условно: усилить receiver chaos matrix
-- 19 — Условно: runtime install тестируется из реального pack layout (manifest/payload/signatures)
-- 20 — Условно: fixture/examples тестируются через реальный pack dir; усилить e2e через runtime API
+- 14 — OK: добавлен long soak с артефактами (`scripts/tests/stream_soak_with_artifacts.sh`, workflow `.github/workflows/stage14-soak-artifacts.yml`)
+- 15 — OK: углублена неизменяемость audit (hash-chain `prev_hash/entry_hash` + `GET /api/v1/audit/verify` + tamper detection tests)
+- 16 — OK: усилены offline/SW негативные сценарии (cache-miss→503 `x-art-offline`, cache put fail, secure-context gate)
+- 17 — OK: placeholder удалён, CI smoke выполняет runtime chaos (`scripts/tests/agent_spool_chaos_runtime.sh`)
+- 18 — OK: усилена receiver chaos matrix (`scripts/tests/agent_receivers_chaos_runtime.sh`, CI job `agent-receivers-chaos-runtime`)
+- 19 — OK: runtime install тестируется из реального pack layout (`scripts/tests/pack_install_runtime.sh`, CI job `packs-runtime-install`)
+- 20 — OK: fixture/examples тестируются через реальный pack dir + runtime API (`scripts/tests/pack_regart_runtime_api.sh`, CI job `pack-regart-runtime-api`)
 - 21 — OK: есть runtime e2e по 4 internal incidents + induced test `metrics_unavailable`
 - 22 — OK: synthetic-заглушки заменены runtime smoke (`scripts/tests/test_stage22_e2e.py`, `e2e_smoke.sh`, `e2e_chaos.sh`)
-- 23 — Проблема: ops/dr smoke не выполняет реальные сценарии
-- 24 — Проблема: signing/upgrade-downgrade не проверяются end-to-end
-- 25 — Проблема: export synthetic вместо реального compliance export
-- 26 — Проблема: RU policy enforcement не серверный
+- 23 — OK: ops/dr smoke переведён в runtime (`scripts/tests/ops_stage23_smoke.sh`: backup/restore + ingest→snapshot + SIGHUP stream survival)
+- 24 — OK: upgrade/downgrade переведён в runtime API suite (`scripts/tests/test_upgrade_downgrade.py`), release signing verify согласован с keyless OIDC workflow (`release_stage04.yml`)
+- 25 — OK: export переведён с synthetic на runtime (`scripts/export_audit_pack.sh` читает `/api/v1/incidents` и `/api/v1/audit`, integration test запускает real core)
+- 26 — OK: RU export policy переведён в server-side enforcement (`scripts/export_audit_pack.sh` берёт `effective_profile_id` из Core snapshot + allowlist `RU_EXPORT_ALLOWLIST_ROOT`)
 
 ## Порядок исправления (строго)
-1. Stage 17 — заменить placeholder job на реальные chaos smoke сценарии.
+1. Stage 18 — усилить receiver chaos matrix.
 2. Stage 19-21 — убрать synthetic-only тесты, добавить runtime integration.
 3. Stage 22-26 — заменить synthetic/grep smoke на реальные e2e/ops/release/compliance/ru проверки.
 4. После каждого stage: evidence, обновление DoD, только потом [x].

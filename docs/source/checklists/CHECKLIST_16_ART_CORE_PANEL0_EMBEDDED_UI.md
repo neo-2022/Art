@@ -73,6 +73,7 @@ Panel0 без двусмысленности: gap подсветка; core-down 
 - [x] e2e: gap highlight (шаг 1)
 - [x] e2e: core-down placeholder (шаг 2)
 - [x] e2e: offline cache (шаг 3)
+- [x] e2e: offline/SW negative scenarios (cache-miss→503 `x-art-offline`, cache put fail, insecure-context no-register)
 - [x] e2e: build_id + effective_profile_id (шаг 4)
 
 ## CI gate
@@ -82,7 +83,7 @@ Panel0 без двусмысленности: gap подсветка; core-down 
   - [x] проверяет минимальный контент (grep):
     - [x] `docs/ui/panel0.md` содержит `observability_gap.`
     - [x] `docs/ui/panel0_offline.md` содержит `offline` и `reload`
-    - [x] `docs/ui/panel0_sw_cache.md` содержит `panel0-cache-` и `skipWaiting`
+    - [x] `docs/ui/panel0_sw_cache.md` содержит `panel0-cache-`, `skipWaiting`, `x-art-offline`, `secure context`
   - [x] exit 1 при нарушении любой проверки
 
 ## DoD
@@ -91,4 +92,3 @@ Panel0 без двусмысленности: gap подсветка; core-down 
 - [x] Panel0 работает офлайн (embedded assets через SW cache).
 - [x] Panel0 показывает `build_id` и `effective_profile_id`.
 - [x] CI gate Stage 16 зелёный.
-

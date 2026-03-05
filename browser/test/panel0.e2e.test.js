@@ -7,6 +7,7 @@ import {
   gapStyleForEvent,
   panel0CacheName,
   panel0Diagnostics,
+  resolvePanel0Fetch,
   shouldRegisterServiceWorker,
 } from "../src/index.js";
 
@@ -74,11 +75,39 @@ test("e2e: offline cache script uses panel0-cache-<build_id> and skipWaiting", (
   assert.equal(panel0CacheName(buildId), "panel0-cache-build-42");
   assert.ok(script.includes("panel0-cache-build-42"));
   assert.ok(script.includes("self.skipWaiting();"));
+  assert.ok(script.includes('"x-art-offline": "1"'));
   assert.ok(script.includes("/panel0/index.html"));
   assert.ok(script.includes("/panel0/panel0.js"));
   assert.ok(script.includes("/panel0/panel0.css"));
   assert.equal(shouldRegisterServiceWorker("/panel0"), true);
+  assert.equal(shouldRegisterServiceWorker("/panel0", false), false);
   assert.equal(shouldRegisterServiceWorker("/"), false);
+});
+
+test("e2e: sw negative — cache put failure не ломает online response", async () => {
+  const response = { status: 200, body: "ok" };
+  const resolved = await resolvePanel0Fetch({
+    request: { method: "GET", url: "/panel0/panel0.js" },
+    fetchFn: async () => response,
+    cachePutFn: async () => {
+      throw new Error("cache quota exceeded");
+    },
+  });
+  assert.equal(resolved.status, 200);
+  assert.equal(resolved.body, "ok");
+});
+
+test("e2e: sw negative — offline + cache miss возвращает 503 offline marker", async () => {
+  const resolved = await resolvePanel0Fetch({
+    request: { method: "GET", url: "/panel0/index.html" },
+    fetchFn: async () => {
+      throw new Error("network down");
+    },
+    cacheMatchFn: async () => null,
+  });
+  assert.equal(resolved.status, 503);
+  assert.equal(resolved.headers["x-art-offline"], "1");
+  assert.equal(resolved.body, "offline");
 });
 
 test("e2e: diagnostics shows build_id and effective_profile_id", () => {
@@ -89,4 +118,3 @@ test("e2e: diagnostics shows build_id and effective_profile_id", () => {
   assert.equal(diagnostics.build_id, "build-99");
   assert.equal(diagnostics.effective_profile_id, "eu");
 });
-

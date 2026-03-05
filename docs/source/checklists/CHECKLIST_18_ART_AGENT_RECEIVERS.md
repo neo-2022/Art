@@ -148,6 +148,7 @@ Core ingest/storage/pipeline — в других чек-листах.
 - [x] docs/agent/receivers.md
 - [x] docs/agent/receivers_config.md
 - [x] docs/agent/receivers_state.md
+- [x] docs/agent/receivers_chaos.md
 - [x] docs/runbooks/receiver_paused_spool_full.md
 - [x] docs/runbooks/receiver_permission_denied.md
 - [x] docs/runbooks/receiver_read_failed.md
@@ -161,9 +162,11 @@ Core ingest/storage/pipeline — в других чек-листах.
 - [x] integration: journald (cursor persistence)
 - [x] integration: stdout_stderr (spawn + exit non-zero)
 - [x] integration: backpressure pause/continue по политикам spool (Stage 17)
+- [x] chaos runtime matrix: `scripts/tests/agent_receivers_chaos_runtime.sh` (permission denied/spawn failed/parse failed/multiline oversize/unsupported kind/redaction)
 
 ## CI gate
 - [x] CI job `agent-receivers-tests` существует и запускается на PR в main; job зелёный
+- [x] CI job `agent-receivers-chaos-runtime` существует и запускает `scripts/tests/agent_receivers_chaos_runtime.sh`
 - [x] CI job `stage18-docs-gate` существует и запускается на PR в main
 - [x] `stage18-docs-gate` запускает `scripts/ci/check_agent_receivers_stage18_docs.sh`, который:
   - [x] проверяет существование файлов из раздела “Документация (RU)”
@@ -171,6 +174,7 @@ Core ingest/storage/pipeline — в других чек-листах.
     - [x] `docs/agent/receivers.md` содержит `receiver_kind` и `source_id` и `source_seq`
     - [x] `docs/agent/receivers_config.md` содержит `file_tail` и `journald` и `stdout_stderr`
     - [x] `docs/agent/receivers_state.md` содержит `offset` и `cursor`
+    - [x] `docs/agent/receivers_chaos.md` содержит `agent_receivers_chaos_runtime.sh` и `receiver_process_spawn_failed`
     - [x] runbooks содержат `mitigations` и `verification`
   - [x] exit 1 при нарушении любой проверки
 
@@ -182,4 +186,3 @@ Core ingest/storage/pipeline — в других чек-листах.
 - [x] Backpressure от spool/outbox реализован и покрыт integration tests.
 - [x] Все `observability_gap.*` события receivers зарегистрированы и имеют runbook.
 - [x] CI gate Stage 18 зелёный.
-

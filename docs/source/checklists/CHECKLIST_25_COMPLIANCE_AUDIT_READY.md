@@ -125,7 +125,7 @@ Audit-ready однозначен и проверяем: export pack (incidents +
 - [x] scripts/export_audit_pack.sh
 
 ## Тестирование
-- [x] integration: `export-audit-pack` (шаг 1)
+- [x] integration: `export-audit-pack` (runtime export из `/api/v1/incidents` + `/api/v1/audit`, шаг 1)
 - [x] induced: export fail → `observability_gap.export_failed` (шаг 4)
 
 ## CI gate
@@ -140,6 +140,7 @@ Audit-ready однозначен и проверяем: export pack (incidents +
     - [x] `docs/compliance/data_destruction.md` содержит `stop` и `backup` (audit pack) и `pass/fail`
     - [x] `docs/runbooks/export_failed.md` содержит `mitigations` и `verification`
     - [x] `docs/governance/observability_gap_registry.md` содержит `export_failed`
+    - [x] `scripts/export_audit_pack.sh` содержит runtime fetch `/api/v1/incidents` и `/api/v1/audit`
   - [x] exit 1 при нарушении любой проверки
 
 ## DoD
@@ -149,4 +150,3 @@ Audit-ready однозначен и проверяем: export pack (incidents +
 - [x] `observability_gap.export_failed` реализован, зарегистрирован и покрыт induced test (включая публикацию startup backlog).
 - [x] Control matrix и audit trail docs существуют и однозначны.
 - [x] CI gate Stage 25 зелёный.
-

@@ -11,3 +11,7 @@ Smoke:
 - stream активен
 
 pass/fail: pass
+
+Runtime smoke в CI выполняется скриптом `scripts/tests/ops_stage23_smoke.sh`:
+- проверяет ingest -> snapshot после DR restore smoke;
+- проверяет, что после `SIGHUP` процесс Core и stream-соединение остаются активными.

@@ -18,6 +18,7 @@ grep -q "drop_oldest_when_full" docs/agent/spool_policies.md
 grep -q "spool_corrupted" docs/agent/recovery.md
 grep -q "kill -9" docs/agent/spool_chaos.md
 grep -q "disk full" docs/agent/spool_chaos.md
+grep -q "agent_spool_chaos_runtime.sh" docs/agent/spool_chaos.md
 
 for f in \
   docs/runbooks/spool_full.md \

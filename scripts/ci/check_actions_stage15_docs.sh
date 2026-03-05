@@ -25,6 +25,9 @@ grep -q "full_admin" docs/security/mcp_modes_runtime.md
 grep -q "client_ip" docs/core/audit.md
 grep -q "user_agent" docs/core/audit.md
 grep -q "append-only" docs/core/audit.md
+grep -q "prev_hash" docs/core/audit.md
+grep -q "entry_hash" docs/core/audit.md
+grep -q "/api/v1/audit/verify" docs/core/audit.md
 
 grep -q "pre-write" docs/security/pii_secret_filter.md
 grep -q "redaction" docs/security/pii_secret_filter.md

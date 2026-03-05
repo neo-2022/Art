@@ -112,10 +112,12 @@ SSE однозначен и проверяем: Last-Event-ID too old → snapsh
 - [x] induced: stream_unavailable + stream_lag (шаг 4)
 - [x] load: 10k events (шаг 5)
 - [x] load: 1000 subs (шаг 6)
+- [x] long soak artifacts: `scripts/tests/stream_soak_with_artifacts.sh` + workflow `.github/workflows/stage14-soak-artifacts.yml`
 
 ## CI gate
 - [x] CI job `stream-integration` существует и зелёный (шага 2/3/4)
 - [x] CI job `stream-load-smoke` существует и зелёный (smoke подмножество шага 5 или 6; один фиксированный smoke сценарий: 1000 events + 50 subs)
+- [x] Отдельный workflow `stage14-soak-artifacts` публикует артефакты long soak (`stream_10k_events.log`, `stream_1000_subscribers_60s.log`, `summary.json`)
 - [x] CI job `stage14-docs-gate` существует и запускает `scripts/ci/check_stream_stage14_docs.sh`, который:
   - [x] проверяет существование файлов из раздела “Документация (RU)”
   - [x] проверяет минимальный контент (grep):
@@ -130,4 +132,3 @@ SSE однозначен и проверяем: Last-Event-ID too old → snapsh
 - [x] `observability_gap.stream_unavailable` и `observability_gap.stream_lag` реализованы, зарегистрированы и имеют runbook.
 - [x] Нагрузочные тесты выполнены и имеют отчёты с pass/fail критериями.
 - [x] CI gate Stage 14 зелёный.
-
