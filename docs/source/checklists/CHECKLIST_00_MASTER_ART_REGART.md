@@ -92,9 +92,9 @@ A) Полный запрет опциональности:
 | [x] 08 | CHECKLIST_08_ART_CONTRACTS_OPENAPI_CODEGEN.md | Contracts | schema registry + spec compliance + unknown-fields tests | 2026-03-05, neo-2022, stage08 contracts gates |
 | [x] 09 | CHECKLIST_09_TELEMETRY_OTEL_OTLP.md | Telemetry | unknown attrs→payload.otel_attributes + severity tests + OTLP rate-limit | 2026-03-05, neo-2022, stage09 telemetry gates |
 | [x] 10 | CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md | Browser Level0 | CORS gap + gzip>1KB + TTL 7d→DLQ + worker+fallback | 2026-03-05, neo-2022, stage10 browser docs gate |
-| [ ] 11 | CHECKLIST_11_ART_CORE_STORAGE_SQLITE.md | Core Storage | WAL corruption recovery + concurrency + VACUUM timer weekly | |
-| [ ] 12 | CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md | Core Ingest | invalid_details + overload 503 + ingest_dropped_total | |
-| [ ] 13 | CHECKLIST_13_ART_CORE_PIPELINE_ENRICH_RULES.md | Pipeline | correlation→Incident + collision + template injection security | |
+| [x] 11 | CHECKLIST_11_ART_CORE_STORAGE_SQLITE.md | Core Storage | WAL corruption recovery + concurrency + VACUUM timer weekly | 2026-03-05, neo-2022, stage11 docs gate + cargo tests |
+| [x] 12 | CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md | Core Ingest | invalid_details + overload 503 + ingest_dropped_total | 2026-03-05, neo-2022, stage12 docs gate + core tests |
+| [x] 13 | CHECKLIST_13_ART_CORE_PIPELINE_ENRICH_RULES.md | Pipeline | correlation→Incident + collision + template injection security | 2026-03-05, neo-2022, stage13 docs gate + core tests |
 | [ ] 14 | CHECKLIST_14_ART_CORE_STREAM_SNAPSHOT_SSE.md | Stream/Snapshot | Last-Event-ID too old→snapshot + 10k events + 1000 subs + gzip | |
 | [ ] 15 | CHECKLIST_15_ART_CORE_ACTIONS_AUDIT_RBAC_PII.md | Actions/Audit/RBAC/PII | client_ip/user_agent + access_denied event + immutability | |
 | [ ] 16 | CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md | Panel0 | gap highlight + core-down placeholder + SW cache | |
