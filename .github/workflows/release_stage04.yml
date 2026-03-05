@@ -107,26 +107,29 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          ASSETS=(
+            agent/dist/agent.txt
+            ui/dist/ui.txt
+            sbom.spdx.json
+            checksums.txt
+            attestation.txt
+            agent/dist/agent.txt.sig
+            agent/dist/agent.txt.pem
+            ui/dist/ui.txt.sig
+            ui/dist/ui.txt.pem
+            sbom.spdx.json.sig
+            sbom.spdx.json.pem
+            checksums.txt.sig
+            checksums.txt.pem
+            attestation.txt.sig
+            attestation.txt.pem
+          )
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
-            gh release upload "${RELEASE_TAG}" \
-              agent/dist/* ui/dist/* \
-              sbom.spdx.json checksums.txt attestation.txt \
-              agent/dist/*.sig agent/dist/*.pem \
-              ui/dist/*.sig ui/dist/*.pem \
-              sbom.spdx.json.sig sbom.spdx.json.pem \
-              checksums.txt.sig checksums.txt.pem \
-              attestation.txt.sig attestation.txt.pem \
-              --clobber
+            gh release upload "${RELEASE_TAG}" "${ASSETS[@]}" --clobber
           else
             gh release create "${RELEASE_TAG}" \
               --target "${GITHUB_SHA}" \
               --title "${RELEASE_TAG}" \
               --notes "release-stage04 automated release" \
-              agent/dist/* ui/dist/* \
-              sbom.spdx.json checksums.txt attestation.txt \
-              agent/dist/*.sig agent/dist/*.pem \
-              ui/dist/*.sig ui/dist/*.pem \
-              sbom.spdx.json.sig sbom.spdx.json.pem \
-              checksums.txt.sig checksums.txt.pem \
-              attestation.txt.sig attestation.txt.pem
+              "${ASSETS[@]}"
           fi
