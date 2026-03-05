@@ -29,3 +29,17 @@ Pass: gap-событие зафиксировано, после освобожд
 3. Проверить создание нового spool и quarantine старого.
 
 Pass: создаётся новый spool, `observability_gap.spool_corrupted` виден в snapshot/stream.
+
+## CI smoke (runtime)
+
+Команда:
+
+```bash
+bash scripts/tests/agent_spool_chaos_runtime.sh
+```
+
+Smoke гарантирует runtime-прохождение сценариев:
+- kill -9 + restart агента;
+- full capacity (`never_drop_unacked`) с `observability_gap.spool_full`;
+- `simulate_disk_full` с `observability_gap.spool_disk_full`;
+- `simulate_corruption` с `observability_gap.spool_corrupted`.

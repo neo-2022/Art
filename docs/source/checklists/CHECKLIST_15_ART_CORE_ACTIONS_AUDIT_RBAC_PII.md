@@ -98,7 +98,9 @@ A) Полный запрет опциональности:
 - [x] **6. Сделать:** Реализовать audit append-only immutability test (update/delete запрещены).
   - [x] Попытка изменить существующую audit запись отклоняется (fail)
   - [x] Попытка удалить audit запись отклоняется (fail)
+  - [x] Audit записи связаны hash-chain (`prev_hash`/`entry_hash`), доступен `GET /api/v1/audit/verify` (admin-only)
   - [x] Тест проверяет, что количество записей не уменьшается и содержимое старых записей не меняется
+  - [x] Тест tamper detection: ручное изменение старой записи приводит к `audit_chain_broken`
   - [x] **Проверка (pass/fail):** integration test “audit immutability” зелёный и подтверждает блокировку update/delete.
 
 ## Документация (RU)
@@ -116,6 +118,7 @@ A) Полный запрет опциональности:
 - [x] integration: access_denied → 403 + `security.access_denied` в snapshot/stream (шаг 4)
 - [x] security: secret injection → pre-write filter + `privacy.redaction_applied` (шаг 5)
 - [x] integration: audit immutability (append-only) (шаг 6)
+- [x] integration: audit hash-chain verify (`/api/v1/audit/verify`) + tamper detection (шаг 6)
 
 ## CI gate
 - [x] CI job `actions-audit-tests` существует и запускается на PR в main; job зелёный
@@ -136,6 +139,5 @@ A) Полный запрет опциональности:
 - [x] AuditEntry содержит поля (включая нормализованные `client_ip` и `user_agent`) и пишется для критичных операций.
 - [x] `security.access_denied` генерируется и видим в snapshot/stream; есть runbook.
 - [x] PII/secret filtering применяется ДО записи в audit; `privacy.redaction_applied` генерируется при фактическом редактировании.
-- [x] Audit append-only immutability test зелёный.
+- [x] Audit append-only + hash-chain immutability tests зелёные.
 - [x] CI gate Stage 15 зелёный.
-

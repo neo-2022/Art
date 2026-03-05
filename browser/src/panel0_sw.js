@@ -9,8 +9,42 @@ export const PANEL0_PRECACHE = [
   "/panel0/favicon.ico",
 ];
 
-export function shouldRegisterServiceWorker(pathname) {
-  return String(pathname || "").startsWith("/panel0");
+export function shouldRegisterServiceWorker(pathname, isSecureContext = true) {
+  return Boolean(isSecureContext) && String(pathname || "").startsWith("/panel0");
+}
+
+export async function resolvePanel0Fetch({
+  request,
+  fetchFn,
+  cacheMatchFn,
+  cachePutFn,
+}) {
+  if (request?.method !== "GET") {
+    return fetchFn(request);
+  }
+  try {
+    const response = await fetchFn(request);
+    if (typeof cachePutFn === "function") {
+      try {
+        await cachePutFn(request, response);
+      } catch {
+        // ignore cache write errors, network response must still be returned
+      }
+    }
+    return response;
+  } catch {
+    if (typeof cacheMatchFn === "function") {
+      const cached = await cacheMatchFn(request);
+      if (cached) {
+        return cached;
+      }
+    }
+    return {
+      status: 503,
+      headers: { "x-art-offline": "1" },
+      body: "offline",
+    };
+  }
 }
 
 export function createServiceWorkerScript(buildId) {
@@ -40,9 +74,18 @@ self.addEventListener("fetch", (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        return new Response("offline", {
+          status: 503,
+          headers: {
+            "content-type": "text/plain; charset=utf-8",
+            "x-art-offline": "1",
+          },
+        });
+      })
   );
 });
 `;
 }
-

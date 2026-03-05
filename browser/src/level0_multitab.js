@@ -210,6 +210,7 @@ export class Level0MultiTabCoordinator {
     try {
       await this._ingestFn({ event, dedup_key: dedupKey });
     } catch (error) {
+      this._dedupTable.delete(dedupKey);
       if (this._isCorsBlockedError(error)) {
         await this._emitGapFn(
           this._buildCorsBlockedEvent({

@@ -136,6 +136,7 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
 - [x] docs/browser/cors_gap.md
 - [x] docs/browser/compression.md
 - [x] docs/browser/dlq.md
+- [x] docs/browser/chaos_e2e_matrix.md
 - [x] docs/runbooks/cors_blocked.md
 - [x] docs/runbooks/outbox_decompress_failed.md
 - [x] docs/runbooks/outbox_event_expired.md
@@ -150,10 +151,12 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
 - [x] integration: payload>1024 → gzip хранение + корректная доставка
 - [x] integration: Worker unavailable → fallback + `observability_gap.worker_unavailable`
 - [x] integration: overflow политики outbox (never_drop_unacked / drop_oldest_when_full) + события/метрики/инцидент
+- [x] chaos/e2e matrix: transient ingest retry + outbox flush retry (`browser/test/level0.chaos.e2e.test.js`)
 
 ## CI gate
 - [x] browser lint/test/build зелёные
 - [x] e2e smoke зелёный (multi-tab + cors blocked + worker fallback)
+- [x] CI job `stage10-chaos-e2e` существует и запускает расширенную chaos/e2e матрицу (`scripts/tests/browser_level0_chaos_e2e.sh`)
 - [x] CI job `stage10-docs-gate` существует и запускается на PR в main
 - [x] `stage10-docs-gate` запускает `scripts/ci/check_browser_level0_stage10_docs.sh`, который:
   - [x] проверяет существование файлов из раздела “Документация (RU)”
@@ -162,6 +165,7 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
     - [x] `docs/browser/dlq.md` содержит `7 суток` и `30 суток`
     - [x] `docs/browser/cors_gap.md` содержит `observability_gap.cors_blocked`
     - [x] `docs/browser/outbox_limits.md` содержит `never_drop_unacked` и `drop_oldest_when_full`
+    - [x] `docs/browser/chaos_e2e_matrix.md` содержит `browser_level0_chaos_e2e.sh` и `Outbox flush retry`
     - [x] runbooks содержат `mitigations` и `verification`
   - [x] завершает работу с exit 1 при нарушении любой проверки
 

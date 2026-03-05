@@ -28,5 +28,6 @@ export {
   panel0CacheName,
   PANEL0_PRECACHE,
   shouldRegisterServiceWorker,
+  resolvePanel0Fetch,
   createServiceWorkerScript,
 } from "./panel0_sw.js";

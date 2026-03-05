@@ -87,10 +87,11 @@ A) Полный запрет опциональности:
 - [x] unit: severity mapping DEBUG/INFO/WARN/ERROR/FATAL + unknown severity
 - [x] integration: rate-limit backpressure (429/503/413) + `retry_after_ms`
 - [x] integration: генерация `observability_gap.otlp_rate_limited` и видимость в snapshot/stream
+- [x] runtime integration: `POST /otlp/v1/logs` покрыт тестами `otlp_logs_*` + `scripts/tests/otlp_runtime_integration.sh`
 
 ## CI gate
 - [x] CI job `test-telemetry` существует и запускается на PR в main
-- [x] `test-telemetry` включает unit+integration тесты этого этапа и зелёный
+- [x] `test-telemetry` включает unit+integration тесты этого этапа и runtime OTLP integration (`scripts/tests/otlp_runtime_integration.sh`) и зелёный
 - [x] CI job `telemetry-docs-gate` существует и запускается на PR в main
 - [x] `telemetry-docs-gate` запускает скрипт `scripts/ci/check_telemetry_stage09_docs.sh`, который:
   - [x] проверяет существование файлов из раздела “Документация (RU)”
@@ -108,4 +109,3 @@ A) Полный запрет опциональности:
 - [x] Backpressure + `retry_after_ms` реализованы и покрыты интеграционным тестом.
 - [x] `observability_gap.otlp_rate_limited` определён, зарегистрирован с `incident_rule` не слабее `create_incident_min_sev2`, и имеет runbook; событие проверяется в integration test.
 - [x] CI gate зелёный.
-

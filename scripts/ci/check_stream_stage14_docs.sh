@@ -13,6 +13,8 @@ grep -q "Last-Event-ID" docs/api/stream.md
 grep -q "X-Stream-Cursor" docs/api/stream.md
 grep -q "86400000" docs/api/stream.md
 grep -q "stream_lag_ms" docs/metrics/stream.md
+grep -q "stream_soak_with_artifacts.sh" docs/perf/stream_10k_events.md
+grep -q "stage14-soak-artifacts.yml" docs/perf/stream_1000_subscribers.md
 grep -q "mitigations" docs/runbooks/stream_unavailable.md
 grep -q "verification" docs/runbooks/stream_unavailable.md
 grep -q "mitigations" docs/runbooks/stream_lag.md

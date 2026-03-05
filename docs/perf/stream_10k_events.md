@@ -3,6 +3,11 @@
 ## Команда запуска
 `/usr/bin/time -v cargo test -p art-core stream_load_10k_events_single_subscriber -- --nocapture`
 
+## Артефакты soak
+- Локально/CI: `bash scripts/tests/stream_soak_with_artifacts.sh artifacts/stage14-soak`
+- Workflow: `.github/workflows/stage14-soak-artifacts.yml`
+- Артефакты: `stream_10k_events.log`, `stream_1000_subscribers_60s.log`, `summary.json`
+
 ## Окружение
 - CPU/RAM: локальная dev-машина (Linux, x86_64)
 

@@ -16,3 +16,5 @@ grep -q "offline" docs/ui/panel0_offline.md
 grep -q "Reload" docs/ui/panel0_offline.md
 grep -q "panel0-cache-" docs/ui/panel0_sw_cache.md
 grep -q "skipWaiting" docs/ui/panel0_sw_cache.md
+grep -q "x-art-offline" docs/ui/panel0_sw_cache.md
+grep -q "secure context" docs/ui/panel0_sw_cache.md
