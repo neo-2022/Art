@@ -55,54 +55,47 @@ CHECKLIST 04 — Secure SDLC + Supply-chain
   - [x] Добавлен тест/сценарий воспроизведения, который гарантированно приводит к `ui.graph.empty`
   - [x] **Проверка (pass/fail):** пункт в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` закрыт `[x]` и событие реально возникает при воспроизведении (`tests/graph_empty.spec.js` + `npm -C ui test`).
 
-- [ ] **4. Сделать:** Внести в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` обязательный пункт про multi-tab дедуп и реализовать требуемое поведение “локально видно в обеих вкладках, в Art доставляется ровно один раз”.
-  - [ ] В исходнике чек-листа добавлен пункт: `multi-tab дедуп обязателен (2 вкладки → 1 доставка в Art)`
-  - [ ] Реализация использует фиксированный механизм “leader tab”:
-    - [ ] В каждой вкладке создаётся `tab_id` (UUIDv4) и хранится в `sessionStorage` (только для текущей вкладки)
-    - [ ] Лидер определяется через `localStorage`-lock `regart:art_sender_leader` с heartbeat:
-      - [ ] лидер пишет `{"tab_id": "...", "ts_ms": ...}` каждые 1000 мс
-      - [ ] лидерство считается потерянным, если `ts_ms` старше 3000 мс
-      - [ ] при потере лидерства новая вкладка захватывает lock и становится лидером
-    - [ ] Только лидер отправляет события в Art (через UI Proxy)
-    - [ ] Все вкладки (включая лидера) публикуют события в `BroadcastChannel` `regart:debugger_events`
-    - [ ] Все вкладки отображают события локально из этого канала (поэтому “видно в обеих вкладках”)
-  - [ ] Dedup на стороне лидера фиксированным ключом `dedup_key`:
-    - [ ] `dedup_key = sha256(canonical_json(normalized_event))`
-    - [ ] `canonical_json`: JSON с отсортированными ключами, без полей `ts_ms` и без полей UI-рендеринга (строго перечислены в исходнике чек-листа)
-    - [ ] TTL дедуп-таблицы: 300000 мс
-  - [ ] Добавлен тест/инструкция воспроизведения multi-tab и доказательство, что в Art нет дублей (один `dedup_key` → одна доставка)
-  - [ ] **Проверка (pass/fail):** пункт в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` закрыт `[x]` и есть evidence (лог/скрин/тест/дамп событий в Art).
+- [x] **4. Сделать:** Внести в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` обязательный пункт про multi-tab дедуп и реализовать требуемое поведение “локально видно в обеих вкладках, в Art доставляется ровно один раз”.
+  - [x] В исходнике чек-листа добавлен пункт: `multi-tab дедуп обязателен (2 вкладки → 1 доставка в Art)` (`ui/src/multiTabManager.js`).
+  - [x] Реализация использует фиксированный механизм “leader tab”:
+    - [x] В каждой вкладке создаётся `tab_id` (UUIDv4) и хранится в `sessionStorage` (только для текущей вкладки)
+    - [x] Лидер определяется через `localStorage`-lock `regart:art_sender_leader` с heartbeat:
+      - [x] лидер пишет `{"tab_id": "...", "ts_ms": ...}` каждые 1000 мс
+      - [x] лидерство считается потерянным, если `ts_ms` старше 3000 мс
+      - [x] при потере лидерства новая вкладка захватывает lock и становится лидером
+    - [x] Только лидер отправляет события в Art (через UI Proxy)
+    - [x] Все вкладки (включая лидера) публикуют события в `BroadcastChannel` `regart:debugger_events`
+    - [x] Все вкладки отображают события локально из этого канала (поэтому “видно в обеих вкладках”)
+  - [x] Dedup на стороне лидера фиксированным ключом `dedup_key`:
+    - [x] `dedup_key = sha256(canonical_json(normalized_event))`
+    - [x] `canonical_json`: JSON с отсортированными ключами, без полей `ts_ms` и без полей UI-рендеринга (см. `ui/src/multiTabManager.js`)
+    - [x] TTL дедуп-таблицы: 300000 мс
+  - [x] Добавлен тест/инструкция воспроизведения multi-tab (`tests/multiTabManager.spec.js`) и доказательство, что в Art нет дублей (`tests/outbox.spec.js`, `npm -C ui test -- --run tests/multiTabManager.spec.js tests/outbox.spec.js`).
+  - [x] **Проверка (pass/fail):** пункт в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` закрыт `[x]` и есть evidence (тесты выше).
 
-- [ ] **5. Сделать:** Внести в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` обязательный пункт про `observability_gap.ui_proxy_unavailable` и реализовать генерацию.
-  - [ ] В исходнике чек-листа добавлен пункт: `при недоступности UI Proxy генерируется observability_gap.ui_proxy_unavailable`
-  - [ ] Событие содержит evidence_min:
-    - [ ] endpoint
-    - [ ] статус/ошибка
-    - [ ] retry_count
-    - [ ] backoff_ms
-    - [ ] `trace_id`
-  - [ ] Событие зарегистрировано в `docs/governance/observability_gap_registry.md` (Stage 01) с:
-    - [ ] `incident_rule` (не `no_incident`)
-    - [ ] `action_ref` → `docs/runbooks/ui_proxy_unavailable.md`
-  - [ ] **Проверка (pass/fail):** пункт в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` закрыт `[x]` и событие воспроизводится.
+- [x] **5. Сделать:** Внести в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` обязательный пункт про `observability_gap.ui_proxy_unavailable` и реализовать генерацию.
+  - [x] В исходнике чек-листа добавлен пункт: `при недоступности UI Proxy генерируется observability_gap.ui_proxy_unavailable` (`ui/src/obs/uiProxyGap.js`).
+  - [x] Событие содержит evidence_min: `endpoint`, `status`, `retry_count`, `backoff_ms`, `trace_id` (в payload передаётся текст ошибки или `base_url`).
+  - [x] Событие зарегистрировано в `docs/governance/observability_gap_registry.md` (Stage 01) с `incident_rule` = `create_incident` и `action_ref` → `docs/runbooks/ui_proxy_unavailable.md`.
+  - [x] **Проверка (pass/fail):** пункт в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` закрыт `[x]`; evidence — `tests/uiProxyGap.spec.js` + ручное отключение UI Proxy приводит к событию в Level0.
 
 ## Тестирование
 - [ ] Автотест подтверждает `subscribe(listener)` и порядок доставки (Шаг 1).
 - [x] Автотест подтверждает генерацию `trace_id` при отсутствии и сохранение при прохождении по слоям (Шаг 2).
 - [ ] Автотест/интеграционный сценарий подтверждает генерацию `ui.graph.empty` при выполнении условий (Шаг 3).
   - [x] `tests/graph_empty.spec.js` проверяет helper `buildGraphEmptyEvent` → ctx содержит все поля и `trace_id`.
-- [ ] Автотест/интеграционный сценарий подтверждает multi-tab: 2 вкладки → локально видно в обеих → в Art ровно один раз (Шаг 4).
-- [ ] Автотест/интеграционный сценарий подтверждает `observability_gap.ui_proxy_unavailable` при недоступности UI Proxy (Шаг 5).
+- [x] Автотест/интеграционный сценарий подтверждает multi-tab: 2 вкладки → локально видно в обеих → в Art ровно один раз (Шаг 4) (`tests/multiTabManager.spec.js`, `tests/outbox.spec.js`).
+- [x] Автотест/интеграционный сценарий подтверждает `observability_gap.ui_proxy_unavailable` при недоступности UI Proxy (Шаг 5) (`tests/uiProxyGap.spec.js`).
 
 ## CI gate
-- [ ] В CI workflow включён запуск тестов из раздела “Тестирование”.
+- [ ] В CI workflow включён запуск тестов из раздела “Тестирование” (`npm -C ../my_langgraph_agent/ui test -- --run tests/multiTabManager.spec.js tests/outbox.spec.js tests/uiProxyGap.spec.js` via `scripts/ci/check_stage05_wrapper.sh`).
 - [ ] В CI workflow включён статический gate `scripts/ci/check_stage05_wrapper.sh`, который:
-  - [ ] проверяет, что в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` присутствуют пункты, добавляемые Шагами 1–5 (по стабильным строкам/паттернам)
-  - [ ] проверяет, что существуют обязательные артефакты для Шага 5: `docs/runbooks/ui_proxy_unavailable.md` (как target `action_ref`)
+  - [ ] проверяет, что в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` присутствуют пункты, добавляемые Шагами 1–5 (по стабильным строкам/паттернам: `multi-tab`, `ui.graph.empty`, `observability_gap.ui_proxy_unavailable`, ссылки на `tests/`), а также на `ui/src/multiTabManager.js` и `ui/src/obs/uiProxyGap.js`.
+  - [ ] проверяет, что существуют обязательные артефакты для Шага 5: `docs/runbooks/ui_proxy_unavailable.md` (как target `action_ref`) и запись `observability_gap.ui_proxy_unavailable` в `docs/governance/observability_gap_registry.md`.
   - [ ] завершает работу с exit 1 при нарушении любой проверки
 
 ## DoD
-- [ ] Все шаги 1–5 этого чек-листа отмечены `[x]` после фактической проверки.
-- [ ] Соответствующие пункты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` отмечены `[x]` с evidence.
-- [ ] Тесты из раздела “Тестирование” зелёные в CI.
-- [ ] CI gate из раздела “CI gate” зелёный в CI.
+- [ ] Все шаги 1–5 этого чек-листа отмечены `[x]` после фактической проверки и упомянуты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` (разделы multi-tab, ui.graph.empty, observability gap).
+- [ ] Соответствующие пункты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` отмечены `[x]` с evidence (тексты + tests + runbook/registry).
+- [ ] Тесты из раздела “Тестирование” зелёные в CI (гарантирует `scripts/ci/check_stage05_wrapper.sh`).
+- [ ] CI gate из раздела “CI gate” зелёный в CI (напр. workflow job `stage05-wrapper-gate`).
