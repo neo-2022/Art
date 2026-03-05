@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Art Panel0</title>
+    <link rel="icon" href="/panel0/favicon.ico">
+    <link rel="stylesheet" href="/panel0/panel0.css">
+  </head>
+  <body>
+    <header class="top">
+      <div>
+        <h1>Art Panel0</h1>
+        <p class="muted">Embedded аварийная панель Core</p>
+      </div>
+      <div class="diag">
+        <div><span class="muted">build_id:</span> <span id="build-id">dev</span></div>
+        <div><span class="muted">effective_profile_id:</span> <span id="profile-id">unknown</span></div>
+      </div>
+    </header>
+
+    <section id="core-down" class="core-down hidden">
+      <h2>Core недоступен</h2>
+      <p id="core-down-reason">network error</p>
+      <button id="reload-btn" type="button">Reload</button>
+    </section>
+
+    <section class="events">
+      <h2>События</h2>
+      <ul id="events-list"></ul>
+    </section>
+
+    <script defer src="/panel0/panel0.js"></script>
+  </body>
+</html>

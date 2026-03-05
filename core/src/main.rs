@@ -11,7 +11,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use anyhow::Context;
 use async_stream::stream;
 use axum::extract::{Path, State};
-use axum::http::{Extensions, HeaderMap, HeaderValue, StatusCode, Version};
+use axum::http::{header::CONTENT_TYPE, Extensions, HeaderMap, HeaderValue, StatusCode, Version};
 use axum::response::sse::{Event, Sse};
 use axum::response::IntoResponse;
 use axum::response::Response;
@@ -33,6 +33,15 @@ const OTLP_MAX_SIZE_BYTES: usize = 524_288;
 const OTLP_RETRY_AFTER_MS: u64 = 500;
 const RESERVED_OTLP_ATTR_KEYS: [&str; 6] =
     ["severity", "ts", "kind", "scope", "message", "trace_id"];
+const PANEL0_BOOT_TIMEOUT_MS: u64 = 5_000;
+const PANEL0_DEFAULT_BUILD_ID: &str = "dev";
+const PANEL0_DEFAULT_CONSOLE_BASE_PATH: &str = "/console";
+const PANEL0_BOOTSTRAP_TEMPLATE: &str = include_str!("../embedded/panel0/bootstrap.html");
+const PANEL0_INDEX_HTML: &str = include_str!("../embedded/panel0/index.html");
+const PANEL0_CSS: &str = include_str!("../embedded/panel0/panel0.css");
+const PANEL0_JS_TEMPLATE: &str = include_str!("../embedded/panel0/panel0.js");
+const PANEL0_SW_TEMPLATE: &str = include_str!("../embedded/panel0/panel0_sw.js");
+const PANEL0_FAVICON: &[u8] = include_bytes!("../embedded/panel0/favicon.ico");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct StoredEvent {
@@ -379,6 +388,14 @@ fn install_runtime_signal_handlers() {
 
 fn build_app(state: Shared) -> Router {
     Router::new()
+        .route("/", get(root_bootstrap))
+        .route("/panel0", get(panel0_index))
+        .route("/panel0/", get(panel0_index))
+        .route("/panel0/index.html", get(panel0_index))
+        .route("/panel0/panel0.js", get(panel0_js))
+        .route("/panel0/panel0.css", get(panel0_css))
+        .route("/panel0/panel0_sw.js", get(panel0_service_worker))
+        .route("/panel0/favicon.ico", get(panel0_favicon))
         .route("/health", get(health))
         .route("/api/v1/profile/effective", get(effective_profile))
         .route("/api/v1/profile/apply", post(apply_profile))
@@ -401,6 +418,115 @@ fn build_app(state: Shared) -> Router {
             axum::routing::put(audit_mutation_forbidden).delete(audit_mutation_forbidden),
         )
         .with_state(state)
+}
+
+fn panel0_build_id() -> String {
+    let raw = env::var("PANEL0_BUILD_ID").unwrap_or_else(|_| PANEL0_DEFAULT_BUILD_ID.to_string());
+    match sanitize_panel0_build_id(&raw) {
+        Some(value) => value,
+        None => {
+            warn!(
+                "invalid PANEL0_BUILD_ID='{}', fallback to '{}'",
+                raw, PANEL0_DEFAULT_BUILD_ID
+            );
+            PANEL0_DEFAULT_BUILD_ID.to_string()
+        }
+    }
+}
+
+fn sanitize_panel0_build_id(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() || trimmed.len() > 64 {
+        return None;
+    }
+    if !trimmed
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' || ch == '.')
+    {
+        return None;
+    }
+    Some(trimmed.to_string())
+}
+
+fn panel0_console_base_path() -> String {
+    let raw = env::var("ART_CONSOLE_BASE_PATH")
+        .unwrap_or_else(|_| PANEL0_DEFAULT_CONSOLE_BASE_PATH.to_string());
+    if is_valid_console_base_path(&raw) {
+        return raw.trim().to_string();
+    }
+    warn!(
+        "invalid ART_CONSOLE_BASE_PATH='{}', fallback to '{}'",
+        raw, PANEL0_DEFAULT_CONSOLE_BASE_PATH
+    );
+    PANEL0_DEFAULT_CONSOLE_BASE_PATH.to_string()
+}
+
+fn is_valid_console_base_path(raw: &str) -> bool {
+    let value = raw.trim();
+    if value.is_empty()
+        || !value.starts_with('/')
+        || value.starts_with("//")
+        || value.contains("://")
+        || value.contains("..")
+        || value.contains('\\')
+    {
+        return false;
+    }
+    !value.chars().any(|ch| ch.is_control())
+}
+
+fn render_panel0_bootstrap_html(build_id: &str, console_base_path: &str) -> String {
+    let build_id_json = serde_json::to_string(build_id).unwrap_or_else(|_| "\"dev\"".to_string());
+    let console_base_path_json =
+        serde_json::to_string(console_base_path).unwrap_or_else(|_| "\"/console\"".to_string());
+    PANEL0_BOOTSTRAP_TEMPLATE
+        .replace("__CONSOLE_BASE_PATH_JSON__", &console_base_path_json)
+        .replace("__PANEL0_BUILD_ID_JSON__", &build_id_json)
+        .replace("__BOOT_TIMEOUT_MS__", &PANEL0_BOOT_TIMEOUT_MS.to_string())
+}
+
+fn render_panel0_js(build_id: &str) -> String {
+    PANEL0_JS_TEMPLATE.replace("__PANEL0_BUILD_ID__", build_id)
+}
+
+fn render_panel0_service_worker(build_id: &str) -> String {
+    PANEL0_SW_TEMPLATE.replace("__PANEL0_BUILD_ID__", build_id)
+}
+
+async fn root_bootstrap() -> impl IntoResponse {
+    let html = render_panel0_bootstrap_html(&panel0_build_id(), &panel0_console_base_path());
+    ([(CONTENT_TYPE, "text/html; charset=utf-8")], html)
+}
+
+async fn panel0_index() -> impl IntoResponse {
+    (
+        [(CONTENT_TYPE, "text/html; charset=utf-8")],
+        PANEL0_INDEX_HTML,
+    )
+}
+
+async fn panel0_js() -> impl IntoResponse {
+    let body = render_panel0_js(&panel0_build_id());
+    (
+        [(CONTENT_TYPE, "application/javascript; charset=utf-8")],
+        body,
+    )
+}
+
+async fn panel0_css() -> impl IntoResponse {
+    ([(CONTENT_TYPE, "text/css; charset=utf-8")], PANEL0_CSS)
+}
+
+async fn panel0_service_worker() -> impl IntoResponse {
+    let body = render_panel0_service_worker(&panel0_build_id());
+    (
+        [(CONTENT_TYPE, "application/javascript; charset=utf-8")],
+        body,
+    )
+}
+
+async fn panel0_favicon() -> impl IntoResponse {
+    ([(CONTENT_TYPE, "image/x-icon")], PANEL0_FAVICON)
 }
 
 async fn health() -> impl IntoResponse {
@@ -2326,6 +2452,97 @@ mod tests {
             .filter_map(|line| line.strip_prefix("id: "))
             .filter_map(|id| id.trim().parse::<u64>().ok())
             .collect()
+    }
+
+    #[test]
+    fn console_base_path_validation_is_strict() {
+        assert!(is_valid_console_base_path("/console"));
+        assert!(is_valid_console_base_path("/console/v2"));
+        assert!(!is_valid_console_base_path("http://console"));
+        assert!(!is_valid_console_base_path("https://console"));
+        assert!(!is_valid_console_base_path("//console"));
+        assert!(!is_valid_console_base_path("/../console"));
+        assert!(!is_valid_console_base_path("/console/.."));
+    }
+
+    #[test]
+    fn panel0_templates_replace_placeholders() {
+        let build_id = "build-42";
+        let bootstrap = render_panel0_bootstrap_html(build_id, "/console");
+        assert!(bootstrap.contains("const BOOT_TIMEOUT_MS = 5000;"));
+        assert!(bootstrap.contains("const EVENT_KIND = \"observability_gap.console_boot_failed\";"));
+        assert!(bootstrap.contains("const CONSOLE_BASE_PATH = \"/console\";"));
+        assert!(bootstrap.contains("const PANEL0_BUILD_ID = \"build-42\";"));
+        assert!(!bootstrap.contains("__CONSOLE_BASE_PATH_JSON__"));
+        assert!(!bootstrap.contains("__PANEL0_BUILD_ID_JSON__"));
+        assert!(!bootstrap.contains("__BOOT_TIMEOUT_MS__"));
+
+        let panel_js = render_panel0_js(build_id);
+        assert!(panel_js.contains("const PANEL0_BUILD_ID = \"build-42\";"));
+        assert!(!panel_js.contains("__PANEL0_BUILD_ID__"));
+
+        let panel_sw = render_panel0_service_worker(build_id);
+        assert!(panel_sw.contains("const CACHE_NAME = \"panel0-cache-build-42\";"));
+        assert!(!panel_sw.contains("__PANEL0_BUILD_ID__"));
+    }
+
+    #[tokio::test]
+    async fn panel0_routes_serve_embedded_assets_with_content_types() {
+        let app = build_app(test_state());
+        let cases = vec![
+            ("/panel0", "text/html"),
+            ("/panel0/", "text/html"),
+            ("/panel0/index.html", "text/html"),
+            ("/panel0/panel0.js", "application/javascript"),
+            ("/panel0/panel0.css", "text/css"),
+            ("/panel0/panel0_sw.js", "application/javascript"),
+            ("/panel0/favicon.ico", "image/x-icon"),
+        ];
+
+        for (uri, expected_ct) in cases {
+            let req = Request::builder()
+                .method("GET")
+                .uri(uri)
+                .body(Body::empty())
+                .expect("request");
+            let resp = app.clone().oneshot(req).await.expect("response");
+            assert_eq!(resp.status(), StatusCode::OK, "uri={uri}");
+            let content_type = resp
+                .headers()
+                .get(CONTENT_TYPE)
+                .and_then(|h| h.to_str().ok())
+                .unwrap_or("");
+            assert!(
+                content_type.starts_with(expected_ct),
+                "uri={uri} content-type={content_type}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn root_route_serves_bootstrap_with_timeout_and_event_contract() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("GET")
+            .uri("/")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let content_type = resp
+            .headers()
+            .get(CONTENT_TYPE)
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or("");
+        assert!(content_type.starts_with("text/html"));
+
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let html = String::from_utf8(body.to_vec()).expect("utf8");
+        assert!(html.contains("const BOOT_TIMEOUT_MS = 5000;"));
+        assert!(html.contains("const EVENT_KIND = \"observability_gap.console_boot_failed\";"));
+        assert!(html.contains("Ctrl+Shift+P"));
+        assert!(html.contains("globalThis.location.replace(\"/panel0\")"));
+        assert!(!html.contains("__CONSOLE_BASE_PATH_JSON__"));
     }
 
     #[tokio::test]

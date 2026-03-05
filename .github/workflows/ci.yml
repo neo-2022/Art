@@ -483,6 +483,8 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 16 docs gate
         run: bash scripts/ci/check_panel0_stage16_docs.sh
+      - name: Stage 16 runtime gate
+        run: bash scripts/ci/check_panel0_stage16_runtime.sh
 
   agent-spool-tests:
     name: agent-spool-tests
