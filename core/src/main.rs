@@ -838,6 +838,11 @@ fn incident_policy_for_gap(kind: &str) -> Option<(&'static str, &'static str, &'
         "observability_gap.source_stale" => {
             Some(("source_stale", "SEV2", "docs/runbooks/source_stale.md"))
         }
+        "observability_gap.e2e_environment_failed" => Some((
+            "e2e_environment_failed",
+            "SEV2",
+            "docs/runbooks/e2e_environment_failed.md",
+        )),
         "observability_gap.metrics_unavailable" => Some((
             "metrics_unavailable",
             "SEV2",
@@ -1112,19 +1117,7 @@ fn compute_min_retained_seq(s: &CoreState) -> u64 {
 
 async fn push_gap_event(state: &Shared, kind: &str, details: Value) {
     let mut s = state.write().await;
-    let seq = s.next_seq;
-    s.next_seq += 1;
-    s.events.push_back(StoredEvent {
-        seq,
-        ts_ms: now_ms(),
-        event: json!({
-            "kind": kind,
-            "details": details
-        }),
-    });
-    if s.events.len() > s.queue_depth_limit {
-        s.events.pop_front();
-    }
+    push_gap_event_locked(&mut s, kind, details);
 }
 
 async fn audit_list(State(state): State<Shared>, headers: HeaderMap) -> impl IntoResponse {
@@ -2609,6 +2602,69 @@ updates_mode = "online"
                 |e| e["event"]["kind"] == "observability_gap.metrics_unavailable"
                     && e["event"]["details"]["endpoint"] == "/metrics"
             ));
+    }
+
+    #[tokio::test]
+    async fn e2e_environment_failed_gap_emits_incident_with_evidence() {
+        let state = test_state();
+        push_gap_event(
+            &state,
+            "observability_gap.e2e_environment_failed",
+            json!({
+                "component": "network",
+                "reason": "port unreachable",
+                "stage": "setup",
+                "trace_id": "trace-stage22",
+            }),
+        )
+        .await;
+        let app = build_app(state);
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.clone().oneshot(snapshot_req).await.expect("response");
+        let snapshot_body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let snapshot_json: Value = serde_json::from_slice(&snapshot_body).expect("json");
+        let events = snapshot_json["events"].as_array().expect("events");
+        let event = events
+            .iter()
+            .find(|e| e["event"]["kind"] == "observability_gap.e2e_environment_failed")
+            .expect("expected observability_gap.e2e_environment_failed");
+        assert_eq!(event["event"]["details"]["component"], "network");
+        assert_eq!(event["event"]["details"]["reason"], "port unreachable");
+        assert_eq!(event["event"]["details"]["stage"], "setup");
+        assert_eq!(event["event"]["details"]["trace_id"], "trace-stage22");
+
+        let incidents_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/incidents")
+            .body(Body::empty())
+            .expect("request");
+        let incidents_resp = app.oneshot(incidents_req).await.expect("response");
+        let incidents_body = incidents_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let incidents_json: Value = serde_json::from_slice(&incidents_body).expect("json");
+        let incidents = incidents_json["items"].as_array().expect("items");
+        assert!(
+            incidents.iter().any(|i| {
+                i["kind"] == "e2e_environment_failed"
+                    && i["severity"] == "SEV2"
+                    && i["action_ref"] == "docs/runbooks/e2e_environment_failed.md"
+            }),
+            "unexpected incidents payload: {incidents_json}"
+        );
     }
 
     #[tokio::test]
