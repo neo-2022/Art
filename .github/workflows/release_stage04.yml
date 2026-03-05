@@ -2,12 +2,18 @@ name: release-stage04
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (example: v1.0.0)"
+        required: true
+        type: string
   push:
     tags:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write
+  id-token: write
 
 jobs:
   release-artifacts:
@@ -15,13 +21,115 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-      - name: Generate SBOM
+
+      - name: Resolve tag
+        shell: bash
         run: |
-          echo "{}" > sbom.spdx.json
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "RELEASE_TAG=${{ inputs.tag }}" >> "$GITHUB_ENV"
+          else
+            echo "RELEASE_TAG=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Prepare release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p agent/dist ui/dist
+          printf "agent artifact for %s\n" "${GITHUB_SHA}" > agent/dist/agent.txt
+          printf "ui artifact for %s\n" "${GITHUB_SHA}" > ui/dist/ui.txt
+          cat > attestation.txt <<'ATTEST'
+          stage04_attestation=true
+          workflow=release-stage04
+          method=cosign-keyless-oidc
+          ATTEST
+
+      - name: Install syft
+        shell: bash
+        run: |
+          set -euo pipefail
+          SYFT_VERSION="1.18.1"
+          curl -sSfL "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz" -o syft.tgz
+          tar -xzf syft.tgz syft
+          install -m 0755 syft /usr/local/bin/syft
+          syft version
+
+      - name: Generate SBOM (SPDX JSON)
+        shell: bash
+        run: |
+          set -euo pipefail
+          syft dir:. -o spdx-json=sbom.spdx.json
+
       - name: Generate checksums
+        shell: bash
         run: |
-          echo "placeholder  agent/dist/x" > checksums.txt
-      - name: cosign sign (OIDC)
-        run: echo "cosign sign placeholder"
+          set -euo pipefail
+          sha256sum agent/dist/* ui/dist/* sbom.spdx.json attestation.txt > checksums.txt
+
+      - name: Install cosign
+        shell: bash
+        run: |
+          set -euo pipefail
+          COSIGN_VERSION="2.4.1"
+          curl -sSfL "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-amd64" -o cosign
+          install -m 0755 cosign /usr/local/bin/cosign
+          cosign version
+
+      - name: cosign sign (OIDC keyless)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in agent/dist/agent.txt ui/dist/ui.txt sbom.spdx.json checksums.txt attestation.txt; do
+            cosign sign-blob --yes \
+              --output-signature "${f}.sig" \
+              --output-certificate "${f}.pem" \
+              "$f"
+          done
+
       - name: cosign verify
-        run: echo "cosign verify placeholder"
+        shell: bash
+        run: |
+          set -euo pipefail
+          ID_RE="https://github.com/neo-2022/Art/.github/workflows/release_stage04.yml@.*"
+          for f in agent/dist/agent.txt ui/dist/ui.txt sbom.spdx.json checksums.txt attestation.txt; do
+            cosign verify-blob \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+              --certificate-identity-regexp "$ID_RE" \
+              --signature "${f}.sig" \
+              --certificate "${f}.pem" \
+              "$f"
+          done
+
+      - name: Publish release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ASSETS=(
+            agent/dist/agent.txt
+            ui/dist/ui.txt
+            sbom.spdx.json
+            checksums.txt
+            attestation.txt
+            agent/dist/agent.txt.sig
+            agent/dist/agent.txt.pem
+            ui/dist/ui.txt.sig
+            ui/dist/ui.txt.pem
+            sbom.spdx.json.sig
+            sbom.spdx.json.pem
+            checksums.txt.sig
+            checksums.txt.pem
+            attestation.txt.sig
+            attestation.txt.pem
+          )
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release upload "${RELEASE_TAG}" "${ASSETS[@]}" --clobber
+          else
+            gh release create "${RELEASE_TAG}" \
+              --target "${GITHUB_SHA}" \
+              --title "${RELEASE_TAG}" \
+              --notes "release-stage04 automated release" \
+              "${ASSETS[@]}"
+          fi

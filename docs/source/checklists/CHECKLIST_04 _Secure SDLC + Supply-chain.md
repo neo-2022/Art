@@ -19,115 +19,115 @@ A) Полный запрет опциональности:
 
 ## Шаги (строго линейно)
 
-- [ ] **1. Сделать:** Описать политику Secure SDLC (общая) и требования “clean build / reproducible build”.
-  - [ ] сборка выполняется в чистом окружении CI (без использования локальных артефактов)
-  - [ ] зависимости фиксируются lock-файлами и/или pinned версиями
-  - [ ] сборка детерминирована: одинаковый вход → одинаковый результат
-  - [ ] для релизных сборок: хэш каждого релизного артефакта совпадает при повторных сборках из одного и того же коммита (rebuild from same commit → identical artifact hash)
-  - [ ] запрещено использовать “latest” для инструментов сборки/линтеров/сканеров в CI
-  - [ ] **Проверка (pass/fail):** существует `docs/security/secure_sdlc_policy.md`, содержит все пункты выше явно, включая требование совпадения хэша артефактов при повторной релизной сборке из того же коммита.
+- [x] **1. Сделать:** Описать политику Secure SDLC (общая) и требования “clean build / reproducible build”.
+  - [x] сборка выполняется в чистом окружении CI (без использования локальных артефактов)
+  - [x] зависимости фиксируются lock-файлами и/или pinned версиями
+  - [x] сборка детерминирована: одинаковый вход → одинаковый результат
+  - [x] для релизных сборок: хэш каждого релизного артефакта совпадает при повторных сборках из одного и того же коммита (rebuild from same commit → identical artifact hash)
+  - [x] запрещено использовать “latest” для инструментов сборки/линтеров/сканеров в CI
+  - [x] **Проверка (pass/fail):** существует `docs/security/secure_sdlc_policy.md`, содержит все пункты выше явно, включая требование совпадения хэша артефактов при повторной релизной сборке из того же коммита.
 
-- [ ] **2. Сделать:** Описать branch policy + tag/release policy (enforce через branch protection) без двусмысленностей, включая точные required status checks.
-  - [ ] прямые коммиты в `main` запрещены
-  - [ ] изменения попадают в `main` только через PR
-  - [ ] required status checks в `main` включены
-  - [ ] required reviews включены (минимум 1)
-  - [ ] CODEOWNERS включён и влияет на required reviews
-  - [ ] force-push в `main` запрещён
-  - [ ] теги релизов защищены (запрет переписывания релизных тегов)
-  - [ ] required status checks для `main` заданы точным списком имён (без “и т.п.”):
-    - [ ] `security-stage04 / sdlc-gate`
-    - [ ] `security-stage04 / sast`
-    - [ ] `security-stage04 / sca`
-    - [ ] `security-stage04 / license`
-    - [ ] `security-stage04 / secrets`
-  - [ ] **Проверка (pass/fail):** существует `docs/security/branch_tag_policy.md`, содержит все пункты выше явно, включая полный список required status checks с точными именами.
+- [x] **2. Сделать:** Описать branch policy + tag/release policy (enforce через branch protection) без двусмысленностей, включая точные required status checks.
+  - [x] прямые коммиты в `main` запрещены
+  - [x] изменения попадают в `main` только через PR
+  - [x] required status checks в `main` включены
+  - [x] required reviews включены (минимум 1)
+  - [x] CODEOWNERS включён и влияет на required reviews
+  - [x] force-push в `main` запрещён
+  - [x] теги релизов защищены (запрет переписывания релизных тегов)
+  - [x] required status checks для `main` заданы точным списком имён (без “и т.п.”):
+    - [x] `security-stage04 / sdlc-gate`
+    - [x] `security-stage04 / sast`
+    - [x] `security-stage04 / sca`
+    - [x] `security-stage04 / license`
+    - [x] `security-stage04 / secrets`
+  - [x] **Проверка (pass/fail):** существует `docs/security/branch_tag_policy.md`, содержит все пункты выше явно, включая полный список required status checks с точными именами.
 
-- [ ] **3. Сделать:** Зафиксировать требование подписанных коммитов в `main` и правило проверки.
-  - [ ] каждый коммит в `main` имеет “Verified” подпись в UI GitHub (единый критерий)
-  - [ ] merge в `main` блокируется, если коммит(ы) не “Verified”
-  - [ ] **Проверка (pass/fail):** `docs/security/branch_tag_policy.md` содержит требование “Verified commits only in main” и требование блокировки merge при нарушении.
+- [x] **3. Сделать:** Зафиксировать требование подписанных коммитов в `main` и правило проверки.
+  - [x] каждый коммит в `main` имеет “Verified” подпись в UI GitHub (единый критерий)
+  - [x] merge в `main` блокируется, если коммит(ы) не “Verified”
+  - [x] **Проверка (pass/fail):** `docs/security/branch_tag_policy.md` содержит требование “Verified commits only in main” и требование блокировки merge при нарушении.
 
-- [ ] **4. Сделать:** Зафиксировать политику pinning supply-chain в CI (GitHub Actions и внешние инструменты), включая запрет удалённых composite actions.
-  - [ ] GitHub Actions в workflow закреплены на commit SHA (запрещены `@vX`, `@main`, `@master`)
-  - [ ] удалённые composite actions запрещены
-  - [ ] разрешены только локальные composite actions из репозитория (`uses: ./.github/actions/...`)
-  - [ ] внешние CLI инструменты (semgrep/gitleaks/osv/syft/cosign и т.п.) закреплены по версии
-  - [ ] разрешённые источники загрузки инструментов перечислены (GitHub Releases/официальные registries)
-  - [ ] **Проверка (pass/fail):** существует `docs/security/ci_pinning_policy.md`, содержит все пункты выше явно.
+- [x] **4. Сделать:** Зафиксировать политику pinning supply-chain в CI (GitHub Actions и внешние инструменты), включая запрет удалённых composite actions.
+  - [x] GitHub Actions в workflow закреплены на commit SHA (запрещены `@vX`, `@main`, `@master`)
+  - [x] удалённые composite actions запрещены
+  - [x] разрешены только локальные composite actions из репозитория (`uses: ./.github/actions/...`)
+  - [x] внешние CLI инструменты (semgrep/gitleaks/osv/syft/cosign и т.п.) закреплены по версии
+  - [x] разрешённые источники загрузки инструментов перечислены (GitHub Releases/официальные registries)
+  - [x] **Проверка (pass/fail):** существует `docs/security/ci_pinning_policy.md`, содержит все пункты выше явно.
 
-- [ ] **5. Сделать:** Описать SAST policy и обязательные правила (PR gate + baseline).
-  - [ ] выбран единый SAST инструмент: `semgrep`
-  - [ ] правила semgrep закреплены по версии (ruleset pinned)
-  - [ ] SAST выполняется на каждом PR в `main`
-  - [ ] политика фейла: найденные issues уровня “error” блокируют merge
-  - [ ] **Проверка (pass/fail):** существует `docs/security/sast_policy.md`, содержит все пункты выше явно.
+- [x] **5. Сделать:** Описать SAST policy и обязательные правила (PR gate + baseline).
+  - [x] выбран единый SAST инструмент: `semgrep`
+  - [x] правила semgrep закреплены по версии (ruleset pinned)
+  - [x] SAST выполняется на каждом PR в `main`
+  - [x] политика фейла: найденные issues уровня “error” блокируют merge
+  - [x] **Проверка (pass/fail):** существует `docs/security/sast_policy.md`, содержит все пункты выше явно.
 
-- [ ] **6. Сделать:** Описать SCA + license checks policy (vuln + лицензии) и PR gate.
-  - [ ] SCA выполняется на каждом PR в `main`
-  - [ ] выбран единый источник уязвимостей: OSV
-  - [ ] выбран инструмент SCA: `osv-scanner`
-  - [ ] license checks выполняются на каждом PR в `main`
-  - [ ] политика фейла: запрещённые лицензии блокируют merge
-  - [ ] **Проверка (pass/fail):** существует `docs/security/sca_policy.md`, содержит:
-    - [ ] инструмент `osv-scanner`
-    - [ ] правила фейла по severity (критерии перечислены)
-    - [ ] список запрещённых лицензий (явный список)
-    - [ ] правило блокировки merge при нарушении
+- [x] **6. Сделать:** Описать SCA + license checks policy (vuln + лицензии) и PR gate.
+  - [x] SCA выполняется на каждом PR в `main`
+  - [x] выбран единый источник уязвимостей: OSV
+  - [x] выбран инструмент SCA: `osv-scanner`
+  - [x] license checks выполняются на каждом PR в `main`
+  - [x] политика фейла: запрещённые лицензии блокируют merge
+  - [x] **Проверка (pass/fail):** существует `docs/security/sca_policy.md`, содержит:
+    - [x] инструмент `osv-scanner`
+    - [x] правила фейла по severity (критерии перечислены)
+    - [x] список запрещённых лицензий (явный список)
+    - [x] правило блокировки merge при нарушении
 
-- [ ] **7. Сделать:** Описать secrets scanning policy и PR gate.
-  - [ ] выбран инструмент: `gitleaks`
-  - [ ] secrets scan выполняется на каждом PR в `main` и на push в `main`
-  - [ ] политика фейла: любые найденные secrets блокируют merge
-  - [ ] исключения допускаются только через allowlist-файл, который перечисляет конкретные пути/паттерны и проходит code review
-  - [ ] **Проверка (pass/fail):** существует `docs/security/secrets_policy.md`, содержит все пункты выше явно.
+- [x] **7. Сделать:** Описать secrets scanning policy и PR gate.
+  - [x] выбран инструмент: `gitleaks`
+  - [x] secrets scan выполняется на каждом PR в `main` и на push в `main`
+  - [x] политика фейла: любые найденные secrets блокируют merge
+  - [x] исключения допускаются только через allowlist-файл, который перечисляет конкретные пути/паттерны и проходит code review
+  - [x] **Проверка (pass/fail):** существует `docs/security/secrets_policy.md`, содержит все пункты выше явно.
 
-- [ ] **8. Сделать:** Описать SBOM policy: генерация, формат, хранение, связка с релизом.
-  - [ ] выбран инструмент: `syft`
-  - [ ] формат SBOM: SPDX JSON
-  - [ ] SBOM генерируется для каждого релиза
-  - [ ] SBOM прикладывается к релизным артефактам и публикуется как релизный asset
-  - [ ] **Проверка (pass/fail):** существует `docs/security/sbom_policy.md`, содержит все пункты выше явно.
+- [x] **8. Сделать:** Описать SBOM policy: генерация, формат, хранение, связка с релизом.
+  - [x] выбран инструмент: `syft`
+  - [x] формат SBOM: SPDX JSON
+  - [x] SBOM генерируется для каждого релиза
+  - [x] SBOM прикладывается к релизным артефактам и публикуется как релизный asset
+  - [x] **Проверка (pass/fail):** существует `docs/security/sbom_policy.md`, содержит все пункты выше явно.
 
-- [ ] **9. Сделать:** Описать provenance/signing policy (sigstore/cosign) для релизных артефактов и правило verify, включая точный перечень подписываемых артефактов.
-  - [ ] выбран инструмент подписи: `cosign` (sigstore)
-  - [ ] режим подписи: keyless через OIDC GitHub Actions
-  - [ ] подписываются все релизные артефакты из фиксированного перечня:
-    - [ ] `agent/dist/*`
-    - [ ] `ui/dist/*`
-    - [ ] `sbom.spdx.json`
-    - [ ] `checksums.txt`
-  - [ ] verify выполняется в CI как обязательный gate для релизов
-  - [ ] подписи/attestation публикуются вместе с релизом
-  - [ ] **Проверка (pass/fail):** существует `docs/security/provenance_signing.md`, содержит все пункты выше явно, включая перечень артефактов.
+- [x] **9. Сделать:** Описать provenance/signing policy (sigstore/cosign) для релизных артефактов и правило verify, включая точный перечень подписываемых артефактов.
+  - [x] выбран инструмент подписи: `cosign` (sigstore)
+  - [x] режим подписи: keyless через OIDC GitHub Actions
+  - [x] подписываются все релизные артефакты из фиксированного перечня:
+    - [x] `agent/dist/*`
+    - [x] `ui/dist/*`
+    - [x] `sbom.spdx.json`
+    - [x] `checksums.txt`
+  - [x] verify выполняется в CI как обязательный gate для релизов
+  - [x] подписи/attestation публикуются вместе с релизом
+  - [x] **Проверка (pass/fail):** существует `docs/security/provenance_signing.md`, содержит все пункты выше явно, включая перечень артефактов.
 
-- [ ] **10. Сделать:** Зафиксировать policy для dependency updates (автообновления) и правило “безопасного обновления”.
-  - [ ] включён механизм PR-обновлений зависимостей (Dependabot)
-  - [ ] PR обновления зависимостей проходит те же security gates (SAST/SCA/license/secrets)
-  - [ ] запрещены апдейты зависимостей без PR
-  - [ ] **Проверка (pass/fail):** существует `docs/security/dependency_update_policy.md`, содержит:
-    - [ ] выбранный механизм (Dependabot)
-    - [ ] правило PR-only
-    - [ ] правило прохождения security gates
+- [x] **10. Сделать:** Зафиксировать policy для dependency updates (автообновления) и правило “безопасного обновления”.
+  - [x] включён механизм PR-обновлений зависимостей (Dependabot)
+  - [x] PR обновления зависимостей проходит те же security gates (SAST/SCA/license/secrets)
+  - [x] запрещены апдейты зависимостей без PR
+  - [x] **Проверка (pass/fail):** существует `docs/security/dependency_update_policy.md`, содержит:
+    - [x] выбранный механизм (Dependabot)
+    - [x] правило PR-only
+    - [x] правило прохождения security gates
 
-- [ ] **11. Сделать:** Зафиксировать release hardening: кто может делать релиз, откуда берутся артефакты, запрет локальных релизов.
-  - [ ] релиз создаётся только из CI workflow (локальные релизы запрещены)
-  - [ ] источник релиза: тег, созданный через PR/CI процедуру
-  - [ ] релизный workflow требует зелёных security jobs перед публикацией
-  - [ ] **Проверка (pass/fail):** существует `docs/security/release_hardening.md`, содержит все пункты выше явно.
+- [x] **11. Сделать:** Зафиксировать release hardening: кто может делать релиз, откуда берутся артефакты, запрет локальных релизов.
+  - [x] релиз создаётся только из CI workflow (локальные релизы запрещены)
+  - [x] источник релиза: тег, созданный через PR/CI процедуру
+  - [x] релизный workflow требует зелёных security jobs перед публикацией
+  - [x] **Проверка (pass/fail):** существует `docs/security/release_hardening.md`, содержит все пункты выше явно.
 
-- [ ] **12. Сделать:** Реализовать CI workflow Stage 04: security jobs и gates.
-  - [ ] существует `.github/workflows/security_stage04.yml`
-  - [ ] workflow имеет имя `security-stage04` (точно)
-  - [ ] workflow запускается на PR в `main` и на push в `main`
-  - [ ] workflow содержит jobs с точными именами:
-    - [ ] `sdlc-gate` (запускает `scripts/ci/check_secure_sdlc_stage04.sh`)
-    - [ ] `sast`
-    - [ ] `sca`
-    - [ ] `license`
-    - [ ] `secrets`
-  - [ ] merge в `main` блокируется, если любой job не зелёный (через required checks списка из шага 2)
-  - [ ] **Проверка (pass/fail):** workflow существует и реально запускается; branch protection `main` включает required checks ровно из списка шага 2.
+- [x] **12. Сделать:** Реализовать CI workflow Stage 04: security jobs и gates.
+  - [x] существует `.github/workflows/security_stage04.yml`
+  - [x] workflow имеет имя `security-stage04` (точно)
+  - [x] workflow запускается на PR в `main` и на push в `main`
+  - [x] workflow содержит jobs с точными именами:
+    - [x] `sdlc-gate` (запускает `scripts/ci/check_secure_sdlc_stage04.sh`)
+    - [x] `sast`
+    - [x] `sca`
+    - [x] `license`
+    - [x] `secrets`
+  - [x] merge в `main` блокируется, если любой job не зелёный (через required checks списка из шага 2)
+  - [x] **Проверка (pass/fail):** workflow существует и реально запускается; branch protection `main` включает required checks ровно из списка шага 2.
 
 - [ ] **13. Сделать:** Реализовать CI workflow релиза Stage 04: SBOM + cosign sign + verify.
   - [ ] существует `.github/workflows/release_stage04.yml`
