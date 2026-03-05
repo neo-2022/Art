@@ -1,7 +1,7 @@
 A) Полный запрет опциональности:
 # CHECKLIST 00 — MASTER (Art v1 + REGART) + STANDARD (единые правила)
 Файл: CHECKLIST_00_MASTER_ART_REGART.md  
-Последняя актуализация: 2026-03-04  
+Последняя актуализация: 2026-03-05  
 Дата последней проверки: 2026-03-05 (аудит соответствия)  
 Триггер пересмотра: любые изменения в Art_v1_spec_final.md / REGART↔Art описание / CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md / CHECKLIST_06_REGART_ART_BRIDGE.md / внешние источники в my_langgraph_agent
 Отчёт аудита: docs/source/checklists/CHECKLIST_27_AUDIT_REMEDIATION_PLAN.md
@@ -110,3 +110,4 @@ A) Полный запрет опциональности:
 | [x] 24 | CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md | Release | downgrade with data + cosign sign images + RELEASE_CHECKLIST + manual releases | 2026-03-05, neo-2022, release-regression+release-signing-verify+stage24-docs-gate |
 | [x] 25 | CHECKLIST_25_COMPLIANCE_AUDIT_READY.md | Compliance | export scripts + immutable evidence + data destruction policy | 2026-03-05, neo-2022, compliance-export+stage25-docs-gate |
 | [x] 26 | CHECKLIST_26_RU_PROFILE.md | RU profile | PDn fields list + PII access audit + block cross-border export | 2026-03-05, neo-2022, ru-profile-tests+stage26-docs-gate |
+| [x] 27 | CHECKLIST_27_AUDIT_REMEDIATION_PLAN.md | Audit/remediation | сводный аудит соответствия и закрытие найденных рисков | 2026-03-05, neo-2022, checklist27 remediation closed |
