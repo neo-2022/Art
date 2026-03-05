@@ -35,6 +35,9 @@ struct StoredEvent {
 struct Incident {
     id: String,
     status: String,
+    kind: String,
+    severity: String,
+    action_ref: Option<String>,
     run_id: Option<String>,
     trace_id: Option<String>,
     span_id: Option<String>,
@@ -390,6 +393,9 @@ async fn apply_profile(
             s.incidents.push(Incident {
                 id: format!("profile-violation-{}", seq),
                 status: "open".to_string(),
+                kind: "profile_violation".to_string(),
+                severity: "SEV2".to_string(),
+                action_ref: None,
                 run_id: None,
                 trace_id: None,
                 span_id: None,
@@ -516,6 +522,10 @@ async fn ingest(
         .get("x-core-pipeline-force-fingerprint")
         .and_then(|h| h.to_str().ok())
         .map(|v| v.to_string());
+    let forced_ingest_latency_ms = headers
+        .get("x-core-force-latency-ms")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|v| v.parse::<u64>().ok());
 
     for (idx, event) in payload.events.into_iter().enumerate() {
         match validate_event(&event) {
@@ -658,18 +668,45 @@ async fn ingest(
                     s.events.pop_front();
                 }
 
-                let incident = Incident {
-                    id: format!("incident-{}", seq),
-                    status: "open".to_string(),
-                    run_id: string_field(&processed_event, "run_id"),
-                    trace_id: string_field(&processed_event, "trace_id"),
-                    span_id: string_field(&processed_event, "span_id"),
-                };
-                s.incidents.push(incident);
+                let incident_policy = incident_policy_for_event(&processed_event);
+                let incident_kind = incident_policy
+                    .map(|x| x.0.to_string())
+                    .unwrap_or_else(|| "event.ingested".to_string());
+                let incident_severity =
+                    incident_policy.map(|x| x.1.to_string()).unwrap_or_else(|| {
+                        processed_event
+                            .get("severity")
+                            .and_then(Value::as_str)
+                            .unwrap_or("info")
+                            .to_uppercase()
+                    });
+                let incident_action_ref = incident_policy.map(|x| x.2.to_string());
+                push_incident_locked(
+                    &mut s,
+                    incident_kind,
+                    incident_severity,
+                    incident_action_ref,
+                    string_field(&processed_event, "run_id"),
+                    string_field(&processed_event, "trace_id"),
+                    string_field(&processed_event, "span_id"),
+                );
                 accepted += 1;
                 s.counters.ingest_accepted_total += 1;
             }
         }
+    }
+
+    let measured_latency_ms = forced_ingest_latency_ms.unwrap_or(0);
+    if measured_latency_ms > 500 {
+        push_incident_locked(
+            &mut s,
+            "core.high_latency".to_string(),
+            "SEV2".to_string(),
+            Some("docs/runbooks/core_high_latency.md".to_string()),
+            None,
+            Some(trace_id.clone()),
+            None,
+        );
     }
 
     let response = IngestResponse {
@@ -682,6 +719,10 @@ async fn ingest(
 }
 
 fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
+    let trace_id = details
+        .get("trace_id")
+        .and_then(Value::as_str)
+        .map(|v| v.to_string());
     let seq = s.next_seq;
     s.next_seq += 1;
     s.events.push_back(StoredEvent {
@@ -695,6 +736,17 @@ fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
     });
     if s.events.len() > s.queue_depth_limit {
         s.events.pop_front();
+    }
+    if let Some((incident_kind, incident_severity, action_ref)) = incident_policy_for_gap(kind) {
+        push_incident_locked(
+            s,
+            incident_kind.to_string(),
+            incident_severity.to_string(),
+            Some(action_ref.to_string()),
+            None,
+            trace_id,
+            None,
+        );
     }
 }
 
@@ -735,6 +787,86 @@ fn string_field(event: &Value, key: &str) -> Option<String> {
         .get(key)
         .and_then(Value::as_str)
         .map(|s| s.to_string())
+}
+
+fn number_field(event: &Value, key: &str) -> Option<f64> {
+    event.get(key).and_then(Value::as_f64)
+}
+
+fn incident_policy_for_event(event: &Value) -> Option<(&'static str, &'static str, &'static str)> {
+    let kind = event
+        .get("kind")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    if kind == "agent.spool_near_full" {
+        return Some((
+            "agent.spool_near_full",
+            "SEV2",
+            "docs/runbooks/agent_spool_near_full.md",
+        ));
+    }
+    if kind == "dlq_non_empty" {
+        return Some(("dlq_non_empty", "SEV3", "docs/runbooks/dlq_non_empty.md"));
+    }
+    if kind == "core.high_latency" {
+        return Some((
+            "core.high_latency",
+            "SEV2",
+            "docs/runbooks/core_high_latency.md",
+        ));
+    }
+
+    let spool_used = number_field(event, "spool_used_bytes").unwrap_or(0.0);
+    let spool_capacity = number_field(event, "spool_capacity_bytes").unwrap_or(0.0);
+    if spool_capacity > 0.0 && (spool_used / spool_capacity) >= 0.90 {
+        return Some((
+            "agent.spool_near_full",
+            "SEV2",
+            "docs/runbooks/agent_spool_near_full.md",
+        ));
+    }
+
+    if number_field(event, "dlq_size").unwrap_or(0.0) > 0.0 {
+        return Some(("dlq_non_empty", "SEV3", "docs/runbooks/dlq_non_empty.md"));
+    }
+
+    None
+}
+
+fn incident_policy_for_gap(kind: &str) -> Option<(&'static str, &'static str, &'static str)> {
+    match kind {
+        "observability_gap.source_stale" => {
+            Some(("source_stale", "SEV2", "docs/runbooks/source_stale.md"))
+        }
+        "observability_gap.metrics_unavailable" => Some((
+            "metrics_unavailable",
+            "SEV2",
+            "docs/runbooks/metrics_unavailable.md",
+        )),
+        _ => None,
+    }
+}
+
+fn push_incident_locked(
+    s: &mut CoreState,
+    kind: String,
+    severity: String,
+    action_ref: Option<String>,
+    run_id: Option<String>,
+    trace_id: Option<String>,
+    span_id: Option<String>,
+) {
+    let incident_id = format!("incident-{}", s.next_seq);
+    s.incidents.push(Incident {
+        id: incident_id,
+        status: "open".to_string(),
+        kind,
+        severity,
+        action_ref,
+        run_id,
+        trace_id,
+        span_id,
+    });
 }
 
 fn contains_injection_pattern(value: &str) -> bool {
@@ -2477,6 +2609,115 @@ updates_mode = "online"
                 |e| e["event"]["kind"] == "observability_gap.metrics_unavailable"
                     && e["event"]["details"]["endpoint"] == "/metrics"
             ));
+    }
+
+    #[tokio::test]
+    async fn self_observability_internal_incidents_cover_required_set() {
+        let app = build_app(test_state());
+
+        let high_latency = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .header("x-core-force-latency-ms", "700")
+            .body(Body::from(
+                r#"{"events":[{"severity":"info","msg":"slow-ingest","source_id":"src-lat"}]}"#,
+            ))
+            .expect("request");
+        let high_latency_resp = app.clone().oneshot(high_latency).await.expect("response");
+        assert_eq!(high_latency_resp.status(), StatusCode::OK);
+
+        let spool_near_full = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                r#"{"events":[{"severity":"warn","msg":"spool-near-full","source_id":"src-spool","spool_used_bytes":90,"spool_capacity_bytes":100}]}"#,
+            ))
+            .expect("request");
+        let spool_resp = app
+            .clone()
+            .oneshot(spool_near_full)
+            .await
+            .expect("response");
+        assert_eq!(spool_resp.status(), StatusCode::OK);
+
+        let dlq_non_empty = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                r#"{"events":[{"severity":"warn","msg":"dlq-has-items","source_id":"src-dlq","dlq_size":1}]}"#,
+            ))
+            .expect("request");
+        let dlq_resp = app.clone().oneshot(dlq_non_empty).await.expect("response");
+        assert_eq!(dlq_resp.status(), StatusCode::OK);
+
+        let first = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .header("x-core-now-ms", "0")
+            .body(Body::from(
+                r#"{"events":[{"severity":"info","msg":"a","source_id":"src-a"}]}"#,
+            ))
+            .expect("request");
+        let first_resp = app.clone().oneshot(first).await.expect("response");
+        assert_eq!(first_resp.status(), StatusCode::OK);
+
+        let second = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .header("x-core-now-ms", "700001")
+            .body(Body::from(
+                r#"{"events":[{"severity":"info","msg":"b","source_id":"src-b"}]}"#,
+            ))
+            .expect("request");
+        let second_resp = app.clone().oneshot(second).await.expect("response");
+        assert_eq!(second_resp.status(), StatusCode::OK);
+
+        let incidents_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/incidents")
+            .body(Body::empty())
+            .expect("request");
+        let incidents_resp = app.oneshot(incidents_req).await.expect("response");
+        assert_eq!(incidents_resp.status(), StatusCode::OK);
+        let body = incidents_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        let items = json["items"].as_array().expect("items");
+        let has_incident = |kind: &str, severity: &str, action_ref: &str| {
+            items.iter().any(|i| {
+                i["kind"] == kind && i["severity"] == severity && i["action_ref"] == action_ref
+            })
+        };
+
+        assert!(has_incident(
+            "core.high_latency",
+            "SEV2",
+            "docs/runbooks/core_high_latency.md"
+        ));
+        assert!(has_incident(
+            "agent.spool_near_full",
+            "SEV2",
+            "docs/runbooks/agent_spool_near_full.md"
+        ));
+        assert!(has_incident(
+            "dlq_non_empty",
+            "SEV3",
+            "docs/runbooks/dlq_non_empty.md"
+        ));
+        assert!(has_incident(
+            "source_stale",
+            "SEV2",
+            "docs/runbooks/source_stale.md"
+        ));
     }
 
     #[tokio::test]
