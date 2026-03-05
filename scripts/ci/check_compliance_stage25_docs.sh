@@ -16,4 +16,7 @@ grep -q "pass/fail" docs/compliance/data_destruction.md
 grep -q "mitigations" docs/runbooks/export_failed.md
 grep -q "verification" docs/runbooks/export_failed.md
 grep -q "export_failed" docs/governance/observability_gap_registry.md
+grep -q "/api/v1/incidents" scripts/export_audit_pack.sh
+grep -q "/api/v1/audit" scripts/export_audit_pack.sh
+grep -q "checksums.txt" scripts/export_audit_pack.sh
 echo "stage25 docs gate: OK"

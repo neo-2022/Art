@@ -93,7 +93,7 @@ RU профиль однозначен и проверяем: фиксирова
 - [x] docs/runbooks/cross_border_export_blocked.md
 
 ## Тестирование
-- [x] integration: `ru-export-blocked` (шаг 3)
+- [x] integration: `ru-export-blocked` (шаг 3, проверка server-side effective_profile_id из Core)
 - [x] integration: `ru-access-audit` (шаг 2)
 - [x] induced: cross-border export blocked → gap event (шаг 5)
 
@@ -109,13 +109,13 @@ RU профиль однозначен и проверяем: фиксирова
     - [x] `docs/ru/airgapped_install.md` содержит `cosign` и `verify` и `checksums`
     - [x] `docs/runbooks/cross_border_export_blocked.md` содержит `mitigations` и `verification`
     - [x] `docs/governance/observability_gap_registry.md` содержит `cross_border_export_blocked`
+    - [x] `scripts/export_audit_pack.sh` содержит server-side policy check по `effective_profile_id` и `RU_EXPORT_ALLOWLIST_ROOT`
   - [x] exit 1 при нарушении любой проверки
 
 ## DoD
 - [x] Список ПДн полей (field paths) RU профиля определён и задокументирован без ссылок на другие профили.
 - [x] Audit доступа к PII-инцидентам реализован (append-only) и подтверждён integration test.
-- [x] Трансграничный экспорт заблокирован в RU профиле (fail closed) и подтверждён integration test.
+- [x] Трансграничный экспорт заблокирован в RU профиле (fail closed) и подтверждён integration test (env override не обходит server-side policy).
 - [x] Airgapped install/update RU профиля (включая packs) задокументирован с точными командами.
 - [x] `observability_gap.cross_border_export_blocked` реализован, зарегистрирован и покрыт induced test.
 - [x] CI gate Stage 26 зелёный.
-

@@ -30,8 +30,8 @@
 - 22 — OK: synthetic-заглушки заменены runtime smoke (`scripts/tests/test_stage22_e2e.py`, `e2e_smoke.sh`, `e2e_chaos.sh`)
 - 23 — OK: ops/dr smoke переведён в runtime (`scripts/tests/ops_stage23_smoke.sh`: backup/restore + ingest→snapshot + SIGHUP stream survival)
 - 24 — OK: upgrade/downgrade переведён в runtime API suite (`scripts/tests/test_upgrade_downgrade.py`), release signing verify согласован с keyless OIDC workflow (`release_stage04.yml`)
-- 25 — Проблема: export synthetic вместо реального compliance export
-- 26 — Проблема: RU policy enforcement не серверный
+- 25 — OK: export переведён с synthetic на runtime (`scripts/export_audit_pack.sh` читает `/api/v1/incidents` и `/api/v1/audit`, integration test запускает real core)
+- 26 — OK: RU export policy переведён в server-side enforcement (`scripts/export_audit_pack.sh` берёт `effective_profile_id` из Core snapshot + allowlist `RU_EXPORT_ALLOWLIST_ROOT`)
 
 ## Порядок исправления (строго)
 1. Stage 18 — усилить receiver chaos matrix.
