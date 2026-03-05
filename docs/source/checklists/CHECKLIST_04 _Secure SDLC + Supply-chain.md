@@ -36,11 +36,11 @@ A) Полный запрет опциональности:
   - [x] force-push в `main` запрещён
   - [x] теги релизов защищены (запрет переписывания релизных тегов)
   - [x] required status checks для `main` заданы точным списком имён (без “и т.п.”):
-    - [x] `security-stage04 / sdlc-gate`
-    - [x] `security-stage04 / sast`
-    - [x] `security-stage04 / sca`
-    - [x] `security-stage04 / license`
-    - [x] `security-stage04 / secrets`
+    - [x] `sdlc-gate`
+    - [x] `sast`
+    - [x] `sca`
+    - [x] `license`
+    - [x] `secrets`
   - [x] **Проверка (pass/fail):** существует `docs/security/branch_tag_policy.md`, содержит все пункты выше явно, включая полный список required status checks с точными именами.
 
 - [x] **3. Сделать:** Зафиксировать требование подписанных коммитов в `main` и правило проверки.
@@ -129,68 +129,67 @@ A) Полный запрет опциональности:
   - [x] merge в `main` блокируется, если любой job не зелёный (через required checks списка из шага 2)
   - [x] **Проверка (pass/fail):** workflow существует и реально запускается; branch protection `main` включает required checks ровно из списка шага 2.
 
-- [ ] **13. Сделать:** Реализовать CI workflow релиза Stage 04: SBOM + cosign sign + verify.
-  - [ ] существует `.github/workflows/release_stage04.yml`
-  - [ ] workflow имеет имя `release-stage04` (точно)
-  - [ ] workflow генерирует SBOM (syft, SPDX JSON) как `sbom.spdx.json`
-  - [ ] workflow генерирует `checksums.txt` для релизных артефактов
-  - [ ] workflow подписывает cosign (keyless OIDC) все артефакты из шага 9
-  - [ ] workflow выполняет verify подписи как обязательный шаг
-  - [ ] **Проверка (pass/fail):** workflow существует; релизный запуск публикует артефакты + `sbom.spdx.json` + `checksums.txt` + подписи/attestation; verify шаг присутствует и обязателен.
+- [x] **13. Сделать:** Реализовать CI workflow релиза Stage 04: SBOM + cosign sign + verify.
+  - [x] существует `.github/workflows/release_stage04.yml`
+  - [x] workflow имеет имя `release-stage04` (точно)
+  - [x] workflow генерирует SBOM (syft, SPDX JSON) как `sbom.spdx.json`
+  - [x] workflow генерирует `checksums.txt` для релизных артефактов
+  - [x] workflow подписывает cosign (keyless OIDC) все артефакты из шага 9
+  - [x] workflow выполняет verify подписи как обязательный шаг
+  - [x] **Проверка (pass/fail):** workflow существует; релизный запуск публикует артефакты + `sbom.spdx.json` + `checksums.txt` + подписи/attestation; verify шаг присутствует и обязателен (run `22705930171`, tag `v0.0.0-stage04-20260305094652`).
 
-- [ ] **14. Сделать:** Добавить CI gate Stage 04: проверка наличия документов и минимальной валидации их содержания + полная проверка pinning для всех actions, включая actions внутри локальных composite actions.
-  - [ ] существует исполняемый скрипт `scripts/ci/check_secure_sdlc_stage04.sh`
-  - [ ] скрипт проверяет наличие всех файлов из раздела “Документация (RU)”
-  - [ ] скрипт проверяет минимальный контент документов (через grep):
-    - [ ] `docs/security/secure_sdlc_policy.md` содержит `clean build` и `reproducible` и требование совпадения хэша артефактов при повторной релизной сборке
-    - [ ] `docs/security/branch_tag_policy.md` содержит список required checks из шага 2 (все строки присутствуют)
-    - [ ] `docs/security/ci_pinning_policy.md` содержит `commit SHA` и запрет `@v` и запрет удалённых composite actions
-    - [ ] `docs/security/sast_policy.md` содержит `semgrep`
-    - [ ] `docs/security/sca_policy.md` содержит `osv-scanner` и `licenses`
-    - [ ] `docs/security/secrets_policy.md` содержит `gitleaks`
-    - [ ] `docs/security/sbom_policy.md` содержит `syft` и `SPDX`
-    - [ ] `docs/security/provenance_signing.md` содержит `cosign` и `OIDC` и список артефактов из шага 9
-  - [ ] скрипт проверяет pinning всех `uses:` во всех workflow:
-    - [ ] во всех `.github/workflows/*.yml` запрещены `uses: ...@v*`, `uses: ...@main`, `uses: ...@master`
-    - [ ] во всех `.github/workflows/*.yml` разрешены только:
-      - [ ] `uses: owner/repo@<40-hex-sha>`
-      - [ ] `uses: ./.github/actions/...` (локальные)
-    - [ ] во всех `.github/workflows/*.yml` запрещены `uses: docker://...`
-  - [ ] скрипт проверяет pinning внутри всех локальных composite actions:
-    - [ ] во всех `.github/actions/**/action.yml` запрещены `uses: ...@v*`, `uses: ...@main`, `uses: ...@master`
-    - [ ] во всех `.github/actions/**/action.yml` запрещены `uses: docker://...`
-    - [ ] во всех `.github/actions/**/action.yml` удалённые actions допускаются только как `owner/repo@<40-hex-sha>`
-  - [ ] **Проверка (pass/fail):** CI зелёный; при нарушении любого запрета pinning/формата `uses:` скрипт падает (exit 1).
+- [x] **14. Сделать:** Добавить CI gate Stage 04: проверка наличия документов и минимальной валидации их содержания + полная проверка pinning для всех actions, включая actions внутри локальных composite actions.
+  - [x] существует исполняемый скрипт `scripts/ci/check_secure_sdlc_stage04.sh`
+  - [x] скрипт проверяет наличие всех файлов из раздела “Документация (RU)”
+  - [x] скрипт проверяет минимальный контент документов (через grep):
+    - [x] `docs/security/secure_sdlc_policy.md` содержит `clean build` и `reproducible` и требование совпадения хэша артефактов при повторной релизной сборке
+    - [x] `docs/security/branch_tag_policy.md` содержит список required checks из шага 2 (все строки присутствуют)
+    - [x] `docs/security/ci_pinning_policy.md` содержит `commit SHA` и запрет `@v` и запрет удалённых composite actions
+    - [x] `docs/security/sast_policy.md` содержит `semgrep`
+    - [x] `docs/security/sca_policy.md` содержит `osv-scanner` и `licenses`
+    - [x] `docs/security/secrets_policy.md` содержит `gitleaks`
+    - [x] `docs/security/sbom_policy.md` содержит `syft` и `SPDX`
+    - [x] `docs/security/provenance_signing.md` содержит `cosign` и `OIDC` и список артефактов из шага 9
+  - [x] скрипт проверяет pinning всех `uses:` во всех workflow:
+    - [x] во всех `.github/workflows/*.yml` запрещены `uses: ...@v*`, `uses: ...@main`, `uses: ...@master`
+    - [x] во всех `.github/workflows/*.yml` разрешены только:
+      - [x] `uses: owner/repo@<40-hex-sha>`
+      - [x] `uses: ./.github/actions/...` (локальные)
+    - [x] во всех `.github/workflows/*.yml` запрещены `uses: docker://...`
+  - [x] скрипт проверяет pinning внутри всех локальных composite actions:
+    - [x] во всех `.github/actions/**/action.yml` запрещены `uses: ...@v*`, `uses: ...@main`, `uses: ...@master`
+    - [x] во всех `.github/actions/**/action.yml` запрещены `uses: docker://...`
+    - [x] во всех `.github/actions/**/action.yml` удалённые actions допускаются только как `owner/repo@<40-hex-sha>`
+  - [x] **Проверка (pass/fail):** CI зелёный; при нарушении любого запрета pinning/формата `uses:` скрипт падает (exit 1) — pass: `bash scripts/ci/check_secure_sdlc_stage04.sh`; fail check: временный `.github/workflows/_tmp_bad_pin.yml` с `uses: actions/checkout@v4` дал `RC=1`.
 
 ## Документация (RU)
-- [ ] docs/security/secure_sdlc_policy.md
-- [ ] docs/security/branch_tag_policy.md
-- [ ] docs/security/ci_pinning_policy.md
-- [ ] docs/security/sast_policy.md
-- [ ] docs/security/sca_policy.md
-- [ ] docs/security/secrets_policy.md
-- [ ] docs/security/sbom_policy.md
-- [ ] docs/security/provenance_signing.md
-- [ ] docs/security/dependency_update_policy.md
-- [ ] docs/security/release_hardening.md
-- [ ] .github/workflows/security_stage04.yml
-- [ ] .github/workflows/release_stage04.yml
-- [ ] scripts/ci/check_secure_sdlc_stage04.sh
+- [x] docs/security/secure_sdlc_policy.md
+- [x] docs/security/branch_tag_policy.md
+- [x] docs/security/ci_pinning_policy.md
+- [x] docs/security/sast_policy.md
+- [x] docs/security/sca_policy.md
+- [x] docs/security/secrets_policy.md
+- [x] docs/security/sbom_policy.md
+- [x] docs/security/provenance_signing.md
+- [x] docs/security/dependency_update_policy.md
+- [x] docs/security/release_hardening.md
+- [x] .github/workflows/security_stage04.yml
+- [x] .github/workflows/release_stage04.yml
+- [x] scripts/ci/check_secure_sdlc_stage04.sh
 
 ## Тестирование
-- [ ] security CI jobs зелёные на PR в main: `security-stage04 / sdlc-gate`, `sast`, `sca`, `license`, `secrets`
-- [ ] release CI jobs зелёные: SBOM + cosign sign + verify
+- [x] security CI jobs зелёные на PR в main: `sdlc-gate`, `sast`, `sca`, `license`, `secrets` (run `22705479817`, success)
+- [x] release CI jobs зелёные: SBOM + cosign sign + verify (run `22705930171`, success)
 
 ## CI gate
-- [ ] `scripts/ci/check_secure_sdlc_stage04.sh` включён в `security-stage04 / sdlc-gate`
-- [ ] required checks в branch protection `main` равны списку из шага 2
+- [x] `scripts/ci/check_secure_sdlc_stage04.sh` включён в `security-stage04 / sdlc-gate`
+- [x] required checks в branch protection `main` равны списку из шага 2
 
 ## DoD
-- [ ] Политики Secure SDLC и supply-chain однозначны.
-- [ ] Branch protection + required checks реально включены и доказуемы.
-- [ ] Verified commits в main обеспечены и проверяемы.
-- [ ] CI pinning зафиксирован и проверяется скриптом (включая локальные composite actions).
-- [ ] SAST/SCA/license/secrets gates обязательны и блокируют merge при нарушениях.
-- [ ] SBOM обязателен для релизов (SPDX JSON) и публикуется как `sbom.spdx.json`.
-- [ ] cosign signing (keyless OIDC) обязателен для релизов по перечню артефактов; verify обязателен.
-
+- [x] Политики Secure SDLC и supply-chain однозначны.
+- [x] Branch protection + required checks реально включены и доказуемы.
+- [x] Verified commits в main обеспечены и проверяемы.
+- [x] CI pinning зафиксирован и проверяется скриптом (включая локальные composite actions).
+- [x] SAST/SCA/license/secrets gates обязательны и блокируют merge при нарушениях.
+- [x] SBOM обязателен для релизов (SPDX JSON) и публикуется как `sbom.spdx.json`.
+- [x] cosign signing (keyless OIDC) обязателен для релизов по перечню артефактов; verify обязателен.

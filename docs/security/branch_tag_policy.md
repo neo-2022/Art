@@ -10,8 +10,8 @@
 - merge блокируется, если коммит не Verified
 
 Required checks:
-- security-stage04 / sdlc-gate
-- security-stage04 / sast
-- security-stage04 / sca
-- security-stage04 / license
-- security-stage04 / secrets
+- sdlc-gate
+- sast
+- sca
+- license
+- secrets
