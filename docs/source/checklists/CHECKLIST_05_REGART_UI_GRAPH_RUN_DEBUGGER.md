@@ -80,10 +80,11 @@ CHECKLIST 04 — Secure SDLC + Supply-chain
   - [x] **Проверка (pass/fail):** пункт в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` закрыт `[x]`; evidence — `tests/uiProxyGap.spec.js` + ручное отключение UI Proxy приводит к событию в Level0.
 
 ## Тестирование
-- [ ] Автотест подтверждает `subscribe(listener)` и порядок доставки (Шаг 1).
+- [x] Автотест подтверждает `subscribe(listener)` и порядок доставки (Шаг 1). Evidence: `ui/tests/debugger_core.spec.js` + `scripts/ci/check_stage05_wrapper.sh` (`npm test -- debugger_core.spec.js`, 2 passed).
 - [x] Автотест подтверждает генерацию `trace_id` при отсутствии и сохранение при прохождении по слоям (Шаг 2).
-- [ ] Автотест/интеграционный сценарий подтверждает генерацию `ui.graph.empty` при выполнении условий (Шаг 3).
+- [x] Автотест/интеграционный сценарий подтверждает генерацию `ui.graph.empty` при выполнении условий (Шаг 3). Evidence: `ui/tests/graph_empty.spec.js` (3 tests passed) + `npm -C ui test -- graph_empty.spec.js`.
   - [x] `tests/graph_empty.spec.js` проверяет helper `buildGraphEmptyEvent` → ctx содержит все поля и `trace_id`.
+  - [x] `tests/graph_empty.spec.js` проверяет условия генерации через `buildGraphEmptyEventIfNeeded` (container>0, nodes=0, edges=0, inFlight=false) и null при нарушении условий.
 - [x] Автотест/интеграционный сценарий подтверждает multi-tab: 2 вкладки → локально видно в обеих → в Art ровно один раз (Шаг 4) (`tests/multiTabManager.spec.js`, `tests/outbox.spec.js`).
 - [x] Автотест/интеграционный сценарий подтверждает `observability_gap.ui_proxy_unavailable` при недоступности UI Proxy (Шаг 5) (`tests/uiProxyGap.spec.js`).
 
