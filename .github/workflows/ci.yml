@@ -342,7 +342,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Pipeline tests
-        run: echo "pipeline tests placeholder"
+        run: |
+          cargo test --package art-core pipeline_correlation_transfers_to_incident_and_missing_is_null
+          cargo test --package art-core pipeline_collision_detection_emits_data_quality_event
+          cargo test --package art-core pipeline_induced_failure_emits_stage_failed_gap
+          cargo test --package art-core pipeline_source_stale_emits_gap_after_10_minutes
 
   pipeline-security-tests:
     name: pipeline-security-tests
@@ -351,7 +355,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Pipeline security tests
-        run: echo "pipeline security tests placeholder"
+        run: |
+          cargo test --package art-core pipeline_template_injection_is_escaped_and_gap_emitted
 
   stage13-docs-gate:
     name: stage13-docs-gate

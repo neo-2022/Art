@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::convert::Infallible;
 use std::env;
 use std::fs;
@@ -21,6 +21,7 @@ use tokio::sync::RwLock;
 use tokio::time::Duration;
 use tower_http::compression::CompressionLayer;
 use tracing::{info, warn};
+use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct StoredEvent {
@@ -33,7 +34,9 @@ struct StoredEvent {
 struct Incident {
     id: String,
     status: String,
+    run_id: Option<String>,
     trace_id: Option<String>,
+    span_id: Option<String>,
 }
 
 #[derive(Debug, Default)]
@@ -48,6 +51,8 @@ struct CoreState {
     next_seq: u64,
     events: VecDeque<StoredEvent>,
     incidents: Vec<Incident>,
+    fingerprint_index: HashMap<String, String>,
+    source_last_seen: HashMap<String, u64>,
     counters: Counters,
     effective_profile_id: String,
     queue_depth_limit: usize,
@@ -66,6 +71,8 @@ impl CoreState {
             next_seq: 1,
             events: VecDeque::new(),
             incidents: Vec::new(),
+            fingerprint_index: HashMap::new(),
+            source_last_seen: HashMap::new(),
             counters: Counters::default(),
             effective_profile_id,
             queue_depth_limit,
@@ -296,7 +303,9 @@ async fn apply_profile(
             s.incidents.push(Incident {
                 id: format!("profile-violation-{}", seq),
                 status: "open".to_string(),
+                run_id: None,
                 trace_id: None,
+                span_id: None,
             });
             (
                 StatusCode::BAD_REQUEST,
@@ -332,7 +341,8 @@ async fn ingest(
     Json(payload): Json<IngestEnvelope>,
 ) -> impl IntoResponse {
     let mut s = state.write().await;
-    let trace_id = format!("ingest-{}", now_ms());
+    let now = ingest_now_ms(&headers);
+    let trace_id = format!("ingest-{}", now);
     if let Some(len) = content_length(&headers) {
         if len > s.max_payload_bytes {
             let max_payload_bytes = s.max_payload_bytes;
@@ -388,6 +398,16 @@ async fn ingest(
         .map(|v| v == "1")
         .unwrap_or(false)
         || env::var("CORE_INGEST_FORCE_STORAGE_ERROR").ok().as_deref() == Some("1");
+    let force_pipeline_fail = headers
+        .get("x-core-pipeline-force-fail")
+        .and_then(|h| h.to_str().ok())
+        .map(|v| v == "1")
+        .unwrap_or(false)
+        || env::var("CORE_PIPELINE_FORCE_FAIL").ok().as_deref() == Some("1");
+    let forced_fingerprint = headers
+        .get("x-core-pipeline-force-fingerprint")
+        .and_then(|h| h.to_str().ok())
+        .map(|v| v.to_string());
 
     for (idx, event) in payload.events.into_iter().enumerate() {
         match validate_event(&event) {
@@ -401,6 +421,32 @@ async fn ingest(
                 s.counters.ingest_invalid_total += 1;
             }
             None => {
+                if force_pipeline_fail {
+                    push_gap_event_locked(
+                        &mut s,
+                        "observability_gap.pipeline_stage_failed",
+                        json!({
+                            "what": "pipeline stage failed",
+                            "where": "core.pipeline.enrich",
+                            "why": "forced_failure",
+                            "evidence": {
+                                "error": "forced pipeline failure",
+                                "stage": "enrich",
+                                "index": idx
+                            },
+                            "actions": {
+                                "action_ref": "docs/runbooks/pipeline_stage_failed.md"
+                            },
+                            "trace_id": trace_id
+                        }),
+                    );
+                    let err = BackpressureError {
+                        error: "pipeline_stage_failed".to_string(),
+                        retry_after_ms: 1_000,
+                    };
+                    return (StatusCode::SERVICE_UNAVAILABLE, Json(json!(err))).into_response();
+                }
+
                 if force_storage_error {
                     let queue_depth = s.events.len();
                     s.counters.ingest_dropped_total += 1;
@@ -422,17 +468,96 @@ async fn ingest(
                     };
                     return (StatusCode::SERVICE_UNAVAILABLE, Json(json!(err))).into_response();
                 }
+
+                let source_id = event
+                    .get("source_id")
+                    .and_then(Value::as_str)
+                    .unwrap_or("unknown")
+                    .to_string();
+                s.source_last_seen.insert(source_id.clone(), now);
+                let stale_threshold_ms = 600_000u64;
+                let stale_sources: Vec<(String, u64)> = s
+                    .source_last_seen
+                    .iter()
+                    .filter_map(|(sid, last_seen)| {
+                        if sid == &source_id {
+                            return None;
+                        }
+                        let age = now.saturating_sub(*last_seen);
+                        if age > stale_threshold_ms {
+                            Some((sid.clone(), age))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                for (stale_source_id, age_ms) in stale_sources {
+                    push_gap_event_locked(
+                        &mut s,
+                        "observability_gap.source_stale",
+                        json!({
+                            "source_id": stale_source_id,
+                            "age_ms": age_ms,
+                            "threshold_ms": stale_threshold_ms,
+                            "trace_id": trace_id
+                        }),
+                    );
+                }
+
+                let processed_event = sanitize_template_injection(&event);
+                if processed_event != event {
+                    push_gap_event_locked(
+                        &mut s,
+                        "security.template_injection_blocked",
+                        json!({
+                            "reason": "template_injection_pattern_detected",
+                            "index": idx,
+                            "trace_id": trace_id
+                        }),
+                    );
+                }
+
+                let canonical = canonical_json_without_ts(&processed_event);
+                let fingerprint = forced_fingerprint
+                    .clone()
+                    .unwrap_or_else(|| sha256_hex(&canonical));
+                if let Some(prev) = s.fingerprint_index.get(&fingerprint).cloned() {
+                    if prev != canonical {
+                        push_gap_event_locked(
+                            &mut s,
+                            "data_quality.fingerprint_collision_suspected",
+                            json!({
+                                "fingerprint": fingerprint,
+                                "count": 2,
+                                "sample_dedup_keys": [sha256_hex(&prev), sha256_hex(&canonical)],
+                                "trace_id": trace_id
+                            }),
+                        );
+                    }
+                } else {
+                    s.fingerprint_index.insert(fingerprint, canonical);
+                }
+
                 let seq = s.next_seq;
                 s.next_seq += 1;
                 upto_seq = seq;
                 s.events.push_back(StoredEvent {
                     seq,
-                    ts_ms: now_ms(),
-                    event,
+                    ts_ms: now,
+                    event: processed_event.clone(),
                 });
                 if s.events.len() > s.queue_depth_limit {
                     s.events.pop_front();
                 }
+
+                let incident = Incident {
+                    id: format!("incident-{}", seq),
+                    status: "open".to_string(),
+                    run_id: string_field(&processed_event, "run_id"),
+                    trace_id: string_field(&processed_event, "trace_id"),
+                    span_id: string_field(&processed_event, "span_id"),
+                };
+                s.incidents.push(incident);
                 accepted += 1;
                 s.counters.ingest_accepted_total += 1;
             }
@@ -487,6 +612,85 @@ fn content_length(headers: &HeaderMap) -> Option<usize> {
         .get("content-length")
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.parse::<usize>().ok())
+}
+
+fn ingest_now_ms(headers: &HeaderMap) -> u64 {
+    headers
+        .get("x-core-now-ms")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or_else(now_ms)
+}
+
+fn string_field(event: &Value, key: &str) -> Option<String> {
+    event.get(key).and_then(Value::as_str).map(|s| s.to_string())
+}
+
+fn contains_injection_pattern(value: &str) -> bool {
+    let patterns = ["$(", "`", "${", ";", "|", "../", "..\\"];
+    patterns.iter().any(|p| value.contains(p))
+}
+
+fn escape_injection(value: &str) -> String {
+    value
+        .replace("$(", "\\$(")
+        .replace("`", "\\`")
+        .replace("${", "\\${")
+        .replace(";", "\\;")
+        .replace("|", "\\|")
+        .replace("../", "..\\/")
+        .replace("..\\", "..\\\\")
+}
+
+fn sanitize_template_injection(value: &Value) -> Value {
+    match value {
+        Value::String(s) => {
+            if contains_injection_pattern(s) {
+                Value::String(escape_injection(s))
+            } else {
+                Value::String(s.clone())
+            }
+        }
+        Value::Array(arr) => Value::Array(arr.iter().map(sanitize_template_injection).collect()),
+        Value::Object(map) => {
+            let mut out = serde_json::Map::new();
+            for (k, v) in map {
+                out.insert(k.clone(), sanitize_template_injection(v));
+            }
+            Value::Object(out)
+        }
+        _ => value.clone(),
+    }
+}
+
+fn canonical_json_without_ts(value: &Value) -> String {
+    fn normalized(v: &Value) -> Value {
+        match v {
+            Value::Array(arr) => Value::Array(arr.iter().map(normalized).collect()),
+            Value::Object(map) => {
+                let mut keys: Vec<_> = map.keys().cloned().collect();
+                keys.sort();
+                let mut out = serde_json::Map::new();
+                for key in keys {
+                    if key == "ts" || key == "ts_ms" {
+                        continue;
+                    }
+                    let nested = map.get(&key).expect("key exists");
+                    out.insert(key, normalized(nested));
+                }
+                Value::Object(out)
+            }
+            _ => v.clone(),
+        }
+    }
+    normalized(value).to_string()
+}
+
+fn sha256_hex(input: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(input.as_bytes());
+    let bytes = hasher.finalize();
+    format!("{:x}", bytes)
 }
 
 async fn snapshot(State(state): State<Shared>) -> impl IntoResponse {
@@ -1122,6 +1326,202 @@ mod tests {
         let third_json: Value = serde_json::from_slice(&third_body).expect("json");
         let seq_after2 = third_json["ack"]["upto_seq"].as_u64().expect("upto seq");
         assert!(seq_after2 > seq_after);
+    }
+
+    #[tokio::test]
+    async fn pipeline_correlation_transfers_to_incident_and_missing_is_null() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                r#"{"events":[
+                    {"severity":"info","msg":"with-correlation","run_id":"run-1","trace_id":"trace-1","span_id":"span-1"},
+                    {"severity":"info","msg":"without-correlation"}
+                ]}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let incidents_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/incidents")
+            .body(Body::empty())
+            .expect("request");
+        let incidents_resp = app.oneshot(incidents_req).await.expect("response");
+        let body = incidents_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        let items = json["items"].as_array().expect("items");
+        assert!(items.iter().any(|i| i["run_id"] == "run-1" && i["trace_id"] == "trace-1" && i["span_id"] == "span-1"));
+        assert!(items.iter().any(|i| i["run_id"].is_null() && i["trace_id"].is_null() && i["span_id"].is_null()));
+    }
+
+    #[tokio::test]
+    async fn pipeline_collision_detection_emits_data_quality_event() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .header("x-core-pipeline-force-fingerprint", "fixed-fp")
+            .body(Body::from(
+                r#"{"events":[
+                    {"severity":"info","msg":"a"},
+                    {"severity":"info","msg":"b"}
+                ]}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.oneshot(snapshot_req).await.expect("response");
+        let body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        let events = json["events"].as_array().expect("events");
+        assert!(events.iter().any(|e| {
+            e["event"]["kind"]
+                .as_str()
+                .map(|k| k == "data_quality.fingerprint_collision_suspected")
+                .unwrap_or(false)
+        }));
+    }
+
+    #[tokio::test]
+    async fn pipeline_template_injection_is_escaped_and_gap_emitted() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                r#"{"events":[{"severity":"info","msg":"$(command); rm -rf / | curl x","source_id":"src-inj"}]}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.oneshot(snapshot_req).await.expect("response");
+        let body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        let events = json["events"].as_array().expect("events");
+        assert!(events.iter().any(|e| {
+            e["event"]["kind"]
+                .as_str()
+                .map(|k| k == "security.template_injection_blocked")
+                .unwrap_or(false)
+        }));
+        let sanitized = events.iter().find(|e| e["event"]["msg"].is_string()).expect("event with msg");
+        let msg = sanitized["event"]["msg"].as_str().expect("msg");
+        assert!(msg.contains("\\$("));
+        assert!(msg.contains("\\;"));
+        assert!(msg.contains("\\|"));
+    }
+
+    #[tokio::test]
+    async fn pipeline_induced_failure_emits_stage_failed_gap() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .header("x-core-pipeline-force-fail", "1")
+            .body(Body::from(r#"{"events":[{"severity":"info","msg":"x"}]}"#))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.oneshot(snapshot_req).await.expect("response");
+        let body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        let events = json["events"].as_array().expect("events");
+        assert!(events.iter().any(|e| {
+            e["event"]["kind"]
+                .as_str()
+                .map(|k| k == "observability_gap.pipeline_stage_failed")
+                .unwrap_or(false)
+        }));
+    }
+
+    #[tokio::test]
+    async fn pipeline_source_stale_emits_gap_after_10_minutes() {
+        let app = build_app(test_state());
+        let first = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .header("x-core-now-ms", "0")
+            .body(Body::from(r#"{"events":[{"severity":"info","msg":"a","source_id":"src-a"}]}"#))
+            .expect("request");
+        let first_resp = app.clone().oneshot(first).await.expect("response");
+        assert_eq!(first_resp.status(), StatusCode::OK);
+
+        let second = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .header("x-core-now-ms", "700001")
+            .body(Body::from(r#"{"events":[{"severity":"info","msg":"b","source_id":"src-b"}]}"#))
+            .expect("request");
+        let second_resp = app.clone().oneshot(second).await.expect("response");
+        assert_eq!(second_resp.status(), StatusCode::OK);
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.oneshot(snapshot_req).await.expect("response");
+        let body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        let events = json["events"].as_array().expect("events");
+        assert!(events.iter().any(|e| {
+            e["event"]["kind"]
+                .as_str()
+                .map(|k| k == "observability_gap.source_stale")
+                .unwrap_or(false)
+        }));
     }
 
     #[test]
