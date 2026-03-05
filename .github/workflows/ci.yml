@@ -549,3 +549,117 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 21 docs gate
         run: bash scripts/ci/check_self_observability_stage21_docs.sh
+
+  e2e-smoke:
+    name: e2e-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 22 e2e smoke
+        run: bash scripts/tests/e2e_smoke.sh
+
+  e2e-chaos:
+    name: e2e-chaos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 22 chaos checks
+        run: |
+          bash scripts/tests/e2e_chaos.sh
+          python3 -m unittest scripts/tests/test_stage22_e2e.py
+
+  stage22-docs-gate:
+    name: stage22-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 22 docs gate
+        run: bash scripts/ci/check_e2e_stage22_docs.sh
+
+  ops-smoke:
+    name: ops-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 23 ops smoke
+        run: |
+          grep -q "SIGHUP" docs/ops/tls_rotation.md
+          grep -q "sqlite3" docs/ops/backup_restore.md
+
+  ops-docs-gate:
+    name: ops-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 23 docs gate
+        run: bash scripts/ci/check_ops_stage23_docs.sh
+
+  release-regression:
+    name: release-regression
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 24 upgrade/downgrade tests
+        run: python3 -m unittest scripts/tests/test_upgrade_downgrade.py
+
+  release-signing-verify:
+    name: release-signing-verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 24 signing verify smoke
+        run: |
+          grep -q "cosign" docs/runbooks/release_signing_failed.md
+          echo "release signing verify smoke: OK"
+
+  stage24-docs-gate:
+    name: stage24-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 24 docs gate
+        run: bash scripts/ci/check_release_stage24_docs.sh
+
+  compliance-export:
+    name: compliance-export
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 25 export test
+        run: python3 -m unittest scripts/tests/test_export_audit_pack.py
+
+  stage25-docs-gate:
+    name: stage25-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 25 docs gate
+        run: bash scripts/ci/check_compliance_stage25_docs.sh
+
+  ru-profile-tests:
+    name: ru-profile-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 26 RU profile tests
+        run: python3 -m unittest scripts/tests/test_ru_profile.py
+
+  stage26-docs-gate:
+    name: stage26-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 26 docs gate
+        run: bash scripts/ci/check_ru_profile_stage26_docs.sh

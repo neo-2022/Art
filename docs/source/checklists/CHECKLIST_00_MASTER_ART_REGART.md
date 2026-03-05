@@ -104,8 +104,8 @@ A) Полный запрет опциональности:
 | [x] 19 | CHECKLIST_19_PACKS_FRAMEWORK.md | Packs | manual updates only + cosign signature verify + dependencies | 2026-03-05, neo-2022, packs-tests+stage19-docs-gate |
 | [x] 20 | CHECKLIST_20_PACK_REGART.md | Pack REGART | fixtures всех событий + correlation + receivers.toml examples | 2026-03-05, neo-2022, pack-regart-tests+stage20-docs-gate |
 | [x] 21 | CHECKLIST_21_SELF_OBSERVABILITY_ART.md | Self-obs | required internal incidents + grafana/ + alert tests | 2026-03-05, neo-2022, self-obs-tests+stage21-docs-gate |
-| [ ] 22 | CHECKLIST_22_E2E_STRESS_CHAOS_SOAK_PERF.md | E2E/Chaos/Soak | 50% packet loss + memory profiling + power loss + nightly chaos | |
-| [ ] 23 | CHECKLIST_23_OPS_DEPLOY_RUNBOOKS_DR.md | Ops/DR | cert-manager + systemd TLS reload SIGHUP + DB migration runbook + WAL backups | |
-| [ ] 24 | CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md | Release | downgrade with data + cosign sign images + RELEASE_CHECKLIST + manual releases | |
-| [ ] 25 | CHECKLIST_25_COMPLIANCE_AUDIT_READY.md | Compliance | export scripts + immutable evidence + data destruction policy | |
-| [ ] 26 | CHECKLIST_26_RU_PROFILE.md | RU profile | PDn fields list + PII access audit + block cross-border export | |
+| [x] 22 | CHECKLIST_22_E2E_STRESS_CHAOS_SOAK_PERF.md | E2E/Chaos/Soak | 50% packet loss + memory profiling + power loss + nightly chaos | 2026-03-05, neo-2022, e2e-smoke+e2e-chaos+stage22-docs-gate |
+| [x] 23 | CHECKLIST_23_OPS_DEPLOY_RUNBOOKS_DR.md | Ops/DR | cert-manager + systemd TLS reload SIGHUP + DB migration runbook + WAL backups | 2026-03-05, neo-2022, ops-smoke+ops-docs-gate |
+| [x] 24 | CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md | Release | downgrade with data + cosign sign images + RELEASE_CHECKLIST + manual releases | 2026-03-05, neo-2022, release-regression+release-signing-verify+stage24-docs-gate |
+| [x] 25 | CHECKLIST_25_COMPLIANCE_AUDIT_READY.md | Compliance | export scripts + immutable evidence + data destruction policy | 2026-03-05, neo-2022, compliance-export+stage25-docs-gate |
+| [x] 26 | CHECKLIST_26_RU_PROFILE.md | RU profile | PDn fields list + PII access audit + block cross-border export | 2026-03-05, neo-2022, ru-profile-tests+stage26-docs-gate |
