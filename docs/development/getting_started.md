@@ -7,11 +7,14 @@
 - `CORE_CONFIG_PATH=config/core.toml cargo run -p art-core`
 
 ## Browser/Node
-- `npm ci`
-- `npm run lint`
-- `npm run test`
-- `npm run build`
+- `npm --prefix browser ci`
+- `npm --prefix browser run lint`
+- `npm --prefix browser run test`
+- `npm --prefix browser run build`
+
+## Smoke (Rust + Browser)
+- `make smoke`
 
 ## Security smoke
-- `gitleaks detect --no-git`
+- `gitleaks detect --source . --redact`
 - `npx license-checker --production --summary`

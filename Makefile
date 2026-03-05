@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: generate generate-schemas-md test-contracts test-telemetry smoke
+.PHONY: generate generate-schemas-md test-contracts test-telemetry smoke security-smoke
 
 generate:
 	@mkdir -p generated/rust generated/ts
@@ -27,9 +27,14 @@ test-telemetry:
 	@echo "telemetry tests: OK"
 
 smoke:
-	@echo "cargo fmt --check"
-	@echo "cargo clippy"
-	@echo "cargo test"
-	@echo "npm run lint"
-	@echo "npm run test"
-	@echo "npm run build"
+	cargo fmt --all --check
+	cargo clippy --workspace --all-targets -- -D warnings
+	cargo test --workspace
+	npm --prefix browser ci
+	npm --prefix browser run lint
+	npm --prefix browser run test
+	npm --prefix browser run build
+
+security-smoke:
+	gitleaks detect --source . --redact
+	npx --yes license-checker --production --summary

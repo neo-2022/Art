@@ -1,0 +1,11 @@
+{
+  "name": "art-browser-level0",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "lint": "node ./scripts/lint.mjs",
+    "test": "node --test",
+    "build": "node ./scripts/build.mjs"
+  }
+}

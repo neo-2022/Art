@@ -10,9 +10,9 @@ use anyhow::Context;
 use async_stream::stream;
 use axum::extract::{Path, State};
 use axum::http::{Extensions, HeaderMap, HeaderValue, StatusCode, Version};
-use axum::response::Response;
 use axum::response::sse::{Event, Sse};
 use axum::response::IntoResponse;
+use axum::response::Response;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
@@ -164,8 +164,7 @@ struct ProfileBaseline {
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "info".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
         )
         .init();
 
@@ -173,7 +172,8 @@ async fn main() -> anyhow::Result<()> {
         .ok()
         .and_then(|v| v.parse::<u16>().ok())
         .unwrap_or(7070);
-    let config_path = env::var("CORE_CONFIG_PATH").unwrap_or_else(|_| "config/core.toml".to_string());
+    let config_path =
+        env::var("CORE_CONFIG_PATH").unwrap_or_else(|_| "config/core.toml".to_string());
     let config = load_core_config(&config_path)
         .with_context(|| format!("failed to load core config from {}", config_path))?;
     let effective_profile_id = validate_profile_guardrails(&config)?;
@@ -205,7 +205,9 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .with_context(|| format!("failed to bind {}", addr))?;
-    axum::serve(listener, app).await.context("core server failed")?;
+    axum::serve(listener, app)
+        .await
+        .context("core server failed")?;
     Ok(())
 }
 
@@ -229,7 +231,10 @@ fn build_app(state: Shared) -> Router {
 }
 
 async fn health() -> impl IntoResponse {
-    (StatusCode::OK, Json(json!({"status":"ok","service":"art-core"})))
+    (
+        StatusCode::OK,
+        Json(json!({"status":"ok","service":"art-core"})),
+    )
 }
 
 async fn effective_profile(State(state): State<Shared>) -> impl IntoResponse {
@@ -431,10 +436,7 @@ async fn snapshot(State(state): State<Shared>) -> impl IntoResponse {
     (StatusCode::OK, Json(body))
 }
 
-async fn stream_events(
-    State(state): State<Shared>,
-    headers: HeaderMap,
-) -> Response {
+async fn stream_events(State(state): State<Shared>, headers: HeaderMap) -> Response {
     let force_unavailable = headers
         .get("x-core-stream-force-unavailable")
         .and_then(|h| h.to_str().ok())
@@ -615,7 +617,10 @@ async fn incident_ack(Path(id): Path<String>, State(state): State<Shared>) -> im
         return (StatusCode::OK, Json(json!({"ok": true, "id": id})));
     }
     warn!("incident not found for ack: {}", id);
-    (StatusCode::NOT_FOUND, Json(json!({"ok": false, "error": "not_found"})))
+    (
+        StatusCode::NOT_FOUND,
+        Json(json!({"ok": false, "error": "not_found"})),
+    )
 }
 
 async fn incident_resolve(
@@ -628,7 +633,10 @@ async fn incident_resolve(
         return (StatusCode::OK, Json(json!({"ok": true, "id": id})));
     }
     warn!("incident not found for resolve: {}", id);
-    (StatusCode::NOT_FOUND, Json(json!({"ok": false, "error": "not_found"})))
+    (
+        StatusCode::NOT_FOUND,
+        Json(json!({"ok": false, "error": "not_found"})),
+    )
 }
 
 async fn actions_execute(Json(req): Json<ActionExecuteRequest>) -> impl IntoResponse {
@@ -1160,7 +1168,8 @@ updates_mode = "online"
                 .map(|k| k == "observability_gap.profile_violation")
                 .unwrap_or(false)
         });
-        let violation = violation.expect("expected observability_gap.profile_violation in snapshot");
+        let violation =
+            violation.expect("expected observability_gap.profile_violation in snapshot");
         assert!(violation["event"]["violated_rule"].is_string());
         assert!(violation["event"]["parameter"].is_string());
         assert!(violation["event"]["current_values"]["current"].is_string());
@@ -1242,7 +1251,10 @@ updates_mode = "online"
                 }
                 let bytes = resp.into_body().collect().await.expect("body").to_bytes();
                 let text = String::from_utf8(bytes.to_vec()).expect("utf8");
-                let keepalive_count = text.lines().filter(|l| l.contains("\"type\":\"keepalive\"")).count() as u64;
+                let keepalive_count = text
+                    .lines()
+                    .filter(|l| l.contains("\"type\":\"keepalive\""))
+                    .count() as u64;
                 (true, keepalive_count)
             }));
         }

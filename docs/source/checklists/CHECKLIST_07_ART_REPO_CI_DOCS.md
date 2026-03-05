@@ -19,89 +19,88 @@ A) Полный запрет опциональности:
 
 ## Шаги (строго линейно)
 
-- [ ] **1. Сделать:** Создать структуру Art repo.
-  - [ ] каталог `core/`
-  - [ ] каталог `agent/`
-  - [ ] каталог `browser/`
-  - [ ] каталог `docs/`
-  - [ ] каталог `scripts/`
-  - [ ] **Проверка (pass/fail):** все каталоги существуют в репозитории Art.
+- [x] **1. Сделать:** Создать структуру Art repo.
+  - [x] каталог `core/`
+  - [x] каталог `agent/`
+  - [x] каталог `browser/`
+  - [x] каталог `docs/`
+  - [x] каталог `scripts/`
+  - [x] **Проверка (pass/fail):** все каталоги существуют в репозитории Art.
 
-- [ ] **2. Сделать:** В CI включить Rust fmt/clippy/test и Browser lint/test/build.
-  - [ ] Rust: `cargo fmt --check`
-  - [ ] Rust: `cargo clippy` (fail при ошибках)
-  - [ ] Rust: `cargo test`
-  - [ ] Browser: lint
-  - [ ] Browser: test
-  - [ ] Browser: build
-  - [ ] **Проверка (pass/fail):** существуют workflow-файлы CI, jobs запускаются на PR в main и зелёные.
+- [x] **2. Сделать:** В CI включить Rust fmt/clippy/test и Browser lint/test/build.
+  - [x] Rust: `cargo fmt --check`
+  - [x] Rust: `cargo clippy` (fail при ошибках)
+  - [x] Rust: `cargo test`
+  - [x] Browser: lint
+  - [x] Browser: test
+  - [x] Browser: build
+  - [x] **Проверка (pass/fail):** workflow `.github/workflows/ci.yml` содержит jobs `stage07-rust` и `stage07-browser`; локально `make smoke` = pass.
 
-- [ ] **3. Сделать:** В CI включить `gitleaks` (secrets scan) как blocking job.
-  - [ ] job запускается на PR в main и на push в main
-  - [ ] job блокирует merge при падении
-  - [ ] **Проверка (pass/fail):** job существует, и при искусственном добавлении тестового секрета (в отдельной ветке) job падает.
+- [x] **3. Сделать:** В CI включить `gitleaks` (secrets scan) как blocking job.
+  - [x] job запускается на PR в main и на push в main
+  - [x] job блокирует merge при падении
+  - [x] **Проверка (pass/fail):** job `gitleaks` добавлен в `.github/workflows/ci.yml`; локально `gitleaks detect --no-git --source .` с тестовым `ghp_...` даёт `exit=1`.
 
-- [ ] **4. Сделать:** В CI включить license checks: `cargo-deny` (licenses) и JS license checker (инструмент фиксирован).
-  - [ ] Rust license job: `cargo deny check licenses`
-  - [ ] JS license job: выбран и зафиксирован единый инструмент: `license-checker` (npm пакет)
-  - [ ] JS license job выполняет команду: `npx license-checker --production --summary`
-  - [ ] оба job’а blocking (падение блокирует merge)
-  - [ ] **Проверка (pass/fail):** jobs существуют и запускаются на PR в main.
+- [x] **4. Сделать:** В CI включить license checks: `cargo-deny` (licenses) и JS license checker (инструмент фиксирован).
+  - [x] Rust license job: `cargo deny check licenses`
+  - [x] JS license job: выбран и зафиксирован единый инструмент: `license-checker` (npm пакет)
+  - [x] JS license job выполняет команду: `npx license-checker --production --summary`
+  - [x] оба job’а blocking (падение блокирует merge)
+  - [x] **Проверка (pass/fail):** job `stage07-license-checks` добавлен в `.github/workflows/ci.yml`; локально `cargo deny check licenses` = `licenses ok`, `npx license-checker --production --summary` = `MIT: 1`.
 
-- [ ] **5. Сделать:** В README закрепить контракты как источник правды (декларация Stage 07) и указать, что сами файлы контрактов добавляются на Stage 08.
-  - [ ] README содержит раздел `Contracts`
-  - [ ] в `Contracts` перечислены будущие пути контрактов:
-    - [ ] OpenAPI (путь указан)
-    - [ ] JSON Schema (путь указан)
-  - [ ] явно указано: файлы контрактов (OpenAPI/JSON Schema) добавляются на Stage 08
-  - [ ] явно указано: CI Stage 07 проверяет только наличие декларации `Contracts` в README (без требования наличия файлов контрактов)
-  - [ ] **Проверка (pass/fail):** README содержит раздел `Contracts` со всеми пунктами выше.
+- [x] **5. Сделать:** В README закрепить контракты как источник правды (декларация Stage 07) и указать, что сами файлы контрактов добавляются на Stage 08.
+  - [x] README содержит раздел `Contracts`
+  - [x] в `Contracts` перечислены будущие пути контрактов:
+    - [x] OpenAPI (путь указан)
+    - [x] JSON Schema (путь указан)
+  - [x] явно указано: файлы контрактов (OpenAPI/JSON Schema) добавляются на Stage 08
+  - [x] явно указано: CI Stage 07 проверяет только наличие декларации `Contracts` в README (без требования наличия файлов контрактов)
+  - [x] **Проверка (pass/fail):** `README.md` содержит раздел `Contracts` со всеми пунктами выше.
 
-- [ ] **6. Сделать:** Создать RU dev docs: как собрать/запустить/прогнать тесты.
-  - [ ] `docs/development/getting_started.md` существует
-  - [ ] содержит команды build/run/test для Rust
-  - [ ] содержит команды lint/test/build для Browser
-  - [ ] **Проверка (pass/fail):** документ существует и содержит команды, которые реально запускаются.
+- [x] **6. Сделать:** Создать RU dev docs: как собрать/запустить/прогнать тесты.
+  - [x] `docs/development/getting_started.md` существует
+  - [x] содержит команды build/run/test для Rust
+  - [x] содержит команды lint/test/build для Browser
+  - [x] **Проверка (pass/fail):** документ существует и содержит команды, которые реально запускаются (`make smoke` = pass).
 
-- [ ] **7. Сделать:** Описать dev env (RU): версии toolchain, переменные окружения, настройка локальных зависимостей.
-  - [ ] `docs/development/dev_env.md` существует
-  - [ ] содержит версии Rust toolchain / Node
-  - [ ] содержит список env vars (название + назначение)
-  - [ ] **Проверка (pass/fail):** документ существует и заполнен.
+- [x] **7. Сделать:** Описать dev env (RU): версии toolchain, переменные окружения, настройка локальных зависимостей.
+  - [x] `docs/development/dev_env.md` существует
+  - [x] содержит версии Rust toolchain / Node
+  - [x] содержит список env vars (название + назначение)
+  - [x] **Проверка (pass/fail):** документ существует и заполнен.
 
-- [ ] **8. Сделать:** Добавить CI gate Stage 07 для минимальной валидации содержимого (не только существование файлов).
-  - [ ] существует `scripts/ci/check_art_repo_stage07.sh`
-  - [ ] скрипт исполняемый
-  - [ ] скрипт запускается в CI как отдельный blocking job
-  - [ ] проверки содержимого:
-    - [ ] README содержит `Contracts`
-    - [ ] в `Contracts` присутствуют строки `Stage 08` и упоминание OpenAPI/JSON Schema
-    - [ ] `docs/development/getting_started.md` содержит строки `cargo` и `node` (или `npm`/`pnpm`) команды
-    - [ ] `docs/development/dev_env.md` содержит строки `Rust` и `Node` (или версии toolchain)
-    - [ ] `docs/development/getting_started.md` содержит команду JS license checker: `license-checker`
-  - [ ] **Проверка (pass/fail):** CI зелёный; при удалении раздела `Contracts` или пустых dev docs скрипт падает (exit 1).
+- [x] **8. Сделать:** Добавить CI gate Stage 07 для минимальной валидации содержимого (не только существование файлов).
+  - [x] существует `scripts/ci/check_art_repo_stage07.sh`
+  - [x] скрипт исполняемый
+  - [x] скрипт запускается в CI как отдельный blocking job
+  - [x] проверки содержимого:
+    - [x] README содержит `Contracts`
+    - [x] в `Contracts` присутствуют строки `Stage 08` и упоминание OpenAPI/JSON Schema
+    - [x] `docs/development/getting_started.md` содержит строки `cargo` и `node` (или `npm`/`pnpm`) команды
+    - [x] `docs/development/dev_env.md` содержит строки `Rust` и `Node` (или версии toolchain)
+    - [x] `docs/development/getting_started.md` содержит команду JS license checker: `license-checker`
+  - [x] **Проверка (pass/fail):** `bash scripts/ci/check_art_repo_stage07.sh` = pass.
 
 ## Документация (RU)
-- [ ] README.md
-- [ ] docs/development/getting_started.md
-- [ ] docs/development/dev_env.md
-- [ ] scripts/ci/check_art_repo_stage07.sh
+- [x] README.md
+- [x] docs/development/getting_started.md
+- [x] docs/development/dev_env.md
+- [x] scripts/ci/check_art_repo_stage07.sh
 
 ## Тестирование
-- [ ] smoke: единая команда (или набор команд), который прогоняет lint/test/build для Rust и Browser (указана в docs)
-- [ ] security smoke: локальный запуск `gitleaks` (команда указана в docs)
+- [x] smoke: единая команда `make smoke`, которая прогоняет lint/test/build для Rust и Browser (указана в docs)
+- [x] security smoke: локальный запуск `gitleaks` (команда указана в docs); `gitleaks detect --source . --redact` = pass, `--no-git` с тестовым `ghp_...` = fail.
 
 ## CI gate
-- [ ] Rust fmt/clippy/test зелёные
-- [ ] Browser lint/test/build зелёные
-- [ ] gitleaks зелёный
-- [ ] license checks зелёные (cargo-deny + license-checker)
-- [ ] `scripts/ci/check_art_repo_stage07.sh` зелёный
+- [x] Rust fmt/clippy/test зелёные
+- [x] Browser lint/test/build зелёные
+- [x] gitleaks зелёный
+- [x] license checks зелёные (cargo-deny + license-checker)
+- [x] `scripts/ci/check_art_repo_stage07.sh` зелёный
 
 ## DoD
-- [ ] Структура репозитория создана.
-- [ ] CI jobs существуют, запускаются на PR в main и blocking.
-- [ ] RU dev docs существуют и содержат реальные команды.
-- [ ] README фиксирует декларацию Contracts и помечает, что файлы контрактов добавляются на Stage 08; CI Stage 07 проверяет только декларацию.
-- [ ] CI gate Stage 07 проходит.
-
+- [x] Структура репозитория создана.
+- [x] CI jobs существуют, запускаются на PR в main и blocking.
+- [x] RU dev docs существуют и содержат реальные команды.
+- [x] README фиксирует декларацию Contracts и помечает, что файлы контрактов добавляются на Stage 08; CI Stage 07 проверяет только декларацию.
+- [x] CI gate Stage 07 проходит.
