@@ -17,11 +17,11 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
 use tokio::sync::RwLock;
 use tokio::time::Duration;
 use tower_http::compression::CompressionLayer;
 use tracing::{info, warn};
-use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct StoredEvent {
@@ -623,7 +623,10 @@ fn ingest_now_ms(headers: &HeaderMap) -> u64 {
 }
 
 fn string_field(event: &Value, key: &str) -> Option<String> {
-    event.get(key).and_then(Value::as_str).map(|s| s.to_string())
+    event
+        .get(key)
+        .and_then(Value::as_str)
+        .map(|s| s.to_string())
 }
 
 fn contains_injection_pattern(value: &str) -> bool {
@@ -1287,7 +1290,9 @@ mod tests {
             .uri("/api/v1/ingest")
             .header("content-type", "application/json")
             .header("x-core-ingest-force-storage-error", "1")
-            .body(Body::from(r#"{"events":[{"severity":"info","msg":"drop"}]}"#))
+            .body(Body::from(
+                r#"{"events":[{"severity":"info","msg":"drop"}]}"#,
+            ))
             .expect("request");
         let first_resp = app.clone().oneshot(first).await.expect("response");
         assert_eq!(first_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
@@ -1313,7 +1318,9 @@ mod tests {
             .method("POST")
             .uri("/api/v1/ingest")
             .header("content-type", "application/json")
-            .body(Body::from(r#"{"events":[{"severity":"info","msg":"ok2"}]}"#))
+            .body(Body::from(
+                r#"{"events":[{"severity":"info","msg":"ok2"}]}"#,
+            ))
             .expect("request");
         let third_resp = app.oneshot(third).await.expect("response");
         assert_eq!(third_resp.status(), StatusCode::OK);
@@ -1359,8 +1366,12 @@ mod tests {
             .to_bytes();
         let json: Value = serde_json::from_slice(&body).expect("json");
         let items = json["items"].as_array().expect("items");
-        assert!(items.iter().any(|i| i["run_id"] == "run-1" && i["trace_id"] == "trace-1" && i["span_id"] == "span-1"));
-        assert!(items.iter().any(|i| i["run_id"].is_null() && i["trace_id"].is_null() && i["span_id"].is_null()));
+        assert!(items.iter().any(|i| i["run_id"] == "run-1"
+            && i["trace_id"] == "trace-1"
+            && i["span_id"] == "span-1"));
+        assert!(items
+            .iter()
+            .any(|i| i["run_id"].is_null() && i["trace_id"].is_null() && i["span_id"].is_null()));
     }
 
     #[tokio::test]
@@ -1437,7 +1448,10 @@ mod tests {
                 .map(|k| k == "security.template_injection_blocked")
                 .unwrap_or(false)
         }));
-        let sanitized = events.iter().find(|e| e["event"]["msg"].is_string()).expect("event with msg");
+        let sanitized = events
+            .iter()
+            .find(|e| e["event"]["msg"].is_string())
+            .expect("event with msg");
         let msg = sanitized["event"]["msg"].as_str().expect("msg");
         assert!(msg.contains("\\$("));
         assert!(msg.contains("\\;"));
@@ -1487,7 +1501,9 @@ mod tests {
             .uri("/api/v1/ingest")
             .header("content-type", "application/json")
             .header("x-core-now-ms", "0")
-            .body(Body::from(r#"{"events":[{"severity":"info","msg":"a","source_id":"src-a"}]}"#))
+            .body(Body::from(
+                r#"{"events":[{"severity":"info","msg":"a","source_id":"src-a"}]}"#,
+            ))
             .expect("request");
         let first_resp = app.clone().oneshot(first).await.expect("response");
         assert_eq!(first_resp.status(), StatusCode::OK);
@@ -1497,7 +1513,9 @@ mod tests {
             .uri("/api/v1/ingest")
             .header("content-type", "application/json")
             .header("x-core-now-ms", "700001")
-            .body(Body::from(r#"{"events":[{"severity":"info","msg":"b","source_id":"src-b"}]}"#))
+            .body(Body::from(
+                r#"{"events":[{"severity":"info","msg":"b","source_id":"src-b"}]}"#,
+            ))
             .expect("request");
         let second_resp = app.clone().oneshot(second).await.expect("response");
         assert_eq!(second_resp.status(), StatusCode::OK);
