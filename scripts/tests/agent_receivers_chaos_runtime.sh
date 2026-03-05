@@ -5,6 +5,7 @@ PORT="${AGENT_RECEIVERS_CHAOS_PORT:-18072}"
 BASE_URL="http://127.0.0.1:${PORT}"
 TMP_DIR="$(mktemp -d)"
 AGENT_PID=""
+STARTUP_TIMEOUT_SECONDS="${AGENT_STARTUP_TIMEOUT_SECONDS:-180}"
 
 cleanup() {
   if [[ -n "${AGENT_PID}" ]] && kill -0 "${AGENT_PID}" 2>/dev/null; then
@@ -16,13 +17,17 @@ cleanup() {
 trap cleanup EXIT
 
 wait_health() {
-  for _ in $(seq 1 100); do
+  local deadline=$(( $(date +%s) + STARTUP_TIMEOUT_SECONDS ))
+  while (( $(date +%s) < deadline )); do
     if curl -fsS "${BASE_URL}/health" >/dev/null 2>&1; then
       return 0
     fi
-    sleep 0.2
+    sleep 0.5
   done
   echo "agent receivers chaos: health timeout" >&2
+  if [[ -s "${TMP_DIR}/agent.log" ]]; then
+    tail -n 50 "${TMP_DIR}/agent.log" >&2 || true
+  fi
   return 1
 }
 

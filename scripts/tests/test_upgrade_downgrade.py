@@ -8,7 +8,7 @@ import urllib.error
 import urllib.request
 
 
-def _wait_ready(port: int, timeout: float = 20.0) -> None:
+def _wait_ready(port: int, timeout: float = 180.0) -> None:
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:

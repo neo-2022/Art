@@ -8,6 +8,17 @@ import unittest
 import urllib.request
 
 
+def wait_core_ready(port: str, timeout: float = 180.0) -> None:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/metrics", timeout=1):
+                return
+        except Exception:
+            time.sleep(0.2)
+    raise AssertionError(f"core not ready on port {port}")
+
+
 class RuProfileTests(unittest.TestCase):
     def test_export_blocked_for_ru_profile(self):
         with tempfile.TemporaryDirectory() as td:
@@ -33,17 +44,7 @@ class RuProfileTests(unittest.TestCase):
                 stderr=subprocess.DEVNULL,
             )
             try:
-                deadline = time.time() + 20
-                while time.time() < deadline:
-                    try:
-                        with urllib.request.urlopen(
-                            f"http://127.0.0.1:{port}/metrics", timeout=1
-                        ):
-                            break
-                    except Exception:
-                        time.sleep(0.2)
-                else:
-                    self.fail("core not ready")
+                wait_core_ready(port)
 
                 ingest_req = urllib.request.Request(
                     f"http://127.0.0.1:{port}/api/v1/ingest",
@@ -100,17 +101,7 @@ class RuProfileTests(unittest.TestCase):
                 stderr=subprocess.DEVNULL,
             )
             try:
-                deadline = time.time() + 20
-                while time.time() < deadline:
-                    try:
-                        with urllib.request.urlopen(
-                            f"http://127.0.0.1:{port}/metrics", timeout=1
-                        ):
-                            break
-                    except Exception:
-                        time.sleep(0.2)
-                else:
-                    self.fail("core ru profile not ready")
+                wait_core_ready(port)
 
                 env = os.environ.copy()
                 env["CORE_BASE_URL"] = f"http://127.0.0.1:{port}"

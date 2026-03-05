@@ -7,6 +7,7 @@ DB="$TMP_DIR/core.db"
 BAK="$TMP_DIR/backups/core-$(date +%Y%m%d-%H%M).sqlite3"
 RESTORED_DB="$TMP_DIR/core-restored.db"
 PORT="${CORE_PORT:-18090}"
+STARTUP_TIMEOUT_SECONDS="${CORE_STARTUP_TIMEOUT_SECONDS:-180}"
 
 CORE_PID=""
 STREAM_PID=""
@@ -38,13 +39,20 @@ cd "$ROOT_DIR"
 CORE_PORT="$PORT" cargo run -p art-core >/tmp/ops_stage23_core.log 2>&1 &
 CORE_PID=$!
 
-for _ in $(seq 1 80); do
+deadline=$(( $(date +%s) + STARTUP_TIMEOUT_SECONDS ))
+while (( $(date +%s) < deadline )); do
   if curl -fsS "http://127.0.0.1:${PORT}/metrics" >/dev/null 2>&1; then
     break
   fi
-  sleep 0.25
+  sleep 0.5
 done
-curl -fsS "http://127.0.0.1:${PORT}/metrics" >/dev/null
+if ! curl -fsS "http://127.0.0.1:${PORT}/metrics" >/dev/null; then
+  echo "core metrics readiness timeout on port ${PORT}" >&2
+  if [[ -s /tmp/ops_stage23_core.log ]]; then
+    tail -n 80 /tmp/ops_stage23_core.log >&2 || true
+  fi
+  exit 1
+fi
 
 INGEST_CODE="$(
   curl -sS -o "$TMP_DIR/ingest.json" -w "%{http_code}" \

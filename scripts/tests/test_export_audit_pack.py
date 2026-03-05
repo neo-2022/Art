@@ -10,7 +10,7 @@ import unittest
 import urllib.request
 
 
-def wait_core_ready(port: int, timeout: float = 20.0) -> None:
+def wait_core_ready(port: int, timeout: float = 180.0) -> None:
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:

@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PORT="${CORE_PORT:-18080}"
+STARTUP_TIMEOUT_SECONDS="${CORE_STARTUP_TIMEOUT_SECONDS:-180}"
 
 cd "$ROOT_DIR"
 
@@ -16,13 +17,20 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for _ in $(seq 1 40); do
+deadline=$(( $(date +%s) + STARTUP_TIMEOUT_SECONDS ))
+while (( $(date +%s) < deadline )); do
   if curl -fsS "http://127.0.0.1:${PORT}/metrics" >/dev/null 2>&1; then
     break
   fi
-  sleep 0.25
+  sleep 0.5
 done
-curl -fsS "http://127.0.0.1:${PORT}/metrics" >/dev/null
+if ! curl -fsS "http://127.0.0.1:${PORT}/metrics" >/dev/null; then
+  echo "core metrics readiness timeout on port ${PORT}" >&2
+  if [[ -s /tmp/pack_regart_runtime_api_core.log ]]; then
+    tail -n 80 /tmp/pack_regart_runtime_api_core.log >&2 || true
+  fi
+  exit 1
+fi
 
 python3 - "$PORT" <<'PY'
 import json

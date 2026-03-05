@@ -26,7 +26,7 @@ jobs:
         run: bash scripts/tests/stream_soak_with_artifacts.sh artifacts/stage14-soak
 
       - name: Upload stage14 soak artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: stage14-soak-${{ github.run_id }}
           path: artifacts/stage14-soak
