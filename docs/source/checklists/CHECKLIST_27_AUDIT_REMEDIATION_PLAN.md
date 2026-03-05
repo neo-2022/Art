@@ -24,9 +24,9 @@
 - 16 — Условно: усилить offline/SW негативные сценарии
 - 17 — Проблема: chaos smoke placeholder в CI
 - 18 — Условно: усилить receiver chaos matrix
-- 19 — Проблема: packs runtime слишком synthetic
-- 20 — Условно: привязать fixture проверки к runtime API
-- 21 — Проблема: self-observability тесты изолированные, не системные
+- 19 — Условно: runtime install тестируется из реального pack layout (manifest/payload/signatures)
+- 20 — Условно: fixture/examples тестируются через реальный pack dir; усилить e2e через runtime API
+- 21 — Условно: добавлен runtime smoke на core (source_stale/metrics_unavailable), но нет полного e2e по 4 internal incidents
 - 22 — Проблема: e2e/chaos/perf проверяются grep/заглушками
 - 23 — Проблема: ops/dr smoke не выполняет реальные сценарии
 - 24 — Проблема: signing/upgrade-downgrade не проверяются end-to-end
@@ -48,7 +48,8 @@
 
 ## Критичные исправления по файлам
 - `.github/workflows/ci.yml`: убрать placeholder и grep-only jobs для 17,22,23,24,25,26.
-- `scripts/tests/*stage22*`, `test_upgrade_downgrade.py`, `test_self_observability.py`: перейти от synthetic констант к runtime проверкам.
+- `scripts/tests/*stage22*`, `test_upgrade_downgrade.py`: перейти от synthetic констант к runtime проверкам.
+- `test_self_observability.py`: держать связку с runtime smoke (`scripts/tests/self_observability_runtime_smoke.sh`) и расширить до полного e2e по 4 internal incidents.
 - `scripts/export_audit_pack.sh`: экспорт из реальных данных, не synthetic JSON.
 - `docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`: закрытие только после реального integration evidence.
 

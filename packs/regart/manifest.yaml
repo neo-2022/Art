@@ -5,4 +5,4 @@ dependencies:
   - name: base-observability
     version_range: ">=1.0.0,<2.0.0"
 entrypoints:
-  - packs/regart/rules/enrich.json
+  - rules/enrich.json
