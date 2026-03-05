@@ -1,0 +1,12 @@
+[Unit]
+Description=Art Core SQLite VACUUM (safe mode)
+After=network.target
+
+[Service]
+Type=oneshot
+User=%i
+Environment=ART_CORE_DB_PATH=%h/.local/share/art/core.sqlite3
+Environment=ART_INGEST_ACTIVE_FILE=%h/.local/share/art/ingest_active.flag
+ExecStart=/usr/bin/env bash -lc 'if [ -f "$ART_INGEST_ACTIVE_FILE" ]; then echo "ingest_active=1, skip vacuum"; exit 0; fi; sqlite3 "$ART_CORE_DB_PATH" "PRAGMA wal_checkpoint(TRUNCATE); VACUUM;"'
+StandardOutput=journal
+StandardError=journal

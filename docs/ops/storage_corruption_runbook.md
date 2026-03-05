@@ -1,9 +1,16 @@
 # Runbook: storage_corruption
 
-При corruption:
-1. ingest -> HTTP 503
-2. ответ содержит retry_after_ms
-3. генерируется `observability_gap.storage_corrupted`
+При corruption (строгий порядок):
+1. ingest -> `HTTP 503`
+2. ответ содержит `retry_after_ms` (>= 0)
+3. генерируется `observability_gap.storage_corrupted` с evidence:
+   - `db_path`
+   - `corruption_type`
+   - `sqlite_error`
+   - `last_ok_backup_id` (`none`, если backup отсутствует)
+   - `trace_id`
 4. restore из последнего валидного backup
-5. integrity check
-6. если restore неуспешен -> read_only + `observability_gap.storage_read_only`
+5. `integrity check` после restore
+6. если restore неуспешен -> режим `read_only`
+7. в `read_only` ingest остаётся на `HTTP 503` + `retry_after_ms`
+8. генерируется `observability_gap.storage_read_only`
