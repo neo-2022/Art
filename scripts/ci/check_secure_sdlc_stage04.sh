@@ -6,7 +6,7 @@ done
 grep -q "clean build" docs/security/secure_sdlc_policy.md
 grep -q "reproducible" docs/security/secure_sdlc_policy.md
 grep -q "artifact hash" docs/security/secure_sdlc_policy.md
-for c in "security-stage04 / sdlc-gate" "security-stage04 / sast" "security-stage04 / sca" "security-stage04 / license" "security-stage04 / secrets"; do
+for c in "sdlc-gate" "sast" "sca" "license" "secrets"; do
   grep -q "$c" docs/security/branch_tag_policy.md
 done
 grep -q "commit SHA" docs/security/ci_pinning_policy.md

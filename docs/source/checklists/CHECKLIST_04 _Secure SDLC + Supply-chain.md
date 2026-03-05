@@ -36,11 +36,11 @@ A) Полный запрет опциональности:
   - [x] force-push в `main` запрещён
   - [x] теги релизов защищены (запрет переписывания релизных тегов)
   - [x] required status checks для `main` заданы точным списком имён (без “и т.п.”):
-    - [x] `security-stage04 / sdlc-gate`
-    - [x] `security-stage04 / sast`
-    - [x] `security-stage04 / sca`
-    - [x] `security-stage04 / license`
-    - [x] `security-stage04 / secrets`
+    - [x] `sdlc-gate`
+    - [x] `sast`
+    - [x] `sca`
+    - [x] `license`
+    - [x] `secrets`
   - [x] **Проверка (pass/fail):** существует `docs/security/branch_tag_policy.md`, содержит все пункты выше явно, включая полный список required status checks с точными именами.
 
 - [x] **3. Сделать:** Зафиксировать требование подписанных коммитов в `main` и правило проверки.
@@ -178,7 +178,7 @@ A) Полный запрет опциональности:
 - [x] scripts/ci/check_secure_sdlc_stage04.sh
 
 ## Тестирование
-- [x] security CI jobs зелёные на PR в main: `security-stage04 / sdlc-gate`, `sast`, `sca`, `license`, `secrets` (run `22705479817`, success)
+- [x] security CI jobs зелёные на PR в main: `sdlc-gate`, `sast`, `sca`, `license`, `secrets` (run `22705479817`, success)
 - [x] release CI jobs зелёные: SBOM + cosign sign + verify (run `22705930171`, success)
 
 ## CI gate
