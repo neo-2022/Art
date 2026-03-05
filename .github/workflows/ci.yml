@@ -301,7 +301,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Ingest integration
-        run: echo "ingest integration placeholder"
+        run: |
+          cargo test --package art-core ingest_returns_invalid_details_for_bad_event
+          cargo test --package art-core ingest_returns_413_and_pushes_payload_too_large_gap
+          cargo test --package art-core ingest_storage_error_increments_dropped_and_pushes_unavailable_gap
 
   ingest-load-smoke:
     name: ingest-load-smoke
@@ -310,7 +313,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Ingest load smoke
-        run: echo "ingest load smoke placeholder"
+        run: |
+          cargo test --package art-core ingest_returns_503_and_pushes_ingest_overloaded_gap
 
   ingest-chaos-smoke:
     name: ingest-chaos-smoke
@@ -319,7 +323,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Ingest chaos smoke
-        run: echo "ingest chaos smoke placeholder"
+        run: |
+          cargo test --package art-core ingest_ack_upto_seq_is_monotonic_after_error_recovery
 
   stage12-docs-gate:
     name: stage12-docs-gate

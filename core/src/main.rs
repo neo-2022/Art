@@ -332,8 +332,20 @@ async fn ingest(
     Json(payload): Json<IngestEnvelope>,
 ) -> impl IntoResponse {
     let mut s = state.write().await;
+    let trace_id = format!("ingest-{}", now_ms());
     if let Some(len) = content_length(&headers) {
         if len > s.max_payload_bytes {
+            let max_payload_bytes = s.max_payload_bytes;
+            push_gap_event_locked(
+                &mut s,
+                "observability_gap.ingest_payload_too_large",
+                json!({
+                    "payload_size": len,
+                    "max_size": max_payload_bytes,
+                    "retry_after_ms": 1_000,
+                    "trace_id": trace_id
+                }),
+            );
             let err = BackpressureError {
                 error: "payload_too_large".to_string(),
                 retry_after_ms: 1_000,
@@ -349,6 +361,17 @@ async fn ingest(
         return (StatusCode::TOO_MANY_REQUESTS, Json(json!(err))).into_response();
     }
     if s.events.len() >= s.queue_depth_limit {
+        let queue_depth = s.events.len();
+        push_gap_event_locked(
+            &mut s,
+            "observability_gap.ingest_overloaded",
+            json!({
+                "queue_depth": queue_depth,
+                "inflight": 0,
+                "retry_after_ms": 1_500,
+                "trace_id": trace_id
+            }),
+        );
         let err = BackpressureError {
             error: "ingest_overloaded".to_string(),
             retry_after_ms: 1_500,
@@ -359,6 +382,12 @@ async fn ingest(
     let mut accepted = 0usize;
     let mut invalid_details = Vec::new();
     let mut upto_seq = s.next_seq.saturating_sub(1);
+    let force_storage_error = headers
+        .get("x-core-ingest-force-storage-error")
+        .and_then(|h| h.to_str().ok())
+        .map(|v| v == "1")
+        .unwrap_or(false)
+        || env::var("CORE_INGEST_FORCE_STORAGE_ERROR").ok().as_deref() == Some("1");
 
     for (idx, event) in payload.events.into_iter().enumerate() {
         match validate_event(&event) {
@@ -372,6 +401,27 @@ async fn ingest(
                 s.counters.ingest_invalid_total += 1;
             }
             None => {
+                if force_storage_error {
+                    let queue_depth = s.events.len();
+                    s.counters.ingest_dropped_total += 1;
+                    push_gap_event_locked(
+                        &mut s,
+                        "observability_gap.ingest_unavailable",
+                        json!({
+                            "reason": "forced_storage_error",
+                            "error": "storage write failed",
+                            "queue_depth": queue_depth,
+                            "inflight": 0,
+                            "retry_after_ms": 1_200,
+                            "trace_id": trace_id
+                        }),
+                    );
+                    let err = BackpressureError {
+                        error: "ingest_unavailable".to_string(),
+                        retry_after_ms: 1_200,
+                    };
+                    return (StatusCode::SERVICE_UNAVAILABLE, Json(json!(err))).into_response();
+                }
                 let seq = s.next_seq;
                 s.next_seq += 1;
                 upto_seq = seq;
@@ -396,6 +446,23 @@ async fn ingest(
         invalid_details,
     };
     (StatusCode::OK, Json(response)).into_response()
+}
+
+fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
+    let seq = s.next_seq;
+    s.next_seq += 1;
+    s.events.push_back(StoredEvent {
+        seq,
+        ts_ms: now_ms(),
+        event: json!({
+            "kind": kind,
+            "severity": "error",
+            "details": details
+        }),
+    });
+    if s.events.len() > s.queue_depth_limit {
+        s.events.pop_front();
+    }
 }
 
 fn validate_event(event: &Value) -> Option<(String, String, String)> {
@@ -862,6 +929,199 @@ mod tests {
         let body = resp.into_body().collect().await.expect("body").to_bytes();
         let json: Value = serde_json::from_slice(&body).expect("json");
         assert!(json["retry_after_ms"].as_u64().is_some());
+    }
+
+    #[tokio::test]
+    async fn ingest_returns_413_and_pushes_payload_too_large_gap() {
+        let app = build_app(test_state());
+        let payload = json!({ "events": [{"severity":"info","msg":"x"}] });
+        let huge = 600_000usize;
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .header("content-length", huge.to_string())
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::PAYLOAD_TOO_LARGE);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert!(json["retry_after_ms"].as_u64().is_some());
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.oneshot(snapshot_req).await.expect("response");
+        let snapshot_body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let snapshot_json: Value = serde_json::from_slice(&snapshot_body).expect("json");
+        let events = snapshot_json["events"].as_array().expect("events");
+        assert!(events.iter().any(|e| {
+            e["event"]["kind"]
+                .as_str()
+                .map(|k| k == "observability_gap.ingest_payload_too_large")
+                .unwrap_or(false)
+        }));
+    }
+
+    #[tokio::test]
+    async fn ingest_returns_503_and_pushes_ingest_overloaded_gap() {
+        let state = test_state();
+        {
+            let mut s = state.write().await;
+            s.queue_depth_limit = 1;
+            s.events.push_back(StoredEvent {
+                seq: 1,
+                ts_ms: now_ms(),
+                event: json!({"severity":"info","msg":"prefill"}),
+            });
+            s.next_seq = 2;
+        }
+        let app = build_app(state);
+        let payload = json!({ "events": [{"severity":"info","msg":"x"}] });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert!(json["retry_after_ms"].as_u64().is_some());
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.oneshot(snapshot_req).await.expect("response");
+        let snapshot_body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let snapshot_json: Value = serde_json::from_slice(&snapshot_body).expect("json");
+        let events = snapshot_json["events"].as_array().expect("events");
+        assert!(events.iter().any(|e| {
+            e["event"]["kind"]
+                .as_str()
+                .map(|k| k == "observability_gap.ingest_overloaded")
+                .unwrap_or(false)
+        }));
+    }
+
+    #[tokio::test]
+    async fn ingest_storage_error_increments_dropped_and_pushes_unavailable_gap() {
+        let app = build_app(test_state());
+        let payload = json!({ "events": [{"severity":"info","msg":"x"}] });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .header("x-core-ingest-force-storage-error", "1")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert!(json["retry_after_ms"].as_u64().is_some());
+
+        let metrics_req = Request::builder()
+            .method("GET")
+            .uri("/metrics")
+            .body(Body::empty())
+            .expect("request");
+        let metrics_resp = app.clone().oneshot(metrics_req).await.expect("response");
+        let metrics_body = metrics_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let text = String::from_utf8(metrics_body.to_vec()).expect("utf8");
+        assert!(text.contains("ingest_dropped_total 1"));
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.oneshot(snapshot_req).await.expect("response");
+        let snapshot_body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let snapshot_json: Value = serde_json::from_slice(&snapshot_body).expect("json");
+        let events = snapshot_json["events"].as_array().expect("events");
+        assert!(events.iter().any(|e| {
+            e["event"]["kind"]
+                .as_str()
+                .map(|k| k == "observability_gap.ingest_unavailable")
+                .unwrap_or(false)
+        }));
+    }
+
+    #[tokio::test]
+    async fn ingest_ack_upto_seq_is_monotonic_after_error_recovery() {
+        let app = build_app(test_state());
+        let first = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .header("x-core-ingest-force-storage-error", "1")
+            .body(Body::from(r#"{"events":[{"severity":"info","msg":"drop"}]}"#))
+            .expect("request");
+        let first_resp = app.clone().oneshot(first).await.expect("response");
+        assert_eq!(first_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+
+        let second = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(r#"{"events":[{"severity":"info","msg":"ok"}]}"#))
+            .expect("request");
+        let second_resp = app.clone().oneshot(second).await.expect("response");
+        assert_eq!(second_resp.status(), StatusCode::OK);
+        let second_body = second_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let second_json: Value = serde_json::from_slice(&second_body).expect("json");
+        let seq_after = second_json["ack"]["upto_seq"].as_u64().expect("upto seq");
+
+        let third = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(r#"{"events":[{"severity":"info","msg":"ok2"}]}"#))
+            .expect("request");
+        let third_resp = app.oneshot(third).await.expect("response");
+        assert_eq!(third_resp.status(), StatusCode::OK);
+        let third_body = third_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let third_json: Value = serde_json::from_slice(&third_body).expect("json");
+        let seq_after2 = third_json["ack"]["upto_seq"].as_u64().expect("upto seq");
+        assert!(seq_after2 > seq_after);
     }
 
     #[test]
