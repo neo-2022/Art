@@ -6,7 +6,7 @@
 
 - `docs/source/Art_v1_spec_final.md` — нормативная мастер-спецификация Art v1.
 - `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md` — целевая модель интеграции REGART с Art.
-- `docs/source/checklists/` — полный набор чек-листов реализации и приёмки.
+- `docs/source/checklists/` — полный набор чек-листов реализации, приёмки и аудита.
 
 Подробный индекс исходников: `docs/source/README.md`.
 
@@ -24,6 +24,7 @@
 - `17..18` — Agent: spool/outbox и receivers.
 - `19..20` — framework паков и pack REGART.
 - `21..26` — self-observability, тестирование, ops, release, compliance, RU-профиль.
+- `27` — аудит соответствия и ремедиация (runtime/CI hardening).
 
 Подробный индекс чек-листов: `docs/source/checklists/README.md`.
 Детализация этапов `05..06` хранится в репозитории REGART: `https://github.com/neo-2022/my_langgraph_agent`.
