@@ -399,6 +399,30 @@ jobs:
       - name: Stage 14 docs gate
         run: bash scripts/ci/check_stream_stage14_docs.sh
 
+  actions-audit-tests:
+    name: actions-audit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 15 actions/audit tests
+        run: |
+          cargo test -p art-core rbac_matrix_enforced_for_actions_and_audit
+          cargo test -p art-core mcp_modes_enforced_for_actions
+          cargo test -p art-core audit_contains_normalized_client_ip_and_user_agent
+          cargo test -p art-core access_denied_event_emitted_for_forbidden_action
+          cargo test -p art-core actions_secret_redaction_happens_pre_write
+          cargo test -p art-core audit_is_append_only_update_delete_forbidden
+
+  stage15-docs-gate:
+    name: stage15-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 15 docs gate
+        run: bash scripts/ci/check_actions_stage15_docs.sh
+
   agent-spool-tests:
     name: agent-spool-tests
     runs-on: ubuntu-latest

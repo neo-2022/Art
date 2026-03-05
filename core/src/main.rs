@@ -3,6 +3,7 @@ use std::convert::Infallible;
 use std::env;
 use std::fs;
 use std::net::SocketAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -58,6 +59,9 @@ struct CoreState {
     queue_depth_limit: usize,
     max_batch_events: usize,
     max_payload_bytes: usize,
+    audits: Vec<AuditEntry>,
+    next_audit_id: u64,
+    limited_actions_allowlist: Vec<String>,
 }
 
 impl CoreState {
@@ -66,6 +70,7 @@ impl CoreState {
         queue_depth_limit: usize,
         max_batch_events: usize,
         max_payload_bytes: usize,
+        limited_actions_allowlist: Vec<String>,
     ) -> Self {
         Self {
             next_seq: 1,
@@ -78,6 +83,9 @@ impl CoreState {
             queue_depth_limit,
             max_batch_events,
             max_payload_bytes,
+            audits: Vec::new(),
+            next_audit_id: 1,
+            limited_actions_allowlist,
         }
     }
 }
@@ -128,6 +136,7 @@ struct SnapshotResponse {
 struct ActionExecuteRequest {
     action: String,
     target: Option<String>,
+    params: Option<Value>,
 }
 
 #[derive(Debug, Serialize)]
@@ -135,6 +144,67 @@ struct ActionExecuteResponse {
     accepted: bool,
     action: String,
     target: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct AuditEntry {
+    id: u64,
+    timestamp: u64,
+    actor_id: String,
+    actor_role: String,
+    mcp_mode: String,
+    action: String,
+    target: String,
+    result: String,
+    trace_id: String,
+    evidence_ref: String,
+    client_ip: String,
+    user_agent: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ActorRole {
+    Viewer,
+    Operator,
+    Admin,
+}
+
+impl ActorRole {
+    fn as_str(self) -> &'static str {
+        match self {
+            ActorRole::Viewer => "viewer",
+            ActorRole::Operator => "operator",
+            ActorRole::Admin => "admin",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum McpMode {
+    ReadOnly,
+    LimitedActions,
+    FullAdmin,
+}
+
+impl McpMode {
+    fn as_str(self) -> &'static str {
+        match self {
+            McpMode::ReadOnly => "read_only",
+            McpMode::LimitedActions => "limited_actions",
+            McpMode::FullAdmin => "full_admin",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Endpoint {
+    Snapshot,
+    Stream,
+    IncidentsGet,
+    IncidentAck,
+    IncidentResolve,
+    ActionsExecute,
+    AuditGet,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -197,12 +267,23 @@ async fn main() -> anyhow::Result<()> {
         .ok()
         .and_then(|v| v.parse::<usize>().ok())
         .unwrap_or(524_288);
+    let limited_actions_allowlist = env::var("CORE_LIMITED_ACTIONS_ALLOWLIST")
+        .ok()
+        .map(|raw| {
+            raw.split(',')
+                .map(str::trim)
+                .filter(|v| !v.is_empty())
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_else(|| vec!["service.restart".to_string(), "service.status".to_string()]);
 
     let state = Arc::new(RwLock::new(CoreState::new(
         effective_profile_id,
         queue_depth_limit,
         max_batch_events,
         max_payload_bytes,
+        limited_actions_allowlist,
     )));
 
     let app = build_app(state);
@@ -234,6 +315,11 @@ fn build_app(state: Shared) -> Router {
         .route("/api/v1/incidents/:id/ack", post(incident_ack))
         .route("/api/v1/incidents/:id/resolve", post(incident_resolve))
         .route("/api/v1/actions/execute", post(actions_execute))
+        .route("/api/v1/audit", get(audit_list))
+        .route(
+            "/api/v1/audit/:id",
+            axum::routing::put(audit_mutation_forbidden).delete(audit_mutation_forbidden),
+        )
         .with_state(state)
 }
 
@@ -696,7 +782,10 @@ fn sha256_hex(input: &str) -> String {
     format!("{:x}", bytes)
 }
 
-async fn snapshot(State(state): State<Shared>) -> impl IntoResponse {
+async fn snapshot(State(state): State<Shared>, headers: HeaderMap) -> impl IntoResponse {
+    if let Err(deny) = enforce_rbac(&state, &headers, Endpoint::Snapshot, None, None).await {
+        return deny;
+    }
     let s = state.read().await;
     let events: Vec<StoredEvent> = s.events.iter().rev().take(200).cloned().collect();
     let cursor = events.iter().map(|e| e.seq).max().unwrap_or(0);
@@ -707,10 +796,13 @@ async fn snapshot(State(state): State<Shared>) -> impl IntoResponse {
         events,
         incidents: s.incidents.clone(),
     };
-    (StatusCode::OK, Json(body))
+    (StatusCode::OK, Json(body)).into_response()
 }
 
 async fn stream_events(State(state): State<Shared>, headers: HeaderMap) -> Response {
+    if let Err(deny) = enforce_rbac(&state, &headers, Endpoint::Stream, None, None).await {
+        return deny;
+    }
     let force_unavailable = headers
         .get("x-core-stream-force-unavailable")
         .and_then(|h| h.to_str().ok())
@@ -879,47 +971,524 @@ async fn push_gap_event(state: &Shared, kind: &str, details: Value) {
     }
 }
 
-async fn incidents(State(state): State<Shared>) -> impl IntoResponse {
+async fn audit_list(State(state): State<Shared>, headers: HeaderMap) -> impl IntoResponse {
+    if let Err(deny) = enforce_rbac(&state, &headers, Endpoint::AuditGet, None, None).await {
+        return deny;
+    }
     let s = state.read().await;
-    (StatusCode::OK, Json(json!({ "items": s.incidents })))
+    (StatusCode::OK, Json(json!({ "items": s.audits }))).into_response()
 }
 
-async fn incident_ack(Path(id): Path<String>, State(state): State<Shared>) -> impl IntoResponse {
+async fn audit_mutation_forbidden(
+    Path(_id): Path<u64>,
+    State(state): State<Shared>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    if let Err(deny) = enforce_rbac(&state, &headers, Endpoint::AuditGet, None, None).await {
+        return deny;
+    }
+    (
+        StatusCode::METHOD_NOT_ALLOWED,
+        Json(json!({"ok": false, "error": "audit_append_only"})),
+    )
+        .into_response()
+}
+
+impl McpMode {
+    fn from_headers(headers: &HeaderMap) -> Self {
+        let raw = headers
+            .get("x-mcp-mode")
+            .and_then(|h| h.to_str().ok())
+            .map(|s| s.to_string())
+            .or_else(|| env::var("CORE_MCP_MODE").ok())
+            .unwrap_or_else(|| "full_admin".to_string());
+        match raw.as_str() {
+            "read_only" => McpMode::ReadOnly,
+            "limited_actions" => McpMode::LimitedActions,
+            "full_admin" => McpMode::FullAdmin,
+            _ => McpMode::ReadOnly,
+        }
+    }
+}
+
+fn role_from_headers(headers: &HeaderMap) -> Option<ActorRole> {
+    match headers
+        .get("x-actor-role")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("viewer")
+    {
+        "viewer" => Some(ActorRole::Viewer),
+        "operator" => Some(ActorRole::Operator),
+        "admin" => Some(ActorRole::Admin),
+        _ => None,
+    }
+}
+
+fn rbac_allows(role: ActorRole, endpoint: Endpoint) -> bool {
+    match endpoint {
+        Endpoint::Snapshot | Endpoint::Stream | Endpoint::IncidentsGet => true,
+        Endpoint::IncidentAck | Endpoint::IncidentResolve | Endpoint::ActionsExecute => {
+            matches!(role, ActorRole::Operator | ActorRole::Admin)
+        }
+        Endpoint::AuditGet => matches!(role, ActorRole::Admin),
+    }
+}
+
+async fn enforce_rbac(
+    state: &Shared,
+    headers: &HeaderMap,
+    endpoint: Endpoint,
+    action: Option<&str>,
+    target: Option<&str>,
+) -> Result<(), Response> {
+    let role = role_from_headers(headers);
+    if role.is_some() && rbac_allows(role.expect("checked"), endpoint) {
+        return Ok(());
+    }
+    push_access_denied(
+        state,
+        headers,
+        endpoint_name(endpoint),
+        "rbac_denied",
+        action.unwrap_or("none"),
+        target.unwrap_or("none"),
+    )
+    .await;
+    Err((
+        StatusCode::FORBIDDEN,
+        Json(json!({"ok": false, "error": "access_denied"})),
+    )
+        .into_response())
+}
+
+async fn enforce_mcp_mode(
+    state: &Shared,
+    headers: &HeaderMap,
+    mode: McpMode,
+    action: &str,
+    target: &str,
+    allowlist: &[String],
+) -> Result<(), Response> {
+    match mode {
+        McpMode::ReadOnly => {
+            push_access_denied(
+                state,
+                headers,
+                endpoint_name(Endpoint::ActionsExecute),
+                "mcp_denied",
+                action,
+                target,
+            )
+            .await;
+            Err((
+                StatusCode::FORBIDDEN,
+                Json(json!({"ok": false, "error": "access_denied"})),
+            )
+                .into_response())
+        }
+        McpMode::LimitedActions => {
+            if allowlist.iter().any(|allowed| allowed == action) {
+                Ok(())
+            } else {
+                push_access_denied(
+                    state,
+                    headers,
+                    endpoint_name(Endpoint::ActionsExecute),
+                    "mcp_denied",
+                    action,
+                    target,
+                )
+                .await;
+                Err((
+                    StatusCode::FORBIDDEN,
+                    Json(json!({"ok": false, "error": "access_denied"})),
+                )
+                    .into_response())
+            }
+        }
+        McpMode::FullAdmin => Ok(()),
+    }
+}
+
+async fn push_access_denied(
+    state: &Shared,
+    headers: &HeaderMap,
+    endpoint: &str,
+    reason: &str,
+    action: &str,
+    target: &str,
+) {
+    let role = role_from_headers(headers)
+        .map(ActorRole::as_str)
+        .unwrap_or("unknown");
+    let mcp_mode = McpMode::from_headers(headers).as_str();
+    push_gap_event(
+        state,
+        "security.access_denied",
+        json!({
+            "what": "access denied",
+            "where": "/api/v1",
+            "why": reason,
+            "evidence": {
+                "endpoint": endpoint,
+                "actor_role": role,
+                "mcp_mode": mcp_mode,
+                "action": action,
+                "reason": reason
+            },
+            "actions": {
+                "action_ref": "docs/runbooks/access_denied.md"
+            },
+            "trace_id": trace_id_from_headers(headers),
+            "target": target
+        }),
+    )
+    .await;
+}
+
+fn endpoint_name(endpoint: Endpoint) -> &'static str {
+    match endpoint {
+        Endpoint::Snapshot => "/api/v1/snapshot",
+        Endpoint::Stream => "/api/v1/stream",
+        Endpoint::IncidentsGet => "/api/v1/incidents",
+        Endpoint::IncidentAck => "/api/v1/incidents/{id}/ack",
+        Endpoint::IncidentResolve => "/api/v1/incidents/{id}/resolve",
+        Endpoint::ActionsExecute => "/api/v1/actions/execute",
+        Endpoint::AuditGet => "/api/v1/audit",
+    }
+}
+
+fn trace_id_from_headers(headers: &HeaderMap) -> String {
+    headers
+        .get("x-trace-id")
+        .and_then(|h| h.to_str().ok())
+        .map(|v| v.to_string())
+        .unwrap_or_else(|| format!("trace-{}", now_ms()))
+}
+
+fn actor_id_from_headers(headers: &HeaderMap) -> String {
+    headers
+        .get("x-actor-id")
+        .and_then(|h| h.to_str().ok())
+        .map(|v| v.to_string())
+        .unwrap_or_else(|| "anonymous".to_string())
+}
+
+fn client_ip_from_headers(headers: &HeaderMap) -> String {
+    let raw = headers
+        .get("x-forwarded-for")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|v| v.split(',').next())
+        .or_else(|| headers.get("x-real-ip").and_then(|h| h.to_str().ok()))
+        .unwrap_or("0.0.0.0");
+    normalize_ip(raw)
+}
+
+fn normalize_ip(raw: &str) -> String {
+    match raw.trim().parse::<IpAddr>() {
+        Ok(IpAddr::V4(v4)) => {
+            let oct = v4.octets();
+            Ipv4Addr::new(oct[0], oct[1], oct[2], 0).to_string()
+        }
+        Ok(IpAddr::V6(v6)) => {
+            let seg = v6.segments();
+            Ipv6Addr::new(seg[0], seg[1], seg[2], 0, 0, 0, 0, 0).to_string()
+        }
+        Err(_) => "0.0.0.0".to_string(),
+    }
+}
+
+fn user_agent_from_headers(headers: &HeaderMap) -> String {
+    let ua = headers
+        .get("user-agent")
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("unknown");
+    truncate_utf8(ua, 256)
+}
+
+fn truncate_utf8(value: &str, max_len: usize) -> String {
+    if value.chars().count() <= max_len {
+        return value.to_string();
+    }
+    value.chars().take(max_len).collect()
+}
+
+fn sanitize_sensitive(value: &Value) -> (Value, bool) {
+    fn recurse(v: &Value, changed: &mut bool) -> Value {
+        match v {
+            Value::Object(map) => {
+                let mut out = serde_json::Map::new();
+                for (k, val) in map {
+                    if ["password", "secret", "token", "api_key", "authorization"]
+                        .iter()
+                        .any(|p| k.to_ascii_lowercase().contains(p))
+                    {
+                        *changed = true;
+                        out.insert(k.clone(), Value::String("***redacted***".to_string()));
+                    } else {
+                        out.insert(k.clone(), recurse(val, changed));
+                    }
+                }
+                Value::Object(out)
+            }
+            Value::Array(arr) => Value::Array(arr.iter().map(|i| recurse(i, changed)).collect()),
+            Value::String(s) => {
+                let lower = s.to_ascii_lowercase();
+                if lower.contains("bearer ")
+                    || lower.contains("token=")
+                    || lower.contains("password=")
+                    || lower.contains("secret=")
+                {
+                    *changed = true;
+                    Value::String("***redacted***".to_string())
+                } else {
+                    Value::String(s.clone())
+                }
+            }
+            _ => v.clone(),
+        }
+    }
+    let mut changed = false;
+    let sanitized = recurse(value, &mut changed);
+    (sanitized, changed)
+}
+
+fn build_audit_entry(
+    headers: &HeaderMap,
+    action: &str,
+    target: &str,
+    result: &str,
+    evidence_ref: &str,
+) -> AuditEntry {
+    build_audit_entry_with_params(headers, action, target, result, evidence_ref, Value::Null)
+}
+
+fn build_audit_entry_with_params(
+    headers: &HeaderMap,
+    action: &str,
+    target: &str,
+    result: &str,
+    evidence_ref: &str,
+    params: Value,
+) -> AuditEntry {
+    let mode = McpMode::from_headers(headers);
+    let role = role_from_headers(headers)
+        .map(ActorRole::as_str)
+        .unwrap_or("unknown");
+    let mut target_value = target.to_string();
+    if !params.is_null() {
+        target_value = format!("{}|params={}", target, params);
+    }
+    let (target_json, _) = sanitize_sensitive(&Value::String(target_value));
+    let target_clean = target_json.as_str().unwrap_or("none").to_string();
+    let (ua_json, _) = sanitize_sensitive(&Value::String(user_agent_from_headers(headers)));
+    let user_agent_clean = truncate_utf8(ua_json.as_str().unwrap_or("unknown"), 256);
+    let (ip_json, _) = sanitize_sensitive(&Value::String(client_ip_from_headers(headers)));
+    let client_ip_clean = ip_json.as_str().unwrap_or("0.0.0.0").to_string();
+    AuditEntry {
+        id: 0,
+        timestamp: now_ms(),
+        actor_id: actor_id_from_headers(headers),
+        actor_role: role.to_string(),
+        mcp_mode: mode.as_str().to_string(),
+        action: action.to_string(),
+        target: target_clean,
+        result: result.to_string(),
+        trace_id: trace_id_from_headers(headers),
+        evidence_ref: evidence_ref.to_string(),
+        client_ip: client_ip_clean,
+        user_agent: user_agent_clean,
+    }
+}
+
+fn append_audit_entry(state: &mut CoreState, mut entry: AuditEntry) {
+    entry.id = state.next_audit_id;
+    state.next_audit_id += 1;
+    state.audits.push(entry);
+}
+
+async fn incidents(State(state): State<Shared>, headers: HeaderMap) -> impl IntoResponse {
+    if let Err(deny) = enforce_rbac(&state, &headers, Endpoint::IncidentsGet, None, None).await {
+        return deny;
+    }
+    let s = state.read().await;
+    (StatusCode::OK, Json(json!({ "items": s.incidents }))).into_response()
+}
+
+async fn incident_ack(
+    Path(id): Path<String>,
+    State(state): State<Shared>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let deny = enforce_rbac(
+        &state,
+        &headers,
+        Endpoint::IncidentAck,
+        Some("incident.ack"),
+        Some(&id),
+    )
+    .await
+    .err();
     let mut s = state.write().await;
+    if let Some(resp) = deny {
+        append_audit_entry(
+            &mut s,
+            build_audit_entry(
+                &headers,
+                "incident.ack",
+                &id,
+                "denied",
+                "docs/runbooks/access_denied.md",
+            ),
+        );
+        return resp;
+    }
     if let Some(item) = s.incidents.iter_mut().find(|x| x.id == id) {
         item.status = "acknowledged".to_string();
-        return (StatusCode::OK, Json(json!({"ok": true, "id": id})));
+        append_audit_entry(
+            &mut s,
+            build_audit_entry(&headers, "incident.ack", &id, "success", "none"),
+        );
+        return (StatusCode::OK, Json(json!({"ok": true, "id": id}))).into_response();
     }
+    append_audit_entry(
+        &mut s,
+        build_audit_entry(&headers, "incident.ack", &id, "error", "none"),
+    );
     warn!("incident not found for ack: {}", id);
     (
         StatusCode::NOT_FOUND,
         Json(json!({"ok": false, "error": "not_found"})),
     )
+        .into_response()
 }
 
 async fn incident_resolve(
     Path(id): Path<String>,
     State(state): State<Shared>,
+    headers: HeaderMap,
 ) -> impl IntoResponse {
+    let deny = enforce_rbac(
+        &state,
+        &headers,
+        Endpoint::IncidentResolve,
+        Some("incident.resolve"),
+        Some(&id),
+    )
+    .await
+    .err();
     let mut s = state.write().await;
+    if let Some(resp) = deny {
+        append_audit_entry(
+            &mut s,
+            build_audit_entry(
+                &headers,
+                "incident.resolve",
+                &id,
+                "denied",
+                "docs/runbooks/access_denied.md",
+            ),
+        );
+        return resp;
+    }
     if let Some(item) = s.incidents.iter_mut().find(|x| x.id == id) {
         item.status = "resolved".to_string();
-        return (StatusCode::OK, Json(json!({"ok": true, "id": id})));
+        append_audit_entry(
+            &mut s,
+            build_audit_entry(&headers, "incident.resolve", &id, "success", "none"),
+        );
+        return (StatusCode::OK, Json(json!({"ok": true, "id": id}))).into_response();
     }
+    append_audit_entry(
+        &mut s,
+        build_audit_entry(&headers, "incident.resolve", &id, "error", "none"),
+    );
     warn!("incident not found for resolve: {}", id);
     (
         StatusCode::NOT_FOUND,
         Json(json!({"ok": false, "error": "not_found"})),
     )
+        .into_response()
 }
 
-async fn actions_execute(Json(req): Json<ActionExecuteRequest>) -> impl IntoResponse {
+async fn actions_execute(
+    State(state): State<Shared>,
+    headers: HeaderMap,
+    Json(req): Json<ActionExecuteRequest>,
+) -> impl IntoResponse {
+    let target = req.target.clone().unwrap_or_else(|| "none".to_string());
+    let deny = if let Err(resp) = enforce_rbac(
+        &state,
+        &headers,
+        Endpoint::ActionsExecute,
+        Some(&req.action),
+        Some(&target),
+    )
+    .await
+    {
+        Some(resp)
+    } else {
+        let allowlist = {
+            let s = state.read().await;
+            s.limited_actions_allowlist.clone()
+        };
+        enforce_mcp_mode(
+            &state,
+            &headers,
+            McpMode::from_headers(&headers),
+            &req.action,
+            &target,
+            &allowlist,
+        )
+        .await
+        .err()
+    };
+    let mut s = state.write().await;
+    let (sanitized_params, redacted) =
+        sanitize_sensitive(&req.params.clone().unwrap_or(Value::Null));
+    if redacted {
+        push_gap_event_locked(
+            &mut s,
+            "privacy.redaction_applied",
+            json!({
+                "scope": "actions.execute.params",
+                "action": req.action,
+                "target": target,
+                "trace_id": trace_id_from_headers(&headers)
+            }),
+        );
+    }
+    if let Some(resp) = deny {
+        append_audit_entry(
+            &mut s,
+            build_audit_entry_with_params(
+                &headers,
+                &req.action,
+                &target,
+                "denied",
+                "docs/runbooks/access_denied.md",
+                sanitized_params,
+            ),
+        );
+        return resp;
+    }
+    append_audit_entry(
+        &mut s,
+        build_audit_entry_with_params(
+            &headers,
+            &req.action,
+            &target,
+            "success",
+            "none",
+            sanitized_params,
+        ),
+    );
     let response = ActionExecuteResponse {
         accepted: true,
         action: req.action,
         target: req.target,
     };
-    (StatusCode::OK, Json(response))
+    (StatusCode::OK, Json(response)).into_response()
 }
 
 fn load_core_config(path: &str) -> anyhow::Result<CoreConfig> {
@@ -1065,6 +1634,7 @@ mod tests {
             10_000,
             200,
             524_288,
+            vec!["service.restart".to_string(), "service.status".to_string()],
         )))
     }
 
@@ -1852,6 +2422,282 @@ updates_mode = "online"
         assert!(violation["event"]["parameter"].is_string());
         assert!(violation["event"]["current_values"]["current"].is_string());
         assert!(violation["event"]["current_values"]["expected"].is_string());
+    }
+
+    #[tokio::test]
+    async fn rbac_matrix_enforced_for_actions_and_audit() {
+        let app = build_app(test_state());
+
+        let viewer_action = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "viewer")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core"}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(viewer_action).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+
+        let operator_action = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core"}"#,
+            ))
+            .expect("request");
+        let resp = app
+            .clone()
+            .oneshot(operator_action)
+            .await
+            .expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let operator_audit = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit")
+            .header("x-actor-role", "operator")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(operator_audit).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+
+        let admin_audit = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.oneshot(admin_audit).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn mcp_modes_enforced_for_actions() {
+        let app = build_app(test_state());
+
+        let ro = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "admin")
+            .header("x-mcp-mode", "read_only")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core"}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(ro).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+
+        let limited_block = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .header("x-mcp-mode", "limited_actions")
+            .body(Body::from(r#"{"action":"unknown.action","target":"core"}"#))
+            .expect("request");
+        let resp = app.clone().oneshot(limited_block).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+
+        let full_admin = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .header("x-mcp-mode", "full_admin")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core"}"#,
+            ))
+            .expect("request");
+        let resp = app.oneshot(full_admin).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn audit_contains_normalized_client_ip_and_user_agent() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .header("x-actor-id", "u-1")
+            .header("x-forwarded-for", "203.0.113.99")
+            .header("user-agent", "Stage15Agent/1.0")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core"}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let audit = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.oneshot(audit).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        let first = &json["items"][0];
+        assert_eq!(first["client_ip"], "203.0.113.0");
+        assert_eq!(first["user_agent"], "Stage15Agent/1.0");
+        assert_eq!(first["actor_id"], "u-1");
+    }
+
+    #[tokio::test]
+    async fn access_denied_event_emitted_for_forbidden_action() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "viewer")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core"}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+
+        let snap_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot = app.oneshot(snap_req).await.expect("response");
+        let body = snapshot
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert!(json["events"]
+            .as_array()
+            .unwrap_or(&Vec::new())
+            .iter()
+            .any(|e| e["event"]["kind"] == "security.access_denied"
+                && e["event"]["details"]["actions"]["action_ref"]
+                    == "docs/runbooks/access_denied.md"));
+    }
+
+    #[tokio::test]
+    async fn actions_secret_redaction_happens_pre_write() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core","params":{"password":"abc123","note":"ok"}}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let audit = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(audit).await.expect("response");
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        let target = json["items"][0]["target"].as_str().unwrap_or("");
+        assert!(!target.contains("abc123"));
+        assert!(target.contains("***redacted***"));
+
+        let snap_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot = app.oneshot(snap_req).await.expect("response");
+        let body = snapshot
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert!(json["events"]
+            .as_array()
+            .unwrap_or(&Vec::new())
+            .iter()
+            .any(|e| e["event"]["kind"] == "privacy.redaction_applied"));
+    }
+
+    #[tokio::test]
+    async fn audit_is_append_only_update_delete_forbidden() {
+        let app = build_app(test_state());
+        let create = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core"}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(create).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let before = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(before).await.expect("response");
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json_before: Value = serde_json::from_slice(&body).expect("json");
+        let before_count = json_before["items"]
+            .as_array()
+            .map(|a| a.len())
+            .unwrap_or(0);
+        let first_before = json_before["items"][0].clone();
+
+        let put_req = Request::builder()
+            .method("PUT")
+            .uri("/api/v1/audit/1")
+            .header("x-actor-role", "admin")
+            .body(Body::from("{}"))
+            .expect("request");
+        let put_resp = app.clone().oneshot(put_req).await.expect("response");
+        assert_eq!(put_resp.status(), StatusCode::METHOD_NOT_ALLOWED);
+
+        let del_req = Request::builder()
+            .method("DELETE")
+            .uri("/api/v1/audit/1")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let del_resp = app.clone().oneshot(del_req).await.expect("response");
+        assert_eq!(del_resp.status(), StatusCode::METHOD_NOT_ALLOWED);
+
+        let after = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.oneshot(after).await.expect("response");
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json_after: Value = serde_json::from_slice(&body).expect("json");
+        let after_count = json_after["items"].as_array().map(|a| a.len()).unwrap_or(0);
+        assert_eq!(before_count, after_count);
+        assert_eq!(first_before, json_after["items"][0]);
     }
 
     #[tokio::test]
