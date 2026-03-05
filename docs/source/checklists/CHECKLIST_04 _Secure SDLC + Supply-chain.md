@@ -97,6 +97,7 @@ A) Полный запрет опциональности:
     - [x] `ui/dist/*`
     - [x] `sbom.spdx.json`
     - [x] `checksums.txt`
+    - [x] `provenance.attestation.json`
   - [x] verify выполняется в CI как обязательный gate для релизов
   - [x] подписи/attestation публикуются вместе с релизом
   - [x] **Проверка (pass/fail):** существует `docs/security/provenance_signing.md`, содержит все пункты выше явно, включая перечень артефактов.
@@ -134,9 +135,10 @@ A) Полный запрет опциональности:
   - [x] workflow имеет имя `release-stage04` (точно)
   - [x] workflow генерирует SBOM (syft, SPDX JSON) как `sbom.spdx.json`
   - [x] workflow генерирует `checksums.txt` для релизных артефактов
+  - [x] workflow генерирует `provenance.attestation.json` (repository/ref/sha/run metadata + SHA256 subjects)
   - [x] workflow подписывает cosign (keyless OIDC) все артефакты из шага 9
-  - [x] workflow выполняет verify подписи как обязательный шаг
-  - [x] **Проверка (pass/fail):** workflow существует; релизный запуск публикует артефакты + `sbom.spdx.json` + `checksums.txt` + подписи/attestation; verify шаг присутствует и обязателен (run `22705930171`, tag `v0.0.0-stage04-20260305094652`).
+  - [x] workflow выполняет verify подписи и verify содержимого `provenance.attestation.json` как обязательные шаги
+  - [x] **Проверка (pass/fail):** workflow существует; релизный запуск публикует артефакты + `sbom.spdx.json` + `checksums.txt` + `provenance.attestation.json` + подписи/attestation; verify шаги присутствуют и обязательны.
 
 - [x] **14. Сделать:** Добавить CI gate Stage 04: проверка наличия документов и минимальной валидации их содержания + полная проверка pinning для всех actions, включая actions внутри локальных composite actions.
   - [x] существует исполняемый скрипт `scripts/ci/check_secure_sdlc_stage04.sh`

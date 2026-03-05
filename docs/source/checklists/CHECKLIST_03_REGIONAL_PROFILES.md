@@ -136,10 +136,12 @@ A) Полный запрет опциональности:
 - [x] integration: смена профиля только по процедуре (шаг 3)
 - [x] integration: guardrails блокируют запуск/применение при нарушении (шаги 6–7)
 - [x] integration: airgapped update — отказ без подписи/несовместимость; успех при валидных условиях (шаги 9–10)
+- [x] integration (negative runtime): `/api/v1/profile/apply` отклоняет invalid `profile_id` и invalid guardrail values; в snapshot фиксируется `observability_gap.profile_violation` с evidence (`scripts/tests/profile_negative_runtime_integration.sh`)
 
 ## CI gate
 - [x] `scripts/ci/check_regional_profiles_stage03.sh` включён в CI для PR в main
 - [x] автотесты Stage 03 включены в CI и зелёные
+- [x] CI job `stage03-profile-negative-integration` включён и запускает `scripts/tests/profile_negative_runtime_integration.sh`
 
 ## DoD
 - [x] Профили и параметры заданы однозначно (без ссылок “как в другом профиле”)

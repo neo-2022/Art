@@ -23,31 +23,33 @@ else
   STRICT_EXTERNAL=0
 fi
 
-# Source-of-truth repo (prefer local sibling checkout).
-if [[ -n "${MY_LANGGRAPH_AGENT_DIR:-}" ]]; then
-  EXT_REPO="$MY_LANGGRAPH_AGENT_DIR"
-elif [[ -d "$ROOT/../my_langgraph_agent" ]]; then
-  EXT_REPO="$ROOT/../my_langgraph_agent"
-else
-  EXT_REPO="$ROOT/.tmp/my_langgraph_agent"
-  if [[ ! -d "$EXT_REPO" ]]; then
-    git clone --depth 1 https://github.com/neo-2022/my_langgraph_agent.git "$EXT_REPO"
+EXT_REPO=""
+EXT_CHECKLIST=""
+UI_PROXY=""
+ITESTS=""
+ITESTS_ACTIONS=""
+if [[ "$STRICT_EXTERNAL" -eq 1 ]]; then
+  if [[ -n "${MY_LANGGRAPH_AGENT_DIR:-}" ]]; then
+    EXT_REPO="$MY_LANGGRAPH_AGENT_DIR"
+  elif [[ -d "$ROOT/../my_langgraph_agent" ]]; then
+    EXT_REPO="$ROOT/../my_langgraph_agent"
+  else
+    echo "stage06: strict mode requires local my_langgraph_agent checkout"
+    exit 1
   fi
+  EXT_CHECKLIST="$EXT_REPO/CHECKLIST_REGART_ART_INTEGRATION.md"
+  UI_PROXY="$EXT_REPO/agent/src/react_agent/ui_proxy.py"
+  ITESTS="$EXT_REPO/agent/tests/integration_tests/test_ui_art_ingest.py"
+  ITESTS_ACTIONS="$EXT_REPO/agent/tests/integration_tests/test_ui_proxy_service_actions.py"
 fi
-
-EXT_CHECKLIST="$EXT_REPO/CHECKLIST_REGART_ART_INTEGRATION.md"
-UI_PROXY="$EXT_REPO/agent/src/react_agent/ui_proxy.py"
-ITESTS="$EXT_REPO/agent/tests/integration_tests/test_ui_art_ingest.py"
-ITESTS_ACTIONS="$EXT_REPO/agent/tests/integration_tests/test_ui_proxy_service_actions.py"
 
 # Local wrapper docs must exist.
 for f in "$ART_CHECKLIST" "$RUNBOOK" "$ERROR_FMT_DOC"; do
   test -s "$f"
 done
 
-# External source-of-truth checklist must exist in all modes.
-test -s "$EXT_CHECKLIST"
 if [[ "$STRICT_EXTERNAL" -eq 1 ]]; then
+  test -s "$EXT_CHECKLIST"
   for f in "$UI_PROXY" "$ITESTS" "$ITESTS_ACTIONS"; do
     test -s "$f"
   done
@@ -56,6 +58,25 @@ fi
 # Wrapper must explicitly reference source-of-truth.
 grep -q "CHECKLIST_REGART_ART_INTEGRATION.md" "$ART_CHECKLIST"
 grep -q "my_langgraph_agent" "$ART_CHECKLIST"
+
+# Reject inconsistent checklist state: parent [x] with unchecked child [ ].
+python3 - "$ART_CHECKLIST" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines()
+parent_done = False
+parent_line = ""
+for ln in lines:
+    if re.match(r"^- \[(x| )\] \*\*\d+\. Сделать:", ln):
+        parent_done = ln.startswith("- [x]")
+        parent_line = ln
+        continue
+    if parent_done and re.match(r"^  - \[ \]", ln):
+        raise SystemExit(f"inconsistent checklist state: parent done but child open\nparent: {parent_line}\nchild: {ln}")
+PY
 
 # Required evidence names in wrapper docs/checklist must be explicit.
 for name in \
@@ -125,14 +146,32 @@ PY
     do
     grep -q "$name" "$ITESTS"
   done
+
+  python3 - "$EXT_CHECKLIST" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines()
+parent_done = False
+parent_line = ""
+for ln in lines:
+    if re.match(r"^- \[(x| )\] \*\*\d+\. Сделать:", ln):
+        parent_done = ln.startswith("- [x]")
+        parent_line = ln
+        continue
+    if parent_done and re.match(r"^  - \[ \]", ln):
+        raise SystemExit(f"inconsistent checklist state in source-of-truth\nparent: {parent_line}\nchild: {ln}")
+PY
 else
   echo "stage06: strict external code checks skipped (no local source-of-truth checkout)"
 fi
 
 # Core requirement phrases must be present.
-PHRASE_TARGET="$EXT_CHECKLIST"
-if [[ "$STRICT_EXTERNAL" -ne 1 ]]; then
-  PHRASE_TARGET="$ART_CHECKLIST"
+PHRASE_TARGET="$ART_CHECKLIST"
+if [[ "$STRICT_EXTERNAL" -eq 1 ]]; then
+  PHRASE_TARGET="$EXT_CHECKLIST"
 fi
 for phrase in \
   "never_drop_unacked" \

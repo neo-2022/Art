@@ -91,6 +91,15 @@ jobs:
       - name: Stage 03 airgapped update integration
         run: bash scripts/tests/airgapped_pack_update_integration.sh
 
+  stage03-profile-negative-integration:
+    name: stage03-profile-negative-integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 03 negative runtime integration
+        run: bash scripts/tests/profile_negative_runtime_integration.sh
+
   stage05-wrapper-gate:
     name: stage05-wrapper-gate
     runs-on: ubuntu-latest
