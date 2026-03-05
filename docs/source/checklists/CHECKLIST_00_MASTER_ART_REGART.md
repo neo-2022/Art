@@ -87,7 +87,7 @@ A) Полный запрет опциональности:
 | [x] 03 | CHECKLIST_03_REGIONAL_PROFILES.md | Региональные профили | profile switch + airgapped packs update | 2026-03-05, neo-2022, stage03 runtime+tests |
 | [x] 04 | CHECKLIST_04 _Secure SDLC + Supply-chain.md | Secure SDLC | clean builds + branch policy + signed commits + sigstore/cosign | |
 | [x] 05 | CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md | REGART UI/Debugger | wrapper → external source-of-truth `my_langgraph_agent/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` | 2026-03-05, neo-2022, stage05 wrapper gate |
-| [ ] 06 | CHECKLIST_06_REGART_ART_BRIDGE.md | REGART→Art bridge | wrapper → external source-of-truth `my_langgraph_agent/CHECKLIST_REGART_ART_INTEGRATION.md` | |
+| [x] 06 | CHECKLIST_06_REGART_ART_BRIDGE.md | REGART→Art bridge | wrapper → external source-of-truth `my_langgraph_agent/CHECKLIST_REGART_ART_INTEGRATION.md` | 2026-03-05, neo-2022, stage06 wrapper gate |
 | [ ] 07 | CHECKLIST_07_ART_REPO_CI_DOCS.md | Art repo WP0 | CI включает gitleaks + licenses + RU dev docs | |
 | [ ] 08 | CHECKLIST_08_ART_CONTRACTS_OPENAPI_CODEGEN.md | Contracts | schema registry + spec compliance + unknown-fields tests | |
 | [ ] 09 | CHECKLIST_09_TELEMETRY_OTEL_OTLP.md | Telemetry | unknown attrs→payload.otel_attributes + severity tests + OTLP rate-limit | |
