@@ -16,6 +16,6 @@
   "scripts": {
     "lint": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.json && node ./scripts/generate-static.mjs",
-    "test": "npm run build && node --test test/*.test.mjs"
+    "test": "corepack pnpm -C ../.. run console:build && node --test test/*.test.mjs"
   }
 }
