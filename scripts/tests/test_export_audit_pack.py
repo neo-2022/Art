@@ -72,7 +72,11 @@ class ExportAuditPackTests(unittest.TestCase):
         action_req = urllib.request.Request(
             f"{base}/api/v1/actions/execute",
             data=json.dumps({"action": "service.status", "target": "core"}).encode("utf-8"),
-            headers={"Content-Type": "application/json", "x-actor-role": "admin"},
+            headers={
+                "Content-Type": "application/json",
+                "x-actor-role": "admin",
+                "x-action-preflight-id": "pf-export-seed-1",
+            },
             method="POST",
         )
         with urllib.request.urlopen(action_req, timeout=10) as resp:
