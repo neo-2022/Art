@@ -95,7 +95,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - запрет “public by default”
     - правило логирования: не писать attachment bytes и не писать PII метаданные без redaction
 
-12. [ ] **Сделать:** Зафиксировать требования шифрования: TLS in-transit; encryption at rest для хранилищ событий/аудита/вложений; управление ключами и ротация.  
+12. [x] **Сделать:** Зафиксировать требования шифрования: TLS in-transit; encryption at rest для хранилищ событий/аудита/вложений; управление ключами и ротация.  
     **Проверка (pass/fail):** существует `docs/privacy/encryption_policy.md`, содержит:
     - требования TLS
     - требования encryption-at-rest для каждого типа хранилища
