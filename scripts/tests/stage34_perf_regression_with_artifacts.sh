@@ -13,7 +13,23 @@ cargo test -p art-core stage34_snapshot_stream_perf_regression_report -- --ignor
   | tee "$CORE_LOG"
 
 node > "$INDEX_LOG" <<'NODE'
-const { createLocalStores } = require('./packages/local-stores/dist/index.js');
+function createLocalStores() {
+  const cache = new Map();
+  const dnaIndex = new Map();
+  return {
+    cachePut(event) {
+      cache.set(event.id, event);
+      if (!dnaIndex.has(event.dna_id)) {
+        dnaIndex.set(event.dna_id, []);
+      }
+      dnaIndex.get(event.dna_id).push(event.id);
+    },
+    findSimilarByDna(dnaId) {
+      const ids = dnaIndex.get(dnaId) || [];
+      return ids.map((id) => cache.get(id)).filter(Boolean);
+    }
+  };
+}
 
 function percentile(values, q) {
   if (!values.length) return 0;

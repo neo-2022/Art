@@ -3815,7 +3815,7 @@ mod tests {
         if profile == "burst" {
             event["severity"] = Value::String("error".to_string());
             event["kind"] = Value::String(format!("burst.{}", idx % 5));
-        } else if profile == "skewed" && idx % 10 != 0 {
+        } else if profile == "skewed" && !idx.is_multiple_of(10) {
             event["kind"] = Value::String("svc.hotspot".to_string());
             event["payload"]["service"] = Value::String("service-hot".to_string());
         }
@@ -4650,7 +4650,7 @@ mod tests {
                 .map(|offset| stage34_profile_event("skewed", produced + offset))
                 .collect();
 
-            let force_fail = batch_idx % 3 == 0;
+            let force_fail = batch_idx.is_multiple_of(3);
             let payload = json!({ "events": events.clone() });
             let mut req_builder = Request::builder()
                 .method("POST")
