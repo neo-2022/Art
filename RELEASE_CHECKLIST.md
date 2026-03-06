@@ -8,12 +8,14 @@
 - `docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
 
 ## Current release candidate
-- Version: `v0.2.0-rc.1`
-- Changelog entry: `CHANGELOG.md#v0.2.0-rc.1---2026-03-06`
+- Version: `v0.2.0-rc.2`
+- Candidate commit: `1676a8a4c09be5067950aa45141e60c4aa315b2e`
+- Changelog entry: `CHANGELOG.md#v0.2.0-rc.2---2026-03-06`
 - Upgrade/downgrade suite: `release-regression` GitHub Actions job
 - Image signing verify: `image-signing-verify` contract, implemented by `release-signing-verify` GitHub Actions job
 - DR/backup requirements: `docs/ops/db_migration_runbook.md`, `docs/ops/deploy_systemd.md`, `docs/ops/deploy_k8s.md`
 - GO/NO-GO decision sheet: `docs/governance/release_decisions/latest_go_no_go.md`
+- Production scope statement: `Ubuntu native + Docker runtime + Kubernetes runtime are execute-gated for the current release scope; extended Linux matrix remains validate-only until ENABLE_NATURAL_MATRIX=true`
 
 ## Mandatory checks
 - [x] `release-regression` green
