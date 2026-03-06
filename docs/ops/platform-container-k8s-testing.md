@@ -1,4 +1,4 @@
-# Platform Container/Kubernetes Testing (Art / REGART)
+# Тестирование Docker И Kubernetes (Art / REGART)
 
 ## Source of truth
 - `formats/platform_support.yaml`
@@ -16,13 +16,13 @@ Docker и Kubernetes — отдельные рабочие платформы з
 - K8s профили: `tests/platform/k8s/profiles/kind-default.env`, `tests/platform/k8s/profiles/k3d-default.env`.
 - CI-gate: `scripts/ci/check_platform_container_k8s_skeletons.sh`.
 
-## Режим CI сейчас
+## Режим CI Сейчас
 - Текущий режим: `ENABLE_NATURAL_MATRIX=false`.
 - Docker/K8s контуры проходят validate-режим как структурный контракт.
 - Дополнительно Docker execute-smoke и Kubernetes execute-smoke уже исполняются на Ubuntu runner как production runtime gates.
 - `ENABLE_NATURAL_MATRIX=true` по-прежнему нужен только для расширения native distro matrix, а не для контейнерных execute-path.
 
-## Docker smoke
+## Docker Smoke
 ### Validate
 ```bash
 MODE=validate tests/platform/container/run_docker_smoke.sh
@@ -40,7 +40,7 @@ Execute-path обязан:
 - пройти `health -> ingest -> snapshot/stream -> safe action(noop) -> audit verify`;
 - сохранить evidence `EVIDENCE_DOCKER_SMOKE` и `EVIDENCE_CONTAINER_TEST_docker`.
 
-## Kubernetes smoke
+## Kubernetes Smoke
 ### Validate
 ```bash
 MODE=validate K8S_PROFILE=kind-default tests/platform/k8s/run_k8s_smoke.sh
@@ -64,5 +64,5 @@ Execute-path обязан:
 - `EVIDENCE_CONTAINER_TEST_docker`
 - `EVIDENCE_CONTAINER_TEST_kubernetes`
 
-## Критичное правило
+## Критичное Правило
 Платформенная совместимость Docker/Kubernetes реализуется через packaging/deploy/tests. Логика `core/agent/browser` не должна ветвиться по среде запуска.

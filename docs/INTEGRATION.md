@@ -1,55 +1,44 @@
-# План интеграции REGART ↔ Art
+# Интеграция Art ↔ REGART
 
-Цель: REGART (`my_langgraph_agent`) передаёт в Art все релевантные события и ошибки, а Art остаётся главным источником инцидентов и observability snapshot.
+## Source of truth
+- [REGART -  LangGraph  взаимодействие с Art описание.md](source/REGART%20-%20%20LangGraph%20%20взаимодействие%20с%20Art%20описание.md)
+- [Art_v1_spec_final.md](source/Art_v1_spec_final.md)
+- [CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md](source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md)
+- [CHECKLIST_06_REGART_ART_BRIDGE.md](source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md)
+- [CHECKLIST_20_PACK_REGART.md](source/checklists/CHECKLIST_20_PACK_REGART.md)
 
-Источники требований:
-- `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
-- `docs/source/Art_v1_spec_final.md`
-- `docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`
-- `docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`
-- `docs/source/checklists/CHECKLIST_20_PACK_REGART.md`
-- внешние source-of-truth REGART:
-  - `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`
-  - `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_REGART_ART_INTEGRATION.md`
+## Кратко
 
-## 1. Контуры интеграции
+Art и REGART — это интегрированные системы, а не смешанная кодовая база.
 
-### 1.1 Backend (UI Proxy / LangGraph)
+Цель интеграции:
+- REGART передаёт в Art значимые операционные сигналы
+- Art остаётся источником истины для incidents, evidence и degraded-state visibility
+- потеря сигнала всегда превращается в явный `observability_gap.*`, а не в молчаливую потерю
 
-- Проксирование и/или bridge endpoint для Art ingest/stream.
-- Нормализованные upstream-ошибки с контекстом (where/why/action/evidence).
-- Корреляция `run_id/node_id/span_id/trace_id`, когда данные доступны.
+## Плоскости интеграции
 
-### 1.2 Browser (REGART Level0)
+### Backend plane
+- события UI Proxy и серверной части
+- нормализованная модель upstream-ошибок
+- корреляция через `trace_id`, `run_id`, `node_id` и смежные идентификаторы
 
-- Единый capture ошибок, network, graph/run/debugger signals.
-- Очередь доставки в Art c backlog и retry.
-- Генерация `observability_gap.*` при недоступности Art/канала.
+### Browser plane
+- capture клиентских и UX-сигналов через Level0
+- backlog, retry, flush и reconnect semantics
+- явные gap-события при недоступности Art
 
-### 1.3 ОС-уровень (через Art Agent)
+### OS plane
+- сбор systemd, journald, ports, probes и process state через Art Agent
+- вывод startup failure, crash loop и service health обратно в Art
 
-- Сбор systemd/journald/ports/net probes для сервисов REGART.
-- Фиксация crashloop, startup-failure, port-collision.
+## Принципы поставки
+- ни один transport path не считается надёжным без явного delivery behavior
+- все failure states обязаны быть видимыми как events или gaps
+- acceptance criteria подтверждаются evidence
+- cross-repo parity должна быть машинно проверяемой
 
-## 2. Этапы реализации
-
-1. `Phase A: Contracts`
-   - закрепить RawEvent schema для каналов REGART;
-   - согласовать правила dedupe/fingerprint/correlation.
-2. `Phase B: Transport`
-   - подключить ingest + stream, retries и ack semantics;
-   - обеспечить корректный CORS/headers в UI Proxy.
-3. `Phase C: Browser bridge`
-   - отправка событий Level0 в Art;
-   - backlog + flush после восстановления.
-4. `Phase D: Observability gaps`
-   - явные `observability_gap.*` для всех точек потерь.
-5. `Phase E: Acceptance`
-   - e2e сценарии: cold boot, Art down, REGART down, reconnect/catchup.
-
-## 3. Definition of Done для REGART-интеграции
-
-- Любая ошибка/деградация REGART имеет отражение в Art (RawEvent или Incident).
-- Потери событий детектируются как `observability_gap.*`, а не "тишина".
-- Панель REGART использует Art как источник статуса/инцидентов, где это предусмотрено.
-- E2E чек-листы `05`, `06`, `20` закрыты и связаны с master `00`.
+## Операционные ссылки
+- runbook моста: [art_bridge_runbook.md](regart/art_bridge_runbook.md)
+- формат upstream-ошибок: [upstream_error_format.md](regart/upstream_error_format.md)
+- parity и platform evidence отслеживаются через stage37 и delivery evidence

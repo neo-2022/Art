@@ -1,4 +1,4 @@
-# Style Guide (Diataxis)
+# Стиль Документации (Diataxis)
 
 ## Source of truth (обязательно)
 - `docs/README.md`
@@ -6,10 +6,10 @@
 - `docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`
 
 ## Классы документов
-- Tutorial: обучение шаг за шагом.
-- How-to: задача/операция.
-- Reference: спецификация и контракт.
-- Explanation: почему и trade-offs.
+- `Tutorial`: обучение шаг за шагом.
+- `How-to`: задача или операция.
+- `Reference`: спецификация и контракт.
+- `Explanation`: объяснение причин и trade-offs.
 
 ## Нормативность
 - MUST/SHOULD/MAY используются явно.

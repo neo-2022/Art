@@ -1,4 +1,4 @@
-# Authority Model: Canon vs Working Docs
+# Модель Авторитета: Канон И Рабочие Документы
 
 ## Source of truth (обязательно)
 - `docs/README.md`

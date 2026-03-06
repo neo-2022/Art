@@ -1,38 +1,42 @@
 # Портал Документации Art
 
-## Source of truth (обязательно)
-- `docs/README.md`
-- `docs/source/README.md`
-- `docs/source/FOUNDATION_CONSTITUTION_V0_2.md`
-- `docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`
-- `docs/INTEGRATION.md`
-- REGART external source-of-truth:
-  - `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`
-  - `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_REGART_ART_INTEGRATION.md`
+## Source of truth
+- [README.md](../README.md)
+- [FOUNDATION_CONSTITUTION_V0_2.md](../source/FOUNDATION_CONSTITUTION_V0_2.md)
+- [CHECKLIST_00_MASTER_ART_REGART.md](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md)
+- [INTEGRATION.md](../INTEGRATION.md)
 
-## Назначение
-Портал является навигационным слоем над существующей документацией и не заменяет канон.
+Этот портал является презентационным и навигационным слоем над каноном.  
+Его задача — быстро объяснить систему, не ослабляя реальные правила проекта.
 
-## Быстрые пути
-- Product/Architecture: `docs/ARCHITECTURE.md`
-- Integration Art↔REGART: `docs/INTEGRATION.md`
-- Checklist program: `docs/source/checklists/*`
-- RAG: `docs/rag/*`
-- Delivery evidence timeline: `docs/portal/DELIVERY_EVIDENCE.md`
-- Release decision template: `docs/ops/go_no_go_template.md`
+## Быстрые Пути
 
-## REGART ↔ Art Integration
-- Быстрый старт: `docs/INTEGRATION.md`
-- Контуры интеграции:
-  - Backend/UI Proxy
-  - Browser Level0
-  - OS Agent
-- Контракты событий/ошибок: `docs/api/*`, `docs/source/checklists/CHECKLIST_08_ART_CONTRACTS_OPENAPI_CODEGEN.md`
-- Actions/control plane: `docs/source/secure_actions_protocol_v2.md`
-- Интеграционные тесты/acceptance: `docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`, `CHECKLIST_06_*`
-- Troubleshooting: `docs/regart/art_bridge_runbook.md`
+### Продукт
+- Архитектура: [ARCHITECTURE.md](../ARCHITECTURE.md)
+- Интеграция: [INTEGRATION.md](../INTEGRATION.md)
+- Глоссарий: [GLOSSARY.md](./GLOSSARY.md)
+- Гарантии продукта: [PRODUCT_GUARANTEES.md](./PRODUCT_GUARANTEES.md)
 
-## UI language routing
-- RU default path: `/docs/`
-- EN path: `/docs/en/`
-- UI выбирает путь по `ui_locale`.
+### Эксплуатация
+- Поддержка платформ: [platform-support.md](../ops/platform-support.md)
+- VM-тестирование: [platform-vm-testing.md](../ops/platform-vm-testing.md)
+- Docker и Kubernetes: [platform-container-k8s-testing.md](../ops/platform-container-k8s-testing.md)
+- GO/NO-GO шаблон: [go_no_go_template.md](../ops/go_no_go_template.md)
+
+### Governance
+- Delivery evidence: [DELIVERY_EVIDENCE.md](./DELIVERY_EVIDENCE.md)
+- Security posture: [SECURITY_POSTURE.md](./SECURITY_POSTURE.md)
+- Матрица совместимости Art↔REGART: [COMPATIBILITY_MATRIX_ART_REGART.md](./COMPATIBILITY_MATRIX_ART_REGART.md)
+- Модель авторитета документов: [DOC_AUTHORITY.md](./DOC_AUTHORITY.md)
+- Стиль документации: [DOC_STYLE_GUIDE.md](./DOC_STYLE_GUIDE.md)
+
+## Интеграция С REGART
+- Быстрый старт: [INTEGRATION.md](../INTEGRATION.md)
+- Контракты и API: [openapi.yaml](../api/openapi.yaml), [openapi.yaml](../contracts/v2/openapi.yaml)
+- Actions и control plane: [secure_actions_protocol_v2.md](../source/secure_actions_protocol_v2.md)
+- Troubleshooting: [art_bridge_runbook.md](../regart/art_bridge_runbook.md)
+
+## Маршрутизация Языка
+- основной путь: `/docs/`
+- служебный английский слой: `/docs/en/`
+- UI-маршрутизация должна учитывать `ui_locale`, но нормативный контур документации ведётся на русском

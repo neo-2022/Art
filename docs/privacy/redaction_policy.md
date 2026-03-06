@@ -1,21 +1,33 @@
-# Redaction policy
+# Политика Редакции Данных
 
-Применение redaction: message/payload/context/attachments meta/audit pre-write.
+## Source of truth
+- `docs/source/checklists/CHECKLIST_02_PRIVACY_BASELINE_GLOBAL.md`
+- `docs/source/checklists/CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md`
+- `docs/governance/observability_gap_registry.md`
 
-## configurable rules
-- rules хранятся в конфиге
-- rules версионируются
-- есть rollout/rollback
+## Где Применяется Redaction
+- `message`
+- `payload`
+- `context`
+- `attachments meta`
+- `audit pre-write`
 
-## privacy.redaction_applied
-Событие обязательно при любом применении redaction:
-- timestamp
-- rule_id
-- field_paths
-- redaction_count
-- owner_component
+## Обязательные Правила
+- правила redaction хранятся в конфиге
+- правила версионируются
+- для правил должен существовать rollout/rollback
 
-## observability_gap.redaction_failed
-При ошибке redaction генерируется `observability_gap.redaction_failed`.
-Содержит evidence_min: error, context, counters.
-Событие регистрируется в `docs/governance/observability_gap_registry.md` с incident_rule и action_ref.
+## Обязательное Событие
+
+При каждом применении redaction фиксируется `privacy.redaction_applied` с минимальным набором:
+- `timestamp`
+- `rule_id`
+- `field_paths`
+- `redaction_count`
+- `owner_component`
+
+## Ошибка Redaction
+
+При сбое redaction формируется `observability_gap.redaction_failed`.
+
+Событие должно быть зарегистрировано в registry с `incident_rule` и `action_ref`.

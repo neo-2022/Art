@@ -1,57 +1,68 @@
-# Art v1 Architecture
+# Архитектурный обзор Art
 
-Документ синхронизирован с:
-- `docs/source/Art_v1_spec_final.md`
-- `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
+## Source of truth
+- [Art_v1_spec_final.md](source/Art_v1_spec_final.md)
+- [FOUNDATION_CONSTITUTION_V0_2.md](source/FOUNDATION_CONSTITUTION_V0_2.md)
+- [CHECKLIST_00_MASTER_ART_REGART.md](source/checklists/CHECKLIST_00_MASTER_ART_REGART.md)
+- [REGART -  LangGraph  взаимодействие с Art описание.md](source/REGART%20-%20%20LangGraph%20%20взаимодействие%20с%20Art%20описание.md)
 
-## 1. Принципы v1
+## Общая картина
 
-1. `100% observability` по доступным сигналам (включая фиксирование `observability_gap.*`).
-2. `UI как экран`: источник правды в Core pipeline и инцидентах.
-3. `Store-and-forward`: ни один event не теряется без явного события о потере.
+Art строится как единый продукт с тремя архитектурными уровнями:
+- Tier A: аварийный и degraded-интерфейс
+- Tier B: основной операционный интерфейс расследования
+- Tier C: SaaS и governance-слой
 
-## 2. Компоненты и границы ответственности
+Базовый закон архитектуры: `Core` — единственный источник истины.  
+Все остальные слои являются либо проекцией, либо транспортом, либо derived-хранилищем.
 
-### 2.1 Art Core (Rust)
+## Базовые runtime-компоненты
 
-- Приём: `POST /api/v1/ingest`
-- Чтение: `GET /api/v1/snapshot`, `GET /api/v1/stream`, `GET /api/v1/incidents`
-- Управление: `POST /api/v1/incidents/{id}/ack`, `.../resolve`, `POST /api/v1/actions/execute`
-- Служебное: `GET /health`, `GET /metrics`
-- Pipeline: `parse -> validate -> quality gates -> fingerprint -> rules -> aggregate -> incident -> enrich -> store -> publish`
-- Storage v1: SQLite WAL, миграции, retention, уникальность `incident_key = rule.id + fingerprint`
+### art-core
+- ingest, validation, normalization, rules, incidents, actions, audit
+- snapshot и stream API
+- хост для встроенного `Panel0`
+- опорная точка release и certified profile
 
-### 2.2 Art Agent (Rust)
+### art-agent
+- сбор сигналов на уровне ОС и сервисов
+- надёжная доставка через spool и outbox
+- backpressure-aware forwarding в Core
+- деградация фиксируется явно, а не маскируется
 
-- Receivers: journald, systemd, files, proc, ports, net_probe, OTLP
-- Надёжная доставка: spool/outbox (`write -> send -> ack -> delete confirmed`)
-- Режим по умолчанию: `never_drop_unacked`
-- При деградации: явные события `data_quality.*` и/или `observability_gap.*`
+### browser / Level0
+- браузерный backlog и capture path
+- мост для клиентских и runtime-сигналов
+- потеря доставки оформляется как evidence/gap, а не как тишина
 
-### 2.3 Browser Level0 (JS)
+## Продуктовые поверхности
 
-- Сбор ошибок runtime и UX-событий.
-- Локальный backlog (IndexedDB) для offline/temporary failures.
-- Отправка в Art Agent/Core с корреляцией, когда доступна.
-- При невозможности доставки: события о gap, а не молчаливая потеря.
+### Tier A: Panel0
+- аварийный встроенный UI внутри Core
+- доступен при отказе Console
+- показывает статус, gaps, evidence и fallback-путь операций
 
-## 3. Модель интеграции с REGART
+### Tier B: Console
+- находится в `apps/console-web`
+- использует только Core API и workspace packages
+- покрывает Command Center, Event River, Incident Room, Audit Explorer, Investigation Library и Visual Flow Mode
 
-В интеграции с REGART используются три канала:
-- `A (OS-level)` — через Agent (systemd/journald/ports/net probes)
-- `B (backend-level)` — события сервисов REGART (UI Proxy, LangGraph)
-- `C (browser-level)` — события из REGART Level0
+### Tier C: SaaS Layer
+- tenant isolation и policy boundary
+- quota, retention и compliance rules
+- release и операционное управление для hosted-модели
 
-Ключевой порядок запуска:
-1. Art Core
-2. Art Agent
-3. REGART services
+## Архитектурные законы
+- Core является единственным источником истины
+- evidence-first рендеринг обязателен
+- degraded-path встроен в основную архитектуру
+- переход к следующему этапу запрещён без подтверждённого закрытия текущего
+- платформенные различия разрешены только в packaging/install/runtime profiles, но не в бизнес-логике
 
-Так обеспечивается диагностика даже если REGART не поднялся.
+## Граница с REGART
+- Art и REGART остаются отдельными репозиториями
+- границы контрактов, событий и runtime-поведения жёстко определены
+- Console не встраивается в REGART
+- интеграция идёт через transport, events, Level0 и операционные контракты
 
-## 4. Нормативная трассировка в документах
-
-- Полный норматив: `docs/source/Art_v1_spec_final.md`
-- Конкретно по REGART: `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
-- Поэтапная реализация: `docs/source/checklists/README.md`
-- Рабочий план интеграции: `docs/INTEGRATION.md`
+Детальный интеграционный слой: [INTEGRATION.md](INTEGRATION.md)

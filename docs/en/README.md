@@ -1,15 +1,15 @@
-# Art Docs (EN)
+# Служебный слой `docs/en`
 
 ## Source of truth
-- `docs/README.md` (RU canonical index)
-- `docs/source/README.md`
-- `docs/source/FOUNDATION_CONSTITUTION_V0_2.md`
+- [../README.md](../README.md)
+- [../source/README.md](../source/README.md)
+- [../source/FOUNDATION_CONSTITUTION_V0_2.md](../source/FOUNDATION_CONSTITUTION_V0_2.md)
 
-This EN tree mirrors key RU pages. Normative languages are RU and EN.
-Runtime translations for other locales are non-normative.
+Этот каталог не является отдельным источником истины.
 
-Key platform pages:
-- `docs/en/ops/platform-support.md`
-- `docs/en/ops/go_no_go_template.md`
-- `docs/en/security/fstec-certified-profile.md`
-- `docs/governance/docs_traceability_matrix.yaml` (full docs-to-checklists traceability matrix)
+Основной нормативный язык документации проекта — русский.  
+Если английские зеркала поддерживаются, они должны синхронизироваться с русским каноном и не могут ему противоречить.
+
+Для основного входа используйте:
+- [../README.md](../README.md)
+- [../portal/INDEX.md](../portal/INDEX.md)

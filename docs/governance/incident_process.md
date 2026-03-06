@@ -1,20 +1,32 @@
-# Incident process
+# Процесс Управления Инцидентами
 
-## Lifecycle
-1. detect
+## Source of truth
+- `docs/source/checklists/CHECKLIST_01_GOVERNANCE_SRE.md`
+- `docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`
+- `docs/governance/observability_gap_registry.md`
+- `docs/governance/severity.md`
+
+## Жизненный Цикл
+1. обнаружение
 2. triage
-3. mitigate
-4. resolve
+3. mitigation
+4. resolution
 5. postmortem
-6. follow-ups
+6. follow-up действия
 
 ## Роли
-- Incident Commander
-- Communications
-- Scribe
+- `Incident Commander` — координирует ход инцидента
+- `Communications` — отвечает за статусные коммуникации
+- `Scribe` — фиксирует timeline, решения и evidence
 
-## observability_gap escalation
-- Все `observability_gap.*` обязательно регистрируются и видимы в snapshot/stream.
-- Для `ingest/*`, `spool/*`, `storage/*` инцидент создаётся автоматически с min severity SEV1.
-- Для остальных случаев правило берётся из `docs/governance/observability_gap_registry.md` (`incident_rule`).
-- Для всех случаев, где создаётся инцидент, обязателен `action_ref` на runbook в `docs/runbooks/`.
+## Правила Эскалации
+- все `observability_gap.*` должны быть видимы в snapshot/stream
+- для критичных контуров автоинциденты создаются по правилам registry
+- если registry требует incident, обязательно должен быть `action_ref` на runbook
+
+## Что Обязательно Фиксируется
+- severity
+- таймлайн
+- evidence
+- принятое решение
+- follow-up actions

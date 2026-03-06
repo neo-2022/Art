@@ -1,4 +1,4 @@
-# Release process
+# Процесс Релиза
 
 ## Source of truth
 - `docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`
@@ -7,13 +7,13 @@
 - `docs/release/versioning.md`
 - `docs/ops/go_no_go_template.md`
 
-## Policy
+## Политика
 - Релиз только manual через CI; локальный релиз запрещён.
 - Версионирование: SemVer.
 - CHANGELOG обязателен в PR до тега.
 - Тегирование разрешено только после полного `RELEASE_CHECKLIST`.
 
-## GitHub release flow
+## GitHub Release Flow
 1. Подготовка release PR с changelog и evidence.
 2. Прогон обязательных CI gates.
 3. Создание подписанного тега `vX.Y.Z` (или `vX.Y.Z-rc.N`).
@@ -25,7 +25,7 @@
    - `docs/ops/go_no_go_template.md`
    - sheet обязателен для production rollout и major upgrade rollout.
 
-## Blocking conditions
+## Блокирующие Условия
 Релиз запрещён, если:
 - есть красные обязательные gates;
 - не собраны обязательные release artifacts;

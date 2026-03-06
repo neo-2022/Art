@@ -1,17 +1,27 @@
-# Provenance and signing policy
+# Политика Provenance И Подписей
 
-Инструмент: cosign.
-Режим: keyless OIDC в GitHub Actions.
-Подписываемые артефакты:
-- agent/dist/*
-- ui/dist/*
-- sbom.spdx.json
-- checksums.txt
-- provenance.attestation.json
+## Source of truth
+- `docs/source/checklists/CHECKLIST_04 _Secure SDLC + Supply-chain.md`
+- `docs/release/release_process.md`
+- `docs/security/release_hardening.md`
 
-Verify подписи обязателен в релизном CI.
-Аттестация provenance формируется как `provenance.attestation.json` и содержит:
-- repository/ref/sha/run_id/run_attempt
-- subjects с SHA256 для `agent/dist/*`, `ui/dist/*`, `sbom.spdx.json`, `checksums.txt`
+## Инструмент И Режим
+- инструмент подписи: `cosign`
+- режим: `keyless OIDC` в GitHub Actions
 
-Подписи и attestations публикуются вместе с релизными артефактами и проверяются в release workflow.
+## Что Подписывается
+- release artifacts
+- SBOM
+- checksum-файлы
+- provenance attestation
+
+## Требования
+- verify подписи обязателен в release CI
+- provenance должен содержать привязку к repository/ref/sha/run_id
+- subjects должны быть перечислены с SHA256
+- подписи и attestation публикуются вместе с релизными артефактами
+
+## Что Считается Провалом
+- нет verify-подтверждения
+- provenance не соответствует релизному commit/run
+- подписи не приложены к релизной поставке
