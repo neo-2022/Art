@@ -138,6 +138,93 @@ natural_test_definition:
     - verify_systemd_units
     - run_health_ingest_stream_actions_smoke
     - export_evidence_bundle
+vm_test_definition:
+  description: "VM-based natural smoke harness for non-host validation across Linux distro/version matrix."
+  source_of_truth: "formats/platform_support.yaml"
+  default_mode: "validate"
+  providers:
+    - id: "vagrant-libvirt"
+      type: "vm"
+      enabled_by_default: true
+      note: "Primary provider for multi-distro matrix on Linux hosts."
+    - id: "qemu-cloudimg"
+      type: "vm"
+      enabled_by_default: false
+      note: "Fallback provider for custom enterprise images."
+  default_resources:
+    vcpu: 2
+    memory_mb: 4096
+    disk_gb: 25
+  mandatory_steps:
+    - resolve_vm_profile
+    - provision_vm
+    - run_install_skeleton_inside_vm
+    - run_health_ingest_stream_actions_smoke
+    - collect_vm_evidence_bundle
+  evidence_ids:
+    - "EVIDENCE_VM_MATRIX_READINESS"
+    - "EVIDENCE_VM_TEST_<distro>"
+container_test_surfaces:
+  description: "Container-native runtime compatibility track."
+  mandatory_now:
+    - "docker_runtime"
+    - "kubernetes_runtime"
+  docker_runtime:
+    smoke_runner: "tests/platform/container/run_docker_smoke.sh"
+    modes:
+      - "validate"
+      - "execute"
+    ci_default_mode: "validate"
+    evidence_ids:
+      - "EVIDENCE_DOCKER_SMOKE"
+      - "EVIDENCE_CONTAINER_TEST_docker"
+  kubernetes_runtime:
+    smoke_runner: "tests/platform/k8s/run_k8s_smoke.sh"
+    providers:
+      - "kind"
+      - "k3d"
+      - "external"
+    modes:
+      - "validate"
+      - "execute"
+    ci_default_mode: "validate"
+    evidence_ids:
+      - "EVIDENCE_K8S_SMOKE"
+      - "EVIDENCE_CONTAINER_TEST_kubernetes"
+runtime_compatibility_matrix:
+  source_of_truth_docs:
+    - "docs/ops/platform-runtime-compatibility-matrix.md"
+    - "docs/en/ops/platform-runtime-compatibility-matrix.md"
+  versions:
+    linux_kernel:
+      minimum: "5.10"
+      target_range: "5.10-6.8"
+    systemd:
+      minimum: "247"
+      target_range: "247+"
+    docker_engine:
+      minimum: "24.0"
+      target_range: "24.x-27.x"
+    kubernetes:
+      minimum: "1.28"
+      target_range: "1.28-1.31"
+    kind:
+      minimum: "0.22"
+      target_range: "0.22+"
+    k3d:
+      minimum: "5.6"
+      target_range: "5.6+"
+  release_blockers:
+    - "mandatory execute-smoke failure on VM/Docker/Kubernetes surfaces"
+    - "version mismatch outside declared ranges"
+    - "k8s production scenarios failure"
+    - "missing mandatory platform evidence bundle"
+  mandatory_k8s_production_scenarios:
+    - "tls_ingress_path"
+    - "persistent_storage_recovery"
+    - "rolling_update_zero_downtime"
+    - "node_pressure_and_drain_recovery"
+    - "rbac_policy_audit_enforcement"
 evidence_ids:
   mandatory_now:
     - "EVIDENCE_PLATFORM_MATRIX"
@@ -148,6 +235,9 @@ evidence_ids:
     - "EVIDENCE_DOCKER_REPRODUCIBLE"
     - "EVIDENCE_SBOM"
     - "EVIDENCE_REGART_INTEGRATION_UBUNTU_SMOKE"
+    - "EVIDENCE_VM_MATRIX_READINESS"
+    - "EVIDENCE_DOCKER_SMOKE"
+    - "EVIDENCE_K8S_SMOKE"
   natural_placeholders:
     pattern: "EVIDENCE_NATURAL_TEST_<distro>"
     note: "Placeholder IDs are mandatory now; real artifacts are required after ENABLE_NATURAL_MATRIX=true."

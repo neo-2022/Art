@@ -23,6 +23,7 @@ A) Полный запрет опциональности:
 ⚠️ ПРАВИЛО: запрещены “временные решения” в репозитории — только финальные реализации (временное — только локально и сразу удалить).  
 ⚠️ ПРАВИЛО: полный запрет опциональности — запрещены формулировки “опционально/где применимо/если нужно/решение зафиксировано/либо A либо B”.
 ⚠️ ПРАВИЛО: запрещено создавать и хранить копии чек-листов (`*.bak`, `*_copy*`, `*_old*` и аналоги). Разрешён только один актуальный файл каждого чек-листа.
+⚠️ ПРАВИЛО: всегда держать в контексте файл `/home/art/my_langgraph_agent/AGENTS.md`; для Codex он считается системным промтом проекта.
 
 ---
 
@@ -81,6 +82,20 @@ A) Полный запрет опциональности:
 - Для программы 28..38 обязательна проверка `docs/source/risk_register_v0_2.md`.
 - Если активен release blocker из risk register, продвижение этапа запрещено.
 
+### A9) Протокол прохождения чек-листов (обязательный, без исключений)
+1) Начинать только с `CHECKLIST_00_MASTER_ART_REGART.md`.
+2) Выбирать первый этап со статусом `[ ]`.
+3) Открывать соответствующий чек-лист и идти строго сверху вниз.
+4) Каждый пункт закрывается только после закрытия всех его подпунктов.
+5) Подпункты закрываются по одному, сразу после фактического выполнения.
+6) Родительский пункт нельзя отмечать `[x]`, пока в нём есть хотя бы один `[ ]` подпункт.
+7) Если в подпункте указана проверка, она выполняется ровно в указанном виде; `[x]` только после PASS.
+8) Если в подпункте указан артефакт, `[x]` ставится только после подтверждения существования артефакта.
+9) Переход к следующему пункту разрешён только после полного закрытия текущего пункта.
+10) Переход к следующему этапу разрешён только после полного закрытия текущего чек-листа.
+11) После завершения этапа исполнитель делает короткий отчёт: “сделано/не сделано”.
+12) Для продолжения работ всегда возвращаться в MASTER и брать следующий этап по порядку.
+
 ---
 
 ## B) MASTER: этапы проекта (строго по порядку)
@@ -117,9 +132,9 @@ A) Полный запрет опциональности:
 | [x] 26 | CHECKLIST_26_RU_PROFILE.md | RU profile | PDn fields list + PII access audit + block cross-border export | 2026-03-05, neo-2022, ru-profile-tests+stage26-docs-gate |
 | [x] 27 | CHECKLIST_27_AUDIT_REMEDIATION_PLAN.md | Audit/remediation | сводный аудит соответствия и закрытие найденных рисков | 2026-03-05, neo-2022, checklist27 remediation closed |
 | [x] 28 | CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md | Console foundation | monorepo apps+packages, workspace boundaries, console shell surfaces | 2026-03-06, neo-2022, stage28-docs-gate+stage28-lens-gate+stage28-audio-settings-e2e+workspace-boundary(-negative) PASS |
-| [x] 29 | CHECKLIST_29_EVENT_DNA_CORE_V2.md | Event DNA Core v2 | deterministic DNA core: formal model + property 1M + reference parity + `/api/v2/*` | 2026-03-06, neo-2022, stage29-dna-tests+stage29-dna-property-million+stage29-nightly-replay-determinism+stage29-contract-fingerprint PASS |
-| [ ] 30 | CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md | Evidence/Claims/Dialogic | evidence blocks, claim lifecycle, dialog schemas, UI law checks | -- |
-| [ ] 31 | CHECKLIST_31_INVESTIGATIONS_AS_CODE.md | Investigations-as-Code | versioned InvestigationDoc, fork/replay/compare | -- |
+| [x] 29 | CHECKLIST_29_EVENT_DNA_CORE_V2.md | Event DNA Core v2 | deterministic DNA core: formal model + property 1M + reference parity + `/api/v2/*` | 2026-03-06, neo-2022, stage29-dna-assurance-gate+stage29-dna-tests+stage29-dna-property-million+stage29-contract-fingerprint+stage29-nightly-replay-determinism+stage28-docs-gate PASS |
+| [x] 30 | CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md | Evidence/Claims/Dialogic | evidence blocks, claim lifecycle, dialog schemas, UI law checks | 2026-03-06, neo-2022, stage30-evidence-claims-tests+stage30-truth-modes-tests+console-test+stage30_dod_validation_artifact PASS |
+| [x] 31 | CHECKLIST_31_INVESTIGATIONS_AS_CODE.md | Investigations-as-Code | versioned InvestigationDoc, fork/replay/compare | 2026-03-06, neo-2022, stage31-investigation-doc-tests+stage31-investigation-library-tests+local-stores integration/e2e artifacts PASS |
 | [ ] 32 | CHECKLIST_32_AUDIT_MERKLE_VERIFY_UI.md | Audit+Merkle | crypto verify flow and proof attachment | -- |
 | [ ] 33 | CHECKLIST_33_SECURE_ACTIONS_PROTOCOL_V2.md | Secure Actions v2 | preflight/policy gates, no silent actions | -- |
 | [ ] 34 | CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md | Perf/Load/Coverage | DNA perf budgets 10k/100k + overload 2x/3x + ratchet 5% + coverage ratchet | -- |

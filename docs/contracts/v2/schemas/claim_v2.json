@@ -4,7 +4,7 @@
   "title": "ClaimV2",
   "type": "object",
   "additionalProperties": false,
-  "required": ["claim_id", "statement", "proof_set", "status", "evidence_refs", "meta"],
+  "required": ["claim_id", "statement", "proof_set", "status", "evidence_refs", "evidence_lineage_id", "meta"],
   "properties": {
     "claim_id": {
       "type": "string",
@@ -33,6 +33,10 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "evidence_lineage_id": {
+      "type": "string",
+      "minLength": 1
     },
     "meta": {
       "type": "object",

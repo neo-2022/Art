@@ -1,0 +1,14 @@
+CHECKLIST: 30 / Step 9
+Date: 2026-03-06
+
+Commands:
+- test -s docs/contracts/v2/schemas/evidence_lineage_v2.json
+- rg -n "evidence_lineage_id" docs/contracts/v2/schemas/claim_v2.json docs/contracts/v2/schemas/dialog_message_v2.json docs/contracts/v2/schemas/evidence_item.json
+- bash scripts/ci/check_stage28_docs.sh
+
+Result:
+PASS
+
+Coverage note:
+- `evidence_lineage_id` is mandatory in evidence/claim/dialog critical schema paths.
+- dedicated schema `evidence_lineage_v2.json` added.

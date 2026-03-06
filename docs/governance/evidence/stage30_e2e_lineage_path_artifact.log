@@ -1,0 +1,11 @@
+CHECKLIST: 30 / Testing / e2e lineage trace path
+Date: 2026-03-06
+
+Command:
+corepack pnpm --filter @art/local-stores run test
+
+Result:
+PASS
+
+Relevant test:
+- local-stores: lineage trace path event -> evidence -> claim -> investigation

@@ -10,9 +10,11 @@
 
 ## Автоматизация
 - `scripts/ci/check_stage_ladder_enforcement.sh`
+- `scripts/ci/check_evidence_ledger.sh`
 - CI job `stage38-ladder-gate`
 - Источник runtime-состояния инцидентов: `docs/ops/runtime_incident_status.json`
 
 ## Отказоустойчивость процесса
 При нарушении лестницы CI блокирует merge до восстановления корректной последовательности статусов.
 Если открыты `open_determinism_incidents` или `open_canary_divergence_incidents`, stage38 gate возвращает FAIL.
+Если закрытый этап не имеет записи/артефактов в `docs/governance/evidence/evidence_ledger.yaml`, stage38 gate возвращает FAIL.

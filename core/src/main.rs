@@ -371,6 +371,14 @@ struct ActionExecuteResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+struct AuditMerkleProof {
+    algorithm: String,
+    leaf_hash: String,
+    parent_hashes: Vec<String>,
+    root_hash: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct AuditEntry {
     id: u64,
     timestamp: u64,
@@ -386,6 +394,7 @@ struct AuditEntry {
     user_agent: String,
     prev_hash: String,
     entry_hash: String,
+    merkle_proof: AuditMerkleProof,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -3059,6 +3068,21 @@ fn build_audit_entry_with_params(
         user_agent: user_agent_clean,
         prev_hash: String::new(),
         entry_hash: String::new(),
+        merkle_proof: AuditMerkleProof {
+            algorithm: "sha256-chain-v1".to_string(),
+            leaf_hash: String::new(),
+            parent_hashes: Vec::new(),
+            root_hash: String::new(),
+        },
+    }
+}
+
+fn build_merkle_proof(prev_hash: &str, entry_hash: &str) -> AuditMerkleProof {
+    AuditMerkleProof {
+        algorithm: "sha256-chain-v1".to_string(),
+        leaf_hash: entry_hash.to_string(),
+        parent_hashes: vec![prev_hash.to_string()],
+        root_hash: sha256_hex(&format!("{}:{}", prev_hash, entry_hash)),
     }
 }
 
@@ -3066,6 +3090,7 @@ fn append_audit_entry(state: &mut CoreState, mut entry: AuditEntry) {
     entry.id = state.next_audit_id;
     entry.prev_hash = state.audit_chain_head.clone();
     entry.entry_hash = sha256_hex(&audit_hash_material(&entry));
+    entry.merkle_proof = build_merkle_proof(&entry.prev_hash, &entry.entry_hash);
     state.next_audit_id += 1;
     state.audit_chain_head = entry.entry_hash.clone();
     state.audits.push(entry);
@@ -3104,6 +3129,38 @@ fn verify_audit_chain(entries: &[AuditEntry]) -> Result<(), String> {
             return Err(format!(
                 "entry_hash_mismatch id={} expected={} actual={}",
                 entry.id, expected_hash, entry.entry_hash
+            ));
+        }
+        if entry.merkle_proof.leaf_hash != entry.entry_hash {
+            return Err(format!(
+                "proof_leaf_mismatch id={} expected={} actual={}",
+                entry.id, entry.entry_hash, entry.merkle_proof.leaf_hash
+            ));
+        }
+        let expected_root = sha256_hex(&format!("{}:{}", entry.prev_hash, entry.entry_hash));
+        if entry.merkle_proof.root_hash != expected_root {
+            return Err(format!(
+                "proof_root_mismatch id={} expected={} actual={}",
+                entry.id, expected_root, entry.merkle_proof.root_hash
+            ));
+        }
+        if entry
+            .merkle_proof
+            .parent_hashes
+            .first()
+            .map(|value| value.as_str())
+            != Some(entry.prev_hash.as_str())
+        {
+            return Err(format!(
+                "proof_parent_mismatch id={} expected={} actual={}",
+                entry.id,
+                entry.prev_hash,
+                entry
+                    .merkle_proof
+                    .parent_hashes
+                    .first()
+                    .cloned()
+                    .unwrap_or_default()
             ));
         }
         prev_hash = entry.entry_hash.clone();
@@ -5559,6 +5616,43 @@ updates_mode = "online"
         {
             let mut s = state.write().await;
             s.audits[0].target = "tampered-target".to_string();
+        }
+
+        let verify = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit/verify")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.oneshot(verify).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["ok"], false);
+        assert_eq!(json["error"], "audit_chain_broken");
+    }
+
+    #[tokio::test]
+    async fn audit_merkle_proof_consistency_detects_tampered_proof() {
+        let state = test_state();
+        let app = build_app(state.clone());
+        let exec = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "admin")
+            .header("x-actor-id", "ops")
+            .header("x-trace-id", "trace-audit-proof-broken")
+            .body(Body::from(
+                r#"{"action":"service.status","target":"core","params":{"k":"v"}}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(exec).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        {
+            let mut s = state.write().await;
+            s.audits[0].merkle_proof.root_hash = "tampered-proof-root".to_string();
         }
 
         let verify = Request::builder()

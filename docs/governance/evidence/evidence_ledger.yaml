@@ -1,0 +1,60 @@
+version: "1.0"
+source_of_truth:
+  - docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
+  - docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
+  - docs/source/checklists/CHECKLIST_29_EVENT_DNA_CORE_V2.md
+policy:
+  closed_stage_requires_evidence: true
+  publish_visibility: "client-facing"
+  evidence_types:
+    - "test_log"
+    - "ci_gate"
+    - "artifact_file"
+    - "screenshot"
+entries:
+  - stage_id: "STAGE-28"
+    date: "2026-03-06"
+    status: "closed"
+    summary: "Console foundation monorepo baseline and governance gates"
+    reproducible_checks:
+      - "bash scripts/ci/check_stage28_docs.sh"
+      - "bash scripts/ci/check_stage_ladder_enforcement.sh"
+      - "bash scripts/ci/check_v0_2_checklists_quality.sh"
+    evidence_files:
+      - "docs/governance/evidence/stage28_settings_profile_manager.png"
+    docs_refs:
+      - "docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md"
+      - "docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md"
+  - stage_id: "STAGE-29"
+    date: "2026-03-06"
+    status: "closed"
+    summary: "Deterministic DNA core v2 with formal/model/property/reference gates"
+    reproducible_checks:
+      - "cargo test -p art-core v2_ingest_snapshot_stream_integration"
+      - "cargo test -p art-core dna_property_determinism_million_sequences_gate -- --ignored"
+      - "bash scripts/ci/check_dna_assurance_program.sh"
+      - "bash scripts/ci/check_v2_contract_fingerprint.sh"
+    evidence_files:
+      - "docs/governance/evidence/stage29_step1_v2_ingest_snapshot_stream_artifact.log"
+      - "docs/governance/evidence/stage29_step2_dna_corpus_artifact.log"
+      - "docs/governance/evidence/stage29_step3_schema_version_artifact.log"
+      - "docs/governance/evidence/stage29_step4_dna_lookup_artifact.log"
+      - "docs/governance/evidence/stage29_step5_invalid_payload_artifact.log"
+    docs_refs:
+      - "docs/source/checklists/CHECKLIST_29_EVENT_DNA_CORE_V2.md"
+      - "docs/contracts/v2/migrations_v2.md"
+      - "docs/contracts/v2/dna_model/README.md"
+  - stage_id: "INTEGRATION-REGART-CHECKS"
+    date: "2026-03-06"
+    status: "active"
+    summary: "Cross-repo integration compatibility checks are enforced in platform and stage37 gates"
+    reproducible_checks:
+      - "bash tests/platform/contract/check_regart_cross_repo_parity.sh"
+      - "bash tests/platform/contract/ubuntu_regart_smoke.sh"
+    evidence_files:
+      - "tests/platform/contract/check_regart_cross_repo_parity.sh"
+      - "tests/platform/contract/ubuntu_regart_smoke.sh"
+    docs_refs:
+      - "docs/INTEGRATION.md"
+      - "docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md"
+      - "docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md"

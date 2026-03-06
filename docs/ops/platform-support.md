@@ -20,6 +20,18 @@
 - Для остальных дистрибутивов job-скелеты существуют и валидны, но отключены условием `ENABLE_NATURAL_MATRIX=false`.
 - Это сознательный режим до подключения выделенных runner-ов.
 
+## VM-контур (не на хосте)
+- Для проверки боеготовности вне хостовой ОС заложен VM-harness: `tests/platform/vm/run_vm_smoke.sh`.
+- Профили по каждому дистрибутиву: `tests/platform/vm/profiles/<distro>.env`.
+- Это позволяет проверять разные Linux-версии в изолированных VM без изменения логики `core/agent/browser`.
+- Подробная инструкция: `docs/ops/platform-vm-testing.md`.
+
+## Docker/Kubernetes как платформы тестирования
+- Отдельный Docker harness: `tests/platform/container/run_docker_smoke.sh`.
+- Отдельный Kubernetes harness: `tests/platform/k8s/run_k8s_smoke.sh`.
+- Контуры включены в source-of-truth и CI-gates как обязательные platform surfaces.
+- Подробная инструкция: `docs/ops/platform-container-k8s-testing.md`.
+
 ## Release artifacts contract
 - `artcore-<version>-linux-x86_64-static.tar.gz`
 - `artagent-<version>-linux-x86_64-static.tar.gz`
@@ -48,6 +60,12 @@
 - `EVIDENCE_DOCKER_REPRODUCIBLE`
 - `EVIDENCE_SBOM`
 - `EVIDENCE_REGART_INTEGRATION_UBUNTU_SMOKE`
+- `EVIDENCE_VM_MATRIX_READINESS`
+- `EVIDENCE_DOCKER_SMOKE`
+- `EVIDENCE_K8S_SMOKE`
 
 Плейсхолдеры для будущих натурных прогонов:
 - `EVIDENCE_NATURAL_TEST_<distro>`
+- `EVIDENCE_VM_TEST_<distro>`
+- `EVIDENCE_CONTAINER_TEST_docker`
+- `EVIDENCE_CONTAINER_TEST_kubernetes`

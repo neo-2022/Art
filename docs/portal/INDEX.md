@@ -18,6 +18,7 @@
 - Integration Art↔REGART: `docs/INTEGRATION.md`
 - Checklist program: `docs/source/checklists/*`
 - RAG: `docs/rag/*`
+- Delivery evidence timeline: `docs/portal/DELIVERY_EVIDENCE.md`
 
 ## REGART ↔ Art Integration
 - Быстрый старт: `docs/INTEGRATION.md`

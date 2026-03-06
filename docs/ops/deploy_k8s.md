@@ -1,5 +1,10 @@
 # Deploy k8s
 
+## Source of truth
+- `formats/platform_support.yaml`
+- `docs/ops/platform-container-k8s-testing.md`
+- `docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+
 ## cert-manager
 Единственный способ выдачи/ротации сертификатов: cert-manager.
 
@@ -20,3 +25,7 @@ spec:
 ```
 Ingress/Gateway использует secret `art-tls`.
 Ротация выполняется автоматически без простоя.
+
+## Проверка в platform matrix
+- Validate/execute smoke path определяется через `tests/platform/k8s/run_k8s_smoke.sh`.
+- Kubernetes рассматривается как обязательная test platform наравне с Linux/VM/Docker.

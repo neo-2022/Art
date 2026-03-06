@@ -6,6 +6,9 @@ cd "$ROOT_DIR"
 
 RU_EN_PAIRS=(
   "docs/ops/platform-support.md:docs/en/ops/platform-support.md"
+  "docs/ops/platform-vm-testing.md:docs/en/ops/platform-vm-testing.md"
+  "docs/ops/platform-container-k8s-testing.md:docs/en/ops/platform-container-k8s-testing.md"
+  "docs/ops/platform-runtime-compatibility-matrix.md:docs/en/ops/platform-runtime-compatibility-matrix.md"
   "docs/security/fstec-certified-profile.md:docs/en/security/fstec-certified-profile.md"
 )
 
@@ -16,6 +19,8 @@ else
   base_commit="$(git rev-list --max-parents=0 HEAD | tail -n 1)"
 fi
 changed_files="$(git diff --name-only "${base_commit}...HEAD" 2>/dev/null || true)"
+working_tree_files="$(git status --porcelain | awk '{print $2}' || true)"
+changed_files="$(printf '%s\n%s\n' "$changed_files" "$working_tree_files" | sed '/^$/d' | sort -u)"
 
 for pair in "${RU_EN_PAIRS[@]}"; do
   ru="${pair%%:*}"

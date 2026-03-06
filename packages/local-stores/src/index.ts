@@ -101,6 +101,53 @@ export interface InvestigationLibraryItem {
   action_count: number;
 }
 
+export interface InvestigationCompareResult {
+  same_signature: boolean;
+  deltas: {
+    claims: number;
+    decisions: number;
+    actions: number;
+    results: number;
+    evidence_refs: number;
+    audit_refs: number;
+  };
+}
+
+export interface LrcRunbookStep {
+  step_id: string;
+  title: string;
+  requires_evidence_refs: string[];
+}
+
+export interface LrcRunbook {
+  runbook_id: string;
+  steps: LrcRunbookStep[];
+}
+
+export interface LrcConditionNode {
+  step_id: string;
+  title: string;
+  missing_evidence_refs: string[];
+  status: "valid" | "invalid";
+}
+
+export interface LrcCompileResult {
+  runbook_id: string;
+  graph: LrcConditionNode[];
+  invalid_steps: string[];
+}
+
+const INVESTIGATION_REQUIRED_FIELDS = [
+  "doc_id",
+  "version",
+  "claims",
+  "decisions",
+  "actions",
+  "results",
+  "evidence_refs",
+  "audit_refs"
+] as const;
+
 const FLOW_TYPES: FlowSemanticType[] = [
   "dna_cloud",
   "incident_cloud",
@@ -110,6 +157,9 @@ const FLOW_TYPES: FlowSemanticType[] = [
   "buffer_node",
   "agent_node"
 ];
+
+const SENSITIVE_KEY_PATTERN = /(password|secret|token|api[_-]?key|authorization|cookie|set-cookie|passwd)/i;
+const REDACTED_VALUE = "[REDACTED]";
 
 function minuteBucket(tsMs: number): number {
   return Math.floor(tsMs / 60_000) * 60_000;
@@ -144,6 +194,28 @@ function stableStringify(value: unknown): string {
   return `{${body}}`;
 }
 
+function sanitizePayload(input: unknown): unknown {
+  if (input === null || input === undefined) {
+    return input ?? null;
+  }
+  if (Array.isArray(input)) {
+    return input.map((item) => sanitizePayload(item));
+  }
+  if (typeof input !== "object") {
+    return input;
+  }
+  const source = input as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (SENSITIVE_KEY_PATTERN.test(key)) {
+      out[key] = REDACTED_VALUE;
+      continue;
+    }
+    out[key] = sanitizePayload(value);
+  }
+  return out;
+}
+
 function simpleHash(input: string): string {
   let hash = 2166136261;
   for (let i = 0; i < input.length; i += 1) {
@@ -151,6 +223,64 @@ function simpleHash(input: string): string {
     hash = Math.imul(hash, 16777619);
   }
   return `h${(hash >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+function assertInvestigationDocShape(input: unknown): asserts input is InvestigationDoc {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("investigation_doc_invalid_shape");
+  }
+  const doc = input as Record<string, unknown>;
+  for (const field of INVESTIGATION_REQUIRED_FIELDS) {
+    if (!(field in doc)) {
+      throw new Error(`investigation_doc_missing_field:${field}`);
+    }
+  }
+  if (typeof doc.doc_id !== "string" || doc.doc_id.length === 0) {
+    throw new Error("investigation_doc_invalid_doc_id");
+  }
+  if (typeof doc.version !== "string" || doc.version.length === 0) {
+    throw new Error("investigation_doc_invalid_version");
+  }
+  for (const field of ["claims", "decisions", "actions", "results", "evidence_refs", "audit_refs"] as const) {
+    if (!Array.isArray(doc[field])) {
+      throw new Error(`investigation_doc_invalid_field_type:${field}`);
+    }
+  }
+}
+
+export function serializeInvestigationDoc(doc: InvestigationDoc): string {
+  assertInvestigationDocShape(doc);
+  return stableStringify(doc);
+}
+
+export function parseInvestigationDoc(serialized: string): InvestigationDoc {
+  const parsed = JSON.parse(serialized) as unknown;
+  assertInvestigationDocShape(parsed);
+  return parsed;
+}
+
+function canonicalSignaturePayload(doc: InvestigationDoc): InvestigationDoc {
+  const cloned = JSON.parse(serializeInvestigationDoc(doc)) as InvestigationDoc;
+  delete (cloned as { signature?: string }).signature;
+  return cloned;
+}
+
+export function compileLiveRunbook(runbook: LrcRunbook, availableEvidenceRefs: string[]): LrcCompileResult {
+  const evidenceSet = new Set(availableEvidenceRefs);
+  const graph: LrcConditionNode[] = runbook.steps.map((step) => {
+    const missing = step.requires_evidence_refs.filter((ref) => !evidenceSet.has(ref));
+    return {
+      step_id: step.step_id,
+      title: step.title,
+      missing_evidence_refs: missing,
+      status: missing.length === 0 ? "valid" : "invalid"
+    };
+  });
+  return {
+    runbook_id: runbook.runbook_id,
+    graph,
+    invalid_steps: graph.filter((node) => node.status === "invalid").map((node) => node.step_id)
+  };
 }
 
 function cloneSnapshotState(state: FlowSnapshotState): FlowSnapshotState {
@@ -293,7 +423,8 @@ export function createLocalStores() {
   }
 
   function importInvestigationDoc(input: InvestigationDoc): InvestigationLibraryItem {
-    const signature = input.signature || simpleHash(stableStringify(input));
+    const canonical = serializeInvestigationDoc(canonicalSignaturePayload(input));
+    const signature = input.signature || simpleHash(canonical);
     const normalized: InvestigationDoc = {
       ...input,
       signature
@@ -313,14 +444,20 @@ export function createLocalStores() {
 
   return {
     cachePut(event: CachedEvent): void {
-      cache.set(event.id, event);
+      const sanitizedPayload = sanitizePayload(event.payload) as Record<string, unknown>;
+      const sanitizedEvent: CachedEvent = {
+        id: event.id,
+        dna_id: event.dna_id,
+        payload: sanitizedPayload
+      };
+      cache.set(event.id, sanitizedEvent);
       analyticsCounters.set(event.dna_id, (analyticsCounters.get(event.dna_id) || 0) + 1);
       recordTelemetry({
         ts_ms: Date.now(),
-        severity: String(event.payload["severity"] || "unknown"),
-        kind: String(event.payload["kind"] || "unknown"),
+        severity: String(sanitizedPayload["severity"] || "unknown"),
+        kind: String(sanitizedPayload["kind"] || "unknown"),
         dna_id: event.dna_id,
-        is_gap: String(event.payload["kind"] || "").startsWith("observability_gap.")
+        is_gap: String(sanitizedPayload["kind"] || "").startsWith("observability_gap.")
       });
     },
     cacheGet(id: string): CachedEvent | null {
@@ -440,7 +577,7 @@ export function createLocalStores() {
       if (!doc) {
         return { ok: false, expected: "", actual: "" };
       }
-      const expected = simpleHash(stableStringify({ ...doc, signature: undefined }));
+      const expected = simpleHash(serializeInvestigationDoc(canonicalSignaturePayload(doc)));
       const actual = doc.signature || "";
       return {
         ok: expected === actual,
@@ -462,6 +599,64 @@ export function createLocalStores() {
         `audit_refs:${doc.audit_refs.length}`
       ];
       return { ok: true, steps };
+    },
+    forkInvestigationDoc(docId: string, forkDocId: string): InvestigationLibraryItem | null {
+      const source = investigationStore.get(docId);
+      if (!source || !forkDocId) {
+        return null;
+      }
+      const forkDoc: InvestigationDoc = {
+        ...JSON.parse(serializeInvestigationDoc(source)) as InvestigationDoc,
+        doc_id: forkDocId,
+        version: `${source.version}-fork`,
+        signature: undefined
+      };
+      return importInvestigationDoc(forkDoc);
+    },
+    compareInvestigationDocs(leftDocId: string, rightDocId: string): InvestigationCompareResult | null {
+      const left = investigationStore.get(leftDocId);
+      const right = investigationStore.get(rightDocId);
+      if (!left || !right) {
+        return null;
+      }
+      return {
+        same_signature: (left.signature || "") === (right.signature || ""),
+        deltas: {
+          claims: left.claims.length - right.claims.length,
+          decisions: left.decisions.length - right.decisions.length,
+          actions: left.actions.length - right.actions.length,
+          results: left.results.length - right.results.length,
+          evidence_refs: left.evidence_refs.length - right.evidence_refs.length,
+          audit_refs: left.audit_refs.length - right.audit_refs.length
+        }
+      };
+    },
+    traceEvidenceLineagePath(input: {
+      event_id: string;
+      evidence_id: string;
+      claim_id: string;
+      investigation_id: string;
+      evidence_lineage_id: string;
+    }): { ok: boolean; path: string[] } {
+      if (
+        !input.event_id ||
+        !input.evidence_id ||
+        !input.claim_id ||
+        !input.investigation_id ||
+        !input.evidence_lineage_id
+      ) {
+        return { ok: false, path: [] };
+      }
+      return {
+        ok: true,
+        path: [
+          `event:${input.event_id}`,
+          `evidence:${input.evidence_id}`,
+          `claim:${input.claim_id}`,
+          `investigation:${input.investigation_id}`,
+          `lineage:${input.evidence_lineage_id}`
+        ]
+      };
     },
     spatialStoreStub() {
       return {

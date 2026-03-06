@@ -1,7 +1,7 @@
 import { buildEvidenceHref } from "@art/evidence-linking";
 import { DEFAULT_LOCALE, resolveLocale, translate, type Locale } from "@art/i18n";
 import { createLocalStores } from "@art/local-stores";
-import { assertEvidenceLink, assertTooltipKey } from "@art/ui-laws";
+import { assertEvidenceLink, assertTooltipKey, evaluateRtpTournament } from "@art/ui-laws";
 import { createWorkerRuntime } from "@art/worker-runtime";
 
 export interface ConsoleSurface {
@@ -158,6 +158,56 @@ function renderAnalyticsPanel(
     <ul data-analytics-chart="top-kinds">${topKinds}</ul>
     <h3>${instructionsTitle}</h3>
     <ul data-analytics-instructions>${instructions}</ul>
+  </section>`;
+}
+
+function renderInvestigationLibraryPanel(
+  locale: Locale,
+  stores: ReturnType<typeof createLocalStores>
+): string {
+  const labels = locale === "ru"
+    ? {
+        title: "Investigation Library",
+        subtitle: "Базовый цикл: import -> list -> verify -> replay",
+        verify: "Проверка",
+        replay: "Повтор",
+        export: "Экспорт"
+      }
+    : {
+        title: "Investigation Library",
+        subtitle: "Baseline cycle: import -> list -> verify -> replay",
+        verify: "Verify",
+        replay: "Replay",
+        export: "Export"
+      };
+
+  stores.importInvestigationDoc({
+    doc_id: "inv-shell-1",
+    version: "v1",
+    claims: [{ claim_id: "claim-shell-1", statement: "Shell baseline claim", evidence_refs: ["ev-shell-1"] }],
+    decisions: [{ decision_id: "dec-shell-1", text: "Inspect evidence" }],
+    actions: [{ action_id: "act-shell-1", kind: "noop" }],
+    results: [{ result_id: "res-shell-1", action_id: "act-shell-1" }],
+    evidence_refs: ["ev-shell-1"],
+    audit_refs: ["aud-shell-1"]
+  });
+  const items = stores.listInvestigationDocs();
+  const first = items[0];
+  const verification = first ? stores.verifyInvestigationDoc(first.doc_id) : { ok: false };
+  const replay = first ? stores.replayInvestigationDoc(first.doc_id) : { ok: false, steps: [] as string[] };
+
+  return `<section id="investigation-library" class="console-card" data-investigation-library="baseline">
+    <h2>${labels.title}</h2>
+    <p>${labels.subtitle}</p>
+    <p data-investigation-list-count="${items.length}">list=${items.length}</p>
+    <p data-investigation-verify="${String(verification.ok)}">${labels.verify}: ${String(verification.ok)}</p>
+    <p data-investigation-replay="${String(replay.ok)}">${labels.replay}: ${String(replay.ok)}</p>
+    <div class="audio-effect-actions">
+      <button class="btn-secondary" type="button" data-investigation-import>${locale === "ru" ? "Импорт" : "Import"}</button>
+      <button class="btn-secondary" type="button" data-investigation-export>${labels.export}</button>
+      <button class="btn-secondary" type="button" data-investigation-verify-btn>${labels.verify}</button>
+      <button class="btn-secondary" type="button" data-investigation-replay-btn>${labels.replay}</button>
+    </div>
   </section>`;
 }
 
@@ -1413,6 +1463,23 @@ export function renderConsoleShell(inputLocale?: string): string {
   const analyticsSummary = stores.analyticsSummary(120, 5);
   const runtime = createWorkerRuntime();
   void runtime.runTask({ id: "boot-1", type: "console.boot", payload: { locale } });
+  const rtpVerdict = evaluateRtpTournament(
+    {
+      claim_id: "claim-console-shell",
+      statement: "Sample claim",
+      proof_set: ["ev-a"],
+      evidence_refs: ["ev-a"],
+      meta: {
+        truth_mode: "observed",
+        evidence_refs: ["ev-a"]
+      }
+    },
+    [
+      { refuter_id: "r1", status: "pass", reason: "baseline stable", evidence_refs: ["ev-a"] },
+      { refuter_id: "r2", status: "contested", reason: "counter signal", evidence_refs: ["ev-b"] }
+    ]
+  );
+  const promotionBlocked = rtpVerdict.verdict === "contested" ? "true" : "false";
 
   const title = translate("console.title", locale);
   const subtitle = translate("console.subtitle", locale);
@@ -1438,6 +1505,12 @@ export function renderConsoleShell(inputLocale?: string): string {
           <button class="btn-secondary" type="button" title="${langSwitchLabel}" data-locale="ru">RU</button>
           <a class="btn-primary" href="${evidenceHref}" title="${evidenceTooltip}">One-click to evidence</a>
         </div>
+        <p data-rtp-verdict="${rtpVerdict.verdict}">
+          RTP verdict: ${rtpVerdict.verdict} (${rtpVerdict.contested_count} contested)
+        </p>
+        <p data-rtp-promotion-guard="${promotionBlocked}">
+          contested claim promotion blocked: ${promotionBlocked}
+        </p>
       </header>
 
       <main class="main-grid">
@@ -1449,6 +1522,7 @@ export function renderConsoleShell(inputLocale?: string): string {
         </section>
         ${renderSurfaceSections(locale)}
         ${renderAnalyticsPanel(locale, analyticsSummary)}
+        ${renderInvestigationLibraryPanel(locale, stores)}
       </main>
 
       ${renderDesignControls(locale)}

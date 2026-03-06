@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://art.local/contracts/v2/schemas/investigation_doc_v1.json",
+  "title": "InvestigationDocV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "doc_id",
+    "doc_version",
+    "created_at",
+    "updated_at",
+    "claims",
+    "decisions",
+    "actions",
+    "results",
+    "evidence_refs",
+    "audit_refs",
+    "proofs"
+  ],
+  "properties": {
+    "doc_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "doc_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "created_at": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "updated_at": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["claim_id", "statement", "evidence_refs"],
+        "properties": {
+          "claim_id": { "type": "string", "minLength": 1 },
+          "statement": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "enum": ["valid", "stale", "invalidated", "contested"] },
+          "evidence_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["decision_id", "text"],
+        "properties": {
+          "decision_id": { "type": "string", "minLength": 1 },
+          "text": { "type": "string", "minLength": 1 },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["action_id", "kind"],
+        "properties": {
+          "action_id": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "enum": ["planned", "executed", "failed", "rolled_back"] }
+        }
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["result_id", "action_id"],
+        "properties": {
+          "result_id": { "type": "string", "minLength": 1 },
+          "action_id": { "type": "string", "minLength": 1 },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "audit_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "proofs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["proof_id", "kind", "ref"],
+        "properties": {
+          "proof_id": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "enum": ["merkle", "signature", "lineage", "other"] },
+          "ref": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

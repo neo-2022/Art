@@ -990,6 +990,27 @@ jobs:
       - name: Stage 30 ui-laws tests
         run: corepack pnpm --filter @art/ui-laws run test
 
+  stage30-truth-modes-tests:
+    name: stage30-truth-modes-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
+        with:
+          version: 9.15.4
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install workspace
+        run: corepack pnpm install --frozen-lockfile
+      - name: Stage 30 truth modes tests
+        run: bash scripts/ci/run_stage30_truth_modes_tests.sh
+
   stage31-investigation-doc-tests:
     name: stage31-investigation-doc-tests
     runs-on: ubuntu-latest
@@ -1010,6 +1031,27 @@ jobs:
         run: corepack pnpm install --frozen-lockfile
       - name: Stage 31 investigation doc gate
         run: bash scripts/ci/check_stage31_investigation_doc.sh
+
+  stage31-investigation-library-tests:
+    name: stage31-investigation-library-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
+        with:
+          version: 9.15.4
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install workspace
+        run: corepack pnpm install --frozen-lockfile
+      - name: Stage 31 investigation library gate
+        run: bash scripts/ci/check_stage31_investigation_library.sh
 
   stage32-audit-merkle-tests:
     name: stage32-audit-merkle-tests

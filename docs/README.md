@@ -18,7 +18,14 @@
 - `docs/portal/INDEX.md` — навигационная главная документационного портала.
 - `docs/rag/README.md` — правила RAG/Knowledge Base и доверенных источников.
 - `docs/ops/platform-support.md` — OS-матрица поддержки (A/B/C) и режим Ubuntu-only для nat-tests.
+- `docs/ops/platform-vm-testing.md` — VM-контур проверок multi-Linux без физического железа.
+- `docs/ops/platform-container-k8s-testing.md` — Docker/Kubernetes как обязательные платформы тестирования.
+- `docs/ops/platform-runtime-compatibility-matrix.md` — version matrix + release-blockers по runtime-совместимости.
 - `docs/security/fstec-certified-profile.md` — certified build profile (контракт и ограничения).
+- `docs/release/versioning.md` — клиентски-наглядная политика версионирования и тегирования.
+- `docs/release/release_process.md` — release flow для GitHub Releases и обязательных артефактов.
+- `docs/governance/evidence/README.md` — политика и структура evidence-артефактов реализации.
+- `docs/portal/DELIVERY_EVIDENCE.md` — клиентская лента фактического прогресса проекта.
 - `docs/governance/docs_traceability_matrix.yaml` — полная трассируемость документации к чек-листам и MASTER.
 
 ## 2.1. Языки и маршрутизация

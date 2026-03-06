@@ -1,0 +1,12 @@
+CHECKLIST: 30 / Step 2
+Date: 2026-03-06
+
+Command:
+bash scripts/ci/check_stage28_docs.sh
+
+Result:
+PASS
+
+Schema assertion:
+- docs/contracts/v2/schemas/claim_v2.json contains required field `proof_set`.
+- `proof_set` has `minItems: 1`, so claim without proof set is invalid by contract.

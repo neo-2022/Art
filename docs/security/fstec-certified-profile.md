@@ -18,6 +18,7 @@
 ## CI сейчас
 - Выполняется контрактная проверка `scripts/ci/check_certified_profile.sh` на Ubuntu.
 - Проверяется сборка `--profile certified` для `art-core` и `art-agent`.
+- VM-контур (`tests/platform/vm/run_vm_smoke.sh`) используется как дополнительный non-host слой проверки, без ослабления certified-инвариантов.
 
 ## Nat testing после финала
 После включения `ENABLE_NATURAL_MATRIX=true` профиль `certified` дополнительно проверяется в:

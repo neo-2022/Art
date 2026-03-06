@@ -23,6 +23,20 @@ export interface ClaimLike {
   meta?: TruthMeta;
 }
 
+export interface RtpRefuterResult {
+  refuter_id: string;
+  status: "pass" | "contested";
+  reason: string;
+  evidence_refs: string[];
+}
+
+export interface RtpTournamentVerdict {
+  claim_id: string;
+  verdict: "passed" | "contested";
+  contested_count: number;
+  results: RtpRefuterResult[];
+}
+
 export function assertTruthMeta(meta: TruthMeta): void {
   if (!meta || !meta.truth_mode) {
     throw new Error("ui_law_violation: truth_mode is required");
@@ -103,6 +117,39 @@ export function assertEvidenceLink(link?: string): void {
   if (!link || !link.startsWith("/console/evidence/")) {
     throw new Error("ui_law_violation: invalid evidence link");
   }
+}
+
+export function evaluateRtpTournament(
+  claim: ClaimLike,
+  results: RtpRefuterResult[]
+): RtpTournamentVerdict {
+  assertClaimHasEvidence(claim);
+  if (!Array.isArray(results) || results.length === 0) {
+    throw new Error("ui_law_violation: RTP requires at least one refuter result");
+  }
+  let contested = 0;
+  for (const result of results) {
+    if (!result.refuter_id || !result.reason) {
+      throw new Error("ui_law_violation: RTP refuter result requires id and reason");
+    }
+    if (!Array.isArray(result.evidence_refs) || result.evidence_refs.length === 0) {
+      throw new Error("ui_law_violation: RTP refuter result requires evidence_refs");
+    }
+    if (result.status === "contested") {
+      contested += 1;
+    }
+  }
+  return {
+    claim_id: claim.claim_id,
+    verdict: contested > 0 ? "contested" : "passed",
+    contested_count: contested,
+    results: results.map((item) => ({
+      refuter_id: item.refuter_id,
+      status: item.status,
+      reason: item.reason,
+      evidence_refs: [...item.evidence_refs]
+    }))
+  };
 }
 
 const SEMANTIC_STATE_TOKEN_PREFIXES = [

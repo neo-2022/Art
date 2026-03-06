@@ -9,7 +9,8 @@ import {
   assertTruthModeBadge,
   assertPredictedNotFact,
   assertSemanticStateToken,
-  assertErrorDangerUsage
+  assertErrorDangerUsage,
+  evaluateRtpTournament
 } from "../dist/index.js";
 
 test("ui-laws: claim requires evidence refs", () => {
@@ -106,4 +107,36 @@ test("ui-laws: error vs danger model is explicit", () => {
   assert.doesNotThrow(() => assertErrorDangerUsage("error", "--color-error-strong"));
   assert.doesNotThrow(() => assertErrorDangerUsage("danger", "--color-danger-strong"));
   assert.doesNotThrow(() => assertErrorDangerUsage("danger", "--color-on-danger"));
+});
+
+test("ui-laws: RTP tournament verdict and trace payload", () => {
+  const claim = {
+    claim_id: "claim-rtp-1",
+    statement: "Latency issue linked to dna-1",
+    proof_set: ["ev-a"],
+    evidence_refs: ["ev-a"],
+    meta: {
+      truth_mode: "observed",
+      evidence_refs: ["ev-a"]
+    }
+  };
+
+  const passed = evaluateRtpTournament(claim, [
+    { refuter_id: "r1", status: "pass", reason: "no contradiction", evidence_refs: ["ev-a"] }
+  ]);
+  assert.equal(passed.verdict, "passed");
+  assert.equal(passed.contested_count, 0);
+  assert.equal(passed.results.length, 1);
+
+  const contested = evaluateRtpTournament(claim, [
+    { refuter_id: "r1", status: "pass", reason: "baseline stable", evidence_refs: ["ev-a"] },
+    { refuter_id: "r2", status: "contested", reason: "counter-signal", evidence_refs: ["ev-b"] }
+  ]);
+  assert.equal(contested.verdict, "contested");
+  assert.equal(contested.contested_count, 1);
+
+  assert.throws(
+    () => evaluateRtpTournament(claim, []),
+    /requires at least one refuter result/
+  );
 });

@@ -1,0 +1,17 @@
+CHECKLIST: 30 / Step 8
+Date: 2026-03-06
+
+Checks:
+- registry entries present in docs/governance/observability_gap_registry.md:
+  observability_gap.evidence_scope_violation
+  observability_gap.claim_without_evidence
+  observability_gap.ui_law_violation
+  observability_gap.evidence_privacy_violation
+- runbooks exist:
+  docs/runbooks/evidence_scope_violation.md
+  docs/runbooks/claim_without_evidence.md
+  docs/runbooks/ui_law_violation.md
+  docs/runbooks/evidence_privacy_violation.md
+
+Result:
+PASS

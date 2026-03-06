@@ -1,0 +1,13 @@
+CHECKLIST: 30 / Step 7
+Date: 2026-03-06
+
+Commands:
+rg -n "law_version|Migration rules|MAJOR bump|MINOR bump|PATCH bump" packages/ui-laws/package.json packages/ui-laws/CHANGELOG.md
+corepack pnpm --filter @art/ui-laws run test
+
+Result:
+PASS
+
+Artifacts:
+- packages/ui-laws/package.json includes `law_version`.
+- packages/ui-laws/CHANGELOG.md defines migration/semver rules.

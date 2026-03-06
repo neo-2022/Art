@@ -10,6 +10,7 @@
     "payload",
     "parent_message_ids",
     "evidence_refs",
+    "evidence_lineage_id",
     "audit_refs",
     "lineage_hash",
     "meta"
@@ -34,6 +35,10 @@
       "type": "array",
       "minItems": 1,
       "items": { "type": "string", "minLength": 1 }
+    },
+    "evidence_lineage_id": {
+      "type": "string",
+      "minLength": 1
     },
     "audit_refs": {
       "type": "array",

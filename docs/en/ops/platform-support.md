@@ -20,6 +20,18 @@ The canonical list and install methods are defined only in `formats/platform_sup
 - Jobs for all other distributions are present and valid but disabled with `ENABLE_NATURAL_MATRIX=false`.
 - This mode stays active until dedicated runners are attached.
 
+## VM track (non-host validation)
+- A VM harness is defined for non-host readiness checks: `tests/platform/vm/run_vm_smoke.sh`.
+- Per-distro profiles are stored at `tests/platform/vm/profiles/<distro>.env`.
+- This enables testing multiple Linux versions in isolated VMs without changing `core/agent/browser` logic.
+- Detailed guide: `docs/en/ops/platform-vm-testing.md`.
+
+## Docker/Kubernetes as test platforms
+- Dedicated Docker harness: `tests/platform/container/run_docker_smoke.sh`.
+- Dedicated Kubernetes harness: `tests/platform/k8s/run_k8s_smoke.sh`.
+- Both tracks are enforced as mandatory platform surfaces via source-of-truth and CI gates.
+- Detailed guide: `docs/en/ops/platform-container-k8s-testing.md`.
+
 ## Release artifacts contract
 - `artcore-<version>-linux-x86_64-static.tar.gz`
 - `artagent-<version>-linux-x86_64-static.tar.gz`
@@ -48,6 +60,12 @@ Mandatory evidence for the current stage:
 - `EVIDENCE_DOCKER_REPRODUCIBLE`
 - `EVIDENCE_SBOM`
 - `EVIDENCE_REGART_INTEGRATION_UBUNTU_SMOKE`
+- `EVIDENCE_VM_MATRIX_READINESS`
+- `EVIDENCE_DOCKER_SMOKE`
+- `EVIDENCE_K8S_SMOKE`
 
 Placeholders for future natural runs:
 - `EVIDENCE_NATURAL_TEST_<distro>`
+- `EVIDENCE_VM_TEST_<distro>`
+- `EVIDENCE_CONTAINER_TEST_docker`
+- `EVIDENCE_CONTAINER_TEST_kubernetes`

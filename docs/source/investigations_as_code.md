@@ -24,6 +24,15 @@
 ## Совместимость версий
 - Minor upgrade не ломает replay старых документов.
 - Любой breaking change требует bump `doc_version`.
+- До завершения перехода допускается legacy поле `version` (string), но canonical схема фиксируется в `docs/contracts/v2/schemas/investigation_doc_v1.json`.
+
+## Migration notes (v1 compatibility)
+1. Legacy payload с `version` импортируется без потери replay/fork/verify.
+2. При сериализации сохраняется канонический детерминированный output; подпись документа пересчитывается от canonical JSON.
+3. Любой переход к `doc_version > 1` обязан сопровождаться migration note + backward-compatibility тестом.
+
+## Compatibility matrix
+См. `docs/source/investigation_doc_compatibility_matrix.md`.
 
 ## Проверка
 - unit: parser/serializer

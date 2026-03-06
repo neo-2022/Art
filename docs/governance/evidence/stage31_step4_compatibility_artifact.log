@@ -1,0 +1,72 @@
+
+> @art/local-stores@0.2.0 test /home/art/Art/packages/local-stores
+> npm run build && node --test test/*.test.mjs
+
+
+> @art/local-stores@0.2.0 build
+> tsc -p tsconfig.json
+
+TAP version 13
+# Subtest: flow inspectability: every semantic node type resolves evidence lineage
+ok 1 - flow inspectability: every semantic node type resolves evidence lineage
+  ---
+  duration_ms: 0.63144
+  type: 'test'
+  ...
+# Subtest: local-stores: cache and dna lookup
+ok 2 - local-stores: cache and dna lookup
+  ---
+  duration_ms: 0.865474
+  type: 'test'
+  ...
+# Subtest: local-stores: analytics summary returns charts and instructions
+ok 3 - local-stores: analytics summary returns charts and instructions
+  ---
+  duration_ms: 4.874211
+  type: 'test'
+  ...
+# Subtest: local-stores: sensitive payload fields are redacted before cache/index use
+ok 4 - local-stores: sensitive payload fields are redacted before cache/index use
+  ---
+  duration_ms: 0.171134
+  type: 'test'
+  ...
+# Subtest: local-stores: lineage trace path event -> evidence -> claim -> investigation
+ok 5 - local-stores: lineage trace path event -> evidence -> claim -> investigation
+  ---
+  duration_ms: 0.497091
+  type: 'test'
+  ...
+# Subtest: local-stores: investigation parser/serializer produce deterministic canonical output
+ok 6 - local-stores: investigation parser/serializer produce deterministic canonical output
+  ---
+  duration_ms: 0.268726
+  type: 'test'
+  ...
+# Subtest: local-stores: parser rejects investigation doc with missing required fields
+ok 7 - local-stores: parser rejects investigation doc with missing required fields
+  ---
+  duration_ms: 0.228866
+  type: 'test'
+  ...
+# Subtest: local-stores: fork/replay/compare investigation docs integration
+ok 8 - local-stores: fork/replay/compare investigation docs integration
+  ---
+  duration_ms: 0.334072
+  type: 'test'
+  ...
+# Subtest: local-stores: backward compatibility for investigation docs keeps replay operable
+ok 9 - local-stores: backward compatibility for investigation docs keeps replay operable
+  ---
+  duration_ms: 0.148243
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 43.712566

@@ -37,10 +37,17 @@
 - [ ] 6. Сделать: блокировать переход по лестнице при активном release-blocker из `risk_register_v0_2`.
   - [ ] Проверка (pass/fail): stage38 gate возвращает FAIL при `open_determinism_incidents>0` или `open_canary_divergence_incidents>0`.
   - [ ] Артефакт результата: runtime incident status + gate log.
+- [ ] 7. Сделать: enforce evidence-ledger правило для закрытых этапов (клиентская прозрачность прогресса).
+  - [ ] Проверка (pass/fail): `scripts/ci/check_evidence_ledger.sh` FAIL, если закрытый этап в MASTER не имеет записи и артефактов в `docs/governance/evidence/evidence_ledger.yaml`.
+  - [ ] Проверка (pass/fail): `scripts/ci/check_stage_ladder_enforcement.sh` включает `check_evidence_ledger.sh`.
+  - [ ] Артефакт результата: evidence gate log + ledger diff.
 
 ## Документация (RU)
 - [ ] docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/ops/stage_ladder_enforcement.md
+- [ ] docs/governance/evidence/evidence_ledger.yaml
+- [ ] docs/governance/evidence/README.md
+- [ ] docs/portal/DELIVERY_EVIDENCE.md
 - [ ] docs/runbooks/checklist_ladder_violation.md
 - [ ] docs/source/risk_register_v0_2.md
 
@@ -49,6 +56,7 @@
 - [ ] integration: CI workflow execution.
 - [ ] e2e: negative scenario (искусственно помеченный поздний этап `[x]` при незакрытом предыдущем) блокируется.
 - [ ] chaos: ручная попытка обойти ladder через прямое изменение одной строки.
+- [ ] integration: closed stage without evidence ledger entry блокируется.
 - [ ] load: не применяется на этапе 38.
 - [ ] soak: не применяется на этапе 38.
 
@@ -58,6 +66,7 @@
 ## DoD
 - [ ] Лестница этапов 28..38 enforce в CI автоматически.
 - [ ] Невозможен merge с нарушением последовательности.
+- [ ] Невозможен merge закрытого этапа без evidence-записи и реальных артефактов.
 - [ ] observability-gap событие этапа 38 зарегистрировано и имеет runbook.
 
 ## Метаданные

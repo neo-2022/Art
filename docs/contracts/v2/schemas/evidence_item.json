@@ -14,11 +14,12 @@
     "base": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["evidence_id", "source_type", "source_ref", "meta"],
+      "required": ["evidence_id", "source_type", "source_ref", "evidence_lineage_id", "meta"],
       "properties": {
         "evidence_id": { "type": "string", "minLength": 1 },
         "source_type": { "type": "string" },
         "source_ref": { "type": "string", "minLength": 1 },
+        "evidence_lineage_id": { "type": "string", "minLength": 1 },
         "meta": {
           "type": "object",
           "additionalProperties": false,

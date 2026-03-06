@@ -65,3 +65,24 @@ test("console-web: semantic interaction tokens are present", () => {
   assert.ok(html.includes("--color-btn-secondary-border"));
   assert.ok(html.includes("--color-focus-ring"));
 });
+
+test("console-web: RTP verdict is rendered and contested promotion is blocked", () => {
+  const html = renderConsoleShell("en");
+  assert.ok(html.includes("data-rtp-verdict=\"contested\""));
+  assert.ok(html.includes("RTP verdict: contested"));
+  assert.ok(html.includes("data-rtp-promotion-guard=\"true\""));
+  assert.ok(html.includes("contested claim promotion blocked: true"));
+});
+
+test("console-web: investigation library baseline contract is rendered", () => {
+  const html = renderConsoleShell("en");
+  assert.ok(html.includes("id=\"investigation-library\""));
+  assert.ok(html.includes("data-investigation-library=\"baseline\""));
+  assert.ok(html.includes("data-investigation-list-count=\"1\""));
+  assert.ok(html.includes("data-investigation-verify=\"true\""));
+  assert.ok(html.includes("data-investigation-replay=\"true\""));
+  assert.ok(html.includes("data-investigation-import"));
+  assert.ok(html.includes("data-investigation-export"));
+  assert.ok(html.includes("data-investigation-verify-btn"));
+  assert.ok(html.includes("data-investigation-replay-btn"));
+});

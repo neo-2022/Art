@@ -1,0 +1,11 @@
+# cargo test -p art-core dna_schema_version_migration_compatibility_tests
+
+running 1 test
+test tests::dna_schema_version_migration_compatibility_tests ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 53 filtered out; finished in 0.00s
+
+
+# docs evidence
+docs/contracts/v2/schemas/dna_signature.json:11:    "dna_schema_version"
+docs/contracts/v2/schemas/dna_signature.json:27:    "dna_schema_version": {

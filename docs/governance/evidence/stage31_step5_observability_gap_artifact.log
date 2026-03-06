@@ -1,0 +1,4 @@
+[stage31 step5 observability-gap] 2026-03-06T14:28:21Z
+57:| observability_gap.investigation_replay_failed | what=replay InvestigationDoc неуспешен; where=console/investigation; why=replay_error | doc_id, doc_version, step, error, trace_id | исправить replay compatibility и повторить tests | console/investigation | On-call | create_incident_min_sev2 | docs/runbooks/investigation_replay_failed.md | replay падает на step |
+57:| observability_gap.investigation_replay_failed | what=replay InvestigationDoc неуспешен; where=console/investigation; why=replay_error | doc_id, doc_version, step, error, trace_id | исправить replay compatibility и повторить tests | console/investigation | On-call | create_incident_min_sev2 | docs/runbooks/investigation_replay_failed.md | replay падает на step |
+runbook_exists=PASS

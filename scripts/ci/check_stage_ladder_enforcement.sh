@@ -7,6 +7,7 @@ INCIDENT_STATE="docs/ops/runtime_incident_status.json"
 bash scripts/ci/check_master_checklist_binding.sh
 bash scripts/ci/check_checklist_status_integrity.sh
 bash scripts/ci/check_docs_master_traceability.sh
+bash scripts/ci/check_evidence_ledger.sh
 
 test -s "$MASTER"
 

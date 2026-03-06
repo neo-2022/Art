@@ -17,9 +17,9 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - CHECKLIST 31 (Investigations-as-Code закрыт)
 
 ## Шаги (строго линейно)
-- [ ] 1. Сделать: attach merkle proof к audit entries.
-  - [ ] Проверка (pass/fail): proof consistency tests PASS.
-  - [ ] Артефакт результата: hash/proof test log.
+- [x] 1. Сделать: attach merkle proof к audit entries.
+  - [x] Проверка (pass/fail): proof consistency tests PASS.
+  - [x] Артефакт результата: hash/proof test log.
 - [ ] 2. Сделать: verify endpoint возвращает детерминированный статус и chain reason.
   - [ ] Проверка (pass/fail): integration tests verify endpoint PASS.
   - [ ] Артефакт результата: API test output.
