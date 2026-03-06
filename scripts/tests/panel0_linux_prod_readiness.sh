@@ -14,7 +14,9 @@ export CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 export PWCLI="$CODEX_HOME/skills/playwright/scripts/playwright_cli.sh"
 
 cleanup() {
-  "$PWCLI" close-all >/dev/null 2>&1 || true
+  if [[ -x "$PWCLI" ]]; then
+    "$PWCLI" close-all >/dev/null 2>&1 || true
+  fi
   if [[ -n "$PROXY_PID" ]] && kill -0 "$PROXY_PID" 2>/dev/null; then
     kill "$PROXY_PID" || true
     wait "$PROXY_PID" || true
@@ -126,13 +128,34 @@ require_cmd cargo
 require_cmd python3
 require_cmd npx
 
-test -x "$PWCLI"
 test -x "$PROXY_BIN"
 
 echo "[panel0-linux] build art-core"
 cargo build -p art-core >/dev/null
 
 start_core
+
+if [[ ! -x "$PWCLI" ]]; then
+  echo "[panel0-linux] playwright-cli wrapper not found; running fallback smoke checks"
+
+  for path in / /panel0/ /panel0/panel0.js /panel0/panel0.css /panel0/panel0_sw.js /panel0/favicon.ico; do
+    code="$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${CORE_PORT}${path}")"
+    if [[ "$code" != "200" ]]; then
+      echo "ASSERT FAIL: expected 200 for ${path}, got ${code}"
+      exit 1
+    fi
+  done
+
+  html="$(curl -fsS "http://127.0.0.1:${CORE_PORT}/")"
+  assert_contains "$html" "const BOOT_TIMEOUT_MS = 5000;" "bootstrap timeout is 5000ms"
+  assert_contains "$html" "observability_gap.console_boot_failed" "bootstrap emits console_boot_failed"
+
+  index_html="$(curl -fsS "http://127.0.0.1:${CORE_PORT}/panel0/")"
+  assert_contains "$index_html" "id=\"core-down\"" "panel0 includes core-down placeholder"
+
+  echo "[panel0-linux] fallback smoke checks passed"
+  exit 0
+fi
 
 echo "[panel0-linux] start mock proxy"
 python3 "$PROXY_BIN" --listen "127.0.0.1:${PROXY_PORT}" --upstream "127.0.0.1:${CORE_PORT}" >"$TMP_DIR/proxy.log" 2>&1 &
