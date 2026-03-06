@@ -59,7 +59,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
    - `owner_component`
    и явное правило: событие пишется всегда, если redaction реально изменила данные.
 
-7. [ ] **Сделать:** Зафиксировать failure-мод redaction: при невозможности применить redaction генерируется `observability_gap.redaction_failed`, и это событие обязано попасть в snapshot/stream.  
+7. [x] **Сделать:** Зафиксировать failure-мод redaction: при невозможности применить redaction генерируется `observability_gap.redaction_failed`, и это событие обязано попасть в snapshot/stream.  
    **Проверка (pass/fail):** `docs/privacy/redaction_policy.md` содержит раздел `observability_gap.redaction_failed`, где указано:
    - условия генерации (сломанный конфиг, исключение фильтра, неизвестная схема)
    - обязательные поля evidence_min (ошибка/контекст/счётчики)
