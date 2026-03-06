@@ -41,7 +41,8 @@ if grep -q "placeholder" .github/workflows/security_stage04.yml; then
   exit 1
 fi
 grep -q "semgrep scan" .github/workflows/security_stage04.yml
-grep -q "osv-scanner scan source -r ." .github/workflows/security_stage04.yml
+grep -q "setuptools==80.9.0" .github/workflows/security_stage04.yml
+grep -q "osv-scanner scan source --recursive . --format json --output osv-report.json" .github/workflows/security_stage04.yml
 grep -q "cargo deny check licenses" .github/workflows/security_stage04.yml
 grep -q "license-checker --production --summary" .github/workflows/security_stage04.yml
 grep -q "actions/upload-artifact@" .github/workflows/security_stage04.yml

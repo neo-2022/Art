@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
-          python -m pip install "semgrep==1.95.0"
+          python -m pip install "semgrep==1.95.0" "setuptools==80.9.0"
       - name: Run semgrep
         shell: bash
         run: |
@@ -63,7 +63,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          osv-scanner scan source -r . --format json --output osv-report.json
+          osv-scanner scan source --recursive . --format json --output osv-report.json
           test -s osv-report.json
       - name: Upload osv report
         if: always()
