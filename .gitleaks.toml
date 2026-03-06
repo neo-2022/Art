@@ -1,0 +1,8 @@
+[allowlist]
+# Temporary allowlist for known test fixture path and non-secret governance text.
+paths = [
+  '''^certs/''',
+]
+regexes = [
+  '''request-driven anonymization flow \| 30,36,37''',
+]

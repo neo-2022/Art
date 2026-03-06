@@ -673,7 +673,9 @@ fn analytics_bucket_for_minute_mut(
             .get_mut(index)
             .expect("bucket index must exist");
     }
-    analytics.buckets.push_back(AnalyticsBucket::new(minute_ts_ms));
+    analytics
+        .buckets
+        .push_back(AnalyticsBucket::new(minute_ts_ms));
     while analytics.buckets.len() > analytics.max_buckets {
         analytics.buckets.pop_front();
     }
@@ -690,7 +692,10 @@ fn record_analytics_event_locked(
     dna_id: Option<&str>,
 ) {
     let minute_ts_ms = (ts_ms / 60_000) * 60_000;
-    let kind = event.get("kind").and_then(Value::as_str).unwrap_or("unknown");
+    let kind = event
+        .get("kind")
+        .and_then(Value::as_str)
+        .unwrap_or("unknown");
     let severity = event
         .get("severity")
         .and_then(Value::as_str)
@@ -1350,8 +1355,7 @@ async fn ingest_v2(
 fn canonical_v2_should_ignore_key(key: &str) -> bool {
     matches!(
         key,
-        "ts"
-            | "ts_ms"
+        "ts" | "ts_ms"
             | "timestamp"
             | "ingest_ts_ms"
             | "event_id"
@@ -3551,8 +3555,7 @@ mod tests {
     fn reference_ignore_key(key: &str) -> bool {
         matches!(
             key,
-            "ts"
-                | "ts_ms"
+            "ts" | "ts_ms"
                 | "timestamp"
                 | "ingest_ts_ms"
                 | "event_id"
@@ -3787,7 +3790,11 @@ mod tests {
             assert_eq!(rust_canonical, ref_canonical, "seq={seq}");
 
             let signature = build_dna_signature(&event);
-            assert_eq!(signature.canonical_hash, sha256_hex(&ref_canonical), "seq={seq}");
+            assert_eq!(
+                signature.canonical_hash,
+                sha256_hex(&ref_canonical),
+                "seq={seq}"
+            );
         }
     }
 
