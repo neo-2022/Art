@@ -80,7 +80,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
    - правило: AuditEntry не редактируется задним числом; PII/Secrets должны быть redacted pre-write
    - ссылки на retention matrix и audit policy
 
-10. [ ] **Сделать:** Зафиксировать policy вложений (attachments): MIME allowlist, magic bytes проверка, max size, sanitize filename, запрет XSS (в т.ч. SVG/HTML), отдельная retention для потенциально PII-вложений.  
+10. [x] **Сделать:** Зафиксировать policy вложений (attachments): MIME allowlist, magic bytes проверка, max size, sanitize filename, запрет XSS (в т.ч. SVG/HTML), отдельная retention для потенциально PII-вложений.  
     **Проверка (pass/fail):** существует `docs/privacy/attachments_security.md`, содержит:
     - allowlist MIME
     - требование проверки magic bytes
