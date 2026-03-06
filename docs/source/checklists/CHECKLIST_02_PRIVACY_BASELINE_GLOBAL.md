@@ -18,7 +18,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Шаги (строго линейно)
 
-1. [ ] **Сделать:** Зафиксировать классификацию данных и примеры для проекта (PII, secrets, telemetry, operational, attachments).  
+1. [x] **Сделать:** Зафиксировать классификацию данных и примеры для проекта (PII, secrets, telemetry, operational, attachments).  
    **Проверка (pass/fail):** существует `docs/privacy/data_classification.md`, содержит:
    - категории данных и определения
    - список примеров PII (email, IP, username, external ids и т.д.)
