@@ -13,6 +13,7 @@ This page proves that the project advances through verifiable implementation ste
 |---|---|---|---|
 | Stage 28 | 2026-03-06 | Console foundation + governance gates | `docs/governance/evidence/stage28_settings_profile_manager.png`, `check_stage28_docs.sh` |
 | Stage 29 | 2026-03-06 | DNA Core v2 determinism and contracts | `docs/governance/evidence/stage29_step*.log`, `check_dna_assurance_program.sh` |
+| Release governance | 2026-03-06 | Operational `GO/NO-GO` decision trail added to release process | `docs/governance/release_decisions/latest_go_no_go.md`, `check_go_no_go_gate.sh` |
 | REGART integration checks | 2026-03-06 | Cross-repo compatibility checks | `tests/platform/contract/check_regart_cross_repo_parity.sh`, `tests/platform/contract/ubuntu_regart_smoke.sh` |
 
 ## How to verify

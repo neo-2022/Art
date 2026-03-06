@@ -19,6 +19,7 @@
 - Checklist program: `docs/source/checklists/*`
 - RAG: `docs/rag/*`
 - Delivery evidence timeline: `docs/portal/DELIVERY_EVIDENCE.md`
+- Release decision template: `docs/ops/go_no_go_template.md`
 
 ## REGART ↔ Art Integration
 - Быстрый старт: `docs/INTEGRATION.md`

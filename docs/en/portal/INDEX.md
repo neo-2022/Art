@@ -13,3 +13,4 @@ This is the English portal entrypoint mirroring RU navigation.
 - Checklist program: `docs/source/checklists/*`
 - RAG: `docs/en/rag/*`
 - Delivery evidence timeline: `docs/en/portal/DELIVERY_EVIDENCE.md`
+- Release decision template: `docs/en/ops/go_no_go_template.md`

@@ -5,6 +5,7 @@
 - `docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
 - `docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
 - `docs/release/versioning.md`
+- `docs/ops/go_no_go_template.md`
 
 ## Policy
 - Релиз только manual через CI; локальный релиз запрещён.
@@ -20,9 +21,13 @@
 5. Публикация compatibility note для клиентов:
    - `docs/release/compat_matrix.md`
    - `docs/ops/platform-runtime-compatibility-matrix.md`
+6. Заполнение `GO/NO-GO` decision sheet:
+   - `docs/ops/go_no_go_template.md`
+   - sheet обязателен для production rollout и major upgrade rollout.
 
 ## Blocking conditions
 Релиз запрещён, если:
 - есть красные обязательные gates;
 - не собраны обязательные release artifacts;
 - есть активные blockers из risk register/checklist 24/checklist 37.
+- не заполнен или не подписан `GO/NO-GO` decision sheet.
