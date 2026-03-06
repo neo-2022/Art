@@ -754,6 +754,32 @@ jobs:
       - name: Stage 28 lens governance gate
         run: bash scripts/ci/check_stage28_lens.sh
 
+  stage28-audio-settings-e2e:
+    name: stage28-audio-settings-e2e
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install workspace
+        run: corepack pnpm install --frozen-lockfile
+      - name: Stage 28 audio/settings e2e gate
+        run: bash scripts/ci/check_stage28_audio_settings.sh
+
+  docs-portal-gate:
+    name: docs-portal-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Docs portal quality gate
+        run: bash scripts/ci/check_docs_portal_quality.sh
+
   console-workspace-install:
     name: console-workspace-install
     runs-on: ubuntu-latest

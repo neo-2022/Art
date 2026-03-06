@@ -4,7 +4,7 @@
   "title": "ClaimV2",
   "type": "object",
   "additionalProperties": false,
-  "required": ["claim_id", "statement", "proof_set", "status"],
+  "required": ["claim_id", "statement", "proof_set", "status", "evidence_refs", "meta"],
   "properties": {
     "claim_id": {
       "type": "string",
@@ -25,6 +25,63 @@
     "status": {
       "type": "string",
       "enum": ["valid", "stale", "invalidated"]
+    },
+    "evidence_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["truth_mode", "evidence_refs"],
+      "properties": {
+        "truth_mode": { "type": "string", "enum": ["observed", "derived", "predicted"] },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "derived": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm_id", "params"],
+          "properties": {
+            "algorithm_id": { "type": "string", "minLength": 1 },
+            "params": { "type": "object" }
+          }
+        },
+        "predicted": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["assumptions", "confidence"],
+          "properties": {
+            "assumptions": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+            "dataset_ref": { "type": "string" },
+            "data_window": { "type": "string" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "truth_mode": { "const": "observed" } } },
+          "then": { "properties": { "evidence_refs": { "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "truth_mode": { "const": "derived" } } },
+          "then": { "required": ["derived"] }
+        },
+        {
+          "if": { "properties": { "truth_mode": { "const": "predicted" } } },
+          "then": { "required": ["predicted"] }
+        }
+      ]
     }
   }
 }

@@ -34,6 +34,11 @@
   - [ ] action_ref: `docs/runbooks/audit_merkle_verify_failed.md`.
   - [ ] Проверка (pass/fail): registry запись + runbook файл.
   - [ ] Артефакт результата: registry/runbook diff.
+- [ ] 6. Сделать: зафиксировать безразрывную интеграцию Audit Verify в интерфейсную лестницу L1->L2.
+  - [ ] Требование: verify-действие доступно из `Incident Room`, `Investigation Library` и из контекстов `Flow Mode` для узлов с `audit_refs`.
+  - [ ] Требование: verify-статус (`verified|failed|unavailable`) отображается единообразно и локализуется (EN/RU).
+  - [ ] Проверка (pass/fail): e2e подтверждает стабильный маршрут `surface -> verify panel -> evidence lineage` без потери контекста.
+  - [ ] Артефакт результата: anti-breakage e2e report + screenshots.
 
 ## Документация (RU)
 - [ ] docs/source/audit_merkle_verify.md
@@ -43,16 +48,20 @@
 - [ ] Tier0 unit: hash/proof validation.
 - [ ] Tier1 integration: verify endpoint.
 - [ ] Tier2 e2e: UI verify flow.
+- [ ] Tier2 e2e: anti-breakage маршруты verify из `Incident Room`/`Investigation Library`/`Flow Mode`.
+- [ ] Tier2 i18n: verify labels/tooltips/errors присутствуют и консистентны для EN/RU.
 - [ ] chaos: tampered chain detection.
 - [ ] load: переносится в этап 34.
 - [ ] soak: переносится в этап 34.
 
 ## CI gate
 - [ ] `stage32-audit-merkle-tests`
+- [ ] `stage32-audit-ux-anti-breakage`
 
 ## DoD
 - [ ] Любое действие имеет проверяемый proof-chain.
 - [ ] verify endpoint/UI детерминированно объясняют причину fail.
+- [ ] verify UX встраивается в L1/L2 поверхности без интерфейсного разрыва и подтверждён anti-breakage e2e.
 - [ ] observability-gap событие этапа 32 зарегистрировано и имеет runbook.
 
 ## Метаданные

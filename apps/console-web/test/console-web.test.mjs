@@ -31,3 +31,37 @@ test("console-web: analytics memory renders chart-ready data and instructions", 
   assert.ok(html.includes("data-analytics-chart=\"timeline\""));
   assert.ok(html.includes("data-analytics-instructions"));
 });
+
+test("console-web: design controls include reset and guardrails", () => {
+  const html = renderConsoleShell("en");
+  assert.ok(html.includes("data-settings-search"));
+  assert.ok(html.includes("data-profile-select"));
+  assert.ok(html.includes("data-profile-save"));
+  assert.ok(html.includes("data-profile-apply"));
+  assert.ok(html.includes("data-profile-export"));
+  assert.ok(html.includes("data-profile-import-file"));
+  assert.ok(html.includes("data-profile-status"));
+  assert.ok(html.includes("data-design-control=\"palettePreset\""));
+  assert.ok(html.includes("data-design-control=\"globalOpacity\""));
+  assert.ok(html.includes("data-design-control=\"globalBrightness\""));
+  assert.ok(html.includes("data-design-control=\"textOpacity\""));
+  assert.ok(html.includes("data-design-control=\"panelOpacity\""));
+  assert.ok(html.includes("data-design-control=\"lineOpacity\""));
+  assert.ok(html.includes("data-design-control=\"audioEnabled\""));
+  assert.ok(html.includes("data-audio-preview=\"ui_click\""));
+  assert.ok(html.includes("data-audio-upload=\"alert_error\""));
+  assert.ok(html.includes("data-audio-clear=\"action_success\""));
+  assert.ok(html.includes("data-design-reset"));
+  assert.ok(html.includes("Contrast guardrail"));
+  assert.ok(html.includes("generated procedurally"));
+});
+
+test("console-web: semantic interaction tokens are present", () => {
+  const html = renderConsoleShell("en");
+  assert.ok(html.includes("--color-link"));
+  assert.ok(html.includes("--color-link-hover"));
+  assert.ok(html.includes("--color-btn-primary-bg"));
+  assert.ok(html.includes("--color-btn-primary-bg-hover"));
+  assert.ok(html.includes("--color-btn-secondary-border"));
+  assert.ok(html.includes("--color-focus-ring"));
+});

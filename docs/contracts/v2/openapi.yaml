@@ -187,5 +187,13 @@ components:
       $ref: ./schemas/claim_v2.json
     DialogMessageV2:
       $ref: ./schemas/dialog_message_v2.json
+    DnaCluster:
+      $ref: ./schemas/dna_cluster.json
+    GapEvent:
+      $ref: ./schemas/gap_event.json
+    SloViolation:
+      $ref: ./schemas/slo_violation.json
+    EvidenceItem:
+      $ref: ./schemas/evidence_item.json
     SnapshotV2:
       $ref: ./schemas/snapshot_v2.json

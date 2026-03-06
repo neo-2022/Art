@@ -37,6 +37,11 @@
 - [ ] 6. Сделать: внедрить экспериментальный LRC (Live Runbook Compiler) для InvestigationDoc runbook sections.
   - [ ] Проверка (pass/fail): runbook компилируется в condition graph и в runtime помечает invalid шаги при нарушении evidence-предусловий.
   - [ ] Артефакт результата: compiler test log + runbook mismatch report.
+- [ ] 7. Сделать: реализовать Investigation Library baseline UI contract без разрыва с L0/L1 слоями.
+  - [ ] Функции: `list/import/export/verify/replay` для InvestigationDoc.
+  - [ ] Ограничение: новые source-of-truth сущности не создаются, используется существующий InvestigationDoc контракт + local store metadata.
+  - [ ] Проверка (pass/fail): integration tests подтверждают стабильный цикл `import -> list -> verify -> replay`.
+  - [ ] Артефакт результата: investigation-library integration log.
 
 ## Документация (RU)
 - [ ] docs/source/investigations_as_code.md
@@ -48,16 +53,19 @@
 - [ ] Tier1 integration: fork/replay/compare.
 - [ ] Tier2 e2e: расследование от ingest до документа.
 - [ ] Tier2 e2e: LRC invalidation path + suggested evidence patch.
+- [ ] Tier2 e2e: Investigation Library (`import/export/verify/replay`) с сохранением lineage.
 - [ ] chaos: повреждённый document payload.
 - [ ] load: переносится в этап 34.
 - [ ] soak: переносится в этап 34.
 
 ## CI gate
 - [ ] `stage31-investigation-doc-tests`
+- [ ] `stage31-investigation-library-tests`
 
 ## DoD
 - [ ] InvestigationDoc сериализуется, версионируется и воспроизводится.
 - [ ] fork/replay/compare покрыты тестами.
+- [ ] Investigation Library baseline реализован и покрыт e2e/integration тестами.
 - [ ] observability-gap событие этапа 31 зарегистрировано и имеет runbook.
 
 ## Метаданные

@@ -76,6 +76,10 @@
 - [ ] 13. Сделать: зафиксировать экспериментальные KPI для RTP/LRC/NRAC и добавить regression gate.
   - [ ] Проверка (pass/fail): отчёт содержит baseline/actual по метрикам false-positive, runbook-mismatch, rollback-rate и не допускает ухудшения за пределами policy.
   - [ ] Артефакт результата: innovation KPI report + gate log.
+- [ ] 14. Сделать: зафиксировать flow-mode 2D baseline budget и watchdog-политику деградации.
+  - [ ] Budget: `1000 nodes pan/zoom p95 <= 50 ms`.
+  - [ ] Проверка (pass/fail): perf suite подтверждает budget и auto-downgrade profile при превышении.
+  - [ ] Артефакт результата: flow perf report + watchdog activation log.
 
 ## Документация (RU)
 - [ ] docs/source/perf_load_coverage_v0_2.md
@@ -97,12 +101,14 @@
 - [ ] perf regression: p95/p99 budgets.
 - [ ] perf regression: replay determinism against baseline.
 - [ ] Tier4 experiment regression: RTP/LRC/NRAC KPI against baseline.
+- [ ] Tier4 perf: flow mode 2D (`1000 nodes`) p95 budget + watchdog fallback.
 - [ ] coverage: global non-decrease + module targets.
 - [ ] chaos: degradation under throttling/partial failures.
 
 ## CI gate
 - [ ] `stage34-perf-load-tests`
 - [ ] `coverage-ratchet-gate`
+- [ ] `stage35-flow-perf-2d-gate`
 
 ## DoD
 - [ ] Перф бюджеты документированы и соблюдаются.
@@ -111,6 +117,7 @@
 - [ ] observability-gap события этапа 34 зарегистрированы и имеют runbook.
 - [ ] Риск R8 из risk register закрыт тестами и perf budget контролем.
 - [ ] Экспериментальные треки RTP/LRC/NRAC имеют измеримый KPI status и не деградируют базовые SLO.
+- [ ] Flow mode 2D baseline и watchdog деградации зафиксированы и проверяются CI-gate.
 
 ## Метаданные
 - Ответственный: @neo-2022

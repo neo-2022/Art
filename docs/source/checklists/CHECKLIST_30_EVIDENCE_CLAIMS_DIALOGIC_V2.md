@@ -54,12 +54,20 @@
 - [ ] 10. Сделать: внедрить экспериментальный каркас RTP (Refutation Tournament Protocol) для ClaimV2.
   - [ ] Проверка (pass/fail): для каждого claim формируется tournament verdict (`passed`/`contested`) с trace refuter-результатов.
   - [ ] Артефакт результата: RTP experiment report + sample tournament traces.
+- [ ] 11. Сделать: внедрить Truth Modes contract (`observed|derived|predicted`) и обязательный `meta`-контур в stage30 UI/contracts.
+  - [ ] Проверка (pass/fail): schemas `claim_v2`, `dialog_message_v2`, `snapshot_v2` содержат `meta.truth_mode` и соответствующие mandatory поля.
+  - [ ] Проверка (pass/fail): observed payload без `meta.evidence_refs` детерминированно отклоняется UI-law тестом.
+  - [ ] Артефакт результата: schema diff + stage30 truth-modes test log.
 
 ## Документация (RU)
 - [ ] docs/contracts/v2/schemas/evidence_block.json
 - [ ] docs/contracts/v2/schemas/claim_v2.json
 - [ ] docs/contracts/v2/schemas/dialog_message_v2.json
 - [ ] docs/contracts/v2/schemas/evidence_lineage_v2.json
+- [ ] docs/contracts/v2/schemas/evidence_item.json
+- [ ] docs/contracts/v2/schemas/gap_event.json
+- [ ] docs/contracts/v2/schemas/slo_violation.json
+- [ ] docs/contracts/v2/schemas/dna_cluster.json
 - [ ] docs/runbooks/evidence_scope_violation.md
 - [ ] docs/runbooks/claim_without_evidence.md
 - [ ] docs/runbooks/ui_law_violation.md
@@ -75,18 +83,21 @@
 - [ ] e2e: one-click-to-evidence path from foundation UI.
 - [ ] e2e: lineage trace path event -> evidence -> claim -> investigation.
 - [ ] e2e: RTP verdict отображается и не позволяет silently повысить contested claim до valid.
+- [ ] regression: L0 shell invariants не ломаются после внедрения Truth Modes.
 - [ ] chaos: scope downgrade scenario.
 - [ ] load: переносится в этап 34.
 - [ ] soak: переносится в этап 34.
 
 ## CI gate
 - [ ] `stage30-evidence-claims-tests`
+- [ ] `stage30-truth-modes-tests`
 - [ ] `console-test`
 
 ## DoD
 - [ ] Evidence endpoint работает с корректным scope enforcement.
 - [ ] Claims/Dialogic contracts валидируются автоматически.
 - [ ] UI-law “no claim without evidence_refs” enforced.
+- [ ] Truth Modes contract реализован и проверяется для observed/derived/predicted.
 - [ ] observability-gap события этапа 30 зарегистрированы и имеют runbook.
 - [ ] Риски R3 и R9 из risk register закрыты тестами и runbook-процедурами.
 

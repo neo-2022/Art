@@ -6,6 +6,7 @@ required_files=(
   "docs/source/dna_core_determinism_performance_assurance.md"
   "docs/source/analytics_memory_v0_2.md"
   "docs/source/risk_register_v0_2.md"
+  "docs/source/console_settings_architecture_v0_2.md"
   "docs/source/checklists/TRACEABILITY_V0_2.md"
   "docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md"
   "docs/source/checklists/CHECKLIST_29_EVENT_DNA_CORE_V2.md"
@@ -52,6 +53,7 @@ required_files=(
   "scripts/ci/check_stage35_spatial_readiness.sh"
   "scripts/ci/check_stage36_saas_architecture.sh"
   "scripts/ci/check_stage28_lens.sh"
+  "scripts/ci/check_stage28_audio_settings.sh"
   "scripts/ci/check_v2_contract_fingerprint.sh"
   "scripts/ci/check_dna_assurance_program.sh"
   "scripts/ci/check_v0_2_risk_register.sh"
@@ -59,6 +61,7 @@ required_files=(
   "scripts/ci/run_stage29_dna_property_million.sh"
   "scripts/ci/run_stage29_replay_determinism.sh"
   "scripts/tests/workspace_boundary_negative_smoke.sh"
+  "scripts/tests/console_audio_settings_e2e.sh"
   "docs/runbooks/console_workspace_boundary_violation.md"
   "docs/runbooks/dna_signature_mismatch.md"
   "docs/runbooks/dna_determinism_violation.md"
@@ -83,6 +86,35 @@ required_files=(
   "docs/runbooks/saas_tenant_isolation_failed.md"
   "docs/runbooks/console_linux_readiness_failed.md"
   "docs/runbooks/checklist_ladder_violation.md"
+  "mkdocs.yml"
+  "docs/portal/INDEX.md"
+  "docs/portal/NAVIGATION.md"
+  "docs/portal/DOC_STYLE_GUIDE.md"
+  "docs/portal/DOC_AUTHORITY.md"
+  "docs/portal/GLOSSARY.md"
+  "docs/portal/COMPATIBILITY_MATRIX_ART_REGART.md"
+  "docs/portal/PRODUCT_GUARANTEES.md"
+  "docs/portal/SECURITY_POSTURE.md"
+  "docs/rag/README.md"
+  "docs/rag/sources.yaml"
+  "docs/rag/context_packs.md"
+  "docs/rag/security_policy.md"
+  "docs/en/README.md"
+  "docs/en/ARCHITECTURE.md"
+  "docs/en/INTEGRATION.md"
+  "docs/en/portal/INDEX.md"
+  "docs/en/portal/NAVIGATION.md"
+  "docs/en/portal/DOC_STYLE_GUIDE.md"
+  "docs/en/portal/DOC_AUTHORITY.md"
+  "docs/en/portal/GLOSSARY.md"
+  "docs/en/portal/COMPATIBILITY_MATRIX_ART_REGART.md"
+  "docs/en/portal/PRODUCT_GUARANTEES.md"
+  "docs/en/portal/SECURITY_POSTURE.md"
+  "docs/en/rag/README.md"
+  "docs/en/rag/context_packs.md"
+  "docs/en/rag/security_policy.md"
+  "docs/en/rag/sources.yaml"
+  "scripts/ci/check_docs_portal_quality.sh"
 )
 
 for file in "${required_files[@]}"; do
@@ -93,16 +125,20 @@ done
 grep -q "No checklist skipping" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "Observability Gap Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "DNA Engine Safety Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+grep -q "Settings Information Architecture Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "stage38-ladder-gate" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "01..27 -> 28..38" docs/source/checklists/TRACEABILITY_V0_2.md
 
 bash scripts/ci/check_stage28_lens.sh
+bash scripts/ci/check_docs_portal_quality.sh
 
 grep -q "CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 grep -q "CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 for job in \
   stage28-lens-gate \
+  stage28-audio-settings-e2e \
+  docs-portal-gate \
   workspace-boundary-negative-smoke \
   stage29-contract-fingerprint \
   stage29-nightly-replay-determinism \

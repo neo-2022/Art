@@ -41,6 +41,14 @@
 - [ ] 7. Сделать: добавить GPU capability profiling и deterministic fallback policy.
   - [ ] Проверка (pass/fail): startup profiling определяет класс GPU и включает предсказуемый fallback profile.
   - [ ] Артефакт результата: profiling matrix + fallback policy report.
+- [ ] 8. Сделать: внедрить Advanced Control guardrail для Visual Flow Mode.
+  - [ ] Политика: advanced flow включается только feature-flag, при нарушении SLO/perf автоматически переводится в read-only mode.
+  - [ ] Проверка (pass/fail): guardrail tests подтверждают auto-downgrade при превышении budget.
+  - [ ] Артефакт результата: guardrail policy report + test log.
+- [ ] 9. Сделать: закрыть inspectability/snapshot/replay/diff контур для semantic node types.
+  - [ ] Проверка (pass/fail): по каждому типу `dna_cloud|incident_cloud|gap_cloud|service_node|store_node|buffer_node|agent_node` клик открывает Evidence Panel с lineage.
+  - [ ] Проверка (pass/fail): snapshot state serialize/restore детерминирован без потери позиций/видимости.
+  - [ ] Артефакт результата: flow inspectability report + snapshot replay report.
 
 ## Документация (RU)
 - [ ] docs/source/spatial_store_v0_2.md
@@ -55,16 +63,23 @@
 - [ ] load: scene scale-up tests.
 - [ ] perf: weak-gpu fallback tests.
 - [ ] integration: GPU capability profiling и deterministic fallback activation.
+- [ ] integration: advanced-flow guardrail (feature-flag + auto-downgrade).
+- [ ] e2e: flow inspectability для всех semantic node types.
+- [ ] e2e: freeze/snapshot/replay/diff state restore.
 - [ ] soak: длительная работа spatial updates.
 
 ## CI gate
 - [ ] `stage35-spatial-readiness-tests`
+- [ ] `stage35-flow-inspectability-tests`
+- [ ] `stage35-flow-snapshot-replay-tests`
+- [ ] `stage35-flow-perf-2d-gate`
 
 ## DoD
 - [ ] Spatial Store contract реализован и покрыт тестами.
 - [ ] Picking/visibility проходит performance budgets.
 - [ ] observability-gap событие этапа 35 зарегистрировано и имеет runbook.
 - [ ] Риск R10 из risk register закрыт прототипом, MVP scope lock и weak-gpu тестами.
+- [ ] Advanced Control guardrail предотвращает разрыв UX между ранними и поздними интерфейсными слоями.
 
 ## Метаданные
 - Ответственный: @neo-2022

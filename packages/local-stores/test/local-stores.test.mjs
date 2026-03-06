@@ -12,6 +12,7 @@ test("local-stores: cache and dna lookup", () => {
   assert.equal(stores.findSimilarByDna("dna-a").length, 2);
   assert.equal(stores.analyticsCount("dna-a"), 2);
   assert.equal(stores.spatialStoreStub().status, "stubbed");
+  assert.ok(stores.spatialStoreStub().interface.includes("saveSnapshot"));
 });
 
 test("local-stores: analytics summary returns charts and instructions", () => {

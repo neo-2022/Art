@@ -55,6 +55,9 @@
 - [ ] 9. Сделать: вести operational debt register для production-risk хвостов.
   - [ ] Проверка (pass/fail): `docs/ops/operational_debt_register.md` существует и содержит `owner`, `risk`, `due_date`, `status`, `mitigation`.
   - [ ] Артефакт результата: debt register diff + review log.
+- [ ] 10. Сделать: ввести Linux anti-breakage suite для интерфейсной лестницы L0/L1/L2.
+  - [ ] Проверка (pass/fail): suite подтверждает, что после rollout сохраняются базовые сценарии shell, truth modes, investigation library и flow mode inspectability.
+  - [ ] Артефакт результата: interface anti-breakage report.
 
 ## Документация (RU)
 - [ ] docs/ops/panel0_linux_prod_readiness.md
@@ -75,6 +78,7 @@
 - [ ] chaos: Core DOWN + Console DOWN + recovery.
 - [ ] load: readiness under sustained traffic.
 - [ ] soak: длительный backlog/recovery прогон.
+- [ ] regression: L0/L1/L2 interface anti-breakage под Linux canary.
 
 ## CI gate
 - [ ] `stage37-linux-hardening-gate`
@@ -86,6 +90,7 @@
 - [ ] observability-gap события этапа 37 зарегистрированы и имеют runbook.
 - [ ] Operational debt register ведётся и не содержит просроченных critical debt без mitigation.
 - [ ] Риски R5 и R9 из risk register закрыты rollout controls и alert gates.
+- [ ] Интерфейсная лестница L0/L1/L2 проходит Linux anti-breakage suite без регрессий.
 
 ## Метаданные
 - Ответственный: @neo-2022

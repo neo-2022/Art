@@ -57,6 +57,35 @@
 - [ ] 10. Сделать: добавить negative smoke для boundary enforcement.
   - [ ] Проверка (pass/fail): `bash scripts/tests/workspace_boundary_negative_smoke.sh` возвращает код `0` и подтверждает FAIL boundary-check при искусственном нарушении.
   - [ ] Артефакт результата: negative smoke log.
+- [ ] 11. Сделать: зафиксировать интерфейсную лестницу реализации (`L0->L1->L2->L3`) как обязательный контракт этапов.
+  - [ ] L0 (stage 28): shell + surfaces skeleton + i18n + tooltip/evidence navigation.
+  - [ ] L1 (stage 30/31): truth modes + dialog lineage + investigation library baseline.
+  - [ ] L2 (stage 35): flow mode 2D (inspect/snapshot/replay/diff) + adaptive settings.
+  - [ ] L3 (post-35): 3D projection как проекция L2 без новых source-of-truth.
+  - [ ] Проверка (pass/fail): `docs/source/FOUNDATION_CONSTITUTION_V0_2.md` содержит разделы `Truth Modes Law`, `Visual Flow Mode Specification`, `Adaptive UX Policy`, `Tiered Testing and CI Law`.
+  - [ ] Артефакт результата: diff Foundation.
+- [ ] 12. Сделать: зафиксировать обязательный anti-breakage набор тестов ранних этапов для будущих интерфейсных слоёв.
+  - [ ] Проверка (pass/fail): `corepack pnpm --filter ./apps/console-web run test` содержит проверки surfaces/i18n/tooltips/evidence links и остаётся PASS после изменений stage 30+.
+  - [ ] Артефакт результата: test log + checklist reference matrix.
+- [ ] 13. Сделать: заложить foundation settings framework с поиском по настройкам и иерархией групп.
+  - [ ] Проверка (pass/fail): Console shell содержит settings search + grouped sections (`visual`, `opacity`, `colors`, `audio`) и фильтрацию пунктов по query.
+  - [ ] Артефакт результата: e2e screenshot + test log.
+- [ ] 14. Сделать: заложить audio effects framework с legal-safe baseline и пользовательской заменой каждого эффекта.
+  - [ ] Требование: default эффекты генерируются процедурно (без внешних audio assets).
+  - [ ] Требование: для каждого эффекта доступны `preview`, `replace`, `clear`.
+  - [ ] Требование: есть явный legal warning о правах на пользовательский контент.
+  - [ ] Проверка (pass/fail): `corepack pnpm --filter ./apps/console-web run test` PASS и подтверждает наличие audio controls + replace hooks.
+  - [ ] Артефакт результата: test log + foundation diff.
+- [ ] 15. Сделать: внедрить runtime e2e suite для audio/settings цепочки.
+  - [ ] Проверка (pass/fail): `bash scripts/tests/console_audio_settings_e2e.sh` PASS (`search -> preview -> custom-status -> clear`).
+  - [ ] Артефакт результата: e2e log + обновление CI job `stage28-audio-settings-e2e`.
+- [ ] 16. Сделать: зафиксировать информационную архитектуру меню настроек всего проекта.
+  - [ ] Проверка (pass/fail): документ `docs/source/console_settings_architecture_v0_2.md` содержит структуру уровней (`Global/Organization/Project/Environment/User`), категории/подкатегории, policy lock и search model.
+  - [ ] Артефакт результата: settings architecture doc diff + ссылочный раздел в Foundation.
+- [ ] 17. Сделать: реализовать Settings Profile Manager (`save/apply/delete/export/import`) для user-scope настроек.
+  - [ ] Проверка (pass/fail): runtime e2e подтверждает цикл `save -> apply -> export -> import -> delete` с корректными status-сообщениями.
+  - [ ] Проверка (pass/fail): policy-locked controls помечены и не изменяются через profile apply.
+  - [ ] Артефакт результата: profile manager e2e log + UI screenshot.
 
 ## Документация (RU)
 - [ ] docs/source/FOUNDATION_CONSTITUTION_V0_2.md
@@ -66,11 +95,17 @@
 - [ ] docs/foundation/lens_audit_report.md
 - [ ] docs/runbooks/console_workspace_boundary_violation.md
 - [ ] docs/source/risk_register_v0_2.md
+- [ ] docs/source/console_settings_architecture_v0_2.md
 
 ## Тестирование
 - [ ] unit: пакеты `packages/*` покрыты тестами и запускаются в CI.
 - [ ] integration: routing foundation shell в `apps/console-web`.
 - [ ] e2e: Linux headless smoke открытия foundation shell.
+- [ ] regression: интерфейсная лестница L0 сохраняет обратную совместимость при переходе к L1/L2.
+- [ ] integration: settings search фильтрует пункты без потери доступности.
+- [ ] integration: audio replace/preview/clear работает по каждому baseline эффекту.
+- [ ] e2e: search + audio preview + custom replace status + clear cycle.
+- [ ] e2e: settings profile manager cycle (`save/apply/export/import/delete`) + policy-lock behavior.
 - [ ] chaos: отрицательный boundary case (прямой импорт запрещённого пути) падает в CI.
 - [ ] load: не применяется на этапе 28; переносится в этап 34.
 - [ ] soak: не применяется на этапе 28; переносится в этап 34.
@@ -86,6 +121,7 @@
 - [ ] `workspace-boundary-negative-smoke`
 - [ ] `panel0-i18n-law-tests`
 - [ ] `stage28-lens-gate`
+- [ ] `stage28-audio-settings-e2e`
 
 ## DoD
 - [ ] Workspace и foundation app/packages воспроизводимо собираются на Linux CI.
@@ -94,6 +130,9 @@
 - [ ] Lens Catalog классифицирован (Primary/Secondary/Anti-pattern) и проверяется в stage28 docs gate.
 - [ ] Lens governance проверяется отдельным CI gate `stage28-lens-gate`.
 - [ ] Отрицательный boundary smoke подтверждает автоматическую блокировку запрещённых импортов.
+- [ ] Интерфейсная лестница L0->L3 задокументирована и проверяется как обязательный anti-breakage контракт.
+- [ ] Settings framework (с поиском) и audio effects framework (replace/preview/clear) реализованы и покрыты тестами.
+- [ ] Карта меню настроек проекта зафиксирована как расширяемый контракт уровней и policy-lock.
 - [ ] observability-gap событие этапа 28 задокументировано в registry + runbook.
 - [ ] Риск R1 из risk register подтверждён метрикой `forbidden_import_count=0`.
 

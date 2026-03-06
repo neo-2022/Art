@@ -142,6 +142,308 @@
 - фикс обязателен;
 - повторная проверка обязательна.
 
+## 15. Product Narrative (Console)
+### 15.1 Категория
+- Art Console является поверхностью Incident OS, а не набором независимых дашбордов.
+- Любой вывод в UI должен быть проверяемым по evidence, audit и lineage.
+
+### 15.2 Дифференциаторы
+- Evidence-First рендеринг.
+- Event DNA как первоклассный навигационный объект.
+- Dialogic protocol вместо свободного невалидируемого чата.
+- Investigations-as-Code с replay/compare.
+- Verifyable audit через Merkle proof.
+- Visual Flow Mode как проекция Reality Model (2D default, 3D как следующий слой).
+
+## 16. Truth Modes Law (обязательный)
+### 16.1 Режимы истины
+- `Observed`: факт из Core/Agent/Panel0, всегда с ссылкой на первичные evidence.
+- `Derived`: детерминированный вывод (кластеризация/агрегация/дифф), всегда с algorithm metadata.
+- `Predicted`: прогноз/симуляция; не может отображаться как факт.
+
+### 16.2 Контракт meta (единый)
+- `meta.truth_mode: observed|derived|predicted`.
+- `meta.evidence_refs: string[]` (mandatory для observed).
+- `meta.derived: { algorithm_id, params }` (mandatory для derived).
+- `meta.predicted: { assumptions[], confidence, dataset_ref?, data_window? }` (mandatory для predicted).
+
+### 16.3 UI law
+- UI обязан визуально различать truth mode (badge/legend/style token).
+- Для `observed` отсутствие `meta.evidence_refs` является блокирующей ошибкой рендера.
+- Для `predicted` обязателен явный маркер "prediction", запрещено подавать как established fact.
+
+## 17. Canonical Domain Model (Console)
+### 17.1 Канонические сущности
+- `Event` (raw/normalized)
+- `DNACluster`
+- `EvidenceItem`
+- `Claim`
+- `ActionRequest` / `ActionResult`
+- `AuditRecord` + `MerkleProof`
+- `SLOViolation`
+- `GapEvent`
+- `InvestigationDoc`
+
+### 17.2 Обязательные идентификаторы и поля
+- `DNACluster`: `dna_id`, `size`, `first_seen`, `last_seen`, `time_range`, `navigation_tags`.
+- `GapEvent`: `kind`, `component`, `incident_rule`, `action_ref`, `trace_id`.
+- `EvidenceItem`: `oneOf(log|metric|trace|audit|snapshot|artifact)` + `source_ref`.
+- `DialogMessage`: `message_id`, `parent_message_ids[]`, `evidence_refs[]`, `audit_refs[]`, `lineage_hash`.
+
+## 18. Surfaces and Interaction Laws
+### 18.1 Поверхности
+- Command Center
+- Event River
+- Incident Room
+- Scenario View
+- Time Field
+- Audit Explorer
+- Action Studio
+- Investigation Library
+- Visual Flow Mode
+
+### 18.2 Базовый пользовательский цикл
+1. Пользователь открывает Command Center и получает состояние/риски/gap-сигналы.
+2. Из Event River фильтрует по DNA/incident/severity/source и раскрывает evidence lineage.
+3. В Incident Room проходит цикл Hypothesis -> Decision -> ActionRequest -> ActionResult -> Explanation.
+4. В Investigation Library выполняет import/export/verify/replay InvestigationDoc.
+5. В Flow Mode визуально исследует потоки, кластеры и связи; клик по объекту открывает Evidence Panel.
+
+### 18.3 Interaction laws
+- `Click-anything -> Inspect`: любой интерактивный объект имеет inspect-переход.
+- `Tooltip everywhere`: все интерактивные элементы имеют tooltip key.
+- `Freeze/Snapshot/Replay/Diff`: обязательные функции для воспроизводимости.
+- `One-click-to-evidence`: gap/claim/decision/audit всегда раскрываются до первичных evidence.
+
+## 19. Visual Flow Mode Specification
+### 19.1 Границы
+- Flow Mode не заменяет другие поверхности, а является проекцией на ту же Reality Model.
+- Для v0.2 новые Core API запрещены; используются текущие контракты и локальный индекс.
+
+### 19.2 Семантические типы
+- `dna_cloud`, `incident_cloud`, `gap_cloud`
+- `service_node`, `store_node`, `buffer_node`, `agent_node`
+- `flow_edge` (направленный поток между узлами)
+
+### 19.3 Truth Overlay
+- Каждый node/cloud/edge имеет overlay mode: observed/derived/predicted.
+- Цвет/контур/иконка определяются truth mode + severity + confidence.
+
+### 19.4 3D концепция
+- 3D-вид моделирует "воздушное пространство данных": направленные трассы потоков + информационные облака.
+- Группировка облаков поддерживается по типам данных, объектам, инцидентам и DNA.
+- 3D остаётся проекцией 2D модели и не является отдельным источником истины.
+
+## 20. Adaptive UX Policy (обязательный)
+- Default policy: `Auto by OS+GPU`.
+- Пользовательские overrides обязательны:
+  - theme: `auto|light|dark|high-contrast`
+  - density: `compact|standard|expanded`
+  - motion: `reduced|standard|enhanced`
+  - flow complexity: `read-only|advanced`
+- Advanced Control допускается только под feature-flag и SLO guardrail.
+- При нарушении perf/stability budget включается auto-downgrade в read-only flow mode.
+
+## 21. Spatial Store Law (Flow/2D/3D)
+- Spatial Store является derivation layer и не хранит source-of-truth.
+- Минимальный интерфейс v0.2:
+  - `setPosition(node_id, vec)`
+  - `getLayout(layout_id)`
+  - `saveSnapshot(snapshot_id, state)`
+  - `loadSnapshot(snapshot_id)`
+  - `listSnapshots()`
+
+## 22. Tiered Testing and CI Law
+### 22.1 Обязательные проверки
+- Truth Modes: observed без evidence_refs -> FAIL.
+- Dialog lineage: сообщение без explainable lineage -> FAIL.
+- Flow inspectability: клик по каждому semantic type раскрывает Evidence Panel.
+- Freeze/Snapshot/Replay: state restore детерминирован.
+- 2D perf baseline: 1000 nodes pan/zoom p95 <= 50 ms.
+- i18n smoke: EN default и RU switch валидны для surfaces/tooltips/errors.
+
+### 22.2 Обязательные CI jobs программы 28..38
+- `stage30-truth-modes-tests`
+- `stage31-investigation-library-tests`
+- `stage35-flow-inspectability-tests`
+- `stage35-flow-snapshot-replay-tests`
+- `stage35-flow-perf-2d-gate`
+
+## 23. Design System Law (Dark Gold Theme Tokens + UI Laws)
+### 23.1 Статус
+- Этот раздел является каноном design system для Console.
+- Любые изменения токенов и law-правил выполняются только через правку этого раздела + повторный аудит контраста/читабельности/доступности.
+
+### 23.2 Закон семантических токенов
+- Компоненты состояний не имеют права использовать raw токены напрямую (`--color-gold-*`, `--color-warning` без суффикса).
+- Обязательны семантические токены:
+  - состояния: `--color-*-subtle`, `--color-*-strong`, `--color-on-*`
+  - таблицы/списки: `--color-row-*`
+  - фокус/оверлеи: `--color-focus-ring`, `--color-overlay-scrim`, `--shadow-elevated`
+  - интерактив: `--color-link*`, `--color-btn-*`
+- Raw gold (`--color-gold-*`) разрешён только для брендовых акцентов: selected/active, headline, primary CTA, выделенный DNA cluster/series.
+
+### 23.3 Модель состояний: error vs danger
+- `error`: ошибки данных/валидации/событий/интерфейса.
+- `danger`: destructive действия (`delete|terminate|rollback|force`).
+- Любая destructive action control обязана использовать `danger` токены.
+- Ошибки валидации/парсинга/загрузки обязаны использовать `error` токены.
+
+### 23.4 Interactive tokens (обязательно)
+- `--color-link`, `--color-link-hover`
+- `--color-btn-primary-bg`, `--color-btn-primary-bg-hover`, `--color-btn-primary-text`
+- `--color-btn-secondary-bg`, `--color-btn-secondary-border`, `--color-btn-secondary-text`
+
+### 23.5 Focus-visible и плотные списки
+- `:focus-visible` обязателен: `2px` ring, `2px` offset, token `--color-focus-ring`.
+- Hover не заменяет keyboard focus.
+- Для dense lists/table rows:
+  - selected: `--color-row-selected` + нецветовой маркер `--color-row-active-border`
+  - hover не имеет права скрывать selected.
+
+### 23.6 Charts и truth overlay
+- Максимум одновременных серий графика: `6`.
+- Набор серий фиксирован: `--color-series-1..6`; произвольные цвета запрещены.
+- Gold используется только для selected series / target SLO / key investigation metric.
+- Truth overlay не может быть реализован только цветом:
+  - `Observed`: solid
+  - `Derived`: dotted
+  - `Predicted`: dashed + badge `PRED` + сниженная opacity
+
+### 23.7 3D operational default
+- По умолчанию 3D работает в operational режиме:
+  - bloom/tуман/лишние cinematic effects отключены
+  - чёткие контуры и читаемая типографика
+- Cinematic mode допустим только отдельным toggle и вне активного расследования либо с явным warning.
+
+### 23.8 i18n law для дизайн-контуров
+- Default UI language: English.
+- Russian обязателен как второй язык, включая tooltips/ошибки/статусы design controls.
+- Запрещены hardcoded строки в компонентах.
+
+### 23.9 Token Canon (CSS variables)
+```css
+/* =========================
+   Base Surfaces
+   ========================= */
+--color-bg-primary: #0A0C0E;
+--color-bg-secondary: #14181C;
+--color-bg-tertiary: #1E2328;
+--color-surface-elevated: #1F262C;
+
+--color-overlay-scrim: rgba(0,0,0,0.6);
+--shadow-elevated: 0 8px 20px rgba(0,0,0,0.5);
+
+/* =========================
+   Typography
+   ========================= */
+--color-text-primary: #E8E6E3;
+--color-text-secondary: #9A9A9A;
+--color-text-disabled: #5A5A5A;
+
+/* =========================
+   Borders
+   ========================= */
+--color-border-subtle: #2C3138;
+--color-border-strong: #4A5058;
+
+/* =========================
+   Brand Gold (raw)
+   ========================= */
+--color-gold-primary: #C6A45C;
+--color-gold-light: #D8B878;
+--color-gold-dark: #B49450;
+--color-gold-dim: #665C3A;
+--color-gold-glow: rgba(198,164,92,0.6);
+
+/* =========================
+   States (semantic)
+   ========================= */
+--color-success-strong: #5B8C5A;
+--color-success-subtle: rgba(91,140,90,0.15);
+
+--color-error-strong: #B55A5A;
+--color-error-subtle: rgba(181,90,90,0.15);
+
+--color-danger-strong: #8E2A2A;
+--color-danger-subtle: rgba(142,42,42,0.2);
+
+--color-warning-strong: #D97C2B;
+--color-warning-subtle: rgba(217,124,43,0.15);
+
+--color-info-strong: #5A8CB5;
+--color-info-subtle: rgba(90,140,181,0.15);
+
+/* =========================
+   "On" Colors (text on colored bg)
+   ========================= */
+--color-on-gold: #0A0C0E;
+--color-on-success: #0A0C0E;
+--color-on-warning: #0A0C0E;
+--color-on-info: #0A0C0E;
+--color-on-danger: #E8E6E3;
+
+/* =========================
+   Focus / Accessibility
+   ========================= */
+--color-focus-ring: #D8B878;
+
+/* =========================
+   Dense Lists / Tables
+   ========================= */
+--color-row-hover: rgba(198,164,92,0.08);
+--color-row-selected: rgba(198,164,92,0.14);
+--color-row-active-border: #D8B878;
+
+/* =========================
+   Charts: fixed series palette
+   ========================= */
+--color-series-1: #5A7C8C;
+--color-series-2: #6A8C7A;
+--color-series-3: #8C7A6A;
+--color-series-4: #7A6A8C;
+--color-series-5: #8C6A7A;
+--color-series-6: #6A8C8C;
+
+/* =========================
+   Interactions (semantic)
+   ========================= */
+--color-link: #D8B878;
+--color-link-hover: #C6A45C;
+
+--color-btn-primary-bg: #C6A45C;
+--color-btn-primary-bg-hover: #D8B878;
+--color-btn-primary-text: #0A0C0E;
+
+--color-btn-secondary-bg: transparent;
+--color-btn-secondary-border: #4A5058;
+--color-btn-secondary-text: #E8E6E3;
+
+/* =========================
+   3D-specific (operational default)
+   ========================= */
+--color-3d-bg-start: #030405;
+--color-3d-bg-end: #0A0C0E;
+--color-3d-node: rgba(198,164,92,0.7);
+--color-3d-edge: rgba(198,164,92,0.3);
+--color-3d-cloud: rgba(102,92,58,0.15);
+```
+
+### 23.10 Audio Effects Ownership Law
+- Аудио-эффекты по умолчанию обязаны генерироваться процедурно (WebAudio synthesis) и не должны зависеть от внешних аудиофайлов.
+- В baseline запрещено включать сторонние мелодии/сэмплы, если не доказана чистота лицензии.
+- Для каждого эффекта UI обязан поддерживать replace/preview/clear через пользовательский файл.
+- При пользовательской загрузке система обязана явно предупреждать о необходимости прав на контент.
+- Каскадные системные эффекты должны быть мелодическими и нейтральными для длительной операционной работы.
+
+## 24. Settings Information Architecture Law
+- Структура настроек Console должна быть единой иерархией с уровнями scope: `Global -> Organization -> Project -> Environment -> User`.
+- Любая настройка обязана иметь `id`, `scope`, `default`, `owner_component`, `verify`.
+- Поиск по настройкам обязателен; фильтрация работает по `label/tags/id`.
+- Policy-locked настройки отображаются как read-only с указанием источника lock.
+- Settings Profile Manager обязателен: `save/apply/delete/export/import` для user-scope snapshot.
+- Каноническая карта меню и stage mapping фиксируются в `docs/source/console_settings_architecture_v0_2.md`.
+
 # APPENDIX A — LENS CATALOG (обязательный аудит полноты)
 
 ## Цель
