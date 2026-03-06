@@ -18,8 +18,9 @@ Docker и Kubernetes — отдельные рабочие платформы з
 
 ## Режим CI сейчас
 - Текущий режим: `ENABLE_NATURAL_MATRIX=false`.
-- Docker/K8s контуры проходят validate-режим в CI как обязательные контракты.
-- Execute-режим (реальный runtime smoke) включается на выделенных runner-ах, без изменений продуктового кода.
+- Docker/K8s контуры проходят validate-режим как структурный контракт.
+- Дополнительно Docker execute-smoke и Kubernetes execute-smoke уже исполняются на Ubuntu runner как production runtime gates.
+- `ENABLE_NATURAL_MATRIX=true` по-прежнему нужен только для расширения native distro matrix, а не для контейнерных execute-path.
 
 ## Docker smoke
 ### Validate
@@ -32,6 +33,13 @@ MODE=validate tests/platform/container/run_docker_smoke.sh
 MODE=execute tests/platform/container/run_docker_smoke.sh
 ```
 
+Execute-path обязан:
+- собрать статические `art-core` и `art-agent`;
+- собрать runtime images;
+- поднять оба контейнера;
+- пройти `health -> ingest -> snapshot/stream -> safe action(noop) -> audit verify`;
+- сохранить evidence `EVIDENCE_DOCKER_SMOKE` и `EVIDENCE_CONTAINER_TEST_docker`.
+
 ## Kubernetes smoke
 ### Validate
 ```bash
@@ -42,6 +50,13 @@ MODE=validate K8S_PROFILE=kind-default tests/platform/k8s/run_k8s_smoke.sh
 ```bash
 MODE=execute K8S_PROVIDER=kind K8S_PROFILE=kind-default tests/platform/k8s/run_k8s_smoke.sh
 ```
+
+Execute-path обязан:
+- собрать статические runtime images;
+- поднять ephemeral cluster (`kind` или `k3d`);
+- задеплоить core/agent;
+- пройти `health -> ingest -> snapshot/stream -> safe action(noop) -> audit verify` через port-forward;
+- сохранить evidence `EVIDENCE_K8S_SMOKE` и `EVIDENCE_CONTAINER_TEST_kubernetes`.
 
 ## Evidence IDs
 - `EVIDENCE_DOCKER_SMOKE`

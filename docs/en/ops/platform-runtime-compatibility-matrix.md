@@ -27,7 +27,7 @@ Define minimum versions and mandatory production scenarios required to claim run
 5. RBAC/policy path blocks forbidden actions and emits audit evidence.
 
 ## Release blockers (strict)
-- Any execute-smoke FAIL on mandatory surfaces defined in `formats/platform_support.yaml`.
+- Any execute-smoke FAIL on enabled/mandatory surfaces defined in the current release scope inside `formats/platform_support.yaml`.
 - Any version-matrix mismatch outside allowed ranges.
 - Any Kubernetes production scenario FAIL.
 - Any missing evidence from:
@@ -38,5 +38,6 @@ Define minimum versions and mandatory production scenarios required to claim run
   - `EVIDENCE_CONTAINER_TEST_kubernetes`
 
 ## CI now
-- `ENABLE_NATURAL_MATRIX=false`: validate gates are mandatory, execute jobs are skipped.
-- `ENABLE_NATURAL_MATRIX=true`: execute smokes become mandatory release gates.
+- `ENABLE_NATURAL_MATRIX=false`: native distro/VM matrix remains validate-only.
+- Docker execute-smoke and Kubernetes execute-smoke are already mandatory on the Ubuntu runner.
+- `ENABLE_NATURAL_MATRIX=true`: additional native distro jobs become mandatory release gates.

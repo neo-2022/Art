@@ -17,8 +17,17 @@
 
 ## CI сейчас
 - Натурные тесты исполняются только на Ubuntu.
+- Docker execute-smoke и Kubernetes execute-smoke исполняются на Ubuntu runner как обязательные production runtime gates.
 - Для остальных дистрибутивов job-скелеты существуют и валидны, но отключены условием `ENABLE_NATURAL_MATRIX=false`.
 - Это сознательный режим до подключения выделенных runner-ов.
+
+## Текущий production scope
+- Production profile `v0.2.0-prod` подтверждается для:
+  - Ubuntu native runtime;
+  - Docker runtime execute-smoke;
+  - Kubernetes runtime execute-smoke (kind-based harness).
+- VM matrix и non-Ubuntu native matrix остаются validate-only, пока не подключены выделенные образы/runner-ы.
+- Это значит, что прод-декларация не распространяется на неподтверждённые distro/VM поверхности.
 
 ## VM-контур (не на хосте)
 - Для проверки боеготовности вне хостовой ОС заложен VM-harness: `tests/platform/vm/run_vm_smoke.sh`.
@@ -30,6 +39,7 @@
 - Отдельный Docker harness: `tests/platform/container/run_docker_smoke.sh`.
 - Отдельный Kubernetes harness: `tests/platform/k8s/run_k8s_smoke.sh`.
 - Контуры включены в source-of-truth и CI-gates как обязательные platform surfaces.
+- Execute-path больше не placeholder: он обязан реально пройти `health -> ingest -> stream -> action(noop) -> audit verify`.
 - Подробная инструкция: `docs/ops/platform-container-k8s-testing.md`.
 
 ## Release artifacts contract

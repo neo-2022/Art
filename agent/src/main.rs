@@ -109,7 +109,11 @@ async fn main() -> anyhow::Result<()> {
 
     let app = build_app(state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let host = env::var("AGENT_HOST")
+        .ok()
+        .and_then(|raw| raw.parse::<std::net::IpAddr>().ok())
+        .unwrap_or(std::net::IpAddr::from([127, 0, 0, 1]));
+    let addr = SocketAddr::new(host, port);
     info!("art-agent listening on {}", addr);
     let listener = tokio::net::TcpListener::bind(addr)
         .await

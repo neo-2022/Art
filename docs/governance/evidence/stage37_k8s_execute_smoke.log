@@ -1,0 +1,30 @@
+[stage37][k8s-execute-smoke]
+status=PASS
+date=2026-03-06
+provider=kind
+source_of_truth=formats/platform_support.yaml
+checks:
+- kind cluster create OK
+- core deployment rollout OK
+- agent deployment rollout OK
+- core health OK through port-forward
+- core ingest accepted=1 invalid=0
+- core stream delivered smoke.test event
+- action simulate allowed
+- action execute accepted
+- audit verify ok=true
+- agent health OK through port-forward
+- agent spool enqueue/status OK
+evidence_ids:
+- EVIDENCE_K8S_SMOKE
+- EVIDENCE_CONTAINER_TEST_kubernetes
+artifacts:
+- artifacts/k8s-smoke/core-health.json
+- artifacts/k8s-smoke/core-ingest.json
+- artifacts/k8s-smoke/core-stream.txt
+- artifacts/k8s-smoke/core-action-execute.json
+- artifacts/k8s-smoke/core-audit-verify.json
+- artifacts/k8s-smoke/agent-health.json
+- artifacts/k8s-smoke/agent-spool-status.json
+- artifacts/k8s-smoke/pods.txt
+- artifacts/k8s-smoke/services.txt

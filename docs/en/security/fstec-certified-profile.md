@@ -19,6 +19,7 @@ The `certified` profile defines a strict build contour for Level A platforms (As
 - `scripts/ci/check_certified_profile.sh` runs on Ubuntu.
 - `--profile certified` build is verified for both `art-core` and `art-agent`.
 - VM track (`tests/platform/vm/run_vm_smoke.sh`) is used as an additional non-host validation layer, without relaxing certified invariants.
+- The current production scope does not extend certified claims to unproven non-Ubuntu runtime surfaces: until target runners are attached, certified remains a build/profile guarantee rather than a blanket runtime claim.
 
 ## Natural testing after final stage
 After `ENABLE_NATURAL_MATRIX=true`, `certified` checks are also validated in:
