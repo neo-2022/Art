@@ -73,7 +73,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
    - метод удаления (hard delete / crypto-shred — выбрать и зафиксировать один для каждого типа)
    - ответственный компонент (owner_component)
 
-9. [ ] **Сделать:** Зафиксировать DSR процесс: export/delete/rectify и правило “audit append-only; PII редактируется ДО записи в audit”.  
+9. [x] **Сделать:** Зафиксировать DSR процесс: export/delete/rectify и правило “audit append-only; PII редактируется ДО записи в audit”.  
    **Проверка (pass/fail):** существует `docs/privacy/dsr_process.md`, содержит:
    - шаги export/delete/rectify
    - правило идентификации субъекта запроса (какие идентификаторы принимаются)
