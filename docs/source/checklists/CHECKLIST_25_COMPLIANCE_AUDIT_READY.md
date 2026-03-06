@@ -7,7 +7,7 @@ A) Полный запрет опциональности:
 Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
-Audit-ready однозначен и проверяем: export pack (incidents + audit) в CSV/JSON; immutable evidence policy (raw_archive + защита от изменений); data destruction policy (вывод из эксплуатации); `observability_gap.export_failed` при сбое экспорта; CI gate проверяет содержимое документов (не только наличие).
+Audit-ready однозначен и проверяем: export pack (incidents + audit) в CSV/JSON; immutable evidence policy (raw_archive + защита от изменений); data destruction policy (вывод из эксплуатации); `observability_gap.export_failed` при сбое экспорта; нормативный evidence-pack для regulated/RU/gov контуров; CI gate проверяет содержимое документов (не только наличие).
 
 ## Границы
 Только тех. доказательная база и процедуры для аудитора:
@@ -117,11 +117,28 @@ Audit-ready однозначен и проверяем: export pack (incidents +
     - [ ] как проверять `checksums.txt`
   - [ ] **Проверка (pass/fail):** документ существует и содержит перечисленные пункты.
 
+- [ ] **7. Сделать:** Зафиксировать regulatory evidence-pack для regulated/RU/gov контуров.
+  - [ ] Существует `docs/compliance/regulatory_evidence_pack.md`
+  - [ ] Документ перечисляет минимум обязательные артефакты:
+    - [ ] `formats/platform_support.yaml`
+    - [ ] `formats/ru_regulatory_scope.yaml`
+    - [ ] `docs/security/fstec-certified-profile.md`
+    - [ ] `docs/ops/platform-support.md`
+    - [ ] audit/export evidence
+    - [ ] airgapped install/update evidence
+  - [ ] Для каждого артефакта указаны:
+    - [ ] `control_scope`
+    - [ ] `evidence_ref`
+    - [ ] `owner_role`
+    - [ ] `review_frequency`
+  - [ ] **Проверка (pass/fail):** документ существует и содержит все обязательные артефакты и поля.
+
 ## Документация (RU)
 - [ ] docs/compliance/control_matrix.md
 - [ ] docs/compliance/evidence_list.md
 - [ ] docs/compliance/audit_trail.md
 - [ ] docs/compliance/data_destruction.md
+- [ ] docs/compliance/regulatory_evidence_pack.md
 - [ ] docs/runbooks/export_failed.md
 - [ ] scripts/export_audit_pack.sh
 
@@ -139,6 +156,7 @@ Audit-ready однозначен и проверяем: export pack (incidents +
     - [ ] `docs/compliance/control_matrix.md` содержит `control_id` и `evidence_ref` и `review_frequency`
     - [ ] `docs/compliance/audit_trail.md` содержит `export_audit_pack.sh` и `checksums.txt`
     - [ ] `docs/compliance/data_destruction.md` содержит `stop` и `backup` (audit pack) и `pass/fail`
+    - [ ] `docs/compliance/regulatory_evidence_pack.md` содержит `platform_support.yaml` и `ru_regulatory_scope.yaml` и `fstec-certified-profile.md`
     - [ ] `docs/runbooks/export_failed.md` содержит `mitigations` и `verification`
     - [ ] `docs/governance/observability_gap_registry.md` содержит `export_failed`
     - [ ] `scripts/export_audit_pack.sh` содержит runtime fetch `/api/v1/incidents` и `/api/v1/audit`
@@ -150,6 +168,7 @@ Audit-ready однозначен и проверяем: export pack (incidents +
 - [ ] Data destruction policy зафиксирована и имеет критерии pass/fail.
 - [ ] `observability_gap.export_failed` реализован, зарегистрирован и покрыт induced test (включая публикацию startup backlog).
 - [ ] Control matrix и audit trail docs существуют и однозначны.
+- [ ] Regulatory evidence-pack для RU/gov/certified-ready контуров зафиксирован и связан с control matrix.
 - [ ] CI gate Stage 25 зелёный.
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)

@@ -60,6 +60,9 @@ Continuation stages `39..45` не считаются первым местом �
 | Graph-backed exploration | 35, 40, 45 | spatial/flow/showcase | inspectability laws, deterministic navigation, derived-store boundaries |
 | Wasm sandbox for actions | 33, 37 | secure actions, linux hardening | sandbox boundary assumptions, audit hooks, capability policy path |
 | Self-healing tests/docs | 07, 08, 28, 30, 38 | CI/contracts/console/process | impact-report discipline, generated-example policy, no-silent rewrite rule |
+| Полный сбор доступных сигналов и внешних систем | 09, 18, 19, 20 | telemetry/agent/packs/regart | source coverage matrix, ingress mechanisms, external system knowledge in packs |
+| Машиночитаемый РФ нормативный контур | 25, 26, 37 | compliance/RU/platform | `ru_regulatory_scope.yaml`, regulatory evidence-pack, certified-ready boundary |
+| Layer E / Agent Workspace | 28, 30, 31, 33, 39 | console foundation / dialog / investigations / agent governance | evidence-anchored agent workspace, proposal queue, actor provenance, no silent execution |
 
 ## 3. Baseline already covering v0.2
 - Stage16 уже покрывает embedded Panel0 fallback, backlog и runtime docs-gates.

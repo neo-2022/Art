@@ -22,7 +22,7 @@
 
 - `CHECKLIST_07_ART_REPO_CI_DOCS.md` — репозиторий, CI, документация.
 - `CHECKLIST_08_ART_CONTRACTS_OPENAPI_CODEGEN.md` — контракты, OpenAPI, codegen.
-- `CHECKLIST_09_TELEMETRY_OTEL_OTLP.md` — telemetry alignment OTel/OTLP.
+- `CHECKLIST_09_TELEMETRY_OTEL_OTLP.md` — telemetry alignment OTel/OTLP + source coverage matrix внешних telemetry-систем.
 - `CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md` — browser Level0 (универсальный).
 - `CHECKLIST_11_ART_CORE_STORAGE_SQLITE.md` — storage SQLite.
 - `CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md` — ingest ack/seq/backpressure.
@@ -34,7 +34,7 @@
 ## Agent и интеграционные пакеты
 
 - `CHECKLIST_17_ART_AGENT_SPOOL_OUTBOX.md` — spool/outbox.
-- `CHECKLIST_18_ART_AGENT_RECEIVERS.md` — receivers.
+- `CHECKLIST_18_ART_AGENT_RECEIVERS.md` — receivers + полный source coverage доступных сигналов.
 - `CHECKLIST_19_PACKS_FRAMEWORK.md` — framework паков.
 - `CHECKLIST_20_PACK_REGART.md` — pack REGART.
 
@@ -45,7 +45,7 @@
 - `CHECKLIST_23_OPS_DEPLOY_RUNBOOKS_DR.md` — ops/deploy/runbooks/DR.
 - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md` — release/upgrade/regression.
 - `CHECKLIST_25_COMPLIANCE_AUDIT_READY.md` — compliance/audit readiness.
-- `CHECKLIST_26_RU_PROFILE.md` — RU профиль (152-ФЗ/локализация/экспорт/аудит/air-gapped).
+- `CHECKLIST_26_RU_PROFILE.md` — RU профиль (152-ФЗ/1119/17/21/239, РФ-ОС, certified-ready, локализация/экспорт/аудит/air-gapped).
 - `CHECKLIST_27_AUDIT_REMEDIATION_PLAN.md` — итоговый аудит закрытия этапов и план/факт ремедиации.
 
 ## Программа v0.2 (Console + API v2) и continuation backlog

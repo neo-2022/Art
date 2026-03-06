@@ -74,12 +74,18 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] 12. Сделать: зафиксировать обязательный anti-breakage набор тестов ранних этапов для будущих интерфейсных слоёв.
   - [ ] Проверка (pass/fail): `corepack pnpm --filter ./apps/console-web run test` содержит проверки surfaces/i18n/tooltips/evidence links и остаётся PASS после изменений stage 30+.
   - [ ] Артефакт результата: test log + checklist reference matrix.
- - [ ] 12A. Сделать: заложить foundation contract взаимодействия человека с агентом и агентных поверхностей Console.
-   - [ ] Требование: уже на этапе foundation должны быть определены точки входа `ask agent`, `review agent proposal`, `approve/reject`, `show evidence`, `show why`, `show audit trail`.
-   - [ ] Требование: agent UI не имеет права действовать как “магический чат”; только evidence-anchored interaction objects.
-   - [ ] Требование: foundation shell различает `human`, `agent`, `system` actors визуально и текстово.
-   - [ ] Проверка (pass/fail): существует документ модели взаимодействия и foundation tests подтверждают наличие маршрутов/компонентов-заглушек без silent-action path.
-   - [ ] Артефакт результата: interaction model doc + foundation test log.
+- [ ] 12A. Сделать: заложить foundation contract взаимодействия человека с агентом и агентных поверхностей Console.
+  - [ ] Требование: уже на этапе foundation должны быть определены точки входа `ask agent`, `review agent proposal`, `approve/reject`, `show evidence`, `show why`, `show audit trail`.
+  - [ ] Требование: agent UI не имеет права действовать как “магический чат”; только evidence-anchored interaction objects.
+  - [ ] Требование: foundation shell различает `human`, `agent`, `system` actors визуально и текстово.
+  - [ ] Проверка (pass/fail): существует документ модели взаимодействия и foundation tests подтверждают наличие маршрутов/компонентов-заглушек без silent-action path.
+  - [ ] Артефакт результата: interaction model doc + foundation test log.
+- [ ] 12B. Сделать: заложить Layer E / Agent Workspace как обязательный foundation слой данных и UX.
+  - [ ] Требование: `packages/local-stores` и foundation docs фиксируют `Agent Workspace` как отдельный local layer для задач, артефактов анализа, proposal queue и replayable agent traces.
+  - [ ] Требование: agent workspace не создаёт собственную «истину» и хранит только evidence-anchored derived artifacts.
+  - [ ] Требование: foundation shell содержит route/placeholder для agent workspace navigation без silent execution path.
+  - [ ] Проверка (pass/fail): существует source-of-truth документ agent workspace model и foundation tests подтверждают наличие route/store contract.
+  - [ ] Артефакт результата: agent workspace model doc + foundation route/store test log.
 - [ ] 13. Сделать: заложить foundation settings framework с поиском по настройкам и иерархией групп.
   - [ ] Проверка (pass/fail): Console shell содержит settings search + grouped sections (`visual`, `opacity`, `colors`, `audio`) и фильтрацию пунктов по query.
   - [ ] Артефакт результата: e2e screenshot + test log.
@@ -110,6 +116,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/source/risk_register_v0_2.md
 - [ ] docs/source/console_settings_architecture_v0_2.md
 - [ ] docs/source/console_agent_interaction_model_v0_2.md
+- [ ] docs/source/agent_workspace_model_v0_2.md
 
 ## Тестирование
 - [ ] unit: пакеты `packages/*` покрыты тестами и запускаются в CI.
@@ -117,6 +124,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] integration: EN/RU parity across all foundation surfaces and settings/agent labels.
 - [ ] e2e: Linux headless smoke открытия foundation shell.
 - [ ] e2e: foundation agent interaction route exists, shows evidence-first placeholders and preserves locale.
+- [ ] integration: agent workspace route/store contract exists and remains evidence-anchored.
 - [ ] regression: интерфейсная лестница L0 сохраняет обратную совместимость при переходе к L1/L2.
 - [ ] integration: settings search фильтрует пункты без потери доступности.
 - [ ] integration: audio replace/preview/clear работает по каждому baseline эффекту.
@@ -150,6 +158,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Settings framework (с поиском) и audio effects framework (replace/preview/clear) реализованы и покрыты тестами.
 - [ ] Полный двуязычный foundation UI подтверждён не только toggle, но и parity всех surface states.
 - [ ] Модель взаимодействия человека с агентом заложена в Console foundation без “магического чата”.
+- [ ] Layer E / Agent Workspace заложен как ранний foundation contour, а не отложен до поздних этапов.
 - [ ] Карта меню настроек проекта зафиксирована как расширяемый контракт уровней и policy-lock.
 - [ ] observability-gap событие этапа 28 задокументировано в registry + runbook.
 - [ ] Риск R1 из risk register подтверждён метрикой `forbidden_import_count=0`.

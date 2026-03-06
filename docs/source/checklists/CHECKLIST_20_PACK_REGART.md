@@ -7,7 +7,7 @@ A) Полный запрет опциональности:
 Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
-Pack REGART полностью покрывает события REGART (UI Proxy/graph/tools/models/network/ui.graph.empty/upstream_error), сохраняет correlation, содержит фиксированные примеры конфигов receivers, и имеет детерминированные тесты совместимости/контрактов.
+Pack REGART полностью покрывает события REGART (UI Proxy/graph/tools/models/network/ui.graph.empty/upstream_error), Linux/systemd/network bridge-контур REGART, сохраняет correlation, содержит фиксированные примеры конфигов receivers, и имеет детерминированные тесты совместимости/контрактов.
 
 ## Границы
 Только Pack REGART: fixtures, rules/enrich, docs, тесты pack.  
@@ -30,6 +30,10 @@ Pack REGART полностью покрывает события REGART (UI Prox
     - [ ] `tools_event.json`
     - [ ] `models_event.json`
     - [ ] `graph_event.json`
+    - [ ] `browser_level0_error.json`
+    - [ ] `service_unit_failed.json`
+    - [ ] `bridge_backlog_recovered.json`
+    - [ ] `langgraph_run_event.json`
   - [ ] каждый fixture содержит обязательные поля correlation:
     - [ ] `run_id`
     - [ ] `trace_id`
@@ -47,10 +51,22 @@ Pack REGART полностью покрывает события REGART (UI Prox
   - [ ] существует файл `packs/regart/examples/receivers.toml`
   - [ ] файл содержит примеры для ровно следующих receivers (каждый с уникальным `source_id` шаблоном):
     - [ ] `journald` (UNIT=ui-proxy.service)
+    - [ ] `systemd_unit` (unit=`ui-proxy.service`)
     - [ ] `file_tail` (абсолютный путь: `/var/log/regart/ui-proxy.log`)
     - [ ] `stdout_stderr` (command_id: `regart-ui-proxy`)
+    - [ ] `proc_probe` (target=`langgraph`)
     - [ ] `net_probe` (endpoint: `http://127.0.0.1:8090/health`)
-  - [ ] **Проверка (pass/fail):** `receivers.toml` валиден (парсится), и pack test `pack_regart_examples_validate` проверяет наличие всех четырёх секций.
+  - [ ] **Проверка (pass/fail):** `receivers.toml` валиден (парсится), и pack test `pack_regart_examples_validate` проверяет наличие всех шести секций.
+
+- [ ] **3A. Сделать:** Зафиксировать source coverage claim REGART pack для полного контура сбора сигналов.
+  - [ ] manifest/README pack явно перечисляет покрытия:
+    - [ ] `Browser Level0 runtime`
+    - [ ] `UI Proxy upstream/network`
+    - [ ] `LangGraph run/graph/tool/model`
+    - [ ] `systemd/journald`
+    - [ ] `proc_probe/net_probe`
+  - [ ] Для каждого покрытия указан механизм доставки в Art (`receiver`, `bridge`, `fixture`, `runtime harness`)
+  - [ ] **Проверка (pass/fail):** `docs/packs/regart/README.md` и pack manifest содержат coverage matrix без пропусков указанных источников.
 
 - [ ] **4. Сделать:** Реализовать gap при несовместимости pack с Core: `observability_gap.pack_incompatible`.
   - [ ] pack manifest фиксирует `core_version_range` (строка semver range)
@@ -79,6 +95,7 @@ Pack REGART полностью покрывает события REGART (UI Prox
 ## Тестирование
 - [ ] unit/integration: fixtures → pipeline → incident (покрывает шаги 1–2)
 - [ ] unit: validate examples `receivers.toml` (шаг 3)
+- [ ] validation: REGART pack coverage claim (`Browser/UI Proxy/LangGraph/systemd/probe`) не содержит пробелов
 - [ ] induced: incompatible pack install → `observability_gap.pack_incompatible` (шаг 4)
 - [ ] runtime API: `scripts/tests/pack_regart_runtime_api.sh` проверяет ingest fixtures из `packs/regart/fixtures` и сохранение correlation в `/api/v1/incidents`
 
@@ -90,16 +107,17 @@ Pack REGART полностью покрывает события REGART (UI Prox
   - [ ] проверяет существование файлов из раздела “Документация (RU)”
   - [ ] проверяет наличие runtime harness `scripts/tests/pack_regart_runtime_api.sh`
   - [ ] проверяет минимальный контент (grep):
-    - [ ] `docs/packs/regart/README.md` содержит `fixtures` и `correlation`
-    - [ ] `docs/packs/regart/receivers_examples.md` содержит `journald` и `file_tail` и `stdout_stderr` и `net_probe`
-    - [ ] `docs/packs/regart/troubleshooting.md` содержит `ui.graph.empty` и `upstream_error`
+    - [ ] `docs/packs/regart/README.md` содержит `fixtures` и `correlation` и `Browser Level0` и `systemd` и `LangGraph`
+    - [ ] `docs/packs/regart/receivers_examples.md` содержит `journald` и `systemd_unit` и `file_tail` и `stdout_stderr` и `proc_probe` и `net_probe`
+    - [ ] `docs/packs/regart/troubleshooting.md` содержит `ui.graph.empty` и `upstream_error` и `bridge_backlog_recovered`
     - [ ] `docs/runbooks/pack_incompatible.md` содержит `mitigations` и `verification`
   - [ ] exit 1 при нарушении любой проверки
 
 ## DoD
 - [ ] Fixtures полного набора REGART событий существуют и реально используются тестами.
 - [ ] Correlation (`run_id/trace_id/span_id`) сохраняется в Incident по всем fixtures и подтверждена тестами.
-- [ ] Examples receivers (4 секции) существуют и валидируются тестом.
+- [ ] Examples receivers (6 секций) существуют и валидируются тестом.
+- [ ] REGART pack явно покрывает полный source contour (`Browser/UI Proxy/LangGraph/systemd/probes`) и это валидируется.
 - [ ] `observability_gap.pack_incompatible` реализован, зарегистрирован и имеет runbook; induced test зелёный.
 - [ ] CI gate Stage 20 зелёный.
 

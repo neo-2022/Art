@@ -7,7 +7,7 @@ A) Полный запрет опциональности:
 Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
-Согласовать OTLP→RawEvent и сделать поведение детерминированным: unknown attrs → `payload.otel_attributes`, строгий severity mapping, фиксированные OTLP rate-limits, backpressure ответы с `retry_after_ms`, и обязательное событие `observability_gap.otlp_rate_limited`.
+Согласовать OTLP→RawEvent и сделать поведение детерминированным: unknown attrs → `payload.otel_attributes`, строгий severity mapping, фиксированные OTLP rate-limits, backpressure ответы с `retry_after_ms`, обязательное событие `observability_gap.otlp_rate_limited`, и явный source-of-truth по тому, как внешние telemetry-системы входят в Art без потери сигналов.
 
 ## Границы
 Только alignment, контракты и тесты телеметрии (OTel/OTLP). Реализация ingestion/хранилища описывается в других этапах.
@@ -77,10 +77,28 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] содержит ссылку на `docs/telemetry/otlp_receiver.md` и `docs/telemetry/otel_mapping.md`
   - [ ] **Проверка (pass/fail):** файл существует и содержит таблицу лимитов + ссылки.
 
+- [ ] **6. Сделать:** Зафиксировать coverage matrix внешних telemetry-источников и механизмов входа в Art.
+  - [ ] существует `docs/telemetry/source_coverage_matrix.md`
+  - [ ] документ фиксирует правило `Art собирает 100% доступных измеримых сигналов при текущих правах; недоступность канала фиксируется как observability_gap.*`
+  - [ ] matrix содержит минимум строки для:
+    - [ ] `OTLP logs -> Agent/OTLP receiver -> RawEvent`
+    - [ ] `Browser Level0 runtime/network -> Browser sender/backlog -> Agent/Core`
+    - [ ] `Prometheus metrics -> bridge/export path -> RawEvent/derived evidence`
+    - [ ] `SIEM/webhook/json export -> structured ingest path`
+    - [ ] `REGART UI Proxy/LangGraph bridge -> RawEvent`
+  - [ ] для каждой строки зафиксированы:
+    - [ ] `source_kind`
+    - [ ] `ingress_mechanism`
+    - [ ] `owner_component`
+    - [ ] `correlation_fields`
+    - [ ] `gap_event_on_unavailable`
+  - [ ] **Проверка (pass/fail):** документ существует и содержит все обязательные строки и колонки.
+
 ## Документация (RU)
 - [ ] docs/telemetry/otel_mapping.md
 - [ ] docs/telemetry/otlp_receiver.md
 - [ ] docs/telemetry/limits.md
+- [ ] docs/telemetry/source_coverage_matrix.md
 - [ ] docs/runbooks/otlp_rate_limited.md
 
 ## Тестирование
@@ -100,6 +118,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - [ ] `docs/telemetry/otel_mapping.md` содержит строки `payload.otel_attributes`, `bytes → base64`, `otel.<key>`
     - [ ] `docs/telemetry/otlp_receiver.md` содержит `max_events_per_sec=200`, `burst=400`, `max_batch_events=200`, `max_size_bytes=524288`
     - [ ] `docs/telemetry/limits.md` содержит `max_events_per_sec`, `max_size_bytes`
+    - [ ] `docs/telemetry/source_coverage_matrix.md` содержит `OTLP logs`, `Browser Level0`, `Prometheus`, `SIEM`, `REGART UI Proxy`
     - [ ] `docs/runbooks/otlp_rate_limited.md` содержит `mitigations` и `verification`
   - [ ] завершает работу с exit 1 при нарушении любой проверки
 
@@ -108,6 +127,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Severity mapping определён и покрыт тестами.
 - [ ] OTLP лимиты фиксированы, задокументированы и проверяемы.
 - [ ] Backpressure + `retry_after_ms` реализованы и покрыты интеграционным тестом.
+- [ ] Coverage matrix внешних telemetry-источников и ingress-механизмов зафиксирована как source-of-truth.
 - [ ] `observability_gap.otlp_rate_limited` определён, зарегистрирован с `incident_rule` не слабее `create_incident_min_sev2`, и имеет runbook; событие проверяется в integration test.
 - [ ] CI gate зелёный.
 
