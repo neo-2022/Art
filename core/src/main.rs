@@ -559,7 +559,11 @@ async fn main() -> anyhow::Result<()> {
 
     let app = build_app(state);
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let host = env::var("CORE_HOST")
+        .ok()
+        .and_then(|raw| raw.parse::<std::net::IpAddr>().ok())
+        .unwrap_or(std::net::IpAddr::from([127, 0, 0, 1]));
+    let addr = SocketAddr::new(host, port);
     let tls_config = load_tls_config_from_env();
     if let Some((cert_path, key_path)) = tls_config {
         info!(

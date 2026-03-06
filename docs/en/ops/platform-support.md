@@ -17,8 +17,17 @@ The canonical list and install methods are defined only in `formats/platform_sup
 
 ## CI now
 - Natural tests execute only on Ubuntu.
+- Docker execute-smoke and Kubernetes execute-smoke run on the Ubuntu runner as mandatory production runtime gates.
 - Jobs for all other distributions are present and valid but disabled with `ENABLE_NATURAL_MATRIX=false`.
 - This mode stays active until dedicated runners are attached.
+
+## Current production scope
+- Production profile `v0.2.0-prod` is currently proven for:
+  - Ubuntu native runtime;
+  - Docker runtime execute smoke;
+  - Kubernetes runtime execute smoke (kind-based harness).
+- VM matrix and non-Ubuntu native matrix remain validate-only until dedicated images/runners are attached.
+- Production claims do not extend to surfaces that are not yet evidence-backed.
 
 ## VM track (non-host validation)
 - A VM harness is defined for non-host readiness checks: `tests/platform/vm/run_vm_smoke.sh`.
@@ -30,6 +39,7 @@ The canonical list and install methods are defined only in `formats/platform_sup
 - Dedicated Docker harness: `tests/platform/container/run_docker_smoke.sh`.
 - Dedicated Kubernetes harness: `tests/platform/k8s/run_k8s_smoke.sh`.
 - Both tracks are enforced as mandatory platform surfaces via source-of-truth and CI gates.
+- The execute path is no longer a placeholder: it must pass `health -> ingest -> stream -> action(noop) -> audit verify`.
 - Detailed guide: `docs/en/ops/platform-container-k8s-testing.md`.
 
 ## Release artifacts contract

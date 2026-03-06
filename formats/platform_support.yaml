@@ -6,6 +6,16 @@ ci_mode:
   currently_executed_natural_targets:
     - "ubuntu"
   note: "Natural matrix jobs exist for all declared distros but are disabled until dedicated runners are attached."
+current_release_scope:
+  profile_id: "v0.2.0-prod"
+  mandatory_execute_surfaces:
+    - "ubuntu_native"
+    - "docker_runtime"
+    - "kubernetes_runtime"
+  validate_only_surfaces:
+    - "vm_runtime_matrix"
+    - "non_ubuntu_native_matrix"
+  note: "First production profile is proven on Ubuntu host plus container/Kubernetes runtime smoke; wider distro/VM matrix remains validate-only until dedicated images/runners are attached."
 levels:
   A:
     name: "certified"
@@ -215,7 +225,7 @@ runtime_compatibility_matrix:
       minimum: "5.6"
       target_range: "5.6+"
   release_blockers:
-    - "mandatory execute-smoke failure on VM/Docker/Kubernetes surfaces"
+    - "mandatory execute-smoke failure on enabled VM/Docker/Kubernetes surfaces"
     - "version mismatch outside declared ranges"
     - "k8s production scenarios failure"
     - "missing mandatory platform evidence bundle"

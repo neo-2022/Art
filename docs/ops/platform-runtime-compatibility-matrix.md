@@ -27,7 +27,7 @@
 5. RBAC/policy path блокирует запрещённые действия и фиксирует audit evidence.
 
 ## Release blockers (strict)
-- Любой FAIL в execute-smoke по surface, отмеченному как mandatory в `formats/platform_support.yaml`.
+- Любой FAIL в execute-smoke по surface, отмеченному как enabled/mandatory в текущем release scope из `formats/platform_support.yaml`.
 - Любой mismatch матрицы версий вне допустимого диапазона.
 - Любой FAIL production-сценариев Kubernetes.
 - Любой отсутствующий evidence из списка:
@@ -38,5 +38,6 @@
   - `EVIDENCE_CONTAINER_TEST_kubernetes`
 
 ## CI сейчас
-- `ENABLE_NATURAL_MATRIX=false`: validate-gates обязательны, execute-jobs не запускаются.
-- `ENABLE_NATURAL_MATRIX=true`: execute-smokes становятся mandatory release gates.
+- `ENABLE_NATURAL_MATRIX=false`: native distro/VM matrix остаётся validate-only.
+- Docker execute-smoke и Kubernetes execute-smoke уже обязательны на Ubuntu runner.
+- `ENABLE_NATURAL_MATRIX=true`: дополнительные native distro jobs становятся mandatory release gates.

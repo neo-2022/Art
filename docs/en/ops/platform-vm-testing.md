@@ -21,6 +21,7 @@ The VM track proves product readiness outside the developer host OS by running s
 - Current mode: `ENABLE_NATURAL_MATRIX=false`.
 - VM skeleton validity is checked in CI, while heavy natural VM execution remains disabled for every push.
 - Once dedicated runners are attached, set `ENABLE_NATURAL_MATRIX=true` and enable VM smoke runs without changing product business logic.
+- In the current production scope, the VM track remains validate-only and is not used as proof for runtime compatibility beyond Ubuntu host + container/Kubernetes execute evidence.
 
 ## Local execution on Linux host
 ### 1) Validate mode (no VM boot)

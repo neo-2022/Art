@@ -1,0 +1,25 @@
+[stage37][docker-execute-smoke]
+status=PASS
+date=2026-03-06
+source_of_truth=formats/platform_support.yaml
+checks:
+- docker runtime contract OK
+- core health OK
+- core ingest accepted=1 invalid=0
+- core stream delivered smoke.test event
+- action simulate allowed
+- action execute accepted
+- audit verify ok=true
+- agent health OK
+- agent spool enqueue/status OK
+evidence_ids:
+- EVIDENCE_DOCKER_SMOKE
+- EVIDENCE_CONTAINER_TEST_docker
+artifacts:
+- artifacts/docker-smoke/core-health.json
+- artifacts/docker-smoke/core-ingest.json
+- artifacts/docker-smoke/core-stream.txt
+- artifacts/docker-smoke/core-action-execute.json
+- artifacts/docker-smoke/core-audit-verify.json
+- artifacts/docker-smoke/agent-health.json
+- artifacts/docker-smoke/agent-spool-status.json
