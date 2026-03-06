@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение perf целей; изменение сети; новые компоненты; изменение состава стенда e2e
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Доказать устойчивость end-to-end: network chaos (50% packet loss), memory profiling под нагрузкой, power loss recovery, nightly chaos CI, и наблюдаемость проблем стенда через `observability_gap.e2e_environment_failed`.

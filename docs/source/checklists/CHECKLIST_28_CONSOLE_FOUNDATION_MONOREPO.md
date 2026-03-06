@@ -3,6 +3,7 @@
 Последняя актуализация: 2026-03-06
 Дата последней проверки: 2026-03-06
 Триггер пересмотра: изменение monorepo layout, import boundaries, foundation routes Console
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Подготовить production-ready фундамент Tier B Console в одном репозитории `Art`: workspace, package boundaries, базовые поверхности UI, i18n и UI-laws runtime checks.

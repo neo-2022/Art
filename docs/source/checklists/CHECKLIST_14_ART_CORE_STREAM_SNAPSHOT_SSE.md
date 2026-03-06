@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение retention; изменение SSE поведения; изменение нагрузочных целей; изменение контракта cursors/Last-Event-ID
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 SSE однозначен и проверяем: Last-Event-ID too old → snapshot+new_cursor; gzip обязателен при Accept-Encoding:gzip; нагрузочные цели фиксированы (10k events, 1000 subs); деградации stream порождают `observability_gap.stream_unavailable` и `observability_gap.stream_lag`.

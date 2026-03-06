@@ -22,6 +22,9 @@ jobs:
           bash scripts/ci/check_privacy_stage02.sh
           bash scripts/ci/check_stage05_wrapper.sh
           bash scripts/ci/check_stage06_wrapper.sh
+          bash scripts/ci/check_master_checklist_binding.sh
+          bash scripts/ci/check_checklist_status_integrity.sh
+          bash scripts/ci/check_docs_master_traceability.sh
 
   sast:
     name: sast

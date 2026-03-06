@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05 (pass)  
 Триггер пересмотра: изменение ingest контракта; изменение backpressure; изменение `invalid_details`; изменение ack/seq семантики
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Сделать ingest полностью детерминированным: `invalid_details` обязателен для частично/полностью невалидных батчей; backpressure обязателен (503/429/413 + `retry_after_ms`); ack/seq семантика однозначна (`ack.upto_seq`); метрики ingest обязательны (`ingest_dropped_total`, `ingest_accepted_total`, `ingest_invalid_total`); chaos обязателен.

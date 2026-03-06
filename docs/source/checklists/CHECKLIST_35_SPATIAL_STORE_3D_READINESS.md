@@ -3,6 +3,7 @@
 Последняя актуализация: 2026-03-06
 Дата последней проверки: 2026-03-06
 Триггер пересмотра: изменение spatial store contracts, picking algorithm, LOD policy
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Реализовать contract-ready Spatial Store для детерминированного 3D/XR рендера без brute-force перебора.

@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: требования аудитора; изменение форматов экспорта; изменение raw_archive; изменение retention/DSR; изменение audit policy
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Audit-ready однозначен и проверяем: export pack (incidents + audit) в CSV/JSON; immutable evidence policy (raw_archive + защита от изменений); data destruction policy (вывод из эксплуатации); `observability_gap.export_failed` при сбое экспорта; CI gate проверяет содержимое документов (не только наличие).

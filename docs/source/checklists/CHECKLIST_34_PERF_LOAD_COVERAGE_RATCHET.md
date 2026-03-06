@@ -3,6 +3,7 @@
 Последняя актуализация: 2026-03-06
 Дата последней проверки: 2026-03-06
 Триггер пересмотра: изменение perf budgets, load profile, coverage policy, DNA throughput targets
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Зафиксировать runtime бюджеты производительности DNA Core/Console и ratchet-политику, которая блокирует скрытые регрессии.

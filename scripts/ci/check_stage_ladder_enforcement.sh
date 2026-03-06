@@ -4,6 +4,10 @@ set -euo pipefail
 MASTER="docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md"
 INCIDENT_STATE="docs/ops/runtime_incident_status.json"
 
+bash scripts/ci/check_master_checklist_binding.sh
+bash scripts/ci/check_checklist_status_integrity.sh
+bash scripts/ci/check_docs_master_traceability.sh
+
 test -s "$MASTER"
 
 # stage -> checklist file

@@ -35,6 +35,8 @@ jobs:
         run: bash tests/platform/contract/check_package_layout_contract.sh
       - name: Docker runtime contract
         run: bash tests/platform/contract/check_docker_runtime_contract.sh
+      - name: REGART cross-repo parity
+        run: bash tests/platform/contract/check_regart_cross_repo_parity.sh
 
   ubuntu-smoke:
     name: ubuntu-smoke

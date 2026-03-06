@@ -3,6 +3,7 @@
 Последняя актуализация: 2026-03-06
 Дата последней проверки: 2026-03-06
 Триггер пересмотра: изменение preflight/policy/action protocol
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Сделать протокол действий строго безопасным: preflight обязателен, policy gate обязателен, audit attach обязателен.

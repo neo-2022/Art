@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение SLO/SLI; изменение метрик; изменение алертов; изменение имен incidents; изменение порогов spool/dlq/source_stale
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Self-observability однозначна и проверяема: фиксированные internal incidents, фиксированные Grafana dashboards, фиксированные alert tests, и обязательное `observability_gap.metrics_unavailable` при недоступности /metrics.

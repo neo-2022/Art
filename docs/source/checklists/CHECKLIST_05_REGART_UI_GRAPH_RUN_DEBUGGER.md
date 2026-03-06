@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменения в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`; изменения требований `trace_id`; изменения требований `ui.graph.empty`; изменения требований multi-tab дедуп; изменения поведения UI Proxy / transport
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 Внешний source-of-truth (REGART):
 - Локально (если репозитории рядом): `../my_langgraph_agent/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`

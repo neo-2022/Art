@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение формата RawEvent; изменение redaction rules; изменение spool/outbox политики; добавление/изменение receiver kinds; изменение политики multiline/парсинга
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Receivers в агенте однозначны и проверяемы: фиксированный список receiver kinds v1, детерминированный контракт `source_id/source_seq`, корректный парсинг (включая multiline), pre-write redaction, backpressure от spool/outbox, и обязательные `observability_gap.*`/`data_quality.*` события с runbook.

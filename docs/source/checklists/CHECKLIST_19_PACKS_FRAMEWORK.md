@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение формата packs; изменение signing; изменение dependencies; изменение политики airgapped; изменение ключей подписи
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Packs без двусмысленности: автообновление запрещено (только ручная установка); подпись cosign обязательна и проверяется при install; dependencies обязательны в формате; install failures порождают `observability_gap.pack_install_failed` с runbook; CI gate проверяет не только наличие файлов, но и минимальное содержимое документов.

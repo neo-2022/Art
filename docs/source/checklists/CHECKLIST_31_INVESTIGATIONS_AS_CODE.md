@@ -3,6 +3,7 @@
 Последняя актуализация: 2026-03-06
 Дата последней проверки: 2026-03-06
 Триггер пересмотра: изменение InvestigationDoc schema, fork/replay/compare semantics
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Ввести обязательный артефакт расследования `InvestigationDoc` с versioning, fork/replay/compare и доказательной связностью.

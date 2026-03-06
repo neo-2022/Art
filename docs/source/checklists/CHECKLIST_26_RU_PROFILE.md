@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение PDn списка; изменение export policy; изменение требований локализации; изменение audit schema; изменение airgapped/packs policy
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 RU профиль однозначен и проверяем: фиксированный список ПДн (field paths), аудит доступа к PII-инцидентам (append-only), блокировка трансграничного экспорта, airgapped install/update (включая packs), и gap событие `observability_gap.cross_border_export_blocked` с runbook.

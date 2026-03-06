@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение REGART событий; изменение correlation полей; изменение формата packs v1; изменение schema RawEvent/Incident
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Pack REGART полностью покрывает события REGART (UI Proxy/graph/tools/models/network/ui.graph.empty/upstream_error), сохраняет correlation, содержит фиксированные примеры конфигов receivers, и имеет детерминированные тесты совместимости/контрактов.

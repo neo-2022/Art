@@ -19,6 +19,7 @@
 - `docs/rag/README.md` — правила RAG/Knowledge Base и доверенных источников.
 - `docs/ops/platform-support.md` — OS-матрица поддержки (A/B/C) и режим Ubuntu-only для nat-tests.
 - `docs/security/fstec-certified-profile.md` — certified build profile (контракт и ограничения).
+- `docs/governance/docs_traceability_matrix.yaml` — полная трассируемость документации к чек-листам и MASTER.
 
 ## 2.1. Языки и маршрутизация
 

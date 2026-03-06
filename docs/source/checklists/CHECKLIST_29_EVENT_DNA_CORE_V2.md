@@ -3,6 +3,7 @@
 Последняя актуализация: 2026-03-06
 Дата последней проверки: 2026-03-06
 Триггер пересмотра: изменение canonicalization, dna_schema_version, v2 API/migration, DNA assurance program
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Реализовать DNA Core v2 как детерминированный и производительно-устойчивый фундамент Incident OS: контракты, runtime API, formal model, property-based проверка, reference parity, canary-safety.

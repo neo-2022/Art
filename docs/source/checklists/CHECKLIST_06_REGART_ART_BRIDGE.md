@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменения в `CHECKLIST_REGART_ART_INTEGRATION.md`; изменения TLS/actions/overflow policies; изменения схем RawEvent/UiError/Audit
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 Внешний source-of-truth (REGART):
 - Локально (если репозитории рядом): `../my_langgraph_agent/CHECKLIST_REGART_ART_INTEGRATION.md`

@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение CI; смена security tools; изменение структуры repo
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Создать репозиторий Art и базовый CI: структура, fmt/lint/test/build, secrets scan, license checks, RU dev docs, и декларация контрактов (OpenAPI/Schema) как источника правды.

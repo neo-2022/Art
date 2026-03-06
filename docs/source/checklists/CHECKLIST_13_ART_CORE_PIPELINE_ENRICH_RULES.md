@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05 (pass)  
 Триггер пересмотра: изменение rules/enrich; изменение Incident схемы; изменение correlation модели; изменение политики security тестов шаблонов
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Pipeline однозначен и проверяем: correlation переносится в Incident; collision detection обязателен; template-injection security тест-матрица обязательна; pipeline gap события обязательны; source_stale обязателен.

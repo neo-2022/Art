@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05 (telemetry pass)  
 Триггер пересмотра: изменение OTel mapping; изменение лимитов OTLP; изменение схем RawEvent/ingest; изменение политики backpressure
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Согласовать OTLP→RawEvent и сделать поведение детерминированным: unknown attrs → `payload.otel_attributes`, строгий severity mapping, фиксированные OTLP rate-limits, backpressure ответы с `retry_after_ms`, и обязательное событие `observability_gap.otlp_rate_limited`.

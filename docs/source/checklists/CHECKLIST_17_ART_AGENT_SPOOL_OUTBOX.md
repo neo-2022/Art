@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение spool политики; изменение recovery; изменение concurrency модели; изменение TTL/DLQ; изменение runbook registry
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Spool однозначен и проверяем: default `never_drop_unacked` блокирует receivers при full; альтернативный `drop_oldest_when_full` включает lossy события и инцидент; recovery при corruption детерминирован; concurrency тест 10 потоков; chaos обязателен; все `observability_gap.*` зарегистрированы с `incident_rule` и `action_ref`.

@@ -3,6 +3,7 @@
 Последняя актуализация: 2026-03-06
 Дата последней проверки: 2026-03-06
 Триггер пересмотра: изменение tenant isolation, quotas/retention/compliance contracts
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Зафиксировать и проверить SaaS-ready архитектуру: tenant isolation, control-plane/data-plane, policy parity с self-hosted.

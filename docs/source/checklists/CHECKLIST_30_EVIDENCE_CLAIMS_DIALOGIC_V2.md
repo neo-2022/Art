@@ -3,6 +3,7 @@
 Последняя актуализация: 2026-03-06
 Дата последней проверки: 2026-03-06
 Триггер пересмотра: изменение EvidenceBlock/ClaimV2/DialogMessageV2 и access scope model
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Реализовать proof-carrying объекты v2: EvidenceBlock, ClaimV2, DialogMessageV2 и enforce их runtime-валидации в Core и Console foundation.

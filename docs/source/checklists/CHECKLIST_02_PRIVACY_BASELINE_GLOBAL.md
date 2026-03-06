@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение схем RawEvent/Incident/Audit/attachments; изменение redaction rules; изменение retention; изменение региональных профилей
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Зафиксировать privacy-by-design: классификация данных, PII surface, redaction с событием `privacy.redaction_applied`, политика “no HTTP bodies by default”, retention, DSR, политика вложений (включая потенциальную PII в attachments), и управляемые failure-моды через `observability_gap.*`.

@@ -3,6 +3,7 @@
 Последняя актуализация: 2026-03-06
 Дата последней проверки: 2026-03-06
 Триггер пересмотра: изменение Linux rollout/rollback, readiness suites, alert gates, DNA canary policy
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Подготовить Linux-only production hardening для Tier A Panel0 и Tier B Console с обязательной безопасностью rollout DNA Core.

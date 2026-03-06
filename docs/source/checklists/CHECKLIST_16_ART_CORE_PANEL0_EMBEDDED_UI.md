@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-06
 Дата последней проверки: 2026-03-06
 Триггер пересмотра: изменение fallback-контракта `/`, изменение `/panel0/*` роутов, изменение evidence `observability_gap.console_boot_failed`
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Реализовать детерминированный аварийный вход в Panel0: `GET /` пытается открыть Console и при сбое за 5 секунд переводит в Panel0 с обязательной фиксацией `observability_gap.console_boot_failed`.

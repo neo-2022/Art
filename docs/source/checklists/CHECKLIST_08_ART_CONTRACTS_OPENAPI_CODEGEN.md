@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05 (contracts/openapi/codegen pass)  
 Триггер пересмотра: изменение Art_v1_spec_final.md (контракты); добавление/изменение полей схем; изменение OpenAPI; изменение генераторов codegen
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Сделать контракты v1 однозначными и проверяемыми: schema registry, сверка со спецификацией, unknown-fields tests, negative contract tests, OpenAPI codegen, human-readable docs.

@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение релизной политики; изменение signing; изменение матрицы совместимости; изменение downgrade/миграций
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Релиз однозначен и проверяем: manual release процесс; upgrade N→N+1 и downgrade N→N-1 с сохранением данных обязателен; cosign signing+verify для Docker образов обязателен; RELEASE_CHECKLIST обязателен перед тегом; отказ verify порождает `observability_gap.release_signing_failed`.
