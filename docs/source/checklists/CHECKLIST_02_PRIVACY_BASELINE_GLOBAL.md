@@ -114,7 +114,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - integration: attachments MIME/magic/max-size + sanitize filename + запрет активного контента
     - integration: DSR export/delete path (проверка по артефактам)
 
-15. [ ] **Сделать:** Добавить CI gate Stage 02: проверка наличия документов Stage 02 + минимальная валидация содержимого ключевых требований (через grep/простые проверки).  
+15. [x] **Сделать:** Добавить CI gate Stage 02: проверка наличия документов Stage 02 + минимальная валидация содержимого ключевых требований (через grep/простые проверки).  
     **Проверка (pass/fail):** существует исполняемый скрипт `scripts/ci/check_privacy_stage02.sh` и он запускается в CI workflow; скрипт:
     - проверяет существование всех файлов из раздела “Документация (RU)”
     - проверяет минимальный контент:
