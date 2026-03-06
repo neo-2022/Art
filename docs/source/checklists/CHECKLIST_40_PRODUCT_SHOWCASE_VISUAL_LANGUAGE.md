@@ -8,6 +8,10 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 ## Цель
 Довести брендово-презентационный и demo-контур Art до состояния управляемого продукта без разрыва с боевым интерфейсом.
 
+Важно:
+- brand/showcase layer должен учитываться уже в этапах 28, 35 и 37;
+- этот этап завершает и production-hardens уже начатый визуальный и демонстрационный контур, а не создаёт его впервые.
+
 ## Границы
 - Включено: visual language canon, showcase spec, demo flow, motion rules, client-facing story.
 - Исключено: маркетинговые материалы вне репозитория и вне source-of-truth контроля.

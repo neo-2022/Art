@@ -8,6 +8,10 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 ## Цель
 Превратить AI Engineering Operating Model из описательного документа в обязательный управляемый контур исполнения проекта.
 
+Важно:
+- этот этап не вводит AI-governance “с нуля”;
+- он завершает и усиливает сквозные требования, которые уже должны быть отражены в этапах 01, 04, 07, 24 и 38.
+
 ## Границы
 - Включено: role map, review-duty matrix, lessons learned ledger, knowledge contour discipline, truthfulness gate.
 - Исключено: замена человеческого владельца проекта автоматическими решениями.

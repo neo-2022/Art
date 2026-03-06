@@ -8,6 +8,10 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 ## Цель
 Сделать расследование и воспроизведение инцидентов переносимыми, проверяемыми и детерминированными.
 
+Важно:
+- replay discipline, versioned investigation artifacts и parity thinking должны появляться уже в 29, 31, 32, 34 и 37;
+- stage44 завершает capsule/twin как самостоятельную production capability.
+
 ## Границы
 - Включено: Reproducible Incident Capsule, Deterministic Incident Twin, replay parity.
 - Исключено: ad-hoc dump without verify/replay semantics.

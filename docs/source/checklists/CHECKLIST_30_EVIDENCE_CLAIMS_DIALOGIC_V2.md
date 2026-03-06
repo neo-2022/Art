@@ -59,6 +59,15 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] Проверка (pass/fail): schemas `claim_v2`, `dialog_message_v2`, `snapshot_v2` содержат `meta.truth_mode` и соответствующие mandatory поля.
   - [ ] Проверка (pass/fail): observed payload без `meta.evidence_refs` детерминированно отклоняется UI-law тестом.
   - [ ] Артефакт результата: schema diff + stage30 truth-modes test log.
+ - [ ] 12. Сделать: ввести actor model для dialogic protocol (`human|agent|system`) и запретить неразмеченные сообщения.
+   - [ ] Требование: `DialogMessageV2` содержит `author_type`, `author_id`, `approval_state` там, где сообщение инициировано агентом или требует решения человека.
+   - [ ] Требование: agent-originated hypothesis/decision/explanation всегда помечается как agent-generated и раскрывает evidence lineage.
+   - [ ] Проверка (pass/fail): schema/tests FAIL на message без actor metadata и на agent claim без evidence lineage.
+   - [ ] Артефакт результата: schema diff + negative validation log.
+ - [ ] 13. Сделать: зафиксировать bilingual law для доказательных объектов.
+   - [ ] Требование: labels/status/tooltips для evidence/claim/dialog states локализуются EN/RU без расхождения смысла.
+   - [ ] Проверка (pass/fail): UI tests подтверждают parity для `claim state`, `truth mode`, `contest/approve/reject`, `agent/human/system` labels.
+   - [ ] Артефакт результата: i18n dialog/evidence test log.
 
 ## Документация (RU)
 - [ ] docs/contracts/v2/schemas/evidence_block.json
@@ -75,14 +84,17 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/runbooks/evidence_privacy_violation.md
 - [ ] docs/source/risk_register_v0_2.md
 - [ ] docs/foundation/revolutionary_hypotheses.md
+- [ ] docs/source/console_agent_interaction_model_v0_2.md
 
 ## Тестирование
 - [ ] Tier0: schema validation.
 - [ ] Tier1: evidence scope runtime enforcement.
 - [ ] Tier2: ui-laws runtime checks.
 - [ ] Tier2: ui-laws static lint checks.
+- [ ] Tier2: actor model validation (`human|agent|system`) and agent-generated message restrictions.
 - [ ] e2e: one-click-to-evidence path from foundation UI.
 - [ ] e2e: lineage trace path event -> evidence -> claim -> investigation.
+- [ ] e2e: EN/RU parity for evidence/claim/dialog actor labels and states.
 - [ ] e2e: RTP verdict отображается и не позволяет silently повысить contested claim до valid.
 - [ ] regression: L0 shell invariants не ломаются после внедрения Truth Modes.
 - [ ] chaos: scope downgrade scenario.
@@ -99,6 +111,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Claims/Dialogic contracts валидируются автоматически.
 - [ ] UI-law “no claim without evidence_refs” enforced.
 - [ ] Truth Modes contract реализован и проверяется для observed/derived/predicted.
+- [ ] Dialogic actor model (`human|agent|system`) реализован и запрещает неразмеченные agent paths.
+- [ ] Билингвальная parity для evidence/claim/dialog states подтверждена тестами.
 - [ ] observability-gap события этапа 30 зарегистрированы и имеют runbook.
 - [ ] Риски R3 и R9 из risk register закрыты тестами и runbook-процедурами.
 

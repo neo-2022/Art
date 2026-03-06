@@ -80,6 +80,19 @@ CHECKLIST 04 — Secure SDLC + Supply-chain
   - [ ] Событие зарегистрировано в `docs/governance/observability_gap_registry.md` (Stage 01) с `incident_rule` = `create_incident` и `action_ref` → `docs/runbooks/ui_proxy_unavailable.md`.
   - [ ] **Проверка (pass/fail):** пункт в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` закрыт `[x]`; evidence — `tests/uiProxyGap.spec.js` + ручное отключение UI Proxy приводит к событию в Level0.
 
+- [ ] **6. Сделать:** Внести в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` обязательный пункт про мост `Level0/Network -> Art` и реализовать его как baseline обязанность REGART UI.
+  - [ ] В исходнике чек-листа добавлен пункт: `Level0 bridge отправляет errors/events/network в Art с локальным backlog`.
+  - [ ] Реализация: важные `Level0` события и network meta передаются в Art ingest через sender с локальным backlog/повторной доставкой.
+  - [ ] Реализация: недоступность Art порождает отдельный gap-сигнал и не ломает локальный Debugger overlay.
+  - [ ] Реализация: network provider перехватывает UI fetch/XHR path централизованно, а не точечными вызовами.
+  - [ ] **Проверка (pass/fail):** в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` есть пункт про bridge/network provider, закрыт `[x]`; evidence — integration/e2e log с `Art unavailable -> backlog -> recovery`.
+
+- [ ] **7. Сделать:** Внести в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` обязательный пункт про строгую корреляцию `run_id/node_id/trace_id`.
+  - [ ] Правило: `run_id` и `node_id` используются только если реально известны по данным; эвристический jump запрещён.
+  - [ ] Правило: `trace_id` не теряется при переходе `Level0 -> UI -> UI Proxy -> Art`.
+  - [ ] Правило: события Graph/Tool/Model помечаются корреляционными полями без хардкода.
+  - [ ] **Проверка (pass/fail):** source-of-truth чек-лист содержит этот пункт и он закрыт `[x]`; evidence — correlation tests/logs.
+
 ## Тестирование
 - [ ] Автотест подтверждает `subscribe(listener)` и порядок доставки (Шаг 1). Evidence: `ui/tests/debugger_core.spec.js` + `scripts/ci/check_stage05_wrapper.sh` (`npm test -- debugger_core.spec.js`, 2 passed).
 - [ ] Автотест подтверждает генерацию `trace_id` при отсутствии и сохранение при прохождении по слоям (Шаг 2).
@@ -88,6 +101,8 @@ CHECKLIST 04 — Secure SDLC + Supply-chain
   - [ ] `tests/graph_empty.spec.js` проверяет условия генерации через `buildGraphEmptyEventIfNeeded` (container>0, nodes=0, edges=0, inFlight=false) и null при нарушении условий.
 - [ ] Автотест/интеграционный сценарий подтверждает multi-tab: 2 вкладки → локально видно в обеих → в Art ровно один раз (Шаг 4) (`tests/multiTabManager.spec.js`, `tests/outbox.spec.js`).
 - [ ] Автотест/интеграционный сценарий подтверждает `observability_gap.ui_proxy_unavailable` при недоступности UI Proxy (Шаг 5) (`tests/uiProxyGap.spec.js`).
+- [ ] Автотест/интеграционный сценарий подтверждает bridge `Level0/network -> Art` с backlog/recovery и отдельным gap при недоступном Art (Шаг 6).
+- [ ] Автотест/интеграционный сценарий подтверждает строгую корреляцию `run_id/node_id/trace_id` без эвристического jump (Шаг 7).
 
 ## CI gate
 - [ ] В CI workflow включён запуск тестов из раздела “Тестирование” через `scripts/ci/check_stage05_wrapper.sh` в двух режимах:
@@ -100,6 +115,7 @@ CHECKLIST 04 — Secure SDLC + Supply-chain
 
 ## DoD
 - [ ] Все шаги 1–5 этого чек-листа отмечены `[x]` после фактической проверки и упомянуты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` (разделы multi-tab, ui.graph.empty, observability gap).
+- [ ] Все шаги 1–7 этого чек-листа отмечены `[x]` после фактической проверки и упомянуты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` (включая bridge/network/correlation).
 - [ ] Соответствующие пункты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` отмечены `[x]` с evidence (тексты + tests + runbook/registry).
 - [ ] Тесты из раздела “Тестирование” зелёные в CI (гарантирует `scripts/ci/check_stage05_wrapper.sh`).
 - [ ] CI gate из раздела “CI gate” зелёный в CI (напр. workflow job `stage05-wrapper-gate`).

@@ -70,6 +70,23 @@ CHECKLIST 05 — REGART: UI/Graph/Run/Debugger (обёртка)
   - [ ] пример RawEvent `kind="upstream_error"` с `trace_id` и `retry_count`
   - [ ] **Проверка (pass/fail):** `docs/regart/upstream_error_format.md` существует и содержит все пункты выше.
 
+- [ ] **9. Сделать:** Внести требование и реализовать Art-first bridge semantics для REGART UI Proxy и LangGraph.
+  - [ ] Bridge не делает REGART зависимым от Art, но при доступном Art отправляет structured RawEvent/UiError через единый sender path.
+  - [ ] При недоступном Art включается локальный backlog/retry path без потери локального UX.
+  - [ ] В source-of-truth фиксируется, что Art остаётся source-of-truth по incident state, а REGART отправляет structured facts.
+  - [ ] **Проверка (pass/fail):** соответствующий пункт есть и закрыт `[x]` в `CHECKLIST_REGART_ART_INTEGRATION.md`; evidence — bridge recovery log.
+
+- [ ] **10. Сделать:** Внести требование и реализовать строгую корреляцию `run_id/node_id/trace_id` и запрет эвристик.
+  - [ ] `run_id` и `node_id` добавляются только при наличии реальных данных от backend/runtime.
+  - [ ] `trace_id` обязателен и сохраняется при переходе `REGART -> UI Proxy -> Art`.
+  - [ ] Jump/navigation “по догадке” запрещены и покрыты negative test.
+  - [ ] **Проверка (pass/fail):** соответствующий пункт есть и закрыт `[x]` в `CHECKLIST_REGART_ART_INTEGRATION.md`; evidence — correlation negative/positive suite.
+
+- [ ] **11. Сделать:** Внести требование и реализовать перенос управляющих действий REGART в Art Actions с human/audit path.
+  - [ ] UI Proxy не выполняет локально критичные сервисные действия вне Art Actions.
+  - [ ] Для agent/service control путь всегда `proposal/preflight/policy/audit`, без silent administrative bypass.
+  - [ ] **Проверка (pass/fail):** source-of-truth чек-лист содержит и закрывает этот путь; evidence — action mediation tests/logs.
+
 ## Документация (RU)
 - [ ] docs/regart/art_bridge_runbook.md
 - [ ] docs/regart/upstream_error_format.md
@@ -81,6 +98,9 @@ CHECKLIST 05 — REGART: UI/Graph/Run/Debugger (обёртка)
 - [ ] integration: HTTPS smoke UI Proxy↔Art Core (`test_art_ingest_https_only_rejects_http`, `test_art_ingest_tls_smoke_self_signed`)
 - [ ] integration: upstream error → RawEvent `kind="upstream_error"` с `what/where/why/actions/evidence/trace_id/retry_count` (`test_upstream_error_format_contains_required_fields`)
 - [ ] integration: audit immutability (append-only) тест зелёный (`test_audit_immutability_append_only`)
+- [ ] integration: Art-first bridge recovery path (`Art unavailable -> backlog -> resend`) зелёный.
+- [ ] integration: correlation suite запрещает эвристический `node_id/run_id` jump.
+- [ ] integration: human/audit-mediated service control path зелёный.
 
 ## CI gate
 - [ ] В CI workflow включён запуск тестов из раздела “Тестирование” через `scripts/ci/check_stage06_wrapper.sh` в двух режимах:
@@ -94,6 +114,7 @@ CHECKLIST 05 — REGART: UI/Graph/Run/Debugger (обёртка)
 
 ## DoD
 - [ ] Все шаги 1–8 этого чек-листа отмечены `[x]` после фактической проверки.
+- [ ] Все шаги 1–11 этого чек-листа отмечены `[x]` после фактической проверки.
 - [ ] Соответствующие пункты в `CHECKLIST_REGART_ART_INTEGRATION.md` добавлены и отмечены `[x]` с evidence.
 - [ ] Тесты из раздела “Тестирование” зелёные в CI.
 - [ ] CI gate из раздела “CI gate” зелёный в CI (`scripts/ci/check_stage06_wrapper.sh`).

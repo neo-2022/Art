@@ -8,6 +8,10 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 ## Цель
 Довести forensic и relationship exploration differentiators до production-grade уровня.
 
+Важно:
+- privacy-safe forensic boundaries, flow/graph inspectability и Linux capture constraints должны учитываться заранее в 26, 35 и 37;
+- stage45 завершает deep-forensic и graph exploration контур, а не вводит его впервые.
+
 ## Границы
 - Включено: eBPF evidence linking, graph-backed DNA exploration, advanced relationship navigation.
 - Исключено: Linux-unsafe data capture и неконтролируемое расширение forensic surface.

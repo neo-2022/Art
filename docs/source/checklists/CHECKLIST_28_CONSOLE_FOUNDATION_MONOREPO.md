@@ -38,6 +38,12 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] 5. Сделать: enforce i18n foundation (EN default + RU switch) и tooltip laws.
   - [ ] Проверка (pass/fail): `corepack pnpm run console:test` и `node --test browser/test/panel0_i18n_laws.test.js` возвращают код `0`.
   - [ ] Артефакт результата: логи test jobs `console-test`, `panel0-i18n-law-tests`.
+ - [ ] 5A. Сделать: разложить двуязычный UI как обязательный сквозной контракт всех foundation surfaces, а не только language toggle.
+   - [ ] Требование: EN default + RU switch работают для `routes`, `tooltips`, `errors`, `empty states`, `status labels`, `settings search`, `audio/settings controls`, `keyboard help`, `agent interaction labels`.
+   - [ ] Требование: locale сохраняется при переходах между surface routes и не теряется после reload.
+   - [ ] Требование: foundation shell не содержит hardcoded user-facing strings вне i18n слоя.
+   - [ ] Проверка (pass/fail): test suite подтверждает EN/RU parity для всех foundation routes и отрицательно падает на hardcoded string fixture.
+   - [ ] Артефакт результата: i18n parity test log + negative fixture log.
 - [ ] 6. Сделать: внедрить observability-gap контроль нарушений boundaries.
   - [ ] Событие: `observability_gap.console_workspace_boundary_violation`.
   - [ ] evidence_min: `module`, `import_path`, `rule`, `trace_id`.
@@ -68,6 +74,12 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] 12. Сделать: зафиксировать обязательный anti-breakage набор тестов ранних этапов для будущих интерфейсных слоёв.
   - [ ] Проверка (pass/fail): `corepack pnpm --filter ./apps/console-web run test` содержит проверки surfaces/i18n/tooltips/evidence links и остаётся PASS после изменений stage 30+.
   - [ ] Артефакт результата: test log + checklist reference matrix.
+ - [ ] 12A. Сделать: заложить foundation contract взаимодействия человека с агентом и агентных поверхностей Console.
+   - [ ] Требование: уже на этапе foundation должны быть определены точки входа `ask agent`, `review agent proposal`, `approve/reject`, `show evidence`, `show why`, `show audit trail`.
+   - [ ] Требование: agent UI не имеет права действовать как “магический чат”; только evidence-anchored interaction objects.
+   - [ ] Требование: foundation shell различает `human`, `agent`, `system` actors визуально и текстово.
+   - [ ] Проверка (pass/fail): существует документ модели взаимодействия и foundation tests подтверждают наличие маршрутов/компонентов-заглушек без silent-action path.
+   - [ ] Артефакт результата: interaction model doc + foundation test log.
 - [ ] 13. Сделать: заложить foundation settings framework с поиском по настройкам и иерархией групп.
   - [ ] Проверка (pass/fail): Console shell содержит settings search + grouped sections (`visual`, `opacity`, `colors`, `audio`) и фильтрацию пунктов по query.
   - [ ] Артефакт результата: e2e screenshot + test log.
@@ -97,11 +109,14 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/runbooks/console_workspace_boundary_violation.md
 - [ ] docs/source/risk_register_v0_2.md
 - [ ] docs/source/console_settings_architecture_v0_2.md
+- [ ] docs/source/console_agent_interaction_model_v0_2.md
 
 ## Тестирование
 - [ ] unit: пакеты `packages/*` покрыты тестами и запускаются в CI.
 - [ ] integration: routing foundation shell в `apps/console-web`.
+- [ ] integration: EN/RU parity across all foundation surfaces and settings/agent labels.
 - [ ] e2e: Linux headless smoke открытия foundation shell.
+- [ ] e2e: foundation agent interaction route exists, shows evidence-first placeholders and preserves locale.
 - [ ] regression: интерфейсная лестница L0 сохраняет обратную совместимость при переходе к L1/L2.
 - [ ] integration: settings search фильтрует пункты без потери доступности.
 - [ ] integration: audio replace/preview/clear работает по каждому baseline эффекту.
@@ -133,6 +148,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Отрицательный boundary smoke подтверждает автоматическую блокировку запрещённых импортов.
 - [ ] Интерфейсная лестница L0->L3 задокументирована и проверяется как обязательный anti-breakage контракт.
 - [ ] Settings framework (с поиском) и audio effects framework (replace/preview/clear) реализованы и покрыты тестами.
+- [ ] Полный двуязычный foundation UI подтверждён не только toggle, но и parity всех surface states.
+- [ ] Модель взаимодействия человека с агентом заложена в Console foundation без “магического чата”.
 - [ ] Карта меню настроек проекта зафиксирована как расширяемый контракт уровней и policy-lock.
 - [ ] observability-gap событие этапа 28 задокументировано в registry + runbook.
 - [ ] Риск R1 из risk register подтверждён метрикой `forbidden_import_count=0`.

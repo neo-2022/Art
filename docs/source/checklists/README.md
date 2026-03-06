@@ -50,6 +50,11 @@
 
 ## Программа v0.2 (Console + API v2) и continuation backlog
 
+Важное правило программы:
+- утверждённые differentiators и концепции из historical/foundation корпуса должны начинать встраиваться уже в этапы `01..38`, если они влияют на соответствующую подсистему;
+- этапы `39..45` не являются “первым местом появления” этих идей;
+- этапы `39..45` служат для специализированной финализации, hardening, отдельных CI-gates и production-grade доведения.
+
 - `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md` — foundation Console в monorepo (apps+packages).
 - `CHECKLIST_29_EVENT_DNA_CORE_V2.md` — API v2 Event DNA core (formal model + property 1M + reference parity).
 - `CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md` — Evidence/Claims/Dialogic v2.

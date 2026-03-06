@@ -8,6 +8,10 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 ## Цель
 Перевести продвинутую автоматизацию UI-laws и contract-driven maintenance в обязательный механизм качества.
 
+Важно:
+- базовые UI laws и discipline уже должны жить в этапах 28, 30, 34 и 38;
+- stage41 закрывает static/AST/self-healing hardening path, а не первое появление этих инвариантов.
+
 ## Границы
 - Включено: AST/type-level UI law checks, self-healing test impact map, docs-from-code/tests pipeline.
 - Исключено: автоматическое изменение кода без review и evidence.

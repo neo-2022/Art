@@ -43,11 +43,21 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] Ограничение: новые source-of-truth сущности не создаются, используется существующий InvestigationDoc контракт + local store metadata.
   - [ ] Проверка (pass/fail): integration tests подтверждают стабильный цикл `import -> list -> verify -> replay`.
   - [ ] Артефакт результата: investigation-library integration log.
+ - [ ] 8. Сделать: зафиксировать human-agent collaboration path внутри InvestigationDoc.
+   - [ ] Требование: документ различает `human-authored`, `agent-proposed`, `system-generated` sections/actions/decisions.
+   - [ ] Требование: agent proposals сохраняют `approval_state` и ссылку на человеческое решение при approve/reject.
+   - [ ] Проверка (pass/fail): export/import/replay сохраняет actor provenance без потери и без нормализации “в один тип автора”.
+   - [ ] Артефакт результата: actor provenance replay log.
+ - [ ] 9. Сделать: добавить bilingual replay/verify path для Investigation Library.
+   - [ ] Требование: EN/RU labels для import/export/verify/replay/diff и состояний проверки консистентны.
+   - [ ] Проверка (pass/fail): UI/e2e tests подтверждают parity EN/RU без потери навигации и без перепутанных статусов.
+   - [ ] Артефакт результата: Investigation Library i18n parity log.
 
 ## Документация (RU)
 - [ ] docs/source/investigations_as_code.md
 - [ ] docs/runbooks/investigation_replay_failed.md
 - [ ] docs/foundation/revolutionary_hypotheses.md
+- [ ] docs/source/console_agent_interaction_model_v0_2.md
 
 ## Тестирование
 - [ ] Tier0 unit: parser/serializer.
@@ -55,6 +65,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Tier2 e2e: расследование от ingest до документа.
 - [ ] Tier2 e2e: LRC invalidation path + suggested evidence patch.
 - [ ] Tier2 e2e: Investigation Library (`import/export/verify/replay`) с сохранением lineage.
+- [ ] Tier2 e2e: actor provenance (`human|agent|system`) survives export/import/replay.
+- [ ] Tier2 e2e: EN/RU parity for Investigation Library actions/states.
 - [ ] chaos: повреждённый document payload.
 - [ ] load: переносится в этап 34.
 - [ ] soak: переносится в этап 34.
@@ -67,6 +79,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] InvestigationDoc сериализуется, версионируется и воспроизводится.
 - [ ] fork/replay/compare покрыты тестами.
 - [ ] Investigation Library baseline реализован и покрыт e2e/integration тестами.
+- [ ] Human-agent collaboration path в InvestigationDoc формализован и воспроизводим.
+- [ ] Билингвальный replay/verify/import/export контур подтверждён тестами.
 - [ ] observability-gap событие этапа 31 зарегистрировано и имеет runbook.
 
 ## Метаданные

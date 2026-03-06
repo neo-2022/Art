@@ -8,6 +8,10 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 ## Цель
 Довести action intelligence до безопасного и воспроизводимого состояния: before-execute simulation, bounded-regret reasoning и безопасная extensibility.
 
+Важно:
+- preflight-first, policy-as-ui, NRAC hooks и safe extensibility должны учитываться уже в этапах 31, 33, 34 и 37;
+- stage43 закрывает специализированный intelligent-action hardening path.
+
 ## Границы
 - Включено: Counterfactual Action Simulator, NRAC maturation, Wasm sandbox for actions.
 - Исключено: скрытые side effects и silent plugin execution.

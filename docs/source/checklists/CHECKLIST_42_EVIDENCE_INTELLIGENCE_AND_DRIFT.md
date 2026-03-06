@@ -8,6 +8,10 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 ## Цель
 Реализовать интеллектуальные доказательные механизмы, которые были утверждены как differentiators Art, но ещё не доведены до продукта.
 
+Важно:
+- claim quality, drift-awareness и proof-carrying AI должны закладываться уже при прохождении 29, 30, 31, 34 и 37;
+- stage42 завершает отдельные алгоритмы, gate’ы и UX-hardening этих возможностей.
+
 ## Границы
 - Включено: Proof Completeness Score, DNA Drift Radar, Proof-Carrying AI Claims.
 - Исключено: недоказуемые AI-выводы и скрытая эвристика без explanation path.

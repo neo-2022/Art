@@ -40,6 +40,27 @@ Continuation expansion marker: `01..27 -> 28..45`.
 | 44 | investigations + audit roadmap | reproducible incident capsule, deterministic twin | воспроизводимость инцидентов должна быть переносимой и проверяемой end-to-end |
 | 45 | advanced automation + platform/deep forensics | eBPF evidence linking, graph-backed exploration | forensic и relationship navigation — часть заявленной уникальности продукта |
 
+## 2B. Сквозная интеграция approved-концепций в ранние этапы 01..38
+
+Continuation stages `39..45` не считаются первым местом появления approved-концепций. Ниже зафиксирован обязательный ранний integration path, который должен учитываться уже при прохождении базовой программы.
+
+| Approved-концепция | Ранний integration path | Где обязана начать влиять | Что должно появиться до stage39+ |
+|---|---|---|---|
+| AI engineering operating model | 01, 04, 07, 24, 38 | governance, review, release, truthfulness | role split, review discipline, evidence-aware status control |
+| Product showcase / visual language | 28, 35, 37 | foundation UI, flow/spatial, linux runtime | design laws, showcase-safe degradation, perf-safe presentation policy |
+| AST/static UI laws | 28, 30, 34 | console foundation, truth modes, perf discipline | UI law inventory, negative scenarios, impact-aware checks |
+| Proof Completeness Score | 30, 31, 34 | evidence/claims, investigations, anti-overload UX | claim quality model, UI space for score/explanation, perf budget |
+| DNA Drift Radar | 29, 34, 37 | DNA core, perf/load, canary/replay | deterministic drift corpus, replay hooks, divergence policy |
+| Proof-Carrying AI Claims | 30, 33, 39 | claims/actions/governance | ban on AI claim without evidence, negative gates, audit trail |
+| Counterfactual Action Simulator | 31, 33, 34 | investigations, secure actions, perf budget | preflight attachment points, no-side-effect path, perf constraints |
+| Mature NRAC | 33, 37 | secure actions, release/hardening | certificate path, policy exception handling, runtime gate planning |
+| Reproducible Incident Capsule | 31, 32, 34 | investigations, audit, replay regression | versioning hooks, proof attachment, replay evidence expectations |
+| Deterministic Incident Twin | 29, 31, 34, 37 | DNA determinism, replay, canary | parity/replay baseline, drift-safe corpus, divergence alerts |
+| eBPF evidence linking | 37, 26, 45 | Linux/RU/policy boundary | privacy/policy constraints, kernel/profile contracts, safe opt-in model |
+| Graph-backed exploration | 35, 40, 45 | spatial/flow/showcase | inspectability laws, deterministic navigation, derived-store boundaries |
+| Wasm sandbox for actions | 33, 37 | secure actions, linux hardening | sandbox boundary assumptions, audit hooks, capability policy path |
+| Self-healing tests/docs | 07, 08, 28, 30, 38 | CI/contracts/console/process | impact-report discipline, generated-example policy, no-silent rewrite rule |
+
 ## 3. Baseline already covering v0.2
 - Stage16 уже покрывает embedded Panel0 fallback, backlog и runtime docs-gates.
 - Stage15 уже покрывает RBAC и append-only аудит на API baseline.
