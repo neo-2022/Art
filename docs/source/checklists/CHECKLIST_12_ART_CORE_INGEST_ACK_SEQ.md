@@ -125,3 +125,6 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [x] `observability_gap.ingest_overloaded` и `observability_gap.ingest_unavailable` определены, зарегистрированы и имеют runbook.
 - [x] Chaos сценарии воспроизводимы и smoke прогоняются в CI.
 - [x] CI gate Stage 12 зелёный.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

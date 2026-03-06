@@ -110,3 +110,6 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [x] Backpressure + `retry_after_ms` реализованы и покрыты интеграционным тестом.
 - [x] `observability_gap.otlp_rate_limited` определён, зарегистрирован с `incident_rule` не слабее `create_incident_min_sev2`, и имеет runbook; событие проверяется в integration test.
 - [x] CI gate зелёный.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

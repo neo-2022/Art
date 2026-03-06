@@ -99,3 +99,6 @@ CHECKLIST 05 — REGART: UI/Graph/Run/Debugger (обёртка)
 - [x] CI gate из раздела “CI gate” зелёный в CI (`scripts/ci/check_stage06_wrapper.sh`).
 - [x] `scripts/ci/check_stage06_wrapper.sh` проходил: `./scripts/ci/check_stage06_wrapper.sh` (7 passed).  
 - [x] `agent/tests/integration_tests/test_ui_art_ingest.py::test_drop_oldest_when_full_logs_lossy` подтверждает `drop_oldest_when_full`, `lossy_mode_active` и `data_quality.lossy`.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

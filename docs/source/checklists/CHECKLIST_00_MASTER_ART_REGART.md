@@ -116,8 +116,8 @@ A) Полный запрет опциональности:
 | [x] 25 | CHECKLIST_25_COMPLIANCE_AUDIT_READY.md | Compliance | export scripts + immutable evidence + data destruction policy | 2026-03-05, neo-2022, compliance-export+stage25-docs-gate |
 | [x] 26 | CHECKLIST_26_RU_PROFILE.md | RU profile | PDn fields list + PII access audit + block cross-border export | 2026-03-05, neo-2022, ru-profile-tests+stage26-docs-gate |
 | [x] 27 | CHECKLIST_27_AUDIT_REMEDIATION_PLAN.md | Audit/remediation | сводный аудит соответствия и закрытие найденных рисков | 2026-03-05, neo-2022, checklist27 remediation closed |
-| [ ] 28 | CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md | Console foundation | monorepo apps+packages, workspace boundaries, console shell surfaces | -- |
-| [ ] 29 | CHECKLIST_29_EVENT_DNA_CORE_V2.md | Event DNA Core v2 | deterministic DNA core: formal model + property 1M + reference parity + `/api/v2/*` | -- |
+| [x] 28 | CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md | Console foundation | monorepo apps+packages, workspace boundaries, console shell surfaces | 2026-03-06, neo-2022, stage28-docs-gate+stage28-lens-gate+stage28-audio-settings-e2e+workspace-boundary(-negative) PASS |
+| [x] 29 | CHECKLIST_29_EVENT_DNA_CORE_V2.md | Event DNA Core v2 | deterministic DNA core: formal model + property 1M + reference parity + `/api/v2/*` | 2026-03-06, neo-2022, stage29-dna-tests+stage29-dna-property-million+stage29-nightly-replay-determinism+stage29-contract-fingerprint PASS |
 | [ ] 30 | CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md | Evidence/Claims/Dialogic | evidence blocks, claim lifecycle, dialog schemas, UI law checks | -- |
 | [ ] 31 | CHECKLIST_31_INVESTIGATIONS_AS_CODE.md | Investigations-as-Code | versioned InvestigationDoc, fork/replay/compare | -- |
 | [ ] 32 | CHECKLIST_32_AUDIT_MERKLE_VERIFY_UI.md | Audit+Merkle | crypto verify flow and proof attachment | -- |
@@ -127,3 +127,6 @@ A) Полный запрет опциональности:
 | [ ] 36 | CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md | SaaS readiness | tenant/control-data-plane architecture contracts | -- |
 | [ ] 37 | CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md | Linux hardening | canary/rollback + OS matrix source-of-truth + certified/general profiles + Ubuntu-only natural gate | -- |
 | [ ] 38 | CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md | Process ladder | CI-enforced stage order and status integrity | -- |
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

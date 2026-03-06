@@ -137,3 +137,6 @@ Pipeline Core (rules/enrich/fingerprint/correlation) без UI.
 - [x] Template injection защита реализована и проверена security suite; `security.template_injection_blocked` видим в snapshot/stream.
 - [x] `observability_gap.pipeline_stage_failed` и `observability_gap.source_stale` реализованы, зарегистрированы и имеют runbook.
 - [x] CI gate Stage 13 зелёный.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

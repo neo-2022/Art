@@ -142,3 +142,6 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [x] PII/secret filtering применяется ДО записи в audit; `privacy.redaction_applied` генерируется при фактическом редактировании.
 - [x] Audit append-only + hash-chain immutability tests зелёные.
 - [x] CI gate Stage 15 зелёный.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.
