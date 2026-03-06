@@ -245,15 +245,103 @@ function renderSurfaceNavigation(locale: Locale): string {
   }).join("\n");
 }
 
+function renderActionStudioPolicyPanel(locale: Locale): string {
+  const roleLabel = translate("console.action.policy.role", locale);
+  const actionLabel = translate("console.action.policy.action", locale);
+  const targetLabel = translate("console.action.policy.target", locale);
+  const ticketLabel = translate("console.action.policy.param.ticket", locale);
+  const windowLabel = translate("console.action.policy.param.window_min", locale);
+  const reasonLabel = translate("console.action.policy.param.reason", locale);
+  const forceLabel = translate("console.action.policy.param.force", locale);
+  const executeLabel = translate("console.action.policy.execute", locale);
+  const verdictLabel = translate("console.action.policy.verdict.pending", locale);
+  const flowTitle = translate("console.action.flow.title", locale);
+  const flowContext = translate("console.action.flow.context", locale);
+  const flowCurrent = translate("console.action.flow.current", locale);
+  const pending = translate("console.action.flow.status.pending", locale);
+  const denied = translate("console.action.flow.status.denied", locale);
+  const approved = translate("console.action.flow.status.approved", locale);
+  const executed = translate("console.action.flow.status.executed", locale);
+  const rolledBack = translate("console.action.flow.status.rolled_back", locale);
+
+  assertTooltipKey("action.policy.role", "console.tooltip.surface");
+  assertTooltipKey("action.policy.action", "console.tooltip.surface");
+  assertTooltipKey("action.policy.target", "console.tooltip.surface");
+
+  return `<section class="action-policy-panel" data-action-policy="v2">
+    <h3>${translate("console.action.policy.title", locale)}</h3>
+    <p class="settings-note">${translate("console.action.policy.subtitle", locale)}</p>
+    <label class="setting-item" title="${translate("console.tooltip.surface", locale)}">
+      ${roleLabel}
+      <select data-action-policy-role>
+        <option value="viewer">${translate("console.action.policy.role.viewer", locale)}</option>
+        <option value="operator">${translate("console.action.policy.role.operator", locale)}</option>
+        <option value="admin">${translate("console.action.policy.role.admin", locale)}</option>
+      </select>
+    </label>
+    <label class="setting-item" title="${translate("console.tooltip.surface", locale)}">
+      ${actionLabel}
+      <select data-action-policy-action></select>
+    </label>
+    <label class="setting-item" title="${translate("console.tooltip.surface", locale)}">
+      ${targetLabel}
+      <select data-action-policy-target></select>
+    </label>
+    <label class="setting-item" data-action-param-field="ticket">
+      ${ticketLabel}
+      <input data-action-param="ticket" type="text" maxlength="40" placeholder="INC-2026-001">
+    </label>
+    <label class="setting-item" data-action-param-field="window_min">
+      ${windowLabel}
+      <input data-action-param="window_min" type="number" min="1" max="120" step="1" value="5">
+    </label>
+    <label class="setting-item" data-action-param-field="reason">
+      ${reasonLabel}
+      <input data-action-param="reason" type="text" maxlength="100" placeholder="${locale === "ru" ? "Причина действия" : "Reason for action"}">
+    </label>
+    <label class="setting-item" data-action-param-field="force">
+      <span>${forceLabel}</span>
+      <input data-action-param="force" type="checkbox">
+    </label>
+    <p class="settings-note" data-action-policy-verdict>${verdictLabel}</p>
+    <section class="settings-group" data-action-flow-ladder>
+      <h4>${flowTitle}</h4>
+      <p class="settings-note">${flowContext}: <strong data-action-context-source>command-center</strong></p>
+      <p class="settings-note">${flowCurrent}: <strong data-action-flow-current="pending">${pending}</strong></p>
+      <div class="audio-effect-actions">
+        <span class="policy-lock-badge" data-action-status-chip="pending">${pending}</span>
+        <span class="policy-lock-badge" data-action-status-chip="denied">${denied}</span>
+        <span class="policy-lock-badge" data-action-status-chip="approved">${approved}</span>
+        <span class="policy-lock-badge" data-action-status-chip="executed">${executed}</span>
+        <span class="policy-lock-badge" data-action-status-chip="rolled_back">${rolledBack}</span>
+      </div>
+      <div class="audio-effect-actions">
+        <button class="btn-secondary" type="button" data-action-approve>${translate("console.action.flow.approve", locale)}</button>
+        <button class="btn-primary" type="button" data-action-execute>${executeLabel}</button>
+        <button class="btn-secondary" type="button" data-action-rollback>${translate("console.action.flow.rollback", locale)}</button>
+      </div>
+    </section>
+  </section>`;
+}
+
 function renderSurfaceSections(locale: Locale): string {
   return CONSOLE_SURFACES.map((surface, index) => {
     const title = translate(surface.titleKey, locale);
     let extras = "";
     if (surface.id === "incident-room") {
-      extras = `<button class="btn-secondary" type="button" data-audit-verify-trigger="incident-room">${locale === "ru" ? "Проверить audit chain" : "Verify audit chain"}</button>`;
+      extras = `<div class="audio-effect-actions">
+        <button class="btn-secondary" type="button" data-audit-verify-trigger="incident-room">${locale === "ru" ? "Проверить audit chain" : "Verify audit chain"}</button>
+        <button class="btn-secondary" type="button" data-action-open-context="incident-room">${translate("console.action.flow.open_from_incident", locale)}</button>
+      </div>`;
     }
     if (surface.id === "scenario-view") {
-      extras = `<button class="btn-secondary" type="button" data-audit-verify-trigger="flow-mode">${locale === "ru" ? "Flow: Проверить audit chain" : "Flow: Verify audit chain"}</button>`;
+      extras = `<div class="audio-effect-actions">
+        <button class="btn-secondary" type="button" data-audit-verify-trigger="flow-mode">${locale === "ru" ? "Flow: Проверить audit chain" : "Flow: Verify audit chain"}</button>
+        <button class="btn-secondary" type="button" data-action-open-context="flow-mode">${translate("console.action.flow.open_from_flow", locale)}</button>
+      </div>`;
+    }
+    if (surface.id === "action-studio") {
+      extras = renderActionStudioPolicyPanel(locale);
     }
     return `<section class="console-card" id="surface-${surface.id}" ${index === 0 ? "" : "hidden"}>
       <h2>${title}</h2>
@@ -737,6 +825,32 @@ function renderTokenCss(): string {
   .design-panel output { color: var(--color-text-secondary); opacity: var(--ui-text-opacity); }
   .design-panel input[type="range"] { accent-color: var(--color-gold-primary); opacity: var(--ui-line-opacity); }
   .settings-note { margin: 0; color: var(--color-text-secondary); font-size: 0.9em; }
+  .action-policy-panel {
+    display: grid;
+    gap: 8px;
+    border: var(--ui-border-width) solid var(--color-border-subtle);
+    border-radius: calc(var(--ui-border-radius) - 2px);
+    padding: 10px;
+    background: color-mix(in srgb, var(--color-bg-tertiary) 88%, transparent);
+  }
+  .action-policy-panel h3 {
+    margin: 0;
+    color: var(--color-gold-light);
+  }
+  .action-policy-panel h4 {
+    margin: 0;
+    color: var(--color-text-primary);
+  }
+  [data-action-flow-ladder] .policy-lock-badge {
+    border-color: var(--color-border-strong);
+    background: color-mix(in srgb, var(--color-bg-secondary) 82%, transparent);
+    color: var(--color-text-secondary);
+  }
+  [data-action-flow-ladder] .policy-lock-badge.is-active {
+    border-color: var(--color-info-strong);
+    background: var(--color-info-subtle);
+    color: var(--color-text-primary);
+  }
   .policy-lock-badge {
     display: inline-flex;
     align-items: center;
@@ -827,6 +941,41 @@ function renderDesignScript(locale: Locale): string {
   const verifyStatusVerifiedText = ${JSON.stringify(translate("console.audit.verify.status.verified", locale))};
   const verifyStatusFailedText = ${JSON.stringify(translate("console.audit.verify.status.failed", locale))};
   const verifyStatusUnavailableText = ${JSON.stringify(translate("console.audit.verify.status.unavailable", locale))};
+  const actionPolicyVerdictPendingText = ${JSON.stringify(translate("console.action.policy.verdict.pending", locale))};
+  const actionPolicyVerdictAllowedText = ${JSON.stringify(translate("console.action.policy.verdict.allowed", locale))};
+  const actionPolicyRoleUnknownText = ${JSON.stringify(translate("console.action.policy.verdict.role_unknown", locale))};
+  const actionPolicyActionDeniedText = ${JSON.stringify(translate("console.action.policy.verdict.action_denied", locale))};
+  const actionFlowStatusText = {
+    pending: ${JSON.stringify(translate("console.action.flow.status.pending", locale))},
+    denied: ${JSON.stringify(translate("console.action.flow.status.denied", locale))},
+    approved: ${JSON.stringify(translate("console.action.flow.status.approved", locale))},
+    executed: ${JSON.stringify(translate("console.action.flow.status.executed", locale))},
+    rolled_back: ${JSON.stringify(translate("console.action.flow.status.rolled_back", locale))}
+  };
+  const ACTION_POLICY = {
+    viewer: {
+      policy_id: "policy.viewer.readonly.v2",
+      actions: [
+        { id: "service.status", targets: ["core", "agent"], params: [] }
+      ]
+    },
+    operator: {
+      policy_id: "policy.operator.standard.v2",
+      actions: [
+        { id: "service.status", targets: ["core", "agent"], params: [] },
+        { id: "service.restart", targets: ["core", "agent"], params: ["ticket", "window_min"] }
+      ]
+    },
+    admin: {
+      policy_id: "policy.admin.critical.v2",
+      actions: [
+        { id: "service.status", targets: ["core", "agent"], params: [] },
+        { id: "service.restart", targets: ["core", "agent"], params: ["ticket", "window_min"] },
+        { id: "service.rollback", targets: ["core"], params: ["reason", "ticket"] },
+        { id: "service.terminate", targets: ["core", "agent"], params: ["reason", "force"] }
+      ]
+    }
+  };
   const AUDIO_EFFECTS = ["ui_click", "ui_hover", "surface_open", "alert_warning", "alert_error", "gap_event", "action_success"];
   const PROFILE_LIMIT = 24;
   const PROFILE_STORAGE_KEY = ${JSON.stringify(SETTINGS_PROFILES_STORAGE_KEY)};
@@ -1257,6 +1406,95 @@ function renderDesignScript(locale: Locale): string {
     saveSettings(settings);
   }
 
+  function syncActionPolicyUi() {
+    const roleNode = document.querySelector("[data-action-policy-role]");
+    const actionNode = document.querySelector("[data-action-policy-action]");
+    const targetNode = document.querySelector("[data-action-policy-target]");
+    const verdictNode = document.querySelector("[data-action-policy-verdict]");
+    const executeButton = document.querySelector("[data-action-execute]");
+    if (!roleNode || !actionNode || !targetNode || !verdictNode || !executeButton) {
+      return;
+    }
+
+    const role = String(roleNode.value || "viewer");
+    const policy = ACTION_POLICY[role];
+    if (!policy) {
+      verdictNode.textContent = actionPolicyRoleUnknownText;
+      executeButton.disabled = true;
+      return;
+    }
+
+    const prevAction = String(actionNode.value || "");
+    actionNode.innerHTML = "";
+    policy.actions.forEach((action) => {
+      const option = document.createElement("option");
+      option.value = action.id;
+      option.textContent = action.id;
+      actionNode.appendChild(option);
+    });
+    if (policy.actions.some((item) => item.id === prevAction)) {
+      actionNode.value = prevAction;
+    }
+
+    const selectedAction = policy.actions.find((item) => item.id === actionNode.value) || policy.actions[0];
+    if (!selectedAction) {
+      verdictNode.textContent = actionPolicyActionDeniedText;
+      executeButton.disabled = true;
+      return;
+    }
+
+    targetNode.innerHTML = "";
+    selectedAction.targets.forEach((target) => {
+      const option = document.createElement("option");
+      option.value = target;
+      option.textContent = target;
+      targetNode.appendChild(option);
+    });
+
+    const fieldNodes = document.querySelectorAll("[data-action-param-field]");
+    fieldNodes.forEach((fieldNode) => {
+      const fieldName = String(fieldNode.getAttribute("data-action-param-field") || "");
+      fieldNode.hidden = !selectedAction.params.includes(fieldName);
+      const inputNode = fieldNode.querySelector("[data-action-param]");
+      if (!inputNode) return;
+      inputNode.disabled = fieldNode.hidden;
+      if (inputNode.type === "checkbox" && fieldNode.hidden) {
+        inputNode.checked = false;
+      }
+      if (inputNode.type !== "checkbox" && fieldNode.hidden) {
+        inputNode.value = "";
+      }
+    });
+
+    verdictNode.textContent = actionPolicyVerdictAllowedText
+      + ": " + policy.policy_id
+      + " -> " + selectedAction.id
+      + "@" + String(targetNode.value || selectedAction.targets[0]);
+    executeButton.disabled = false;
+    executeButton.setAttribute("data-action-policy-id", policy.policy_id);
+    executeButton.setAttribute("data-action-id", selectedAction.id);
+  }
+
+  function activateSurface(surfaceId) {
+    const sections = document.querySelectorAll('[id^="surface-"]');
+    sections.forEach((section) => {
+      section.hidden = section.id !== "surface-" + surfaceId;
+    });
+  }
+
+  function setActionFlowStatus(status) {
+    const currentNode = document.querySelector("[data-action-flow-current]");
+    const chips = document.querySelectorAll("[data-action-status-chip]");
+    chips.forEach((chip) => {
+      chip.classList.toggle("is-active", chip.getAttribute("data-action-status-chip") === status);
+    });
+    if (currentNode) {
+      const text = actionFlowStatusText[status] || String(status);
+      currentNode.setAttribute("data-action-flow-current", status);
+      currentNode.textContent = text;
+    }
+  }
+
   let profiles = readProfiles();
   const policyLocks = readPolicyLocks();
   let activeSettings = readStoredSettings();
@@ -1265,6 +1503,8 @@ function renderDesignScript(locale: Locale): string {
   applyPolicyLocks(policyLocks);
   setProfileStatus(profileReadyText);
   apply(activeSettings);
+  syncActionPolicyUi();
+  setActionFlowStatus("pending");
 
   document.addEventListener("input", function (event) {
     const target = event.target;
@@ -1304,6 +1544,27 @@ function renderDesignScript(locale: Locale): string {
       playEffect("action_success", activeSettings);
       return;
     }
+    const actionContext = target.getAttribute && target.getAttribute("data-action-open-context");
+    if (actionContext) {
+      activateSurface("action-studio");
+      const contextNode = document.querySelector("[data-action-context-source]");
+      if (contextNode) {
+        contextNode.textContent = actionContext;
+      }
+      setActionFlowStatus("pending");
+      syncActionPolicyUi();
+      playEffect("surface_open", activeSettings);
+      return;
+    }
+    if (target.matches("a.surface-link")) {
+      const route = target.getAttribute("data-route") || "";
+      const surfaceId = route.split("/").filter(Boolean).pop();
+      if (surfaceId) {
+        activateSurface(surfaceId);
+      }
+      playEffect("surface_open", activeSettings);
+      return;
+    }
     const previewKey = target.getAttribute && target.getAttribute("data-audio-preview");
     if (previewKey) {
       playEffect(previewKey, activeSettings);
@@ -1315,6 +1576,27 @@ function renderDesignScript(locale: Locale): string {
       delete nextCustom[clearKey];
       activeSettings = sanitize(Object.assign({}, activeSettings, { audioCustomByEffect: nextCustom }));
       apply(activeSettings);
+      return;
+    }
+
+    if (target.matches("[data-action-execute]")) {
+      const verdictText = String(document.querySelector("[data-action-policy-verdict]")?.textContent || "");
+      if (verdictText.includes(actionPolicyActionDeniedText) || verdictText.includes(actionPolicyRoleUnknownText)) {
+        setActionFlowStatus("denied");
+      } else {
+        setActionFlowStatus("executed");
+      }
+      playEffect("action_success", activeSettings);
+      return;
+    }
+    if (target.matches("[data-action-approve]")) {
+      setActionFlowStatus("approved");
+      playEffect("ui_click", activeSettings);
+      return;
+    }
+    if (target.matches("[data-action-rollback]")) {
+      setActionFlowStatus("rolled_back");
+      playEffect("alert_warning", activeSettings);
       return;
     }
 
@@ -1331,6 +1613,11 @@ function renderDesignScript(locale: Locale): string {
 
   document.addEventListener("change", function (event) {
     const target = event.target;
+    if (target && target.matches && target.matches("[data-action-policy-role], [data-action-policy-action], [data-action-policy-target]")) {
+      syncActionPolicyUi();
+      setActionFlowStatus("pending");
+      return;
+    }
     if (!target || !target.matches || !target.matches("[data-audio-upload]")) return;
     const effectKey = target.getAttribute("data-audio-upload");
     const file = target.files && target.files[0];

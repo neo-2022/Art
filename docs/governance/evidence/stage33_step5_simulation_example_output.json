@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "side_effects": false,
+  "action": "service.restart",
+  "target": "core",
+  "preflight": {
+    "required": true,
+    "provided": false,
+    "preflight_id": "",
+    "diff": ["missing:x-action-preflight-id"]
+  },
+  "policy_verdict": {
+    "allowed": false,
+    "rbac_allowed": false,
+    "mcp_allowed": false,
+    "actor_role": "viewer",
+    "mcp_mode": "read_only",
+    "policy_id": "action_preflight_v1"
+  }
+}

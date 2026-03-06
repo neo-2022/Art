@@ -1092,6 +1092,27 @@ jobs:
       - name: Stage 33 secure actions gate
         run: bash scripts/ci/check_stage33_secure_actions.sh
 
+  stage33-action-ux-anti-breakage:
+    name: stage33-action-ux-anti-breakage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061
+        with:
+          version: 9.15.4
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install workspace
+        run: corepack pnpm install --frozen-lockfile
+      - name: Stage 33 action UX anti-breakage gate
+        run: bash scripts/ci/check_stage33_action_ux_anti_breakage.sh
+
   coverage-ratchet-gate:
     name: coverage-ratchet-gate
     runs-on: ubuntu-latest

@@ -106,6 +106,39 @@ test("console-web: verify action is reachable from incident room, investigation 
   assert.ok(html.includes("data-audit-verify-trigger=\"flow-mode\""));
 });
 
+test("console-web: action studio policy-as-ui constrains role/action/fields", () => {
+  const html = renderConsoleShell("en");
+  assert.ok(html.includes("data-action-policy=\"v2\""));
+  assert.ok(html.includes("data-action-policy-role"));
+  assert.ok(html.includes("data-action-policy-action"));
+  assert.ok(html.includes("data-action-policy-target"));
+  assert.ok(html.includes("data-action-param-field=\"ticket\""));
+  assert.ok(html.includes("data-action-param-field=\"window_min\""));
+  assert.ok(html.includes("data-action-param-field=\"reason\""));
+  assert.ok(html.includes("data-action-param-field=\"force\""));
+  assert.ok(html.includes("data-action-policy-verdict"));
+  assert.ok(html.includes("data-action-execute"));
+  assert.ok(html.includes("policy.viewer.readonly.v2"));
+  assert.ok(html.includes("policy.operator.standard.v2"));
+  assert.ok(html.includes("policy.admin.critical.v2"));
+});
+
+test("console-web: action flow ladder renders L1->L2 statuses and cross-surface entry points", () => {
+  const html = renderConsoleShell("en");
+  assert.ok(html.includes("data-action-open-context=\"incident-room\""));
+  assert.ok(html.includes("data-action-open-context=\"flow-mode\""));
+  assert.ok(html.includes("data-action-flow-ladder"));
+  assert.ok(html.includes("data-action-context-source"));
+  assert.ok(html.includes("data-action-flow-current=\"pending\""));
+  assert.ok(html.includes("data-action-status-chip=\"pending\""));
+  assert.ok(html.includes("data-action-status-chip=\"denied\""));
+  assert.ok(html.includes("data-action-status-chip=\"approved\""));
+  assert.ok(html.includes("data-action-status-chip=\"executed\""));
+  assert.ok(html.includes("data-action-status-chip=\"rolled_back\""));
+  assert.ok(html.includes("data-action-approve"));
+  assert.ok(html.includes("data-action-rollback"));
+});
+
 test("console-web: audit verify texts are rendered for EN and RU locales", () => {
   const en = renderConsoleShell("en");
   assert.ok(en.includes("Audit Verify"));
@@ -114,4 +147,6 @@ test("console-web: audit verify texts are rendered for EN and RU locales", () =>
   const ru = renderConsoleShell("ru");
   assert.ok(ru.includes("Проверка Audit"));
   assert.ok(ru.includes("Цепочка доказательства"));
+  assert.ok(ru.includes("ожидание"));
+  assert.ok(ru.includes("согласовано"));
 });

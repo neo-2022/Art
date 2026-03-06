@@ -368,6 +368,24 @@ struct ActionExecuteResponse {
     accepted: bool,
     action: String,
     target: Option<String>,
+    audit_attach: ActionAuditAttach,
+    nrac: NracResult,
+}
+
+#[derive(Debug, Serialize)]
+struct ActionAuditAttach {
+    audit_id: u64,
+    trace_id: String,
+    entry_hash: String,
+    merkle_proof: AuditMerkleProof,
+}
+
+#[derive(Debug, Serialize)]
+struct NracResult {
+    required: bool,
+    status: String,
+    regret: Option<f64>,
+    threshold: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -440,6 +458,7 @@ enum Endpoint {
     IncidentsGet,
     IncidentAck,
     IncidentResolve,
+    ActionsSimulate,
     ActionsExecute,
     AuditGet,
     AuditVerify,
@@ -761,6 +780,7 @@ fn build_app(state: Shared) -> Router {
         .route("/api/v1/incidents", get(incidents))
         .route("/api/v1/incidents/:id/ack", post(incident_ack))
         .route("/api/v1/incidents/:id/resolve", post(incident_resolve))
+        .route("/api/v1/actions/simulate", post(actions_simulate))
         .route("/api/v1/actions/execute", post(actions_execute))
         .route("/api/v1/audit", get(audit_list))
         .route("/api/v1/audit/verify", get(audit_verify))
@@ -2795,7 +2815,10 @@ fn rbac_allows(role: ActorRole, endpoint: Endpoint) -> bool {
         | Endpoint::Stream
         | Endpoint::StreamV2
         | Endpoint::IncidentsGet => true,
-        Endpoint::IncidentAck | Endpoint::IncidentResolve | Endpoint::ActionsExecute => {
+        Endpoint::IncidentAck
+        | Endpoint::IncidentResolve
+        | Endpoint::ActionsSimulate
+        | Endpoint::ActionsExecute => {
             matches!(role, ActorRole::Operator | ActorRole::Admin)
         }
         Endpoint::AuditGet | Endpoint::AuditVerify => matches!(role, ActorRole::Admin),
@@ -2837,44 +2860,30 @@ async fn enforce_mcp_mode(
     target: &str,
     allowlist: &[String],
 ) -> Result<(), Response> {
+    if mcp_allows(mode, action, allowlist) {
+        return Ok(());
+    }
+    push_access_denied(
+        state,
+        headers,
+        endpoint_name(Endpoint::ActionsExecute),
+        "mcp_denied",
+        action,
+        target,
+    )
+    .await;
+    Err((
+        StatusCode::FORBIDDEN,
+        Json(json!({"ok": false, "error": "access_denied"})),
+    )
+        .into_response())
+}
+
+fn mcp_allows(mode: McpMode, action: &str, allowlist: &[String]) -> bool {
     match mode {
-        McpMode::ReadOnly => {
-            push_access_denied(
-                state,
-                headers,
-                endpoint_name(Endpoint::ActionsExecute),
-                "mcp_denied",
-                action,
-                target,
-            )
-            .await;
-            Err((
-                StatusCode::FORBIDDEN,
-                Json(json!({"ok": false, "error": "access_denied"})),
-            )
-                .into_response())
-        }
-        McpMode::LimitedActions => {
-            if allowlist.iter().any(|allowed| allowed == action) {
-                Ok(())
-            } else {
-                push_access_denied(
-                    state,
-                    headers,
-                    endpoint_name(Endpoint::ActionsExecute),
-                    "mcp_denied",
-                    action,
-                    target,
-                )
-                .await;
-                Err((
-                    StatusCode::FORBIDDEN,
-                    Json(json!({"ok": false, "error": "access_denied"})),
-                )
-                    .into_response())
-            }
-        }
-        McpMode::FullAdmin => Ok(()),
+        McpMode::ReadOnly => false,
+        McpMode::LimitedActions => allowlist.iter().any(|allowed| allowed == action),
+        McpMode::FullAdmin => true,
     }
 }
 
@@ -2923,6 +2932,7 @@ fn endpoint_name(endpoint: Endpoint) -> &'static str {
         Endpoint::IncidentsGet => "/api/v1/incidents",
         Endpoint::IncidentAck => "/api/v1/incidents/{id}/ack",
         Endpoint::IncidentResolve => "/api/v1/incidents/{id}/resolve",
+        Endpoint::ActionsSimulate => "/api/v1/actions/simulate",
         Endpoint::ActionsExecute => "/api/v1/actions/execute",
         Endpoint::AuditGet => "/api/v1/audit",
         Endpoint::AuditVerify => "/api/v1/audit/verify",
@@ -3097,6 +3107,47 @@ fn append_audit_entry(state: &mut CoreState, mut entry: AuditEntry) {
     state.next_audit_id += 1;
     state.audit_chain_head = entry.entry_hash.clone();
     state.audits.push(entry);
+}
+
+fn append_audit_entry_and_get(state: &mut CoreState, mut entry: AuditEntry) -> AuditEntry {
+    entry.id = state.next_audit_id;
+    entry.prev_hash = state.audit_chain_head.clone();
+    entry.entry_hash = sha256_hex(&audit_hash_material(&entry));
+    entry.merkle_proof = build_merkle_proof(&entry.prev_hash, &entry.entry_hash);
+    state.next_audit_id += 1;
+    state.audit_chain_head = entry.entry_hash.clone();
+    state.audits.push(entry.clone());
+    entry
+}
+
+fn action_audit_attach(entry: &AuditEntry) -> ActionAuditAttach {
+    ActionAuditAttach {
+        audit_id: entry.id,
+        trace_id: entry.trace_id.clone(),
+        entry_hash: entry.entry_hash.clone(),
+        merkle_proof: entry.merkle_proof.clone(),
+    }
+}
+
+fn nrac_threshold() -> f64 {
+    let raw = env::var("CORE_NRAC_REGRET_THRESHOLD").unwrap_or_else(|_| "0.05".to_string());
+    raw.parse::<f64>()
+        .ok()
+        .filter(|value| value.is_finite())
+        .map(|value| value.clamp(0.0, 1.0))
+        .unwrap_or(0.05)
+}
+
+fn is_critical_action_for_nrac(action: &str) -> bool {
+    matches!(action, "service.terminate" | "service.rollback")
+}
+
+fn nrac_regret_from_headers(headers: &HeaderMap) -> Option<f64> {
+    headers
+        .get("x-action-nrac-regret")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.trim().parse::<f64>().ok())
+        .filter(|value| value.is_finite())
 }
 
 fn audit_hash_material(entry: &AuditEntry) -> String {
@@ -3281,6 +3332,8 @@ async fn actions_execute(
     Json(req): Json<ActionExecuteRequest>,
 ) -> impl IntoResponse {
     let target = req.target.clone().unwrap_or_else(|| "none".to_string());
+    let critical_nrac = is_critical_action_for_nrac(&req.action);
+    let nrac_threshold_value = nrac_threshold();
     let preflight_id = headers
         .get("x-action-preflight-id")
         .and_then(|value| value.to_str().ok())
@@ -3329,7 +3382,7 @@ async fn actions_execute(
                 "trace_id": trace_id_from_headers(&headers)
             }),
         );
-        append_audit_entry(
+        let denied_audit = append_audit_entry_and_get(
             &mut s,
             build_audit_entry_with_params(
                 &headers,
@@ -3345,7 +3398,14 @@ async fn actions_execute(
             Json(json!({
                 "accepted": false,
                 "error": "preflight_required",
-                "code": "action_preflight_missing"
+                "code": "action_preflight_missing",
+                "audit_attach": action_audit_attach(&denied_audit),
+                "nrac": NracResult {
+                    required: critical_nrac,
+                    status: if critical_nrac { "missing".to_string() } else { "not_required".to_string() },
+                    regret: nrac_regret_from_headers(&headers),
+                    threshold: if critical_nrac { Some(nrac_threshold_value) } else { None }
+                }
             })),
         )
             .into_response();
@@ -3390,7 +3450,72 @@ async fn actions_execute(
         );
         return resp;
     }
-    append_audit_entry(
+    let mut nrac = NracResult {
+        required: critical_nrac,
+        status: "not_required".to_string(),
+        regret: None,
+        threshold: if critical_nrac {
+            Some(nrac_threshold_value)
+        } else {
+            None
+        },
+    };
+    if critical_nrac {
+        let regret = nrac_regret_from_headers(&headers);
+        nrac.regret = regret;
+        if regret.is_none() {
+            nrac.status = "missing".to_string();
+            let denied_audit = append_audit_entry_and_get(
+                &mut s,
+                build_audit_entry_with_params(
+                    &headers,
+                    &req.action,
+                    &target,
+                    "denied",
+                    "docs/foundation/revolutionary_hypotheses.md",
+                    sanitized_params.clone(),
+                ),
+            );
+            return (
+                StatusCode::FORBIDDEN,
+                Json(json!({
+                    "accepted": false,
+                    "error": "nrac_required",
+                    "code": "action_nrac_missing",
+                    "audit_attach": action_audit_attach(&denied_audit),
+                    "nrac": nrac
+                })),
+            )
+                .into_response();
+        }
+        if regret.unwrap_or(1.0) > nrac_threshold_value {
+            nrac.status = "regret_exceeded".to_string();
+            let denied_audit = append_audit_entry_and_get(
+                &mut s,
+                build_audit_entry_with_params(
+                    &headers,
+                    &req.action,
+                    &target,
+                    "denied",
+                    "docs/foundation/revolutionary_hypotheses.md",
+                    sanitized_params.clone(),
+                ),
+            );
+            return (
+                StatusCode::FORBIDDEN,
+                Json(json!({
+                    "accepted": false,
+                    "error": "nrac_regret_exceeded",
+                    "code": "action_nrac_regret_exceeded",
+                    "audit_attach": action_audit_attach(&denied_audit),
+                    "nrac": nrac
+                })),
+            )
+                .into_response();
+        }
+        nrac.status = "accepted".to_string();
+    }
+    let execution_audit = append_audit_entry_and_get(
         &mut s,
         build_audit_entry_with_params(
             &headers,
@@ -3405,8 +3530,64 @@ async fn actions_execute(
         accepted: true,
         action: req.action,
         target: req.target,
+        audit_attach: action_audit_attach(&execution_audit),
+        nrac,
     };
     (StatusCode::OK, Json(response)).into_response()
+}
+
+async fn actions_simulate(
+    State(state): State<Shared>,
+    headers: HeaderMap,
+    Json(req): Json<ActionExecuteRequest>,
+) -> impl IntoResponse {
+    let target = req.target.clone().unwrap_or_else(|| "none".to_string());
+    let preflight_id = headers
+        .get("x-action-preflight-id")
+        .and_then(|value| value.to_str().ok())
+        .map(str::trim)
+        .unwrap_or("");
+    let actor_role = role_from_headers(&headers);
+    let mcp_mode = McpMode::from_headers(&headers);
+    let allowlist = {
+        let s = state.read().await;
+        s.limited_actions_allowlist.clone()
+    };
+    let rbac_allowed = actor_role
+        .map(|role| rbac_allows(role, Endpoint::ActionsSimulate))
+        .unwrap_or(false);
+    let mcp_allowed = mcp_allows(mcp_mode, &req.action, &allowlist);
+    let policy_allowed = rbac_allowed && mcp_allowed;
+    let preflight_provided = !preflight_id.is_empty();
+    let preflight_diff = if preflight_provided {
+        Vec::<String>::new()
+    } else {
+        vec!["missing:x-action-preflight-id".to_string()]
+    };
+    (
+        StatusCode::OK,
+        Json(json!({
+            "ok": true,
+            "side_effects": false,
+            "action": req.action,
+            "target": target,
+            "preflight": {
+                "required": true,
+                "provided": preflight_provided,
+                "preflight_id": if preflight_provided { preflight_id } else { "" },
+                "diff": preflight_diff
+            },
+            "policy_verdict": {
+                "allowed": policy_allowed,
+                "rbac_allowed": rbac_allowed,
+                "mcp_allowed": mcp_allowed,
+                "actor_role": actor_role.map(ActorRole::as_str).unwrap_or("unknown"),
+                "mcp_mode": mcp_mode.as_str(),
+                "policy_id": "action_preflight_v1"
+            }
+        })),
+    )
+        .into_response()
 }
 
 fn load_core_config(path: &str) -> anyhow::Result<CoreConfig> {
@@ -5416,6 +5597,11 @@ updates_mode = "online"
         assert_eq!(json["accepted"], false);
         assert_eq!(json["error"], "preflight_required");
         assert_eq!(json["code"], "action_preflight_missing");
+        assert!(json["audit_attach"]["audit_id"].as_u64().unwrap_or(0) >= 1);
+        assert_eq!(
+            json["audit_attach"]["merkle_proof"]["algorithm"],
+            "sha256-chain-v1"
+        );
 
         let snapshot = Request::builder()
             .method("GET")
@@ -5433,6 +5619,156 @@ updates_mode = "online"
             .iter()
             .any(|row| row["event"]["kind"] == "observability_gap.action_preflight_missing");
         assert!(has_gap);
+    }
+
+    #[tokio::test]
+    async fn actions_simulation_mode_returns_policy_verdict_without_side_effects() {
+        let state = test_state();
+        let app = build_app(state.clone());
+        let before = {
+            let s = state.read().await;
+            (s.events.len(), s.audits.len())
+        };
+
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/simulate")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "viewer")
+            .header("x-mcp-mode", "read_only")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core","params":{"ticket":"INC-1"}}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["ok"], true);
+        assert_eq!(json["side_effects"], false);
+        assert_eq!(json["preflight"]["required"], true);
+        assert_eq!(json["preflight"]["provided"], false);
+        assert_eq!(json["policy_verdict"]["allowed"], false);
+        assert_eq!(json["policy_verdict"]["rbac_allowed"], false);
+        assert_eq!(json["policy_verdict"]["mcp_allowed"], false);
+        assert_eq!(
+            json["preflight"]["diff"][0].as_str(),
+            Some("missing:x-action-preflight-id")
+        );
+
+        let after = {
+            let s = state.read().await;
+            (s.events.len(), s.audits.len())
+        };
+        assert_eq!(before.0, after.0);
+        assert_eq!(before.1, after.1);
+    }
+
+    #[tokio::test]
+    async fn critical_action_requires_nrac_and_blocks_on_high_regret() {
+        let app = build_app(test_state());
+
+        let missing = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-critical")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "admin")
+            .body(Body::from(
+                r#"{"action":"service.terminate","target":"core","params":{"reason":"test"}}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(missing).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["error"], "nrac_required");
+        assert_eq!(json["code"], "action_nrac_missing");
+        assert_eq!(json["nrac"]["required"], true);
+        assert_eq!(json["nrac"]["status"], "missing");
+
+        let high = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-critical")
+            .header("x-action-nrac-regret", "0.40")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "admin")
+            .body(Body::from(
+                r#"{"action":"service.terminate","target":"core","params":{"reason":"test"}}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(high).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["error"], "nrac_regret_exceeded");
+        assert_eq!(json["code"], "action_nrac_regret_exceeded");
+        assert_eq!(json["nrac"]["status"], "regret_exceeded");
+
+        let low = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-critical")
+            .header("x-action-nrac-regret", "0.01")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "admin")
+            .body(Body::from(
+                r#"{"action":"service.terminate","target":"core","params":{"reason":"test"}}"#,
+            ))
+            .expect("request");
+        let resp = app.oneshot(low).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["accepted"], true);
+        assert_eq!(json["nrac"]["required"], true);
+        assert_eq!(json["nrac"]["status"], "accepted");
+    }
+
+    #[tokio::test]
+    async fn actions_execute_response_attaches_audit_merkle_proof() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-proof")
+            .header("x-trace-id", "trace-action-proof")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .body(Body::from(
+                r#"{"action":"service.status","target":"core","params":{"note":"ok"}}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["accepted"], true);
+        assert_eq!(json["audit_attach"]["trace_id"], "trace-action-proof");
+        assert!(json["audit_attach"]["audit_id"].as_u64().unwrap_or(0) >= 1);
+        assert_eq!(
+            json["audit_attach"]["merkle_proof"]["algorithm"],
+            "sha256-chain-v1"
+        );
+        assert_eq!(
+            json["audit_attach"]["entry_hash"],
+            json["audit_attach"]["merkle_proof"]["leaf_hash"]
+        );
+        assert_eq!(
+            json["audit_attach"]["merkle_proof"]["parent_hashes"]
+                .as_array()
+                .map(|rows| rows.len())
+                .unwrap_or(0),
+            1
+        );
+        assert_eq!(
+            json["audit_attach"]["merkle_proof"]["root_hash"]
+                .as_str()
+                .unwrap_or("")
+                .len(),
+            64
+        );
     }
 
     #[tokio::test]
@@ -5579,9 +5915,13 @@ updates_mode = "online"
         let resp = app.clone().oneshot(audit).await.expect("response");
         let body = resp.into_body().collect().await.expect("body").to_bytes();
         let json: Value = serde_json::from_slice(&body).expect("json");
-        let target = json["items"][0]["target"].as_str().unwrap_or("");
-        assert!(!target.contains("abc123"));
-        assert!(target.contains("***redacted***"));
+        let has_redacted_target = json["items"]
+            .as_array()
+            .unwrap_or(&Vec::new())
+            .iter()
+            .filter_map(|row| row["target"].as_str())
+            .any(|target| !target.contains("abc123") && target.contains("***redacted***"));
+        assert!(has_redacted_target);
 
         let snap_req = Request::builder()
             .method("GET")
