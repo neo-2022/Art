@@ -1,0 +1,52 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    devDependencies:
+      typescript:
+        specifier: 5.6.3
+        version: 5.6.3
+
+  apps/console-web:
+    dependencies:
+      '@art/evidence-linking':
+        specifier: workspace:*
+        version: link:../../packages/evidence-linking
+      '@art/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
+      '@art/local-stores':
+        specifier: workspace:*
+        version: link:../../packages/local-stores
+      '@art/ui-laws':
+        specifier: workspace:*
+        version: link:../../packages/ui-laws
+      '@art/worker-runtime':
+        specifier: workspace:*
+        version: link:../../packages/worker-runtime
+
+  packages/evidence-linking: {}
+
+  packages/i18n: {}
+
+  packages/local-stores: {}
+
+  packages/ui-laws: {}
+
+  packages/worker-runtime: {}
+
+packages:
+
+  typescript@5.6.3:
+    resolution: {integrity: sha512-hjcS1mhfuyi4WW8IWtjP7brDrG2cuDZukyrYrSauoXGNgx0S7zceP07adYkJycEr56BOUTNPzbInooiN3fn1qw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
+snapshots:
+
+  typescript@5.6.3: {}

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://art.local/contracts/v2/schemas/snapshot_v2.json",
+  "title": "SnapshotV2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["cursor", "effective_profile_id", "events", "dna_clusters", "incidents"],
+  "properties": {
+    "cursor": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "effective_profile_id": {
+      "type": "string"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["seq", "ts_ms", "raw_event", "dna_signature", "evidence_refs"],
+        "properties": {
+          "seq": { "type": "integer", "minimum": 0 },
+          "ts_ms": { "type": "integer", "minimum": 0 },
+          "raw_event": { "$ref": "./raw_event_v2.json" },
+          "dna_signature": { "$ref": "./dna_signature.json" },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "dna_clusters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["dna_signature", "event_count", "last_seen_ts_ms"],
+        "properties": {
+          "dna_signature": { "$ref": "./dna_signature.json" },
+          "event_count": { "type": "integer", "minimum": 1 },
+          "last_seen_ts_ms": { "type": "integer", "minimum": 0 },
+          "sample_event_seq": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "incidents": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  }
+}

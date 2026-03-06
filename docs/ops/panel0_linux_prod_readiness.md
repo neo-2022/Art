@@ -35,7 +35,7 @@ bash scripts/tests/panel0_linux_prod_readiness.sh
    - после восстановления ingest backlog очищается и событие публикуется.
 6. `Core DOWN + Console DOWN`:
    - `/panel0/` остаётся доступной через SW cache.
-   - отображается `Core недоступен`.
+   - отображается placeholder `Core is unavailable` (EN default) с возможностью RU switch.
    - после восстановления Core placeholder скрывается автоматически.
 
 ## Наблюдаемость и алерты

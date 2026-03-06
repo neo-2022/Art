@@ -81,6 +81,8 @@ grep -q 'const BOOT_TIMEOUT_MS = 5000;' "$ROOT_BODY"
 grep -q 'const EVENT_KIND = "observability_gap.console_boot_failed";' "$ROOT_BODY"
 grep -q 'const CONSOLE_BASE_PATH = "/console";' "$ROOT_BODY"
 grep -q "Ctrl+Shift+P" "$ROOT_BODY"
+grep -q 'data-locale="en"' "$ROOT_BODY"
+grep -q 'data-locale="ru"' "$ROOT_BODY"
 
 echo "[stage16-runtime] check panel0 routes + content-type"
 PANEL0_BODY=""
@@ -129,6 +131,8 @@ grep -qi "^content-type: image/x-icon" "$PANEL0_FAVICON_HEADERS"
 
 grep -q 'const PANEL0_BUILD_ID = "dev";' "$PANEL0_JS_BODY"
 grep -q 'const CACHE_NAME = "panel0-cache-dev";' "$PANEL0_SW_BODY"
+grep -q 'const DEFAULT_LOCALE = "en";' "$PANEL0_JS_BODY"
+grep -q 'panel0.evidence_link' "$PANEL0_JS_BODY"
 if grep -q "__PANEL0_BUILD_ID__" "$PANEL0_JS_BODY"; then
   echo "panel0.js placeholder was not replaced"
   exit 1
@@ -177,6 +181,8 @@ grep -q "observability_gap.console_boot_failed" "$STREAM"
 echo "[stage16-runtime] check core-down placeholder contract markers"
 grep -q 'const health = await fetchJson("/health");' "$PANEL0_JS_BODY"
 grep -q 'const snapshot = await fetchJson("/api/v1/snapshot");' "$PANEL0_JS_BODY"
-grep -q "Core недоступен" "$PANEL0_BODY"
+grep -Eq "Core is unavailable|Core недоступен" "$PANEL0_BODY"
+grep -q 'data-locale="en"' "$PANEL0_BODY"
+grep -q 'data-locale="ru"' "$PANEL0_BODY"
 
 echo "[stage16-runtime] OK"

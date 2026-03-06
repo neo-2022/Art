@@ -483,6 +483,13 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 16 docs gate
         run: bash scripts/ci/check_panel0_stage16_docs.sh
+
+  stage16-runtime-gate:
+    name: stage16-runtime-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 16 runtime gate
         run: bash scripts/ci/check_panel0_stage16_runtime.sh
 
@@ -719,3 +726,296 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 26 docs gate
         run: bash scripts/ci/check_ru_profile_stage26_docs.sh
+
+  stage28-docs-gate:
+    name: stage28-docs-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 28 docs gate
+        run: bash scripts/ci/check_stage28_docs.sh
+
+  stage28-risk-gate:
+    name: stage28-risk-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 28 risk register gate
+        run: bash scripts/ci/check_v0_2_risk_register.sh
+
+  stage28-lens-gate:
+    name: stage28-lens-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 28 lens governance gate
+        run: bash scripts/ci/check_stage28_lens.sh
+
+  console-workspace-install:
+    name: console-workspace-install
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Workspace install
+        run: corepack pnpm install --frozen-lockfile
+
+  console-lint:
+    name: console-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install workspace
+        run: corepack pnpm install --frozen-lockfile
+      - name: Console lint
+        run: corepack pnpm run console:lint
+
+  console-test:
+    name: console-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install workspace
+        run: corepack pnpm install --frozen-lockfile
+      - name: Console tests
+        run: corepack pnpm run console:test
+
+  console-build:
+    name: console-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install workspace
+        run: corepack pnpm install --frozen-lockfile
+      - name: Console build
+        run: corepack pnpm run console:build
+
+  workspace-boundary-check:
+    name: workspace-boundary-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Boundary check
+        run: bash scripts/ci/check_workspace_boundaries.sh
+
+  workspace-boundary-negative-smoke:
+    name: workspace-boundary-negative-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Boundary negative smoke
+        run: bash scripts/tests/workspace_boundary_negative_smoke.sh
+
+  panel0-i18n-law-tests:
+    name: panel0-i18n-law-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: browser/package-lock.json
+      - name: npm ci
+        working-directory: browser
+        run: npm ci
+      - name: Panel0 i18n law tests
+        working-directory: browser
+        run: node --test test/panel0_i18n_laws.test.js
+
+  stage29-dna-assurance-gate:
+    name: stage29-dna-assurance-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 29 DNA assurance gate
+        run: bash scripts/ci/check_dna_assurance_program.sh
+
+  stage29-dna-tests:
+    name: stage29-dna-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 29 DNA tests
+        run: bash scripts/ci/run_stage29_dna_tests.sh
+
+  stage29-dna-property-million:
+    name: stage29-dna-property-million
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 29 heavy property gate
+        run: bash scripts/ci/run_stage29_dna_property_million.sh
+
+  stage29-contract-fingerprint:
+    name: stage29-contract-fingerprint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 29 contract fingerprint gate
+        run: bash scripts/ci/check_v2_contract_fingerprint.sh
+
+  stage29-nightly-replay-determinism:
+    name: stage29-nightly-replay-determinism
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 29 replay determinism suite
+        run: bash scripts/ci/run_stage29_replay_determinism.sh
+
+  stage30-evidence-claims-tests:
+    name: stage30-evidence-claims-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 30 core tests
+        run: |
+          cargo test -p art-core v2_evidence_access_scope_enforcement_tests
+          cargo test -p art-core v2_invalid_payload_returns_deterministic_error_codes
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install workspace
+        run: corepack pnpm install --frozen-lockfile
+      - name: Stage 30 ui-laws tests
+        run: corepack pnpm --filter @art/ui-laws run test
+
+  stage31-investigation-doc-tests:
+    name: stage31-investigation-doc-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install workspace
+        run: corepack pnpm install --frozen-lockfile
+      - name: Stage 31 investigation doc gate
+        run: bash scripts/ci/check_stage31_investigation_doc.sh
+
+  stage32-audit-merkle-tests:
+    name: stage32-audit-merkle-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 32 audit merkle gate
+        run: bash scripts/ci/check_stage32_audit_merkle.sh
+
+  stage33-secure-actions-tests:
+    name: stage33-secure-actions-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 33 secure actions gate
+        run: bash scripts/ci/check_stage33_secure_actions.sh
+
+  coverage-ratchet-gate:
+    name: coverage-ratchet-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Coverage ratchet policy gate
+        run: bash scripts/ci/check_coverage_ratchet_v0_2.sh
+
+  stage34-perf-load-tests:
+    name: stage34-perf-load-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 34 perf/load smoke
+        run: bash scripts/tests/stage34_perf_load_smoke.sh
+
+  stage35-spatial-readiness-tests:
+    name: stage35-spatial-readiness-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install workspace
+        run: corepack pnpm install --frozen-lockfile
+      - name: Stage 35 spatial readiness gate
+        run: bash scripts/ci/check_stage35_spatial_readiness.sh
+
+  stage36-saas-architecture-gate:
+    name: stage36-saas-architecture-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 36 SaaS architecture gate
+        run: bash scripts/ci/check_stage36_saas_architecture.sh
+
+  stage37-linux-hardening-gate:
+    name: stage37-linux-hardening-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 37 linux hardening gate
+        run: bash scripts/ci/check_stage37_linux_hardening.sh
+
+  stage38-ladder-gate:
+    name: stage38-ladder-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage ladder enforcement gate
+        run: bash scripts/ci/check_stage_ladder_enforcement.sh

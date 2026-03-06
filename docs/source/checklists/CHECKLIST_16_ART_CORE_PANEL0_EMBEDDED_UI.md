@@ -49,6 +49,7 @@ A) Полный запрет опциональности:
   - [x] `Ctrl+Shift+P` открывает `/panel0`
   - [x] hotkey не создаёт отдельный `reason_type` и не эмитит `console_boot_failed` без фактического падения Console
   - [x] При Core DOWN показывается placeholder `Core недоступен` (network error / HTTP code)
+  - [x] Tier A i18n backport: EN default + runtime RU switch для статусов/tooltip
   - [x] При восстановлении Core panel автоматически перепроверяет API и выходит из placeholder
   - [x] **Проверка (pass/fail):** runtime/embedded проверки содержимого bootstrap/panel0.js + browser e2e для hotkey и placeholder.
 
@@ -71,6 +72,7 @@ A) Полный запрет опциональности:
 - [x] e2e: gap highlight (историческое покрытие panel0-e2e)
 - [x] e2e: core-down placeholder (историческое покрытие panel0-e2e + runtime markers)
 - [x] e2e: offline cache и negative SW сценарии (историческое покрытие panel0-e2e)
+- [x] e2e: EN default + RU switch (panel0-i18n-law-tests)
 - [x] e2e: auto-fallback при Console DOWN (5s timeout)
 - [x] e2e: observability_gap.console_boot_failed появляется в snapshot/stream
 - [x] e2e: hotkey Ctrl+Shift+P открывает Panel0

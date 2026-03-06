@@ -3,7 +3,6 @@ name = "art-core"
 version = "0.1.0"
 edition = "2021"
 license = "LicenseRef-Proprietary"
-license-file = "../LICENSE"
 
 [dependencies]
 anyhow = "1.0"
@@ -24,4 +23,5 @@ tower-http = { version = "0.6", features = ["compression-gzip"] }
 [dev-dependencies]
 flate2 = "1.1"
 http-body-util = "0.1"
+proptest = "1.5"
 tower = "0.5"

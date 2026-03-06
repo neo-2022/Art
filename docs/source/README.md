@@ -10,6 +10,18 @@
 2. `REGART -  LangGraph  взаимодействие с Art описание.md`
    - Тип: интеграционный дизайн-документ.
    - Назначение: как REGART (my_langgraph_agent) должен работать с Art в модели "100% observability".
+3. `FOUNDATION_CONSTITUTION_V0_2.md`
+   - Тип: конституционный документ исполнения v0.2.
+   - Назначение: обязательные инварианты monorepo, Tier A/B/C, API v2, process law и CI-gates программы 28..38.
+4. `dna_core_determinism_performance_assurance.md`
+   - Тип: обязательный стандарт устойчивости DNA Core.
+   - Назначение: formal model + property-based + heavy gate 1M + reference parity + canary/rollback law.
+5. `risk_register_v0_2.md`
+   - Тип: реестр принятых рисков программы 28..38.
+   - Назначение: обязательные контрмеры, CI-gates, release-blocker условия.
+6. `analytics_memory_v0_2.md`
+   - Тип: спецификация operational analytics памяти.
+   - Назначение: chart-ready данные + авто-инструкции по статистике инцидентов.
 
 ## Чек-листы
 

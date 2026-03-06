@@ -1,0 +1,36 @@
+{
+  "version": "v0.2",
+  "policy": "non_decreasing_global_plus_100_new_workspace_code",
+  "modules": {
+    "apps/console-web": {
+      "lines": 100,
+      "branches": 100,
+      "functions": 100
+    },
+    "packages/ui-laws": {
+      "lines": 100,
+      "branches": 100,
+      "functions": 100
+    },
+    "packages/i18n": {
+      "lines": 100,
+      "branches": 100,
+      "functions": 100
+    },
+    "packages/evidence-linking": {
+      "lines": 100,
+      "branches": 100,
+      "functions": 100
+    },
+    "packages/worker-runtime": {
+      "lines": 100,
+      "branches": 100,
+      "functions": 100
+    },
+    "packages/local-stores": {
+      "lines": 100,
+      "branches": 100,
+      "functions": 100
+    }
+  }
+}

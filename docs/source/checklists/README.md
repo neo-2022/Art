@@ -1,6 +1,6 @@
 # Индекс чек-листов
 
-Этот каталог содержит полный набор чек-листов `CHECKLIST_00..27`.
+Этот каталог содержит полный набор чек-листов `CHECKLIST_00..38`.
 
 ## Мастер и управление
 
@@ -48,6 +48,22 @@
 - `CHECKLIST_26_RU_PROFILE.md` — RU профиль (152-ФЗ/локализация/экспорт/аудит/air-gapped).
 - `CHECKLIST_27_AUDIT_REMEDIATION_PLAN.md` — итоговый аудит закрытия этапов и план/факт ремедиации.
 
+## Программа v0.2 (Console + API v2)
+
+- `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md` — foundation Console в monorepo (apps+packages).
+- `CHECKLIST_29_EVENT_DNA_CORE_V2.md` — API v2 Event DNA core (formal model + property 1M + reference parity).
+- `CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md` — Evidence/Claims/Dialogic v2.
+- `CHECKLIST_31_INVESTIGATIONS_AS_CODE.md` — Investigations-as-Code.
+- `CHECKLIST_32_AUDIT_MERKLE_VERIFY_UI.md` — Audit + Merkle verify.
+- `CHECKLIST_33_SECURE_ACTIONS_PROTOCOL_V2.md` — secure actions protocol v2.
+- `CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md` — perf/load/coverage ratchet (10k/100k + 5% perf guard).
+- `CHECKLIST_35_SPATIAL_STORE_3D_READINESS.md` — spatial store + 3D readiness.
+- `CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md` — SaaS readiness architecture.
+- `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md` — Linux prod hardening Tier A/B (canary divergence stop + feature-flag fallback).
+- `CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md` — enforcement правила “лестницы” этапов.
+- `TRACEABILITY_V0_2.md` — трассировка baseline 01..27 к новой программе 28..38.
+- `../risk_register_v0_2.md` — принятые риски v0.2, контрмеры, release blockers.
+
 ## Порядок прохождения
 
 1. `00`
@@ -56,3 +72,4 @@
 4. `07..20`
 5. `21..26`
 6. `27`
+7. `28..38`

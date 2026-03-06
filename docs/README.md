@@ -6,6 +6,7 @@
 
 - `docs/source/Art_v1_spec_final.md` — нормативная мастер-спецификация Art v1.
 - `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md` — целевая модель интеграции REGART с Art.
+- `docs/source/risk_register_v0_2.md` — обязательный реестр рисков программы 28..38.
 - `docs/source/checklists/` — полный набор чек-листов реализации, приёмки и аудита.
 
 Подробный индекс исходников: `docs/source/README.md`.
@@ -25,6 +26,7 @@
 - `19..20` — framework паков и pack REGART.
 - `21..26` — self-observability, тестирование, ops, release, compliance, RU-профиль.
 - `27` — аудит соответствия и ремедиация (runtime/CI hardening).
+- `28..38` — программа v0.2: monorepo Console foundation, API v2 DNA/Evidence, performance/coverage, SaaS/Linux hardening, ladder enforcement.
 
 Подробный индекс чек-листов: `docs/source/checklists/README.md`.
 Детализация этапов `05..06` хранится в репозитории REGART: `https://github.com/neo-2022/my_langgraph_agent`.

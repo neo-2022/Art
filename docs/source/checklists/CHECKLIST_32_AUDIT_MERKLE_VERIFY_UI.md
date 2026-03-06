@@ -1,0 +1,61 @@
+# CHECKLIST 32 — Audit + Merkle Verify UI
+Файл: CHECKLIST_32_AUDIT_MERKLE_VERIFY_UI.md
+Последняя актуализация: 2026-03-06
+Дата последней проверки: 2026-03-06
+Триггер пересмотра: изменение hash chain, merkle proof format, verify UX
+
+## Цель
+Сделать audit криптографически проверяемым: attach proof, verify в UI, связка с InvestigationDoc.
+
+## Границы
+- Включено: audit proof pipeline, verify endpoint, UI verify projection.
+- Исключено: внешние PKI/нотариальные сервисы.
+
+## Зависимости
+- CHECKLIST 15 (audit baseline)
+- CHECKLIST 31 (Investigations-as-Code закрыт)
+
+## Шаги (строго линейно)
+- [ ] 1. Сделать: attach merkle proof к audit entries.
+  - [ ] Проверка (pass/fail): proof consistency tests PASS.
+  - [ ] Артефакт результата: hash/proof test log.
+- [ ] 2. Сделать: verify endpoint возвращает детерминированный статус и chain reason.
+  - [ ] Проверка (pass/fail): integration tests verify endpoint PASS.
+  - [ ] Артефакт результата: API test output.
+- [ ] 3. Сделать: UI verify flow отображает proof chain.
+  - [ ] Проверка (pass/fail): e2e verify tests PASS.
+  - [ ] Артефакт результата: e2e logs + screenshots.
+- [ ] 4. Сделать: attach proof refs в InvestigationDoc.
+  - [ ] Проверка (pass/fail): replay tests подтверждают наличие audit proof refs.
+  - [ ] Артефакт результата: replay fixture diff.
+- [ ] 5. Сделать: observability-gap контроль verify failures.
+  - [ ] Событие: `observability_gap.audit_merkle_verify_failed`.
+  - [ ] evidence_min: `audit_id`, `proof_hash`, `step`, `error`, `trace_id`.
+  - [ ] action_ref: `docs/runbooks/audit_merkle_verify_failed.md`.
+  - [ ] Проверка (pass/fail): registry запись + runbook файл.
+  - [ ] Артефакт результата: registry/runbook diff.
+
+## Документация (RU)
+- [ ] docs/source/audit_merkle_verify.md
+- [ ] docs/runbooks/audit_merkle_verify_failed.md
+
+## Тестирование
+- [ ] Tier0 unit: hash/proof validation.
+- [ ] Tier1 integration: verify endpoint.
+- [ ] Tier2 e2e: UI verify flow.
+- [ ] chaos: tampered chain detection.
+- [ ] load: переносится в этап 34.
+- [ ] soak: переносится в этап 34.
+
+## CI gate
+- [ ] `stage32-audit-merkle-tests`
+
+## DoD
+- [ ] Любое действие имеет проверяемый proof-chain.
+- [ ] verify endpoint/UI детерминированно объясняют причину fail.
+- [ ] observability-gap событие этапа 32 зарегистрировано и имеет runbook.
+
+## Метаданные
+- Ответственный: @neo-2022
+- Ограничение перехода: CHECKLIST_33 запрещён до полного закрытия CHECKLIST_32.
+- Артефакты закрытия: tests + screenshots + registry/runbook diff.

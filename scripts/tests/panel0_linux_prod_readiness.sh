@@ -253,7 +253,7 @@ set_modes "http_error" "pass"
 stop_core
 out="$("$PWCLI" reload)"
 assert_contains "$out" "Page URL: http://127.0.0.1:${PROXY_PORT}/panel0/" "offline reload stays on panel0"
-out="$("$PWCLI" eval 'async () => { await new Promise((resolve) => setTimeout(resolve, 2500)); return { core_down: !document.querySelector("#core-down")?.classList.contains("hidden"), has_text: document.body.innerText.includes("Core недоступен") }; }')"
+out="$("$PWCLI" eval 'async () => { await new Promise((resolve) => setTimeout(resolve, 2500)); const text = document.body.innerText || ""; return { core_down: !document.querySelector("#core-down")?.classList.contains("hidden"), has_text: text.includes("Core is unavailable") || text.includes("Core недоступен") }; }')"
 assert_contains "$out" '"core_down": true' "core down placeholder visible"
 
 start_core

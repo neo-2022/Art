@@ -20,6 +20,9 @@ export {
 export {
   gapStyleForEvent,
   evaluateCoreAvailability,
+  panel0EvidenceHref,
+  panel0LocaleConfig,
+  panel0Message,
   panel0Diagnostics,
   panel0Config,
 } from "./panel0.js";

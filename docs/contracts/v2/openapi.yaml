@@ -1,0 +1,191 @@
+openapi: 3.0.3
+info:
+  title: Art API v2
+  version: 2.0.0
+servers:
+  - url: /
+paths:
+  /api/v2/ingest:
+    post:
+      summary: Ingest raw events and enrich with DNA/Evidence signatures
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [events]
+              properties:
+                events:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/RawEventV2'
+      responses:
+        '200':
+          description: accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ack, accepted, invalid, invalid_details]
+                properties:
+                  ack:
+                    type: object
+                    required: [upto_seq]
+                    properties:
+                      upto_seq:
+                        type: integer
+                        minimum: 0
+                  accepted:
+                    type: integer
+                    minimum: 0
+                  invalid:
+                    type: integer
+                    minimum: 0
+                  invalid_details:
+                    type: array
+                    items:
+                      type: object
+                      required: [index, reason, path, code]
+                      properties:
+                        index: { type: integer, minimum: 0 }
+                        reason: { type: string }
+                        path: { type: string }
+                        code: { type: string }
+        '400':
+          description: invalid payload
+  /api/v2/snapshot:
+    get:
+      summary: Snapshot v2 state
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotV2'
+  /api/v2/stream:
+    get:
+      summary: Stream v2 events (SSE or snapshot fallback)
+      responses:
+        '200':
+          description: ok
+  /api/v2/dna/clusters:
+    get:
+      summary: List DNA clusters
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+      responses:
+        '200':
+          description: ok
+  /api/v2/dna/{dna_id}:
+    get:
+      summary: Resolve DNA cluster by dna_id
+      parameters:
+        - in: path
+          name: dna_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+        '404':
+          description: not found
+  /api/v2/dna/{dna_id}/similar:
+    get:
+      summary: Get similar DNA clusters
+      parameters:
+        - in: path
+          name: dna_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+        '404':
+          description: not found
+  /api/v2/evidence/{evidence_id}:
+    get:
+      summary: Resolve evidence block by id
+      parameters:
+        - in: path
+          name: evidence_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenceBlock'
+        '403':
+          description: denied by access scope
+        '404':
+          description: not found
+  /api/v2/analytics/summary:
+    get:
+      summary: Analytics summary with chart-ready datasets and auto-instructions
+      parameters:
+        - in: query
+          name: window_minutes
+          schema:
+            type: integer
+            minimum: 5
+            maximum: 10080
+        - in: query
+          name: top
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [generated_at_ms, window_minutes, totals, charts, instructions]
+                properties:
+                  generated_at_ms:
+                    type: integer
+                  window_minutes:
+                    type: integer
+                  totals:
+                    type: object
+                    required: [total_events, gap_events, gap_rate_pct, ingest_invalid_total, ingest_dropped_total]
+                    properties:
+                      total_events: { type: integer }
+                      gap_events: { type: integer }
+                      gap_rate_pct: { type: number }
+                      ingest_invalid_total: { type: integer }
+                      ingest_dropped_total: { type: integer }
+                  charts:
+                    type: object
+                  instructions:
+                    type: array
+                    items:
+                      type: object
+components:
+  schemas:
+    RawEventV2:
+      $ref: ./schemas/raw_event_v2.json
+    DnaSignature:
+      $ref: ./schemas/dna_signature.json
+    EvidenceBlock:
+      $ref: ./schemas/evidence_block.json
+    ClaimV2:
+      $ref: ./schemas/claim_v2.json
+    DialogMessageV2:
+      $ref: ./schemas/dialog_message_v2.json
+    SnapshotV2:
+      $ref: ./schemas/snapshot_v2.json

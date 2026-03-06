@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://art.local/contracts/v2/schemas/raw_event_v2.json",
+  "title": "RawEventV2",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["severity"],
+  "properties": {
+    "severity": {
+      "type": "string",
+      "enum": ["debug", "info", "warn", "error", "fatal"]
+    },
+    "kind": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "ts_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "evidence_blocks": {
+      "type": "array",
+      "items": {
+        "$ref": "./evidence_block.json"
+      }
+    }
+  }
+}

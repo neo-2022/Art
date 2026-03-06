@@ -8,6 +8,36 @@ const REDACT_PATTERNS = [
   /set-cookie/i,
 ];
 
+export const panel0LocaleConfig = {
+  defaultLocale: "en",
+  supportedLocales: ["en", "ru"],
+  storageKey: "art.panel0.locale.v1",
+};
+
+const PANEL0_MESSAGES = {
+  en: {
+    "panel0.core_down": "Core is unavailable",
+    "panel0.evidence_link": "View evidence",
+  },
+  ru: {
+    "panel0.core_down": "Core недоступен",
+    "panel0.evidence_link": "Открыть evidence",
+  },
+};
+
+export function panel0Message(key, locale = panel0LocaleConfig.defaultLocale) {
+  const normalized = String(locale || "").toLowerCase().startsWith("ru") ? "ru" : "en";
+  return (
+    PANEL0_MESSAGES[normalized]?.[key] ??
+    PANEL0_MESSAGES[panel0LocaleConfig.defaultLocale][key] ??
+    key
+  );
+}
+
+export function panel0EvidenceHref(evidenceId) {
+  return `/panel0/?evidence_id=${encodeURIComponent(String(evidenceId || ""))}#panel0-evidence`;
+}
+
 export function sanitizeTooltipValue(value) {
   if (value == null) {
     return "none";
@@ -70,5 +100,5 @@ export function panel0Diagnostics(snapshotPayload, buildId) {
 
 export const panel0Config = {
   buildIdEnv: "PANEL0_BUILD_ID",
+  defaultLocale: panel0LocaleConfig.defaultLocale,
 };
-

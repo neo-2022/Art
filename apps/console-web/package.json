@@ -1,0 +1,21 @@
+{
+  "name": "@art/console-web",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.js",
+  "types": "src/main.ts",
+  "files": ["dist"],
+  "dependencies": {
+    "@art/evidence-linking": "workspace:*",
+    "@art/i18n": "workspace:*",
+    "@art/local-stores": "workspace:*",
+    "@art/ui-laws": "workspace:*",
+    "@art/worker-runtime": "workspace:*"
+  },
+  "scripts": {
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json && node ./scripts/generate-static.mjs",
+    "test": "npm run build && node --test test/*.test.mjs"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "open_determinism_incidents": 0,
+  "open_canary_divergence_incidents": 0,
+  "last_updated": "2026-03-06T00:00:00Z",
+  "note": "Обновляется incident automation при открытии/закрытии critical deterministic incidents"
+}

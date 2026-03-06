@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://art.local/contracts/v2/schemas/dialog_message_v2.json",
+  "title": "DialogMessageV2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "payload", "evidence_refs"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["Hypothesis", "Decision", "ActionRequest", "ActionResult", "Explanation"]
+    },
+    "payload": {
+      "type": "object"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

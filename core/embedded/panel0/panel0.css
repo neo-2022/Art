@@ -32,6 +32,23 @@ body {
   line-height: 1.6;
 }
 
+.lang-switch {
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.lang-switch button {
+  border: 1px solid #475569;
+  background: #1e293b;
+  color: #e2e8f0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
 .core-down {
   margin: 16px 20px;
   border: 1px solid #7f1d1d;
@@ -55,6 +72,20 @@ body {
 
 .events {
   margin: 16px 20px;
+}
+
+.evidence {
+  margin: 16px 20px 24px;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  background: #111827;
+  padding: 12px;
+}
+
+.evidence pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .events ul {
@@ -92,4 +123,10 @@ body {
 
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.evidence-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: #7dd3fc;
 }

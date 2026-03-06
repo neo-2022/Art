@@ -12,6 +12,13 @@
 
 Все ассеты Panel0 встроены в бинарник Core (embedded), runtime-чтения с файловой системы не используются.
 
+## I18N (Tier A backport)
+
+- Язык по умолчанию: `English`.
+- Runtime-переключатель: `RU` (без перезагрузки, через UI кнопки).
+- Локализуются статусы, подписи, tooltip и сообщения placeholder.
+- Состояние языка сохраняется в `localStorage` (`art.panel0.locale.v1`).
+
 ## Авто-fallback
 
 Порядок на `GET /` фиксирован:
@@ -52,6 +59,12 @@
 - При недоступности `/health` или `/api/v1/snapshot` (network error / `503`) показывается `Core недоступен`.
 - После восстановления Core панель повторно опрашивает API и выходит из placeholder.
 - Событие `observability_gap.console_boot_failed` не теряется: остаётся в backlog и доставляется позже.
+
+## Закон One-click-to-evidence
+
+- Каждый элемент `observability_gap.*` в списке событий имеет ссылку `View evidence` / `Открыть evidence`.
+- Переход открывает payload события в секции `Evidence payload` внутри Panel0.
+- Это обязательный инвариант Tier A (без зависимости от Tier B Console).
 
 ## Hotkey
 

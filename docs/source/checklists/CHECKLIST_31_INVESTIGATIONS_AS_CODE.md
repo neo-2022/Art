@@ -1,0 +1,66 @@
+# CHECKLIST 31 — Investigations-as-Code
+Файл: CHECKLIST_31_INVESTIGATIONS_AS_CODE.md
+Последняя актуализация: 2026-03-06
+Дата последней проверки: 2026-03-06
+Триггер пересмотра: изменение InvestigationDoc schema, fork/replay/compare semantics
+
+## Цель
+Ввести обязательный артефакт расследования `InvestigationDoc` с versioning, fork/replay/compare и доказательной связностью.
+
+## Границы
+- Включено: schema документа, parser/serializer, replay интерфейсы, compatibility policy.
+- Исключено: совместное редактирование в real-time.
+
+## Зависимости
+- CHECKLIST 29 (должен быть закрыт перед стартом CHECKLIST 31)
+- CHECKLIST 30 (должен быть закрыт перед стартом CHECKLIST 31)
+
+## Шаги (строго линейно)
+- [ ] 1. Сделать: schema `investigation_doc_v1` (claims/decisions/actions/results/evidence_refs/audit_refs/proofs).
+  - [ ] Проверка (pass/fail): schema tests PASS.
+  - [ ] Артефакт результата: schema файл + test log.
+- [ ] 2. Сделать: parser/serializer c deterministic canonical output.
+  - [ ] Проверка (pass/fail): unit tests parser/serializer PASS.
+  - [ ] Артефакт результата: test output + fixtures.
+- [ ] 3. Сделать: fork/replay/compare операции.
+  - [ ] Проверка (pass/fail): integration tests fork/replay/compare PASS.
+  - [ ] Артефакт результата: integration log + replay fixtures.
+- [ ] 4. Сделать: compatibility policy и migration notes.
+  - [ ] Проверка (pass/fail): backward compatibility tests PASS.
+  - [ ] Артефакт результата: compatibility matrix документ.
+- [ ] 5. Сделать: observability-gap контроль replay/serialization сбоев.
+  - [ ] Событие: `observability_gap.investigation_replay_failed`.
+  - [ ] evidence_min: `doc_id`, `doc_version`, `step`, `error`, `trace_id`.
+  - [ ] action_ref: `docs/runbooks/investigation_replay_failed.md`.
+  - [ ] Проверка (pass/fail): запись есть в registry + runbook файл существует.
+  - [ ] Артефакт результата: registry diff + runbook.
+- [ ] 6. Сделать: внедрить экспериментальный LRC (Live Runbook Compiler) для InvestigationDoc runbook sections.
+  - [ ] Проверка (pass/fail): runbook компилируется в condition graph и в runtime помечает invalid шаги при нарушении evidence-предусловий.
+  - [ ] Артефакт результата: compiler test log + runbook mismatch report.
+
+## Документация (RU)
+- [ ] docs/source/investigations_as_code.md
+- [ ] docs/runbooks/investigation_replay_failed.md
+- [ ] docs/foundation/revolutionary_hypotheses.md
+
+## Тестирование
+- [ ] Tier0 unit: parser/serializer.
+- [ ] Tier1 integration: fork/replay/compare.
+- [ ] Tier2 e2e: расследование от ingest до документа.
+- [ ] Tier2 e2e: LRC invalidation path + suggested evidence patch.
+- [ ] chaos: повреждённый document payload.
+- [ ] load: переносится в этап 34.
+- [ ] soak: переносится в этап 34.
+
+## CI gate
+- [ ] `stage31-investigation-doc-tests`
+
+## DoD
+- [ ] InvestigationDoc сериализуется, версионируется и воспроизводится.
+- [ ] fork/replay/compare покрыты тестами.
+- [ ] observability-gap событие этапа 31 зарегистрировано и имеет runbook.
+
+## Метаданные
+- Ответственный: @neo-2022
+- Ограничение перехода: CHECKLIST_32 запрещён до полного закрытия CHECKLIST_31.
+- Артефакты закрытия: tests + fixtures + registry/runbook diff.

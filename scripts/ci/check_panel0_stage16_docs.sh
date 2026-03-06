@@ -21,6 +21,9 @@ grep -q "PANEL0_BUILD_ID" docs/ui/panel0.md
 grep -q "ART_CONSOLE_BASE_PATH" docs/ui/panel0.md
 grep -q "Core DOWN + Console DOWN" docs/ui/panel0.md
 grep -q "observability_gap.console_boot_failed" docs/ui/panel0.md
+grep -q "English" docs/ui/panel0.md
+grep -q 'Runtime-переключатель: `RU`' docs/ui/panel0.md
+grep -q "One-click-to-evidence" docs/ui/panel0.md
 grep -q "offline" docs/ui/panel0_offline.md
 grep -q "Reload" docs/ui/panel0_offline.md
 grep -q "panel0-cache-" docs/ui/panel0_sw_cache.md

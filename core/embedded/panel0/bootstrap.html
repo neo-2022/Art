@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -28,13 +28,30 @@
       .mono {
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       }
+      .lang-switch {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .lang-switch button {
+        border: 1px solid #475569;
+        background: #1e293b;
+        color: #e2e8f0;
+        border-radius: 6px;
+        padding: 4px 8px;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
     <div class="card">
-      <h1 style="margin-top: 0;">Art Console bootstrap</h1>
-      <p>Проверяем доступность основной консоли. При сбое будет открыт Panel0.</p>
-      <p class="muted">Dev hotkey: <span class="mono">Ctrl+Shift+P</span> открывает Panel0 принудительно.</p>
+      <h1 style="margin-top: 0;" data-i18n="bootstrap.title">Art Console bootstrap</h1>
+      <p data-i18n="bootstrap.description">Checking Console availability. Panel0 will open on failure.</p>
+      <p class="muted" data-i18n="bootstrap.hotkey">Dev hotkey: <span class="mono">Ctrl+Shift+P</span> opens Panel0.</p>
+      <div class="lang-switch">
+        <button type="button" data-locale="en" title="Switch language">EN</button>
+        <button type="button" data-locale="ru" title="Сменить язык">RU</button>
+      </div>
       <p class="muted mono" id="boot-status">status: probing console...</p>
       <p class="muted mono" id="boot-meta"></p>
     </div>
@@ -46,9 +63,30 @@
         const BACKLOG_KEY = "art.panel0.console_boot_failed.backlog.v1";
         const BACKLOG_MAX = 64;
         const EVENT_KIND = "observability_gap.console_boot_failed";
+        const LOCALE_KEY = "art.panel0.locale.v1";
         const statusEl = document.getElementById("boot-status");
         const metaEl = document.getElementById("boot-meta");
+        const langButtons = Array.from(document.querySelectorAll("[data-locale]"));
+        const I18N = {
+          en: {
+            "bootstrap.title": "Art Console bootstrap",
+            "bootstrap.description": "Checking Console availability. Panel0 will open on failure.",
+            "bootstrap.hotkey": "Dev hotkey: Ctrl+Shift+P opens Panel0.",
+            "bootstrap.status_prefix": "status"
+          },
+          ru: {
+            "bootstrap.title": "Art Console bootstrap",
+            "bootstrap.description": "Проверяем доступность основной консоли. При сбое откроется Panel0.",
+            "bootstrap.hotkey": "Dev hotkey: Ctrl+Shift+P открывает Panel0.",
+            "bootstrap.status_prefix": "статус"
+          }
+        };
         let finished = false;
+        let currentLocale = resolveLocale(
+          globalThis.localStorage?.getItem(LOCALE_KEY) ||
+            document.documentElement.lang ||
+            globalThis.navigator?.language
+        );
 
         addEventListener("keydown", (event) => {
           if (event.ctrlKey && event.shiftKey && String(event.key || "").toLowerCase() === "p") {
@@ -58,9 +96,48 @@
         });
 
         const nowMs = () => Date.now();
+
+        function resolveLocale(input) {
+          const value = String(input || "").trim().toLowerCase();
+          return value.startsWith("ru") ? "ru" : "en";
+        }
+
+        function t(key) {
+          const table = I18N[currentLocale] || I18N.en;
+          return table[key] || I18N.en[key] || key;
+        }
+
+        function applyLocale() {
+          document.documentElement.lang = currentLocale;
+          const nodes = Array.from(document.querySelectorAll("[data-i18n]"));
+          for (const node of nodes) {
+            const key = node.getAttribute("data-i18n");
+            if (!key) {
+              continue;
+            }
+            node.textContent = t(key);
+          }
+        }
+
+        function setLocale(nextLocale) {
+          currentLocale = resolveLocale(nextLocale);
+          try {
+            globalThis.localStorage?.setItem(LOCALE_KEY, currentLocale);
+          } catch {
+            // ignore storage failures
+          }
+          applyLocale();
+        }
+
+        for (const button of langButtons) {
+          button.addEventListener("click", () => {
+            setLocale(button.getAttribute("data-locale"));
+          });
+        }
+
         const updateStatus = (text) => {
           if (statusEl) {
-            statusEl.textContent = `status: ${text}`;
+            statusEl.textContent = `${t("bootstrap.status_prefix")}: ${text}`;
           }
         };
 
@@ -194,6 +271,8 @@
         };
         addEventListener("error", runtimeCrashHandler);
         addEventListener("unhandledrejection", runtimeCrashHandler);
+
+        applyLocale();
 
         (async () => {
           try {

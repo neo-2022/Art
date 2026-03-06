@@ -1,3 +1,7 @@
 target/
 __pycache__/
 *.pyc
+node_modules/
+dist/
+.playwright-cli/
+core/proptest-regressions/

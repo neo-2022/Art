@@ -1,9 +1,10 @@
 (function panel0Main() {
   const PANEL0_BUILD_ID = "__PANEL0_BUILD_ID__";
-  const PANEL0_CACHE_NAME = `panel0-cache-${PANEL0_BUILD_ID}`;
   const BACKLOG_KEY = "art.panel0.console_boot_failed.backlog.v1";
   const BACKLOG_MAX = 64;
   const BOOT_EVENT_KIND = "observability_gap.console_boot_failed";
+  const LOCALE_KEY = "art.panel0.locale.v1";
+  const DEFAULT_LOCALE = "en";
   const BOOT_EVIDENCE_KEYS = [
     "reason_type",
     "url",
@@ -14,16 +15,73 @@
     "effective_profile_id",
     "trace_id",
   ];
+  const I18N = {
+    en: {
+      "panel0.title": "Art Panel0",
+      "panel0.subtitle": "Embedded emergency panel for Core",
+      "panel0.build_id_label": "build_id:",
+      "panel0.profile_id_label": "effective_profile_id:",
+      "panel0.language_label": "Language:",
+      "panel0.switch_language": "Switch language",
+      "panel0.core_down_title": "Core is unavailable",
+      "panel0.reload": "Reload",
+      "panel0.reload_tooltip": "Reload panel state",
+      "panel0.events_title": "Events",
+      "panel0.evidence_title": "Evidence payload",
+      "panel0.evidence_link": "View evidence",
+      "panel0.evidence_tooltip": "Open evidence payload for this event",
+      "panel0.network_error": "network error",
+    },
+    ru: {
+      "panel0.title": "Art Panel0",
+      "panel0.subtitle": "Embedded аварийная панель Core",
+      "panel0.build_id_label": "build_id:",
+      "panel0.profile_id_label": "effective_profile_id:",
+      "panel0.language_label": "Язык:",
+      "panel0.switch_language": "Сменить язык",
+      "panel0.core_down_title": "Core недоступен",
+      "panel0.reload": "Перезагрузить",
+      "panel0.reload_tooltip": "Перезагрузить состояние панели",
+      "panel0.events_title": "События",
+      "panel0.evidence_title": "Evidence payload",
+      "panel0.evidence_link": "Открыть evidence",
+      "panel0.evidence_tooltip": "Открыть payload доказательства для события",
+      "panel0.network_error": "network error",
+    },
+  };
 
   const buildIdEl = document.getElementById("build-id");
   const profileIdEl = document.getElementById("profile-id");
   const coreDownEl = document.getElementById("core-down");
   const coreDownReasonEl = document.getElementById("core-down-reason");
   const eventsListEl = document.getElementById("events-list");
+  const evidenceJsonEl = document.getElementById("evidence-json");
   const reloadBtnEl = document.getElementById("reload-btn");
+  const langButtons = Array.from(document.querySelectorAll("[data-locale]"));
+
+  let latestSnapshotEvents = [];
+  let lastCoreDownReasonRaw = "network error";
+  let currentLocale = resolveLocale(
+    globalThis.localStorage?.getItem(LOCALE_KEY) ||
+      document.documentElement.lang ||
+      globalThis.navigator?.language
+  );
 
   if (buildIdEl) {
     buildIdEl.textContent = PANEL0_BUILD_ID || "dev";
+  }
+
+  function resolveLocale(input) {
+    const value = String(input || "").trim().toLowerCase();
+    if (value.startsWith("ru")) {
+      return "ru";
+    }
+    return DEFAULT_LOCALE;
+  }
+
+  function t(key) {
+    const table = I18N[currentLocale] || I18N[DEFAULT_LOCALE];
+    return table[key] || I18N[DEFAULT_LOCALE][key] || key;
   }
 
   function randomTraceId() {
@@ -71,6 +129,40 @@
     result.effective_profile_id = String(result.effective_profile_id || "unknown");
     result.trace_id = String(result.trace_id || randomTraceId());
     return result;
+  }
+
+  function applyLocale() {
+    document.documentElement.lang = currentLocale;
+    const nodes = Array.from(document.querySelectorAll("[data-i18n]"));
+    for (const node of nodes) {
+      const key = node.getAttribute("data-i18n");
+      if (!key) {
+        continue;
+      }
+      node.textContent = t(key);
+    }
+    const titleNodes = Array.from(document.querySelectorAll("[data-i18n-title]"));
+    for (const node of titleNodes) {
+      const key = node.getAttribute("data-i18n-title");
+      if (!key) {
+        continue;
+      }
+      node.setAttribute("title", t(key));
+    }
+    if (coreDownEl && !coreDownEl.classList.contains("hidden")) {
+      coreDownReasonEl.textContent = formatCoreDownReason(lastCoreDownReasonRaw);
+    }
+  }
+
+  function setLocale(locale) {
+    currentLocale = resolveLocale(locale);
+    try {
+      globalThis.localStorage?.setItem(LOCALE_KEY, currentLocale);
+    } catch {
+      // ignore storage errors
+    }
+    applyLocale();
+    renderEvents(latestSnapshotEvents);
   }
 
   function loadBacklog() {
@@ -145,7 +237,8 @@
       isGap,
       severity: String(event.severity || "info"),
       message: String(event.msg || event.message || ""),
-      details: {
+      details,
+      normalized: {
         what: redactIfSensitive(details.what || "none"),
         where: redactIfSensitive(details.where || "none"),
         why: redactIfSensitive(details.why || "none"),
@@ -155,37 +248,93 @@
     };
   }
 
+  function showEvidence(kind, details) {
+    if (!evidenceJsonEl) {
+      return;
+    }
+    evidenceJsonEl.textContent = JSON.stringify(
+      {
+        kind,
+        details,
+      },
+      null,
+      2
+    );
+    const anchor = document.getElementById("panel0-evidence");
+    if (anchor) {
+      anchor.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+  }
+
   function renderEvents(snapshotEvents) {
     if (!eventsListEl) {
       return;
     }
     eventsListEl.innerHTML = "";
     const items = Array.isArray(snapshotEvents) ? snapshotEvents.slice(-25).reverse() : [];
+    latestSnapshotEvents = items;
     for (const stored of items) {
       const view = mapEventForView(stored);
       const li = document.createElement("li");
       if (view.isGap) {
         li.classList.add("gap");
       }
-      const kindTag = `<span class="tag ${view.isGap ? "gap" : ""}">${view.isGap ? "⚠" : "•"} ${view.kind}</span>`;
-      const sevTag = `<span class="tag">${view.severity}</span>`;
-      const msg = `<div>${view.message || "-"}</div>`;
-      const tooltip = `${view.details.what} | ${view.details.where} | ${view.details.why} | ${view.details.action_ref} | ${view.details.trace_id}`;
-      li.innerHTML = `
-        <div>${kindTag}${sevTag}</div>
-        ${msg}
-        <div class="muted mono" title="${tooltip}">what=${view.details.what}; where=${view.details.where}; why=${view.details.why}; action_ref=${view.details.action_ref}; trace_id=${view.details.trace_id}</div>
-      `;
+
+      const tags = document.createElement("div");
+      const kindTag = document.createElement("span");
+      kindTag.className = `tag ${view.isGap ? "gap" : ""}`;
+      kindTag.textContent = `${view.isGap ? "⚠" : "•"} ${view.kind}`;
+      const sevTag = document.createElement("span");
+      sevTag.className = "tag";
+      sevTag.textContent = view.severity;
+      tags.appendChild(kindTag);
+      tags.appendChild(sevTag);
+
+      const msg = document.createElement("div");
+      msg.textContent = view.message || "-";
+
+      const detail = document.createElement("div");
+      detail.className = "muted mono";
+      const tooltip = `${view.normalized.what} | ${view.normalized.where} | ${view.normalized.why} | ${view.normalized.action_ref} | ${view.normalized.trace_id}`;
+      detail.title = tooltip;
+      detail.textContent = `what=${view.normalized.what}; where=${view.normalized.where}; why=${view.normalized.why}; action_ref=${view.normalized.action_ref}; trace_id=${view.normalized.trace_id}`;
+
+      li.appendChild(tags);
+      li.appendChild(msg);
+      li.appendChild(detail);
+
+      if (view.isGap) {
+        const evidenceLink = document.createElement("a");
+        evidenceLink.className = "evidence-link";
+        evidenceLink.href = "#panel0-evidence";
+        evidenceLink.textContent = t("panel0.evidence_link");
+        evidenceLink.title = t("panel0.evidence_tooltip");
+        evidenceLink.addEventListener("click", (event) => {
+          event.preventDefault();
+          showEvidence(view.kind, view.details);
+        });
+        li.appendChild(evidenceLink);
+      }
+
       eventsListEl.appendChild(li);
     }
+  }
+
+  function formatCoreDownReason(reasonText) {
+    const raw = String(reasonText || "").trim();
+    if (!raw || raw.toLowerCase() === "network error") {
+      return t("panel0.network_error");
+    }
+    return raw;
   }
 
   function showCoreDown(reasonText) {
     if (coreDownEl) {
       coreDownEl.classList.remove("hidden");
     }
+    lastCoreDownReasonRaw = String(reasonText || "network error");
     if (coreDownReasonEl) {
-      coreDownReasonEl.textContent = reasonText || "network error";
+      coreDownReasonEl.textContent = formatCoreDownReason(lastCoreDownReasonRaw);
     }
   }
 
@@ -289,7 +438,18 @@
     }
   }
 
+  function registerLocaleSwitch() {
+    for (const button of langButtons) {
+      button.addEventListener("click", () => {
+        const locale = button.getAttribute("data-locale") || DEFAULT_LOCALE;
+        setLocale(locale);
+      });
+    }
+  }
+
   async function boot() {
+    applyLocale();
+    registerLocaleSwitch();
     await registerServiceWorker();
     await flushBacklog();
     await refreshPanel();

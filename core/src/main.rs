@@ -10,7 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Context;
 use async_stream::stream;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::{header::CONTENT_TYPE, Extensions, HeaderMap, HeaderValue, StatusCode, Version};
 use axum::response::sse::{Event, Sse};
 use axum::response::IntoResponse;
@@ -42,12 +42,61 @@ const PANEL0_CSS: &str = include_str!("../embedded/panel0/panel0.css");
 const PANEL0_JS_TEMPLATE: &str = include_str!("../embedded/panel0/panel0.js");
 const PANEL0_SW_TEMPLATE: &str = include_str!("../embedded/panel0/panel0_sw.js");
 const PANEL0_FAVICON: &[u8] = include_bytes!("../embedded/panel0/favicon.ico");
+const DNA_SCHEMA_VERSION: &str = "2.0.0";
+const DEFAULT_ANALYTICS_MAX_BUCKETS: usize = 1_440;
+const DEFAULT_ANALYTICS_STATE_PATH: &str = "/tmp/art_core_analytics_state.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct StoredEvent {
     seq: u64,
     ts_ms: u64,
     event: Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DnaSignature {
+    dna_id: String,
+    canonical_hash: String,
+    payload_hash: String,
+    dna_schema_version: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct EvidenceBlock {
+    evidence_id: String,
+    source_type: String,
+    source_ref: String,
+    trust_score: f64,
+    freshness_ms: u64,
+    redaction_policy_id: String,
+    access_scope: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct StoredEventV2 {
+    seq: u64,
+    ts_ms: u64,
+    raw_event: Value,
+    dna_signature: DnaSignature,
+    evidence_refs: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DnaClusterRecord {
+    dna_signature: DnaSignature,
+    event_count: u64,
+    last_seen_ts_ms: u64,
+    sample_event_seq: u64,
+    evidence_refs: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct DnaClusterState {
+    signature: DnaSignature,
+    event_count: u64,
+    last_seen_ts_ms: u64,
+    sample_event_seq: u64,
+    evidence_refs: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,10 +118,58 @@ struct Counters {
     ingest_dropped_total: u64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct AnalyticsBucket {
+    minute_ts_ms: u64,
+    total_events: u64,
+    gap_events: u64,
+    severity_counts: HashMap<String, u64>,
+    kind_counts: HashMap<String, u64>,
+    dna_counts: HashMap<String, u64>,
+}
+
+impl AnalyticsBucket {
+    fn new(minute_ts_ms: u64) -> Self {
+        Self {
+            minute_ts_ms,
+            total_events: 0,
+            gap_events: 0,
+            severity_counts: HashMap::new(),
+            kind_counts: HashMap::new(),
+            dna_counts: HashMap::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct AnalyticsState {
+    max_buckets: usize,
+    buckets: VecDeque<AnalyticsBucket>,
+    total_events: u64,
+    total_gap_events: u64,
+    last_updated_ms: u64,
+}
+
+impl AnalyticsState {
+    fn new(max_buckets: usize) -> Self {
+        Self {
+            max_buckets,
+            buckets: VecDeque::new(),
+            total_events: 0,
+            total_gap_events: 0,
+            last_updated_ms: 0,
+        }
+    }
+}
+
 #[derive(Debug)]
 struct CoreState {
     next_seq: u64,
     events: VecDeque<StoredEvent>,
+    next_seq_v2: u64,
+    events_v2: VecDeque<StoredEventV2>,
+    dna_clusters: HashMap<String, DnaClusterState>,
+    evidence_blocks: HashMap<String, EvidenceBlock>,
     incidents: Vec<Incident>,
     fingerprint_index: HashMap<String, String>,
     source_last_seen: HashMap<String, u64>,
@@ -87,6 +184,8 @@ struct CoreState {
     limited_actions_allowlist: Vec<String>,
     otlp_tokens: f64,
     otlp_last_refill_ms: u64,
+    analytics: AnalyticsState,
+    analytics_state_path: PathBuf,
 }
 
 impl CoreState {
@@ -96,10 +195,16 @@ impl CoreState {
         max_batch_events: usize,
         max_payload_bytes: usize,
         limited_actions_allowlist: Vec<String>,
+        analytics: AnalyticsState,
+        analytics_state_path: PathBuf,
     ) -> Self {
         Self {
             next_seq: 1,
             events: VecDeque::new(),
+            next_seq_v2: 1,
+            events_v2: VecDeque::new(),
+            dna_clusters: HashMap::new(),
+            evidence_blocks: HashMap::new(),
             incidents: Vec::new(),
             fingerprint_index: HashMap::new(),
             source_last_seen: HashMap::new(),
@@ -114,6 +219,8 @@ impl CoreState {
             limited_actions_allowlist,
             otlp_tokens: OTLP_BURST,
             otlp_last_refill_ms: 0,
+            analytics,
+            analytics_state_path,
         }
     }
 }
@@ -159,6 +266,94 @@ struct SnapshotResponse {
     effective_profile_id: String,
     events: Vec<StoredEvent>,
     incidents: Vec<Incident>,
+}
+
+#[derive(Debug, Serialize)]
+struct SnapshotV2Response {
+    cursor: u64,
+    effective_profile_id: String,
+    events: Vec<StoredEventV2>,
+    dna_clusters: Vec<DnaClusterRecord>,
+    incidents: Vec<Incident>,
+}
+
+#[derive(Debug, Serialize)]
+struct DnaClustersResponse {
+    items: Vec<DnaClusterRecord>,
+    total: usize,
+}
+
+#[derive(Debug, Serialize)]
+struct DnaSimilarItem {
+    dna_id: String,
+    score: f64,
+    cluster: DnaClusterRecord,
+}
+
+#[derive(Debug, Serialize)]
+struct DnaSimilarResponse {
+    base_dna_id: String,
+    items: Vec<DnaSimilarItem>,
+}
+
+#[derive(Debug, Serialize)]
+struct AnalyticsTopItem {
+    key: String,
+    count: u64,
+    share_pct: f64,
+}
+
+#[derive(Debug, Serialize)]
+struct AnalyticsTimelinePoint {
+    minute_ts_ms: u64,
+    total_events: u64,
+    gap_events: u64,
+}
+
+#[derive(Debug, Serialize)]
+struct AnalyticsInstruction {
+    id: String,
+    priority: String,
+    title: String,
+    description: String,
+    action_ref: String,
+}
+
+#[derive(Debug, Serialize)]
+struct AnalyticsTotals {
+    total_events: u64,
+    gap_events: u64,
+    gap_rate_pct: f64,
+    ingest_invalid_total: u64,
+    ingest_dropped_total: u64,
+}
+
+#[derive(Debug, Serialize)]
+struct AnalyticsCharts {
+    timeline: Vec<AnalyticsTimelinePoint>,
+    severity_distribution: Vec<AnalyticsTopItem>,
+    top_kinds: Vec<AnalyticsTopItem>,
+    top_dna: Vec<AnalyticsTopItem>,
+}
+
+#[derive(Debug, Serialize)]
+struct AnalyticsSummaryResponse {
+    generated_at_ms: u64,
+    window_minutes: u64,
+    totals: AnalyticsTotals,
+    charts: AnalyticsCharts,
+    instructions: Vec<AnalyticsInstruction>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DnaListQuery {
+    limit: Option<usize>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AnalyticsQuery {
+    window_minutes: Option<u64>,
+    top: Option<usize>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -230,7 +425,9 @@ impl McpMode {
 #[derive(Debug, Clone, Copy)]
 enum Endpoint {
     Snapshot,
+    SnapshotV2,
     Stream,
+    StreamV2,
     IncidentsGet,
     IncidentAck,
     IncidentResolve,
@@ -309,6 +506,16 @@ async fn main() -> anyhow::Result<()> {
                 .collect::<Vec<_>>()
         })
         .unwrap_or_else(|| vec!["service.restart".to_string(), "service.status".to_string()]);
+    let analytics_max_buckets = env::var("CORE_ANALYTICS_MAX_BUCKETS")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(DEFAULT_ANALYTICS_MAX_BUCKETS)
+        .clamp(60, 10_080);
+    let analytics_state_path = env::var("CORE_ANALYTICS_STATE_PATH")
+        .ok()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(DEFAULT_ANALYTICS_STATE_PATH));
+    let analytics = load_analytics_state(&analytics_state_path, analytics_max_buckets);
 
     let state = Arc::new(RwLock::new(CoreState::new(
         effective_profile_id,
@@ -316,6 +523,8 @@ async fn main() -> anyhow::Result<()> {
         max_batch_events,
         max_payload_bytes,
         limited_actions_allowlist,
+        analytics,
+        analytics_state_path,
     )));
 
     install_runtime_signal_handlers();
@@ -386,6 +595,123 @@ fn install_runtime_signal_handlers() {
     }
 }
 
+fn load_analytics_state(path: &PathBuf, max_buckets: usize) -> AnalyticsState {
+    match fs::read_to_string(path) {
+        Ok(raw) => match serde_json::from_str::<AnalyticsState>(&raw) {
+            Ok(mut state) => {
+                state.max_buckets = max_buckets;
+                while state.buckets.len() > max_buckets {
+                    state.buckets.pop_front();
+                }
+                state
+            }
+            Err(error) => {
+                warn!(
+                    "failed to parse analytics state from {}: {}",
+                    path.display(),
+                    error
+                );
+                AnalyticsState::new(max_buckets)
+            }
+        },
+        Err(_) => AnalyticsState::new(max_buckets),
+    }
+}
+
+fn persist_analytics_state(path: &PathBuf, state: &AnalyticsState) {
+    if let Some(parent) = path.parent() {
+        if let Err(error) = fs::create_dir_all(parent) {
+            warn!(
+                "failed to create analytics state directory {}: {}",
+                parent.display(),
+                error
+            );
+            return;
+        }
+    }
+    let serialized = match serde_json::to_string_pretty(state) {
+        Ok(value) => value,
+        Err(error) => {
+            warn!("failed to serialize analytics state: {}", error);
+            return;
+        }
+    };
+    let tmp = path.with_extension("tmp");
+    if let Err(error) = fs::write(&tmp, serialized) {
+        warn!(
+            "failed to write analytics temp file {}: {}",
+            tmp.display(),
+            error
+        );
+        return;
+    }
+    if let Err(error) = fs::rename(&tmp, path) {
+        warn!(
+            "failed to replace analytics state file {}: {}",
+            path.display(),
+            error
+        );
+    }
+}
+
+fn increment_count(map: &mut HashMap<String, u64>, key: &str) {
+    let entry = map.entry(key.to_string()).or_insert(0);
+    *entry = entry.saturating_add(1);
+}
+
+fn analytics_bucket_for_minute_mut(
+    analytics: &mut AnalyticsState,
+    minute_ts_ms: u64,
+) -> &mut AnalyticsBucket {
+    if let Some(index) = analytics
+        .buckets
+        .iter()
+        .position(|bucket| bucket.minute_ts_ms == minute_ts_ms)
+    {
+        return analytics
+            .buckets
+            .get_mut(index)
+            .expect("bucket index must exist");
+    }
+    analytics.buckets.push_back(AnalyticsBucket::new(minute_ts_ms));
+    while analytics.buckets.len() > analytics.max_buckets {
+        analytics.buckets.pop_front();
+    }
+    analytics
+        .buckets
+        .back_mut()
+        .expect("bucket appended for minute")
+}
+
+fn record_analytics_event_locked(
+    s: &mut CoreState,
+    ts_ms: u64,
+    event: &Value,
+    dna_id: Option<&str>,
+) {
+    let minute_ts_ms = (ts_ms / 60_000) * 60_000;
+    let kind = event.get("kind").and_then(Value::as_str).unwrap_or("unknown");
+    let severity = event
+        .get("severity")
+        .and_then(Value::as_str)
+        .unwrap_or("unknown");
+    let is_gap = kind.starts_with("observability_gap.");
+
+    let bucket = analytics_bucket_for_minute_mut(&mut s.analytics, minute_ts_ms);
+    bucket.total_events = bucket.total_events.saturating_add(1);
+    increment_count(&mut bucket.kind_counts, kind);
+    increment_count(&mut bucket.severity_counts, severity);
+    if let Some(id) = dna_id {
+        increment_count(&mut bucket.dna_counts, id);
+    }
+    if is_gap {
+        bucket.gap_events = bucket.gap_events.saturating_add(1);
+        s.analytics.total_gap_events = s.analytics.total_gap_events.saturating_add(1);
+    }
+    s.analytics.total_events = s.analytics.total_events.saturating_add(1);
+    s.analytics.last_updated_ms = ts_ms;
+}
+
 fn build_app(state: Shared) -> Router {
     Router::new()
         .route("/", get(root_bootstrap))
@@ -401,12 +727,23 @@ fn build_app(state: Shared) -> Router {
         .route("/api/v1/profile/apply", post(apply_profile))
         .route("/metrics", get(metrics))
         .route("/api/v1/ingest", post(ingest))
+        .route("/api/v2/ingest", post(ingest_v2))
         .route(OTLP_ENDPOINT, post(otlp_logs))
         .route("/api/v1/snapshot", get(snapshot))
+        .route("/api/v2/snapshot", get(snapshot_v2))
         .route(
             "/api/v1/stream",
             get(stream_events).layer(CompressionLayer::new().compress_when(always_compress)),
         )
+        .route(
+            "/api/v2/stream",
+            get(stream_events_v2).layer(CompressionLayer::new().compress_when(always_compress)),
+        )
+        .route("/api/v2/dna/clusters", get(dna_clusters_list))
+        .route("/api/v2/dna/:dna_id/similar", get(dna_cluster_similar))
+        .route("/api/v2/dna/:dna_id", get(dna_cluster_get))
+        .route("/api/v2/evidence/:evidence_id", get(evidence_get))
+        .route("/api/v2/analytics/summary", get(analytics_summary))
         .route("/api/v1/incidents", get(incidents))
         .route("/api/v1/incidents/:id/ack", post(incident_ack))
         .route("/api/v1/incidents/:id/resolve", post(incident_resolve))
@@ -892,6 +1229,7 @@ async fn ingest(
                     string_field(&processed_event, "trace_id"),
                     string_field(&processed_event, "span_id"),
                 );
+                record_analytics_event_locked(&mut s, now, &processed_event, None);
                 accepted += 1;
                 s.counters.ingest_accepted_total += 1;
             }
@@ -917,7 +1255,698 @@ async fn ingest(
         invalid: invalid_details.len(),
         invalid_details,
     };
+    persist_analytics_state(&s.analytics_state_path, &s.analytics);
     (StatusCode::OK, Json(response)).into_response()
+}
+
+async fn ingest_v2(
+    State(state): State<Shared>,
+    Json(payload): Json<IngestEnvelope>,
+) -> impl IntoResponse {
+    if payload.events.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "error": "invalid_payload",
+                "code": "v2_empty_batch",
+                "message": "events[] must contain at least one event"
+            })),
+        )
+            .into_response();
+    }
+
+    let mut invalid_details = Vec::new();
+    for (idx, event) in payload.events.iter().enumerate() {
+        if let Some(invalid) = validate_event(event) {
+            invalid_details.push(InvalidDetail {
+                index: idx,
+                reason: invalid.0,
+                path: invalid.1,
+                code: invalid.2,
+            });
+        }
+    }
+    if !invalid_details.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "error": "invalid_payload",
+                "code": "v2_invalid_event",
+                "details": invalid_details,
+            })),
+        )
+            .into_response();
+    }
+
+    let now = now_ms();
+    let events = payload.events;
+    let accepted = events.len();
+    let mut s = state.write().await;
+    let mut upto_seq = s.next_seq_v2.saturating_sub(1);
+
+    for event in events {
+        let seq = s.next_seq_v2;
+        s.next_seq_v2 += 1;
+        upto_seq = seq;
+
+        let dna_signature = build_dna_signature(&event);
+        let evidence_blocks = parse_evidence_blocks(&event, seq, now);
+        let evidence_refs: Vec<String> = evidence_blocks
+            .iter()
+            .map(|block| block.evidence_id.clone())
+            .collect();
+        for block in evidence_blocks {
+            s.evidence_blocks.insert(block.evidence_id.clone(), block);
+        }
+        upsert_dna_cluster_locked(&mut s, &dna_signature, seq, now, &evidence_refs);
+        record_analytics_event_locked(&mut s, now, &event, Some(&dna_signature.dna_id));
+
+        s.events_v2.push_back(StoredEventV2 {
+            seq,
+            ts_ms: now,
+            raw_event: event,
+            dna_signature,
+            evidence_refs,
+        });
+        if s.events_v2.len() > s.queue_depth_limit {
+            s.events_v2.pop_front();
+        }
+    }
+
+    s.counters.ingest_accepted_total = s
+        .counters
+        .ingest_accepted_total
+        .saturating_add(accepted as u64);
+    let response = IngestResponse {
+        ack: Ack { upto_seq },
+        accepted,
+        invalid: 0,
+        invalid_details: Vec::new(),
+    };
+    persist_analytics_state(&s.analytics_state_path, &s.analytics);
+    (StatusCode::OK, Json(response)).into_response()
+}
+
+fn canonical_v2_should_ignore_key(key: &str) -> bool {
+    matches!(
+        key,
+        "ts"
+            | "ts_ms"
+            | "timestamp"
+            | "ingest_ts_ms"
+            | "event_id"
+            | "received_at"
+            | "ingested_at_ms"
+    )
+}
+
+fn canonical_json_v2(value: &Value) -> String {
+    fn normalize(value: &Value) -> Value {
+        match value {
+            Value::Array(items) => Value::Array(items.iter().map(normalize).collect()),
+            Value::Object(map) => {
+                let mut keys: Vec<&String> = map.keys().collect();
+                keys.sort();
+                let mut out = serde_json::Map::new();
+                for key in keys {
+                    if canonical_v2_should_ignore_key(key) {
+                        continue;
+                    }
+                    if let Some(nested) = map.get(key) {
+                        out.insert(key.clone(), normalize(nested));
+                    }
+                }
+                Value::Object(out)
+            }
+            _ => value.clone(),
+        }
+    }
+    normalize(value).to_string()
+}
+
+fn build_dna_signature(event: &Value) -> DnaSignature {
+    let canonical = canonical_json_v2(event);
+    let canonical_hash = sha256_hex(&canonical);
+    let payload_hash = sha256_hex(&event.to_string());
+    let dna_id = sha256_hex(&format!("{}:{}", DNA_SCHEMA_VERSION, canonical_hash));
+    DnaSignature {
+        dna_id,
+        canonical_hash,
+        payload_hash,
+        dna_schema_version: DNA_SCHEMA_VERSION.to_string(),
+    }
+}
+
+fn parse_evidence_blocks(event: &Value, seq: u64, ts_ms: u64) -> Vec<EvidenceBlock> {
+    let mut out = Vec::new();
+    if let Some(items) = event.get("evidence_blocks").and_then(Value::as_array) {
+        for (idx, item) in items.iter().enumerate() {
+            out.push(evidence_block_from_value(item, seq, idx, ts_ms));
+        }
+    }
+    if out.is_empty() {
+        out.push(EvidenceBlock {
+            evidence_id: format!("evd-{}-0", seq),
+            source_type: "raw_event".to_string(),
+            source_ref: format!("/api/v2/events/{}", seq),
+            trust_score: 1.0,
+            freshness_ms: 0,
+            redaction_policy_id: "default".to_string(),
+            access_scope: event
+                .get("access_scope")
+                .and_then(Value::as_str)
+                .unwrap_or("internal")
+                .to_string(),
+        });
+    }
+    out
+}
+
+fn evidence_block_from_value(value: &Value, seq: u64, idx: usize, ts_ms: u64) -> EvidenceBlock {
+    let evidence_id = value
+        .get("evidence_id")
+        .and_then(Value::as_str)
+        .map(|v| v.trim())
+        .filter(|v| !v.is_empty())
+        .map(ToString::to_string)
+        .unwrap_or_else(|| format!("evd-{}-{}", seq, idx));
+    let source_type = value
+        .get("source_type")
+        .and_then(Value::as_str)
+        .unwrap_or("raw_event")
+        .to_string();
+    let source_ref = value
+        .get("source_ref")
+        .and_then(Value::as_str)
+        .unwrap_or("/api/v2/events")
+        .to_string();
+    let trust_score = value
+        .get("trust_score")
+        .and_then(Value::as_f64)
+        .filter(|v| v.is_finite())
+        .map(|v| v.clamp(0.0, 1.0))
+        .unwrap_or(1.0);
+    let freshness_ms = value
+        .get("freshness_ms")
+        .and_then(Value::as_u64)
+        .unwrap_or_else(|| now_ms().saturating_sub(ts_ms));
+    let redaction_policy_id = value
+        .get("redaction_policy_id")
+        .and_then(Value::as_str)
+        .unwrap_or("default")
+        .to_string();
+    let access_scope = value
+        .get("access_scope")
+        .and_then(Value::as_str)
+        .unwrap_or("internal")
+        .to_string();
+    EvidenceBlock {
+        evidence_id,
+        source_type,
+        source_ref,
+        trust_score,
+        freshness_ms,
+        redaction_policy_id,
+        access_scope,
+    }
+}
+
+fn upsert_dna_cluster_locked(
+    state: &mut CoreState,
+    signature: &DnaSignature,
+    seq: u64,
+    ts_ms: u64,
+    evidence_refs: &[String],
+) {
+    let entry = state
+        .dna_clusters
+        .entry(signature.dna_id.clone())
+        .or_insert_with(|| DnaClusterState {
+            signature: signature.clone(),
+            event_count: 0,
+            last_seen_ts_ms: ts_ms,
+            sample_event_seq: seq,
+            evidence_refs: Vec::new(),
+        });
+    entry.event_count = entry.event_count.saturating_add(1);
+    entry.last_seen_ts_ms = ts_ms;
+    if entry.sample_event_seq == 0 {
+        entry.sample_event_seq = seq;
+    }
+    for evidence_id in evidence_refs {
+        if !entry
+            .evidence_refs
+            .iter()
+            .any(|existing| existing == evidence_id)
+        {
+            entry.evidence_refs.push(evidence_id.clone());
+        }
+    }
+}
+
+fn cluster_record_from_state(cluster: &DnaClusterState) -> DnaClusterRecord {
+    DnaClusterRecord {
+        dna_signature: cluster.signature.clone(),
+        event_count: cluster.event_count,
+        last_seen_ts_ms: cluster.last_seen_ts_ms,
+        sample_event_seq: cluster.sample_event_seq,
+        evidence_refs: cluster.evidence_refs.clone(),
+    }
+}
+
+fn sorted_dna_clusters_locked(state: &CoreState, limit: usize) -> Vec<DnaClusterRecord> {
+    let mut clusters: Vec<DnaClusterRecord> = state
+        .dna_clusters
+        .values()
+        .map(cluster_record_from_state)
+        .collect();
+    clusters.sort_by(|left, right| {
+        right
+            .event_count
+            .cmp(&left.event_count)
+            .then_with(|| right.last_seen_ts_ms.cmp(&left.last_seen_ts_ms))
+            .then_with(|| left.dna_signature.dna_id.cmp(&right.dna_signature.dna_id))
+    });
+    clusters.truncate(limit);
+    clusters
+}
+
+fn similarity_score_by_prefix(left_hash: &str, right_hash: &str) -> f64 {
+    let left = left_hash.as_bytes();
+    let right = right_hash.as_bytes();
+    if left.is_empty() || right.is_empty() {
+        return 0.0;
+    }
+    let max = left.len().min(right.len());
+    let mut same_prefix = 0usize;
+    for index in 0..max {
+        if left[index] != right[index] {
+            break;
+        }
+        same_prefix += 1;
+    }
+    same_prefix as f64 / max as f64
+}
+
+async fn snapshot_v2(State(state): State<Shared>, headers: HeaderMap) -> impl IntoResponse {
+    if let Err(deny) = enforce_rbac(&state, &headers, Endpoint::SnapshotV2, None, None).await {
+        return deny;
+    }
+    let s = state.read().await;
+    let events: Vec<StoredEventV2> = s.events_v2.iter().rev().take(200).cloned().collect();
+    let cursor = events.iter().map(|e| e.seq).max().unwrap_or(0);
+    let dna_clusters = sorted_dna_clusters_locked(&s, 200);
+    let body = SnapshotV2Response {
+        cursor,
+        effective_profile_id: s.effective_profile_id.clone(),
+        events,
+        dna_clusters,
+        incidents: s.incidents.clone(),
+    };
+    (StatusCode::OK, Json(body)).into_response()
+}
+
+async fn stream_events_v2(State(state): State<Shared>, headers: HeaderMap) -> Response {
+    if let Err(deny) = enforce_rbac(&state, &headers, Endpoint::StreamV2, None, None).await {
+        return deny;
+    }
+    let last_event_id = headers
+        .get("last-event-id")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|v| v.parse::<u64>().ok());
+    let hold_seconds = headers
+        .get("x-core-stream-hold-seconds")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(0)
+        .min(600);
+
+    let (
+        cursor_now,
+        min_retained_seq,
+        events_for_stream,
+        incidents,
+        effective_profile_id,
+        clusters,
+    ) = {
+        let s = state.read().await;
+        let cursor = s.next_seq_v2.saturating_sub(1);
+        let min_retained = s.events_v2.front().map(|event| event.seq).unwrap_or(cursor);
+        let from_seq = last_event_id.unwrap_or(0);
+        let events = s
+            .events_v2
+            .iter()
+            .filter(|event| event.seq > from_seq)
+            .cloned()
+            .collect::<Vec<_>>();
+        (
+            cursor,
+            min_retained,
+            events,
+            s.incidents.clone(),
+            s.effective_profile_id.clone(),
+            sorted_dna_clusters_locked(&s, 200),
+        )
+    };
+
+    if let Some(cursor) = last_event_id {
+        if cursor != 0 && cursor < min_retained_seq {
+            let snapshot = SnapshotV2Response {
+                cursor: cursor_now,
+                effective_profile_id,
+                events: events_for_stream.into_iter().rev().take(200).collect(),
+                dna_clusters: clusters,
+                incidents,
+            };
+            let mut resp = (StatusCode::OK, Json(snapshot)).into_response();
+            if let Ok(v) = HeaderValue::from_str(&cursor_now.to_string()) {
+                resp.headers_mut().insert("x-stream-cursor", v);
+            }
+            return resp;
+        }
+    }
+
+    let tick = Duration::from_secs(1);
+    let out = stream! {
+        for stored in events_for_stream {
+            let payload = json!({
+                "seq": stored.seq,
+                "ts_ms": stored.ts_ms,
+                "raw_event": stored.raw_event,
+                "dna_signature": stored.dna_signature,
+                "evidence_refs": stored.evidence_refs,
+            });
+            yield Ok::<Event, Infallible>(
+                Event::default()
+                    .id(stored.seq.to_string())
+                    .event("message")
+                    .data(payload.to_string()),
+            );
+        }
+        for _ in 0..hold_seconds {
+            tokio::time::sleep(tick).await;
+            let cursor = {
+                let s = state.read().await;
+                s.next_seq_v2.saturating_sub(1)
+            };
+            let payload = json!({
+                "type": "keepalive",
+                "cursor": cursor
+            });
+            yield Ok::<Event, Infallible>(
+                Event::default()
+                    .id(cursor.to_string())
+                    .event("message")
+                    .data(payload.to_string()),
+            );
+        }
+    };
+
+    let mut resp = Sse::new(out).into_response();
+    resp.headers_mut()
+        .insert("cache-control", HeaderValue::from_static("no-cache"));
+    resp
+}
+
+async fn dna_clusters_list(
+    State(state): State<Shared>,
+    Query(query): Query<DnaListQuery>,
+) -> impl IntoResponse {
+    let limit = query.limit.unwrap_or(50).clamp(1, 500);
+    let s = state.read().await;
+    let total = s.dna_clusters.len();
+    let items = sorted_dna_clusters_locked(&s, limit);
+    (StatusCode::OK, Json(DnaClustersResponse { items, total })).into_response()
+}
+
+async fn dna_cluster_get(
+    Path(dna_id): Path<String>,
+    State(state): State<Shared>,
+) -> impl IntoResponse {
+    let s = state.read().await;
+    if let Some(cluster) = s.dna_clusters.get(&dna_id) {
+        return (StatusCode::OK, Json(cluster_record_from_state(cluster))).into_response();
+    }
+    (
+        StatusCode::NOT_FOUND,
+        Json(json!({"error":"dna_not_found","dna_id": dna_id})),
+    )
+        .into_response()
+}
+
+async fn dna_cluster_similar(
+    Path(dna_id): Path<String>,
+    State(state): State<Shared>,
+    Query(query): Query<DnaListQuery>,
+) -> impl IntoResponse {
+    let limit = query.limit.unwrap_or(5).clamp(1, 25);
+    let s = state.read().await;
+    let Some(base) = s.dna_clusters.get(&dna_id) else {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({"error":"dna_not_found","dna_id": dna_id})),
+        )
+            .into_response();
+    };
+    let base_hash = base.signature.canonical_hash.clone();
+    let mut items = Vec::new();
+    for (candidate_id, candidate) in &s.dna_clusters {
+        if candidate_id == &dna_id {
+            continue;
+        }
+        let score = similarity_score_by_prefix(&base_hash, &candidate.signature.canonical_hash);
+        items.push(DnaSimilarItem {
+            dna_id: candidate_id.clone(),
+            score,
+            cluster: cluster_record_from_state(candidate),
+        });
+    }
+    items.sort_by(|left, right| {
+        right
+            .score
+            .total_cmp(&left.score)
+            .then_with(|| right.cluster.event_count.cmp(&left.cluster.event_count))
+            .then_with(|| left.dna_id.cmp(&right.dna_id))
+    });
+    items.truncate(limit);
+    (
+        StatusCode::OK,
+        Json(DnaSimilarResponse {
+            base_dna_id: dna_id,
+            items,
+        }),
+    )
+        .into_response()
+}
+
+async fn evidence_get(
+    Path(evidence_id): Path<String>,
+    State(state): State<Shared>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let scope_header = headers
+        .get("x-access-scope")
+        .and_then(|value| value.to_str().ok())
+        .map(|value| value.to_string());
+    let role = role_from_headers(&headers);
+    let s = state.read().await;
+    let Some(block) = s.evidence_blocks.get(&evidence_id) else {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({"error":"evidence_not_found","evidence_id": evidence_id})),
+        )
+            .into_response();
+    };
+    if block.access_scope != "public"
+        && scope_header.as_deref() != Some(block.access_scope.as_str())
+        && role != Some(ActorRole::Admin)
+    {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({
+                "error":"evidence_access_denied",
+                "evidence_id": evidence_id,
+                "required_scope": block.access_scope
+            })),
+        )
+            .into_response();
+    }
+    (StatusCode::OK, Json(block.clone())).into_response()
+}
+
+fn top_items_from_counts(
+    counts: &HashMap<String, u64>,
+    total: u64,
+    top: usize,
+) -> Vec<AnalyticsTopItem> {
+    let mut items: Vec<(String, u64)> = counts.iter().map(|(k, v)| (k.clone(), *v)).collect();
+    items.sort_by(|left, right| right.1.cmp(&left.1).then_with(|| left.0.cmp(&right.0)));
+    items
+        .into_iter()
+        .take(top)
+        .map(|(key, count)| {
+            let share_pct = if total == 0 {
+                0.0
+            } else {
+                (count as f64 / total as f64) * 100.0
+            };
+            AnalyticsTopItem {
+                key,
+                count,
+                share_pct: (share_pct * 100.0).round() / 100.0,
+            }
+        })
+        .collect()
+}
+
+fn build_analytics_instructions(
+    totals: &AnalyticsTotals,
+    top_kinds: &[AnalyticsTopItem],
+    top_dna: &[AnalyticsTopItem],
+) -> Vec<AnalyticsInstruction> {
+    let mut out = Vec::new();
+    if totals.gap_rate_pct > 5.0 {
+        out.push(AnalyticsInstruction {
+            id: "gap-rate-high".to_string(),
+            priority: "high".to_string(),
+            title: "High observability gap rate".to_string(),
+            description: format!(
+                "Gap rate is {:.2}%. Stabilize data pipeline first and execute related runbooks.",
+                totals.gap_rate_pct
+            ),
+            action_ref: "docs/runbooks/console_boot_failed.md".to_string(),
+        });
+    }
+    if totals.ingest_invalid_total > 0 {
+        out.push(AnalyticsInstruction {
+            id: "invalid-payloads-present".to_string(),
+            priority: "medium".to_string(),
+            title: "Invalid ingest payloads detected".to_string(),
+            description: format!(
+                "Found {} invalid payloads. Check schema compliance in producers.",
+                totals.ingest_invalid_total
+            ),
+            action_ref: "docs/runbooks/ingest_payload_too_large.md".to_string(),
+        });
+    }
+    if let Some(kind) = top_kinds.first() {
+        out.push(AnalyticsInstruction {
+            id: "top-kind-focus".to_string(),
+            priority: "medium".to_string(),
+            title: "Primary incident pattern".to_string(),
+            description: format!(
+                "Most frequent event kind is '{}' ({} events). Focus triage and mitigation around this pattern.",
+                kind.key, kind.count
+            ),
+            action_ref: "docs/source/dna_core_determinism_performance_assurance.md".to_string(),
+        });
+    }
+    if let Some(dna) = top_dna.first() {
+        out.push(AnalyticsInstruction {
+            id: "top-dna-recurrence".to_string(),
+            priority: "medium".to_string(),
+            title: "Recurring DNA cluster".to_string(),
+            description: format!(
+                "DNA '{}' dominates with {} events. Consider dedicated investigation and automation.",
+                dna.key, dna.count
+            ),
+            action_ref: "docs/source/investigations_as_code.md".to_string(),
+        });
+    }
+    if out.is_empty() {
+        out.push(AnalyticsInstruction {
+            id: "stable-signal".to_string(),
+            priority: "low".to_string(),
+            title: "Signal quality is stable".to_string(),
+            description: "No critical anomalies in selected window. Continue monitoring and scheduled replay checks."
+                .to_string(),
+            action_ref: "docs/source/checklists/CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md"
+                .to_string(),
+        });
+    }
+    out
+}
+
+async fn analytics_summary(
+    State(state): State<Shared>,
+    headers: HeaderMap,
+    Query(query): Query<AnalyticsQuery>,
+) -> impl IntoResponse {
+    if let Err(deny) = enforce_rbac(&state, &headers, Endpoint::SnapshotV2, None, None).await {
+        return deny;
+    }
+    let window_minutes = query.window_minutes.unwrap_or(60).clamp(5, 10_080);
+    let top = query.top.unwrap_or(5).clamp(1, 20);
+    let now = now_ms();
+    let cutoff = now.saturating_sub(window_minutes.saturating_mul(60_000));
+
+    let s = state.read().await;
+    let mut timeline = Vec::new();
+    let mut severity_counts: HashMap<String, u64> = HashMap::new();
+    let mut kind_counts: HashMap<String, u64> = HashMap::new();
+    let mut dna_counts: HashMap<String, u64> = HashMap::new();
+    let mut total_events = 0u64;
+    let mut gap_events = 0u64;
+
+    for bucket in &s.analytics.buckets {
+        if bucket.minute_ts_ms < cutoff {
+            continue;
+        }
+        timeline.push(AnalyticsTimelinePoint {
+            minute_ts_ms: bucket.minute_ts_ms,
+            total_events: bucket.total_events,
+            gap_events: bucket.gap_events,
+        });
+        total_events = total_events.saturating_add(bucket.total_events);
+        gap_events = gap_events.saturating_add(bucket.gap_events);
+        for (key, value) in &bucket.severity_counts {
+            let entry = severity_counts.entry(key.clone()).or_insert(0);
+            *entry = entry.saturating_add(*value);
+        }
+        for (key, value) in &bucket.kind_counts {
+            let entry = kind_counts.entry(key.clone()).or_insert(0);
+            *entry = entry.saturating_add(*value);
+        }
+        for (key, value) in &bucket.dna_counts {
+            let entry = dna_counts.entry(key.clone()).or_insert(0);
+            *entry = entry.saturating_add(*value);
+        }
+    }
+
+    timeline.sort_by(|left, right| left.minute_ts_ms.cmp(&right.minute_ts_ms));
+    let gap_rate_pct = if total_events == 0 {
+        0.0
+    } else {
+        ((gap_events as f64 / total_events as f64) * 10000.0).round() / 100.0
+    };
+    let totals = AnalyticsTotals {
+        total_events,
+        gap_events,
+        gap_rate_pct,
+        ingest_invalid_total: s.counters.ingest_invalid_total,
+        ingest_dropped_total: s.counters.ingest_dropped_total,
+    };
+    let severity_distribution = top_items_from_counts(&severity_counts, total_events, top);
+    let top_kinds = top_items_from_counts(&kind_counts, total_events, top);
+    let top_dna = top_items_from_counts(&dna_counts, total_events, top);
+    let instructions = build_analytics_instructions(&totals, &top_kinds, &top_dna);
+
+    (
+        StatusCode::OK,
+        Json(AnalyticsSummaryResponse {
+            generated_at_ms: now,
+            window_minutes,
+            totals,
+            charts: AnalyticsCharts {
+                timeline,
+                severity_distribution,
+                top_kinds,
+                top_dna,
+            },
+            instructions,
+        }),
+    )
+        .into_response()
 }
 
 async fn otlp_logs(
@@ -1256,17 +2285,20 @@ fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
         .get("trace_id")
         .and_then(Value::as_str)
         .map(|v| v.to_string());
+    let ts_ms = now_ms();
     let seq = s.next_seq;
     s.next_seq += 1;
+    let gap_event = json!({
+        "kind": kind,
+        "severity": "error",
+        "details": details
+    });
     s.events.push_back(StoredEvent {
         seq,
-        ts_ms: now_ms(),
-        event: json!({
-            "kind": kind,
-            "severity": "error",
-            "details": details
-        }),
+        ts_ms,
+        event: gap_event.clone(),
     });
+    record_analytics_event_locked(s, ts_ms, &gap_event, None);
     if s.events.len() > s.queue_depth_limit {
         s.events.pop_front();
     }
@@ -1281,6 +2313,7 @@ fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
             None,
         );
     }
+    persist_analytics_state(&s.analytics_state_path, &s.analytics);
 }
 
 fn validate_event(event: &Value) -> Option<(String, String, String)> {
@@ -1741,7 +2774,11 @@ fn role_from_headers(headers: &HeaderMap) -> Option<ActorRole> {
 
 fn rbac_allows(role: ActorRole, endpoint: Endpoint) -> bool {
     match endpoint {
-        Endpoint::Snapshot | Endpoint::Stream | Endpoint::IncidentsGet => true,
+        Endpoint::Snapshot
+        | Endpoint::SnapshotV2
+        | Endpoint::Stream
+        | Endpoint::StreamV2
+        | Endpoint::IncidentsGet => true,
         Endpoint::IncidentAck | Endpoint::IncidentResolve | Endpoint::ActionsExecute => {
             matches!(role, ActorRole::Operator | ActorRole::Admin)
         }
@@ -1864,7 +2901,9 @@ async fn push_access_denied(
 fn endpoint_name(endpoint: Endpoint) -> &'static str {
     match endpoint {
         Endpoint::Snapshot => "/api/v1/snapshot",
+        Endpoint::SnapshotV2 => "/api/v2/snapshot",
         Endpoint::Stream => "/api/v1/stream",
+        Endpoint::StreamV2 => "/api/v2/stream",
         Endpoint::IncidentsGet => "/api/v1/incidents",
         Endpoint::IncidentAck => "/api/v1/incidents/{id}/ack",
         Endpoint::IncidentResolve => "/api/v1/incidents/{id}/resolve",
@@ -2386,6 +3425,8 @@ mod tests {
     use axum::http::{Request, StatusCode};
     use flate2::read::GzDecoder;
     use http_body_util::BodyExt;
+    use proptest::prelude::*;
+    use std::collections::HashSet;
     use std::io::Read;
     use tower::ServiceExt;
 
@@ -2396,6 +3437,8 @@ mod tests {
             200,
             524_288,
             vec!["service.restart".to_string(), "service.status".to_string()],
+            AnalyticsState::new(1_440),
+            PathBuf::from("/tmp/art_core_analytics_state_test.json"),
         )))
     }
 
@@ -2452,6 +3495,120 @@ mod tests {
             .filter_map(|line| line.strip_prefix("id: "))
             .filter_map(|id| id.trim().parse::<u64>().ok())
             .collect()
+    }
+
+    fn lcg_next(state: &mut u64) -> u64 {
+        *state = state
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        *state
+    }
+
+    fn dna_seed_to_event(seed: u64, seq: u64) -> Value {
+        let severity = match seed % 3 {
+            0 => "info",
+            1 => "warn",
+            _ => "error",
+        };
+        let region = if seed & 1 == 0 { "eu" } else { "us" };
+        json!({
+            "severity": severity,
+            "kind": format!("svc.{}", seed % 37),
+            "payload": {
+                "service": format!("service-{}", seed % 17),
+                "region": region,
+                "bucket": format!("b-{}", (seed >> 4) % 97),
+                "error_code": seed % 4096
+            },
+            "ts_ms": seq + (seed % 10_000),
+            "received_at": format!("2026-03-06T{:02}:00:00Z", seed % 24),
+            "ingested_at_ms": seed % 1_000_000
+        })
+    }
+
+    fn dna_seed_to_event_variant(seed: u64, seq: u64) -> Value {
+        let severity = match seed % 3 {
+            0 => "info",
+            1 => "warn",
+            _ => "error",
+        };
+        let region = if seed & 1 == 0 { "eu" } else { "us" };
+        json!({
+            "payload": {
+                "error_code": seed % 4096,
+                "bucket": format!("b-{}", (seed >> 4) % 97),
+                "region": region,
+                "service": format!("service-{}", seed % 17)
+            },
+            "kind": format!("svc.{}", seed % 37),
+            "severity": severity,
+            "ts_ms": seq + 99_999_999,
+            "received_at": "2099-01-01T00:00:00Z",
+            "ingested_at_ms": 777_777_777
+        })
+    }
+
+    fn reference_ignore_key(key: &str) -> bool {
+        matches!(
+            key,
+            "ts"
+                | "ts_ms"
+                | "timestamp"
+                | "ingest_ts_ms"
+                | "event_id"
+                | "received_at"
+                | "ingested_at_ms"
+        )
+    }
+
+    fn canonicalize_reference(value: &Value) -> Value {
+        match value {
+            Value::Object(map) => {
+                let mut keys: Vec<&String> = map.keys().collect();
+                keys.sort();
+                let mut normalized = serde_json::Map::new();
+                for key in keys {
+                    if reference_ignore_key(key) {
+                        continue;
+                    }
+                    if let Some(inner) = map.get(key) {
+                        normalized.insert(key.clone(), canonicalize_reference(inner));
+                    }
+                }
+                Value::Object(normalized)
+            }
+            Value::Array(items) => {
+                let normalized: Vec<Value> = items.iter().map(canonicalize_reference).collect();
+                Value::Array(normalized)
+            }
+            _ => value.clone(),
+        }
+    }
+
+    fn canonical_json_reference_v2(value: &Value) -> String {
+        let normalized = canonicalize_reference(value);
+        serde_json::to_string(&normalized).unwrap_or_else(|_| "{}".to_string())
+    }
+
+    fn mutated_canonical_json_without_ignore(value: &Value) -> String {
+        fn normalize(value: &Value) -> Value {
+            match value {
+                Value::Object(map) => {
+                    let mut keys: Vec<&String> = map.keys().collect();
+                    keys.sort();
+                    let mut out = serde_json::Map::new();
+                    for key in keys {
+                        if let Some(inner) = map.get(key) {
+                            out.insert(key.clone(), normalize(inner));
+                        }
+                    }
+                    Value::Object(out)
+                }
+                Value::Array(items) => Value::Array(items.iter().map(normalize).collect()),
+                _ => value.clone(),
+            }
+        }
+        normalize(value).to_string()
     }
 
     #[test]
@@ -2543,6 +3700,398 @@ mod tests {
         assert!(html.contains("Ctrl+Shift+P"));
         assert!(html.contains("globalThis.location.replace(\"/panel0/\")"));
         assert!(!html.contains("__CONSOLE_BASE_PATH_JSON__"));
+    }
+
+    #[test]
+    fn dna_canonicalization_determinism_corpus_tests() {
+        let event_a = json!({
+            "severity": "error",
+            "kind": "db.timeout",
+            "payload": {
+                "region": "eu",
+                "service": "orders"
+            },
+            "ts_ms": 1000
+        });
+        let event_b = json!({
+            "payload": {
+                "service": "orders",
+                "region": "eu"
+            },
+            "kind": "db.timeout",
+            "severity": "error",
+            "ts_ms": 9999
+        });
+
+        let canon_a = canonical_json_v2(&event_a);
+        let canon_b = canonical_json_v2(&event_b);
+        assert_eq!(canon_a, canon_b);
+
+        let sig_a = build_dna_signature(&event_a);
+        let sig_b = build_dna_signature(&event_b);
+        assert_eq!(sig_a.dna_id, sig_b.dna_id);
+        assert_eq!(sig_a.canonical_hash, sig_b.canonical_hash);
+        assert_eq!(sig_a.dna_schema_version, DNA_SCHEMA_VERSION);
+    }
+
+    #[test]
+    fn dna_schema_version_migration_compatibility_tests() {
+        let event = json!({"severity":"warn","kind":"cache.degraded","msg":"x"});
+        let sig = build_dna_signature(&event);
+        assert_eq!(sig.dna_schema_version, DNA_SCHEMA_VERSION);
+        assert!(!sig.dna_id.is_empty());
+        assert_eq!(sig.canonical_hash.len(), 64);
+        assert_eq!(sig.payload_hash.len(), 64);
+    }
+
+    proptest! {
+        #[test]
+        fn dna_property_determinism_proptest(seed in 0_u64..u64::MAX, seq in 0_u64..1_000_000_u64) {
+            let event_a = dna_seed_to_event(seed, seq);
+            let event_b = dna_seed_to_event_variant(seed, seq);
+
+            let canonical_a = canonical_json_v2(&event_a);
+            let canonical_b = canonical_json_v2(&event_b);
+            prop_assert_eq!(canonical_a, canonical_b);
+
+            let sig_a = build_dna_signature(&event_a);
+            let sig_b = build_dna_signature(&event_b);
+            prop_assert_eq!(sig_a.dna_id, sig_b.dna_id);
+            prop_assert_eq!(sig_a.canonical_hash, sig_b.canonical_hash);
+        }
+    }
+
+    #[test]
+    #[ignore = "heavy deterministic gate for CI stage29"]
+    fn dna_property_determinism_million_sequences_gate() {
+        let mut prng_state = 0xA1B2_C3D4_E5F6_7788_u64;
+        for seq in 0_u64..1_000_000_u64 {
+            let seed = lcg_next(&mut prng_state);
+            let event_a = dna_seed_to_event(seed, seq);
+            let event_b = dna_seed_to_event_variant(seed, seq);
+
+            let sig_a = build_dna_signature(&event_a);
+            let sig_b = build_dna_signature(&event_b);
+            assert_eq!(sig_a.dna_id, sig_b.dna_id, "seq={seq}");
+            assert_eq!(sig_a.canonical_hash, sig_b.canonical_hash, "seq={seq}");
+        }
+    }
+
+    #[test]
+    fn dna_reference_implementation_parity_corpus() {
+        for seq in 0_u64..10_000_u64 {
+            let seed = seq.wrapping_mul(7_919).wrapping_add(12_345);
+            let event = dna_seed_to_event(seed, seq);
+            let rust_canonical = canonical_json_v2(&event);
+            let ref_canonical = canonical_json_reference_v2(&event);
+            assert_eq!(rust_canonical, ref_canonical, "seq={seq}");
+
+            let signature = build_dna_signature(&event);
+            assert_eq!(signature.canonical_hash, sha256_hex(&ref_canonical), "seq={seq}");
+        }
+    }
+
+    #[test]
+    fn dna_mutation_resilience_sentinel_test() {
+        let event_a = dna_seed_to_event(77, 10);
+        let event_b = dna_seed_to_event_variant(77, 10);
+
+        let stable_a = build_dna_signature(&event_a);
+        let stable_b = build_dna_signature(&event_b);
+        assert_eq!(stable_a.dna_id, stable_b.dna_id);
+
+        let mutated_a = mutated_canonical_json_without_ignore(&event_a);
+        let mutated_b = mutated_canonical_json_without_ignore(&event_b);
+        assert_ne!(
+            sha256_hex(&mutated_a),
+            sha256_hex(&mutated_b),
+            "mutation sentinel must detect volatile-field sensitivity"
+        );
+    }
+
+    #[test]
+    fn dna_clusters_are_monotonic_for_append_only_sequence() {
+        let mut observed = HashSet::new();
+        let mut state = 0x4E_45_4F_32_30_32_32_u64;
+        let mut prev_len = 0usize;
+        for seq in 0_u64..25_000_u64 {
+            let seed = lcg_next(&mut state);
+            let event = dna_seed_to_event(seed, seq);
+            let signature = build_dna_signature(&event);
+            observed.insert(signature.dna_id);
+            let current_len = observed.len();
+            assert!(current_len >= prev_len);
+            prev_len = current_len;
+        }
+    }
+
+    #[tokio::test]
+    async fn v2_ingest_snapshot_stream_integration() {
+        let app = build_app(test_state());
+        let payload = json!({
+            "events": [
+                {
+                    "severity":"error",
+                    "kind":"db.timeout",
+                    "msg":"database timeout",
+                    "evidence_blocks":[
+                        {
+                            "evidence_id":"ev-v2-1",
+                            "source_type":"log",
+                            "source_ref":"log://db/1",
+                            "trust_score":0.9,
+                            "freshness_ms":1200,
+                            "redaction_policy_id":"default",
+                            "access_scope":"public"
+                        }
+                    ]
+                },
+                {
+                    "severity":"error",
+                    "kind":"db.timeout",
+                    "msg":"database timeout replica"
+                }
+            ]
+        });
+
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let ingest_resp = app.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::OK);
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.clone().oneshot(snapshot_req).await.expect("response");
+        assert_eq!(snapshot_resp.status(), StatusCode::OK);
+        let snapshot_body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let snapshot_json: Value = serde_json::from_slice(&snapshot_body).expect("json");
+        assert!(snapshot_json["events"]
+            .as_array()
+            .map(|v| !v.is_empty())
+            .unwrap_or(false));
+        assert!(snapshot_json["dna_clusters"]
+            .as_array()
+            .map(|v| !v.is_empty())
+            .unwrap_or(false));
+        assert_eq!(
+            snapshot_json["events"][0]["dna_signature"]["dna_schema_version"],
+            DNA_SCHEMA_VERSION
+        );
+
+        let stream_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/stream")
+            .header("last-event-id", "0")
+            .body(Body::empty())
+            .expect("request");
+        let stream_resp = app.oneshot(stream_req).await.expect("response");
+        assert_eq!(stream_resp.status(), StatusCode::OK);
+        let stream_body = stream_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let stream_text = String::from_utf8(stream_body.to_vec()).expect("utf8");
+        assert!(stream_text.contains("\"dna_signature\""));
+        assert!(stream_text.contains("\"evidence_refs\""));
+    }
+
+    #[tokio::test]
+    async fn v2_evidence_access_scope_enforcement_tests() {
+        let app = build_app(test_state());
+        let payload = json!({
+            "events": [
+                {
+                    "severity":"info",
+                    "kind":"scope.check",
+                    "evidence_blocks":[
+                        {
+                            "evidence_id":"ev-private-1",
+                            "source_type":"log",
+                            "source_ref":"log://secure/1",
+                            "trust_score":1.0,
+                            "freshness_ms":0,
+                            "redaction_policy_id":"default",
+                            "access_scope":"tenant:alpha"
+                        }
+                    ]
+                }
+            ]
+        });
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let ingest_resp = app.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::OK);
+
+        let denied_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/evidence/ev-private-1")
+            .body(Body::empty())
+            .expect("request");
+        let denied_resp = app.clone().oneshot(denied_req).await.expect("response");
+        assert_eq!(denied_resp.status(), StatusCode::FORBIDDEN);
+
+        let scoped_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/evidence/ev-private-1")
+            .header("x-access-scope", "tenant:alpha")
+            .body(Body::empty())
+            .expect("request");
+        let scoped_resp = app.clone().oneshot(scoped_req).await.expect("response");
+        assert_eq!(scoped_resp.status(), StatusCode::OK);
+
+        let admin_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/evidence/ev-private-1")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let admin_resp = app.oneshot(admin_req).await.expect("response");
+        assert_eq!(admin_resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn v2_invalid_payload_returns_deterministic_error_codes() {
+        let app = build_app(test_state());
+        let invalid_payload = json!({
+            "events": [
+                {"kind":"missing-severity"}
+            ]
+        });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(invalid_payload.to_string()))
+            .expect("request");
+        let resp = app.oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["error"], "invalid_payload");
+        assert_eq!(json["code"], "v2_invalid_event");
+        assert_eq!(json["details"][0]["path"], "severity");
+        assert_eq!(json["details"][0]["code"], "validation_error");
+    }
+
+    #[tokio::test]
+    async fn v2_dna_clusters_and_similar_lookup() {
+        let app = build_app(test_state());
+        let payload = json!({
+            "events": [
+                {"severity":"error","kind":"db.timeout","payload":{"service":"orders","region":"eu"}},
+                {"severity":"error","kind":"db.timeout","payload":{"service":"orders","region":"eu"}},
+                {"severity":"error","kind":"db.timeout","payload":{"service":"billing","region":"eu"}}
+            ]
+        });
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let ingest_resp = app.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::OK);
+
+        let clusters_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/dna/clusters?limit=10")
+            .body(Body::empty())
+            .expect("request");
+        let clusters_resp = app.clone().oneshot(clusters_req).await.expect("response");
+        assert_eq!(clusters_resp.status(), StatusCode::OK);
+        let clusters_body = clusters_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let clusters_json: Value = serde_json::from_slice(&clusters_body).expect("json");
+        let first_dna_id = clusters_json["items"][0]["dna_signature"]["dna_id"]
+            .as_str()
+            .expect("dna_id")
+            .to_string();
+
+        let similar_req = Request::builder()
+            .method("GET")
+            .uri(format!("/api/v2/dna/{first_dna_id}/similar"))
+            .body(Body::empty())
+            .expect("request");
+        let similar_resp = app.oneshot(similar_req).await.expect("response");
+        assert_eq!(similar_resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn v2_analytics_summary_returns_chart_data_and_instructions() {
+        let app = build_app(test_state());
+        let payload = json!({
+            "events": [
+                {"severity":"error","kind":"db.timeout","payload":{"service":"orders","region":"eu"}},
+                {"severity":"warn","kind":"cache.degraded","payload":{"service":"orders","region":"eu"}},
+                {"severity":"error","kind":"db.timeout","payload":{"service":"orders","region":"eu"}}
+            ]
+        });
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let ingest_resp = app.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::OK);
+
+        let metrics_req = Request::builder()
+            .method("GET")
+            .uri("/metrics")
+            .header("x-core-metrics-force-unavailable", "1")
+            .body(Body::empty())
+            .expect("request");
+        let metrics_resp = app.clone().oneshot(metrics_req).await.expect("response");
+        assert_eq!(metrics_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+
+        let analytics_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/analytics/summary?window_minutes=120&top=3")
+            .body(Body::empty())
+            .expect("request");
+        let analytics_resp = app.oneshot(analytics_req).await.expect("response");
+        assert_eq!(analytics_resp.status(), StatusCode::OK);
+        let analytics_body = analytics_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let analytics_json: Value = serde_json::from_slice(&analytics_body).expect("json");
+        assert!(analytics_json["totals"]["total_events"]
+            .as_u64()
+            .map(|value| value >= 3)
+            .unwrap_or(false));
+        assert!(analytics_json["charts"]["timeline"]
+            .as_array()
+            .map(|arr| !arr.is_empty())
+            .unwrap_or(false));
+        assert!(analytics_json["instructions"]
+            .as_array()
+            .map(|arr| !arr.is_empty())
+            .unwrap_or(false));
     }
 
     #[tokio::test]
