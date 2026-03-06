@@ -10,5 +10,6 @@ Runtime translations for other locales are non-normative.
 
 Key platform pages:
 - `docs/en/ops/platform-support.md`
+- `docs/en/ops/go_no_go_template.md`
 - `docs/en/security/fstec-certified-profile.md`
 - `docs/governance/docs_traceability_matrix.yaml` (full docs-to-checklists traceability matrix)

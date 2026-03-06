@@ -9,6 +9,7 @@ bash scripts/ci/check_platform_vm_skeletons.sh
 bash scripts/ci/check_platform_container_k8s_skeletons.sh
 bash scripts/ci/check_platform_runtime_compatibility.sh
 bash scripts/ci/check_certified_profile.sh
+bash scripts/ci/check_go_no_go_gate.sh
 bash tests/platform/contract/check_package_layout_contract.sh
 bash tests/platform/contract/check_docker_runtime_contract.sh
 bash tests/platform/contract/check_regart_cross_repo_parity.sh

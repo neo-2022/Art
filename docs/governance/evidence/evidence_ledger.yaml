@@ -198,6 +198,7 @@ entries:
       - "bash tests/platform/contract/check_docker_runtime_contract.sh"
     evidence_files:
       - "docs/governance/evidence/stage37_stage_gate.log"
+      - "docs/governance/evidence/stage37_go_no_go_gate.log"
       - "artifacts/regart-parity/report.json"
       - "artifacts/platform-evidence/EVIDENCE_PLATFORM_MATRIX.txt"
       - "artifacts/platform-evidence/EVIDENCE_CERTIFIED_BUILD.txt"
@@ -214,6 +215,8 @@ entries:
       - "docs/ops/platform-container-k8s-testing.md"
       - "docs/ops/platform-runtime-compatibility-matrix.md"
       - "docs/security/fstec-certified-profile.md"
+      - "docs/ops/go_no_go_template.md"
+      - "docs/governance/release_decisions/latest_go_no_go.md"
   - stage_id: "STAGE-38"
     date: "2026-03-06"
     status: "closed"
@@ -227,6 +230,7 @@ entries:
     evidence_files:
       - "scripts/ci/check_stage_ladder_enforcement.sh"
       - "scripts/ci/check_evidence_ledger.sh"
+      - "scripts/ci/check_go_no_go_gate.sh"
       - "docs/governance/evidence/stage38_ladder_gate.log"
       - "docs/ops/stage_ladder_enforcement.md"
       - "docs/portal/DELIVERY_EVIDENCE.md"
@@ -236,6 +240,7 @@ entries:
       - "docs/governance/observability_gap_registry.md"
       - "docs/runbooks/checklist_ladder_violation.md"
       - "docs/source/risk_register_v0_2.md"
+      - "docs/governance/release_decisions/latest_go_no_go.md"
   - stage_id: "INTEGRATION-REGART-CHECKS"
     date: "2026-03-06"
     status: "active"
