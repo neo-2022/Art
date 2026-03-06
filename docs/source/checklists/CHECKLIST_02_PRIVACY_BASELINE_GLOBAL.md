@@ -89,7 +89,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - запрет активного контента (XSS) и явно перечисленные запрещённые типы
     - ссылку на `docs/privacy/retention_matrix.md` для attachments retention
 
-11. [ ] **Сделать:** Зафиксировать правило: вложения и их метаданные не должны утекать в логи/ответы без redaction и без доступа по ролям (least privilege).  
+11. [x] **Сделать:** Зафиксировать правило: вложения и их метаданные не должны утекать в логи/ответы без redaction и без доступа по ролям (least privilege).  
     **Проверка (pass/fail):** существует `docs/privacy/access_control_policy.md`, содержит:
     - роли доступа к attachments
     - запрет “public by default”
