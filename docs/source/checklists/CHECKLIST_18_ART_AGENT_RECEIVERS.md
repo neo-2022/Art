@@ -19,6 +19,7 @@ Core ingest/storage/pipeline — в других чек-листах.
 - CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
 - CHECKLIST 02 — Privacy baseline (global)
 - CHECKLIST 01 — Governance/SRE (реестр `observability_gap.*`, runbooks)
+- CHECKLIST 23 — Ops/Deploy/Runbooks/DR
 
 ## Статус перепроверки
 - Перепроверка завершена: runtime, тесты, docs и CI gate подтверждены.
@@ -68,6 +69,33 @@ Core ingest/storage/pipeline — в других чек-листах.
     - [ ] `gap_events`
     - [ ] `privacy_boundary`
   - [ ] **Проверка (pass/fail):** документ существует и содержит все обязательные классы и поля.
+
+- [ ] **2A. Сделать:** Зафиксировать deployment/transport topology Art Agent как обязательный закон этапа 18.
+  - [ ] существует `docs/source/agent_deployment_transport_v0_2.md`
+  - [ ] документ содержит обязательные модели установки:
+    - [ ] `systemd service`
+    - [ ] `container sidecar`
+    - [ ] `k8s DaemonSet`
+    - [ ] `air-gapped package`
+  - [ ] документ содержит обязательные топологии доставки:
+    - [ ] `single-site`
+    - [ ] `multi-site / WAN`
+    - [ ] `segmented network`
+    - [ ] `air-gapped relay/export`
+  - [ ] для каждой топологии зафиксированы:
+    - [ ] `placement`
+    - [ ] `bootstrap/enrollment`
+    - [ ] `transport path`
+    - [ ] `local persistence boundary`
+    - [ ] `gap events`
+    - [ ] `security boundary`
+  - [ ] transport path фиксирован как:
+    - [ ] `receiver -> normalizer -> pre-write redaction -> spool/outbox -> transport -> Core ingest -> ack`
+  - [ ] зафиксировано, что при недоступности сети/WAN данные не теряются молча:
+    - [ ] используется локальный spool/outbox
+    - [ ] после восстановления связи выполняется replay backlog
+    - [ ] при недоступности/переполнении/ошибке доставки порождаются `observability_gap.*`
+  - [ ] **Проверка (pass/fail):** документ существует и содержит все обязательные модели, топологии и transport path.
 
 - [ ] **3. Сделать:** Реализовать pre-write redaction в receivers ДО записи в spool/outbox.
   - [ ] redaction применяется к:
@@ -221,6 +249,7 @@ Core ingest/storage/pipeline — в других чек-листах.
 - [ ] docs/agent/receiver_source_coverage.md
 - [ ] docs/agent/receivers_state.md
 - [ ] docs/agent/receivers_chaos.md
+- [ ] docs/source/agent_deployment_transport_v0_2.md
 - [ ] docs/runbooks/receiver_paused_spool_full.md
 - [ ] docs/runbooks/receiver_permission_denied.md
 - [ ] docs/runbooks/receiver_read_failed.md
@@ -261,6 +290,7 @@ Core ingest/storage/pipeline — в других чек-листах.
 - [ ] Receiver kinds v1 (`file_tail`, `journald`, `systemd_unit`, `proc_probe`, `net_probe`, `stdout_stderr`, `otlp_logs`) реализованы и задокументированы.
 - [ ] Контракт source_id/source_seq/trace_id/retry_count соблюдается и покрыт тестами.
 - [ ] Source coverage matrix агента фиксирует полный охват доступных сигналов проекта/окружения.
+- [ ] Deployment/transport topology агента фиксирует установку и доставку для single-site, WAN, segmented и air-gapped контуров.
 - [ ] Parsing (plain/structured/multiline) детерминирован и покрыт unit tests.
 - [ ] Pre-write redaction работает и подтверждён security тестом.
 - [ ] Backpressure от spool/outbox реализован и покрыт integration tests.

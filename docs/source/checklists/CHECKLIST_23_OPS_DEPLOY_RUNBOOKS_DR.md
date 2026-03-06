@@ -16,6 +16,7 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
 - CHECKLIST 22 — E2E/Stress/Chaos/Soak/Perf
 - CHECKLIST 14 — Stream/Snapshot v1 (TLS для API)
 - CHECKLIST 15 — Actions/Audit/RBAC/PII (TLS для Actions/Audit)
+- CHECKLIST 18 — Art Agent Receivers v1
 
 ## Шаги (строго линейно)
 
@@ -100,6 +101,22 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
     - [ ] подтверждает отказ старта Core
     - [ ] после исправления TLS и перезапуска Core ожидает и подтверждает появление `observability_gap.tls_config_invalid` в `/api/v1/snapshot` (startup backlog опубликован)
 
+- [ ] **7. Сделать:** Зафиксировать multi-site deployment и transport runbook для Art Agent.
+  - [ ] существует `docs/ops/agent_multisite_deploy.md`
+  - [ ] документ содержит сценарии:
+    - [ ] `single-site`
+    - [ ] `multi-site / WAN`
+    - [ ] `segmented network`
+    - [ ] `air-gapped relay/export`
+  - [ ] для каждого сценария описаны:
+    - [ ] способ установки агента
+    - [ ] путь доставки в Core/relay
+    - [ ] локальный spool/outbox boundary
+    - [ ] retry/replay поведение
+    - [ ] команды проверки health и backlog
+    - [ ] rollback / isolate процедура
+  - [ ] **Проверка (pass/fail):** документ существует и содержит все сценарии и обязательные подпункты.
+
 ## Документация (RU)
 - [ ] docs/ops/deploy_systemd.md
 - [ ] docs/ops/deploy_k8s.md
@@ -107,6 +124,7 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
 - [ ] docs/ops/db_migration_runbook.md
 - [ ] docs/ops/backup_restore.md
 - [ ] docs/ops/dr_drill.md
+- [ ] docs/ops/agent_multisite_deploy.md
 - [ ] docs/runbooks/tls_config_invalid.md
 
 ## Тестирование
@@ -137,6 +155,7 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
 - [ ] WAL-aware backup зафиксирован как `sqlite3 .backup` при остановленном Core.
 - [ ] DR drill выполнен и зафиксирован отчётом с pass/fail.
 - [ ] `observability_gap.tls_config_invalid` реализован, зарегистрирован и покрыт induced test (включая публикацию startup backlog в snapshot/stream).
+- [ ] Multi-site deployment/transport runbook Art Agent зафиксирован для single-site, WAN, segmented и air-gapped контуров.
 - [ ] CI gate Stage 23 зелёный.
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)

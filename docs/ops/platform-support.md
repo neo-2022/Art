@@ -15,6 +15,23 @@
 
 Полный перечень и методы установки определяются только в `formats/platform_support.yaml`.
 
+## Контур установки Art Agent
+- допустимые модели установки:
+  - `systemd service`
+  - `container sidecar`
+  - `k8s DaemonSet`
+  - `air-gapped package`
+- допустимые topology/path модели:
+  - `single-site`
+  - `multi-site / WAN`
+  - `segmented network`
+  - `air-gapped relay/export`
+- для всех моделей действует единый закон доставки:
+  - `receiver -> normalizer -> pre-write redaction -> spool/outbox -> transport -> Core ingest -> ack`
+- подробная спецификация:
+  - `docs/source/agent_deployment_transport_v0_2.md`
+  - `docs/ops/agent_multisite_deploy.md`
+
 ## CI Сейчас
 - Натурные тесты исполняются только на Ubuntu.
 - Docker execute-smoke и Kubernetes execute-smoke исполняются на Ubuntu runner как обязательные production runtime gates.

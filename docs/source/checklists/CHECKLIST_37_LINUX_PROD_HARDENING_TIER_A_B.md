@@ -104,10 +104,19 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
    - [ ] Проверка (pass/fail): systemd/Linux readiness учитывает `Level0 -> Art bridge`, `UI Proxy -> Art`, `agent backlog/recovery`, `human-agent interaction safety`.
    - [ ] Проверка (pass/fail): anti-breakage suite подтверждает, что locale, agent proposal path и evidence-first labels не ломаются в Linux headless/profiled режиме.
    - [ ] Артефакт результата: Linux agent-interaction readiness report.
- - [ ] 22. Сделать: заложить Linux policy boundary для будущего forensic/ebpf/sandbox контура.
-   - [ ] Проверка (pass/fail): platform docs и risk register фиксируют kernel/profile/privacy ограничения для `eBPF evidence linking` и capability policy для `Wasm sandbox`.
-   - [ ] Проверка (pass/fail): production hardening описывает opt-in boundary и release blockers до stage45.
-   - [ ] Артефакт результата: Linux policy boundary diff + risk update log.
+- [ ] 22. Сделать: заложить Linux policy boundary для будущего forensic/ebpf/sandbox контура.
+  - [ ] Проверка (pass/fail): platform docs и risk register фиксируют kernel/profile/privacy ограничения для `eBPF evidence linking` и capability policy для `Wasm sandbox`.
+  - [ ] Проверка (pass/fail): production hardening описывает opt-in boundary и release blockers до stage45.
+  - [ ] Артефакт результата: Linux policy boundary diff + risk update log.
+- [ ] 23. Сделать: зафиксировать Linux multi-site/WAN/segmented deployment boundary для Art Agent.
+  - [ ] Проверка (pass/fail): platform docs фиксируют:
+    - [ ] agent install path для `systemd`, `container`, `DaemonSet`, `air-gapped package`
+    - [ ] transport path через direct Core ingest или relay/approved bridge
+    - [ ] обязательный локальный spool/outbox при WAN/segment break
+    - [ ] запрет молчаливой потери данных при network partition
+    - [ ] Linux-ready команды проверки backlog/health/replay
+  - [ ] Проверка (pass/fail): `docs/ops/agent_multisite_deploy.md` и `docs/source/agent_deployment_transport_v0_2.md` согласованы с `formats/platform_support.yaml`.
+  - [ ] Артефакт результата: multi-site Linux deployment report.
 
 ## Документация (RU)
 - [ ] docs/ops/panel0_linux_prod_readiness.md
@@ -129,6 +138,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/runbooks/dna_canary_divergence.md
 - [ ] docs/source/risk_register_v0_2.md
 - [ ] docs/source/console_agent_interaction_model_v0_2.md
+- [ ] docs/source/agent_deployment_transport_v0_2.md
+- [ ] docs/ops/agent_multisite_deploy.md
 
 ## Тестирование
 - [ ] e2e: Linux headless сценарии Panel0 + Console.
@@ -173,6 +184,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Интерфейсная лестница L0/L1/L2 проходит Linux anti-breakage suite без регрессий.
 - [ ] Linux-ready контур agent/bridge interaction подтверждён как production-safe.
 - [ ] Linux policy boundary для будущих `eBPF`/`Wasm sandbox` возможностей зафиксирован до их финального внедрения.
+- [ ] Linux multi-site/WAN/segmented deployment boundary Art Agent зафиксирован и согласован с platform matrix.
 
 ## Метаданные
 - Ответственный: @neo-2022
