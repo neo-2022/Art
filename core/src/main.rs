@@ -6079,18 +6079,20 @@ updates_mode = "online"
         assert_eq!(json["ok"], false);
         assert_eq!(json["status"], "failed");
         assert_eq!(json["error"], "audit_chain_broken");
-        assert!(json["chain_reason"]
-            .as_str()
-            .unwrap_or("")
-            .contains("entry_hash_mismatch")
-            || json["chain_reason"]
+        assert!(
+            json["chain_reason"]
                 .as_str()
                 .unwrap_or("")
-                .contains("proof_")
-            || json["chain_reason"]
-                .as_str()
-                .unwrap_or("")
-                .contains("prev_hash_mismatch"));
+                .contains("entry_hash_mismatch")
+                || json["chain_reason"]
+                    .as_str()
+                    .unwrap_or("")
+                    .contains("proof_")
+                || json["chain_reason"]
+                    .as_str()
+                    .unwrap_or("")
+                    .contains("prev_hash_mismatch")
+        );
     }
 
     #[tokio::test]
