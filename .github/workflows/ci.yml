@@ -1128,8 +1128,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-      - name: Stage 34 perf/load smoke
-        run: bash scripts/tests/stage34_perf_load_smoke.sh
+      - name: Stage 34 perf/load ratchet gate
+        run: bash scripts/ci/check_stage34_perf_ratchet.sh
 
   stage35-spatial-readiness-tests:
     name: stage35-spatial-readiness-tests
@@ -1151,6 +1151,15 @@ jobs:
         run: corepack pnpm install --frozen-lockfile
       - name: Stage 35 spatial readiness gate
         run: bash scripts/ci/check_stage35_spatial_readiness.sh
+
+  stage35-flow-perf-2d-gate:
+    name: stage35-flow-perf-2d-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Stage 35 flow perf 2d gate
+        run: bash scripts/ci/check_stage35_flow_perf_2d_gate.sh
 
   stage36-saas-architecture-gate:
     name: stage36-saas-architecture-gate

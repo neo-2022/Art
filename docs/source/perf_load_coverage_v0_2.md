@@ -16,6 +16,7 @@
 8. `weak-gpu scene update p95` < 50 ms.
 9. `local-store index heap growth p95` <= 64 MB на профиль `local-store-heavy`.
 10. `local-store analytics heap growth p95` <= 96 MB на профиль `local-store-heavy`.
+11. `flow mode 2D (1000 nodes) pan/zoom p95` <= 50 ms.
 
 ## Профили нагрузки
 - `steady-10k`: стабильный поток 10k/сек.
@@ -34,6 +35,10 @@
 ## Weak-GPU degradation law
 - Для профиля Intel UHD 620 (и эквивалентного VM GPU) обязателен budget `p95 < 50 ms`.
 - При риске нарушения budget применяется автоматическая деградация качества: LOD downshift + упрощённый рендер.
+
+## Flow mode watchdog law
+- Для `flow mode 2D` при превышении `1000 nodes pan/zoom p95 <= 50 ms` watchdog обязан автоматически переводить профиль в `read-only` (auto-downgrade).
+- Watchdog activation фиксируется в отдельном perf артефакте и используется как regression signal.
 
 ## Ratchet policy
 - Ухудшение ключевых перф-метрик более 5% от зафиксированного baseline запрещено.

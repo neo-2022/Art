@@ -1,0 +1,16 @@
+{
+  "sources": {
+    "rtp": "docs/governance/evidence/stage30_step10_rtp_experiment_report.md",
+    "lrc": "docs/governance/evidence/stage31_step6_lrc_mismatch_report.md",
+    "nrac": "docs/governance/evidence/stage33_step6_nrac_evaluation_report.md"
+  },
+  "metrics": {
+    "false_positive_rate": 0.0,
+    "runbook_mismatch_rate": 0.5,
+    "rollback_rate": 0.0
+  },
+  "notes": {
+    "lrc_total_steps": 2,
+    "lrc_invalid_steps": 1
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "snapshot_ms": 19,
+  "stream_response_start_ms": 35,
+  "stream_total_ms": 306,
+  "stream_events": 10000,
+  "local_index_p95_ms": 0.15,
+  "local_index_p99_ms": 0.187,
+  "local_index_samples": 4000,
+  "budgets": {
+    "snapshot_ms": 200,
+    "stream_response_start_ms": 250,
+    "index_p95_ms": 50.0
+  },
+  "status": {
+    "snapshot_pass": true,
+    "stream_pass": true,
+    "index_pass": true
+  }
+}

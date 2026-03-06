@@ -1,0 +1,15 @@
+
+running 1 test
+STAGE34_LOAD_BEGIN
+STAGE34_LOAD scenario=steady-10k profile=steady events=10000 requests=50 accepted=10000 p95_ms=28 p99_ms=31 throughput_eps=9186.26 error_rate=0.0000 snapshot_events=200 snapshot_clusters=200
+STAGE34_LOAD scenario=steady-100k profile=steady events=100000 requests=500 accepted=100000 p95_ms=193 p99_ms=201 throughput_eps=1830.02 error_rate=0.0000 snapshot_events=200 snapshot_clusters=200
+STAGE34_LOAD scenario=burst-10k profile=burst events=10000 requests=50 accepted=10000 p95_ms=28 p99_ms=31 throughput_eps=8892.65 error_rate=0.0000 snapshot_events=200 snapshot_clusters=200
+test tests::stage34_v2_ingest_profile_load_report has been running for over 60 seconds
+STAGE34_LOAD scenario=burst-100k profile=burst events=100000 requests=500 accepted=100000 p95_ms=192 p99_ms=199 throughput_eps=1821.10 error_rate=0.0000 snapshot_events=200 snapshot_clusters=200
+STAGE34_LOAD scenario=skewed-10k profile=skewed events=10000 requests=50 accepted=10000 p95_ms=27 p99_ms=31 throughput_eps=8987.46 error_rate=0.0000 snapshot_events=200 snapshot_clusters=200
+STAGE34_LOAD scenario=skewed-100k profile=skewed events=100000 requests=500 accepted=100000 p95_ms=192 p99_ms=197 throughput_eps=1821.30 error_rate=0.0000 snapshot_events=200 snapshot_clusters=200
+STAGE34_LOAD_END
+test tests::stage34_v2_ingest_profile_load_report ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 59 filtered out; finished in 168.52s
+

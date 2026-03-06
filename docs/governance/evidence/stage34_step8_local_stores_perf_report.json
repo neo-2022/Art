@@ -1,0 +1,22 @@
+{
+  "budgets": {
+    "find_similar_p95_ms": 50,
+    "index_update_p95_ms": 50,
+    "main_thread_lag_p95_ms": 20
+  },
+  "metrics": {
+    "lookup_p95_ms": 0.199,
+    "lookup_p99_ms": 0.242,
+    "insert_p95_ms": 0.002,
+    "insert_p99_ms": 0.003,
+    "main_thread_lag_p95_ms": 4,
+    "main_thread_lag_p99_ms": 4,
+    "records": 30000,
+    "lookups": 4000
+  },
+  "status": {
+    "lookup_budget_pass": true,
+    "insert_budget_pass": true,
+    "main_thread_pass": true
+  }
+}

@@ -3796,6 +3796,33 @@ mod tests {
             .collect()
     }
 
+    fn percentile_ms(samples: &[u128], quantile: f64) -> u128 {
+        if samples.is_empty() {
+            return 0;
+        }
+        let mut sorted = samples.to_vec();
+        sorted.sort_unstable();
+        let idx = ((sorted.len() as f64) * quantile).floor() as usize;
+        sorted[idx.min(sorted.len().saturating_sub(1))]
+    }
+
+    fn stage34_profile_event(profile: &str, idx: usize) -> Value {
+        let seed = (idx as u64)
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        let mut event = dna_seed_to_event(seed, idx as u64);
+
+        if profile == "burst" {
+            event["severity"] = Value::String("error".to_string());
+            event["kind"] = Value::String(format!("burst.{}", idx % 5));
+        } else if profile == "skewed" && idx % 10 != 0 {
+            event["kind"] = Value::String("svc.hotspot".to_string());
+            event["payload"]["service"] = Value::String("service-hot".to_string());
+        }
+
+        event
+    }
+
     fn lcg_next(state: &mut u64) -> u64 {
         *state = state
             .wrapping_mul(6_364_136_223_846_793_005)
@@ -4394,6 +4421,399 @@ mod tests {
             .as_array()
             .map(|arr| !arr.is_empty())
             .unwrap_or(false));
+    }
+
+    #[tokio::test]
+    #[ignore = "stage34 load suite: 10k/100k steady-burst-skewed profiles"]
+    async fn stage34_v2_ingest_profile_load_report() {
+        let scenarios = [
+            ("steady-10k", "steady", 10_000usize, 120u128),
+            ("steady-100k", "steady", 100_000usize, 350u128),
+            ("burst-10k", "burst", 10_000usize, 120u128),
+            ("burst-100k", "burst", 100_000usize, 350u128),
+            ("skewed-10k", "skewed", 10_000usize, 120u128),
+            ("skewed-100k", "skewed", 100_000usize, 350u128),
+        ];
+
+        println!("STAGE34_LOAD_BEGIN");
+        for (scenario, profile, total_events, p95_budget_ms) in scenarios {
+            let app = build_app(test_state());
+            let mut left = total_events;
+            let mut req_idx: usize = 0;
+            let mut latency_samples_ms = Vec::new();
+            let started = std::time::Instant::now();
+            let mut accepted_total = 0usize;
+            while left > 0 {
+                let chunk = left.min(200);
+                let base = req_idx * 200;
+                let events: Vec<Value> = (0..chunk)
+                    .map(|offset| stage34_profile_event(profile, base + offset))
+                    .collect();
+                let payload = json!({ "events": events });
+                let req = Request::builder()
+                    .method("POST")
+                    .uri("/api/v2/ingest")
+                    .header("content-type", "application/json")
+                    .body(Body::from(payload.to_string()))
+                    .expect("request");
+                let req_started = std::time::Instant::now();
+                let resp = app.clone().oneshot(req).await.expect("response");
+                let elapsed_ms = req_started.elapsed().as_millis();
+                latency_samples_ms.push(elapsed_ms);
+                assert_eq!(
+                    resp.status(),
+                    StatusCode::OK,
+                    "scenario={scenario} request={req_idx}"
+                );
+                let body = resp.into_body().collect().await.expect("body").to_bytes();
+                let ack: Value = serde_json::from_slice(&body).expect("json");
+                accepted_total += ack["accepted"].as_u64().unwrap_or(0) as usize;
+                req_idx += 1;
+                left -= chunk;
+            }
+
+            let snapshot_req = Request::builder()
+                .method("GET")
+                .uri("/api/v2/snapshot")
+                .body(Body::empty())
+                .expect("request");
+            let snapshot_resp = app.clone().oneshot(snapshot_req).await.expect("response");
+            assert_eq!(snapshot_resp.status(), StatusCode::OK);
+            let snapshot_body = snapshot_resp
+                .into_body()
+                .collect()
+                .await
+                .expect("body")
+                .to_bytes();
+            let snapshot_json: Value = serde_json::from_slice(&snapshot_body).expect("json");
+            let snapshot_events = snapshot_json["events"]
+                .as_array()
+                .map(|arr| arr.len())
+                .unwrap_or(0);
+            let snapshot_clusters = snapshot_json["dna_clusters"]
+                .as_array()
+                .map(|arr| arr.len())
+                .unwrap_or(0);
+            assert_eq!(
+                accepted_total, total_events,
+                "scenario={scenario} accepted_total={accepted_total} expected={total_events}"
+            );
+            assert!(
+                snapshot_clusters > 0,
+                "scenario={scenario} dna_clusters must be non-empty"
+            );
+
+            let elapsed = started.elapsed().as_secs_f64();
+            let throughput_eps = if elapsed > 0.0 {
+                (total_events as f64) / elapsed
+            } else {
+                0.0
+            };
+            let p95_ms = percentile_ms(&latency_samples_ms, 0.95);
+            let p99_ms = percentile_ms(&latency_samples_ms, 0.99);
+            let error_rate = 0.0f64;
+            println!(
+                "STAGE34_LOAD scenario={} profile={} events={} requests={} accepted={} p95_ms={} p99_ms={} throughput_eps={:.2} error_rate={:.4} snapshot_events={} snapshot_clusters={}",
+                scenario,
+                profile,
+                total_events,
+                req_idx,
+                accepted_total,
+                p95_ms,
+                p99_ms,
+                throughput_eps,
+                error_rate,
+                snapshot_events,
+                snapshot_clusters
+            );
+            assert!(
+                p95_ms <= p95_budget_ms,
+                "scenario={scenario} p95_ms={} exceeds budget_ms={}",
+                p95_ms,
+                p95_budget_ms
+            );
+        }
+        println!("STAGE34_LOAD_END");
+    }
+
+    #[tokio::test]
+    #[ignore = "stage34 overload suite: controlled degradation at 2x/3x budget"]
+    async fn stage34_v2_overload_degradation_report() {
+        let budgets = [
+            (2usize, 20_000usize, 240u128),
+            (3usize, 30_000usize, 360u128),
+        ];
+        let mut p95_values = Vec::new();
+
+        println!("STAGE34_OVERLOAD_BEGIN");
+        for (factor, total_events, p95_budget_ms) in budgets {
+            let app = build_app(test_state());
+            let mut latency_samples_ms = Vec::new();
+            let mut left = total_events;
+            let mut req_idx = 0usize;
+            let mut accepted_total = 0usize;
+            let started = std::time::Instant::now();
+
+            while left > 0 {
+                let chunk = left.min(200);
+                let base = req_idx * 200;
+                let events: Vec<Value> = (0..chunk)
+                    .map(|offset| stage34_profile_event("burst", base + offset))
+                    .collect();
+                let payload = json!({ "events": events });
+                let req = Request::builder()
+                    .method("POST")
+                    .uri("/api/v2/ingest")
+                    .header("content-type", "application/json")
+                    .body(Body::from(payload.to_string()))
+                    .expect("request");
+                let req_started = std::time::Instant::now();
+                let resp = app.clone().oneshot(req).await.expect("response");
+                let elapsed_ms = req_started.elapsed().as_millis();
+                latency_samples_ms.push(elapsed_ms);
+                assert_eq!(
+                    resp.status(),
+                    StatusCode::OK,
+                    "factor={factor} req={req_idx}"
+                );
+                let body = resp.into_body().collect().await.expect("body").to_bytes();
+                let ack: Value = serde_json::from_slice(&body).expect("json");
+                accepted_total += ack["accepted"].as_u64().unwrap_or(0) as usize;
+                left -= chunk;
+                req_idx += 1;
+            }
+
+            let elapsed = started.elapsed().as_secs_f64();
+            let throughput_eps = if elapsed > 0.0 {
+                (total_events as f64) / elapsed
+            } else {
+                0.0
+            };
+            let p95_ms = percentile_ms(&latency_samples_ms, 0.95);
+            let p99_ms = percentile_ms(&latency_samples_ms, 0.99);
+            p95_values.push((factor, p95_ms));
+
+            let data_path_ok = accepted_total == total_events;
+            println!(
+                "STAGE34_OVERLOAD factor={}x events={} requests={} accepted={} p95_ms={} p99_ms={} throughput_eps={:.2} budget_p95_ms={} data_path_ok={}",
+                factor,
+                total_events,
+                req_idx,
+                accepted_total,
+                p95_ms,
+                p99_ms,
+                throughput_eps,
+                p95_budget_ms,
+                data_path_ok
+            );
+            assert!(data_path_ok, "factor={factor}x data path lost events");
+            assert!(
+                p95_ms <= p95_budget_ms,
+                "factor={factor}x p95_ms={} exceeds overload budget_ms={}",
+                p95_ms,
+                p95_budget_ms
+            );
+        }
+
+        if p95_values.len() == 2 {
+            let p95_2x = p95_values[0].1 as f64;
+            let p95_3x = p95_values[1].1 as f64;
+            let degrade_ratio = if p95_2x > 0.0 { p95_3x / p95_2x } else { 1.0 };
+            println!(
+                "STAGE34_OVERLOAD_DEGRADE p95_2x={} p95_3x={} ratio={:.3}",
+                p95_values[0].1, p95_values[1].1, degrade_ratio
+            );
+        }
+        println!("STAGE34_OVERLOAD_END");
+    }
+
+    #[tokio::test]
+    #[ignore = "stage34 soak suite: backlog/recovery with zero-loss assertion"]
+    async fn stage34_v2_soak_backlog_recovery_zero_loss() {
+        let state = test_state();
+        {
+            let mut s = state.write().await;
+            s.queue_depth_limit = 250_000;
+        }
+        let app = build_app(state);
+        let total_events = 20_000usize;
+        let mut produced = 0usize;
+        let mut accepted_total = 0usize;
+        let mut backlog_batches: Vec<Vec<Value>> = Vec::new();
+        let mut forced_failures = 0usize;
+        let mut batch_idx = 0usize;
+        let started = std::time::Instant::now();
+
+        while produced < total_events {
+            let chunk = (total_events - produced).min(200);
+            let events: Vec<Value> = (0..chunk)
+                .map(|offset| stage34_profile_event("skewed", produced + offset))
+                .collect();
+
+            let force_fail = batch_idx % 3 == 0;
+            let payload = json!({ "events": events.clone() });
+            let mut req_builder = Request::builder()
+                .method("POST")
+                .uri("/api/v1/ingest")
+                .header("content-type", "application/json");
+            if force_fail {
+                req_builder = req_builder.header("x-core-ingest-force-storage-error", "1");
+            }
+            let req = req_builder
+                .body(Body::from(payload.to_string()))
+                .expect("request");
+            let resp = app.clone().oneshot(req).await.expect("response");
+            if force_fail {
+                assert_eq!(resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+                forced_failures += 1;
+                backlog_batches.push(events);
+            } else {
+                assert_eq!(resp.status(), StatusCode::OK);
+                let body = resp.into_body().collect().await.expect("body").to_bytes();
+                let ack: Value = serde_json::from_slice(&body).expect("json");
+                accepted_total += ack["accepted"].as_u64().unwrap_or(0) as usize;
+            }
+            produced += chunk;
+            batch_idx += 1;
+        }
+
+        let mut retries = 0usize;
+        for events in backlog_batches {
+            let payload = json!({ "events": events });
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/ingest")
+                .header("content-type", "application/json")
+                .body(Body::from(payload.to_string()))
+                .expect("request");
+            let resp = app.clone().oneshot(req).await.expect("response");
+            assert_eq!(resp.status(), StatusCode::OK);
+            let body = resp.into_body().collect().await.expect("body").to_bytes();
+            let ack: Value = serde_json::from_slice(&body).expect("json");
+            accepted_total += ack["accepted"].as_u64().unwrap_or(0) as usize;
+            retries += 1;
+        }
+
+        let zero_loss = accepted_total == total_events;
+        println!(
+            "STAGE34_SOAK total_events={} accepted_total={} forced_failures={} backlog_retries={} zero_loss={} elapsed_sec={}",
+            total_events,
+            accepted_total,
+            forced_failures,
+            retries,
+            zero_loss,
+            started.elapsed().as_secs()
+        );
+        assert!(zero_loss, "zero-loss assertion failed");
+    }
+
+    #[tokio::test]
+    #[ignore = "stage34 perf regression: snapshot/stream budgets"]
+    async fn stage34_snapshot_stream_perf_regression_report() {
+        let app = build_app(test_state());
+        let mut left = 10_000usize;
+        let mut req_idx = 0usize;
+        while left > 0 {
+            let chunk = left.min(200);
+            let base = req_idx * 200;
+            let events: Vec<Value> = (0..chunk)
+                .map(|offset| stage34_profile_event("steady", base + offset))
+                .collect();
+            let payload = json!({ "events": events });
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v2/ingest")
+                .header("content-type", "application/json")
+                .body(Body::from(payload.to_string()))
+                .expect("request");
+            let resp = app.clone().oneshot(req).await.expect("response");
+            assert_eq!(resp.status(), StatusCode::OK);
+            left -= chunk;
+            req_idx += 1;
+        }
+
+        let snapshot_started = std::time::Instant::now();
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.clone().oneshot(snapshot_req).await.expect("response");
+        assert_eq!(snapshot_resp.status(), StatusCode::OK);
+        let snapshot_ms = snapshot_started.elapsed().as_millis();
+
+        let stream_started = std::time::Instant::now();
+        let stream_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/stream")
+            .header("last-event-id", "0")
+            .body(Body::empty())
+            .expect("request");
+        let stream_resp = app.clone().oneshot(stream_req).await.expect("response");
+        let stream_response_start_ms = stream_started.elapsed().as_millis();
+        assert_eq!(stream_resp.status(), StatusCode::OK);
+        let stream_body = stream_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let stream_text = String::from_utf8(stream_body.to_vec()).expect("utf8");
+        let event_count = stream_text
+            .lines()
+            .filter(|line| line.starts_with("id: "))
+            .count();
+        let stream_ms = stream_started.elapsed().as_millis();
+
+        println!(
+            "STAGE34_REGRESSION snapshot_ms={} stream_response_start_ms={} stream_total_ms={} stream_events={}",
+            snapshot_ms, stream_response_start_ms, stream_ms, event_count
+        );
+        assert!(
+            snapshot_ms <= 200,
+            "snapshot budget exceeded: {snapshot_ms}ms"
+        );
+        assert!(
+            stream_response_start_ms <= 250,
+            "stream response start budget exceeded: {stream_response_start_ms}ms"
+        );
+        assert!(event_count >= 10_000, "stream did not include full payload");
+    }
+
+    fn stage34_replay_signature() -> String {
+        let events: Vec<Value> = (0..2_048usize)
+            .map(|idx| stage34_profile_event("steady", idx))
+            .collect();
+        let joined = events
+            .iter()
+            .map(|event| build_dna_signature(event).dna_id)
+            .collect::<Vec<String>>()
+            .join("|");
+        sha256_hex(&joined)
+    }
+
+    #[test]
+    fn stage34_replay_signature_probe() {
+        let run_hash = stage34_replay_signature();
+        println!("STAGE34_REPLAY_PROBE run_hash={}", run_hash);
+        assert_eq!(run_hash.len(), 64);
+    }
+
+    #[test]
+    fn stage34_replay_determinism_against_baseline() {
+        let baseline_json = include_str!("../../docs/source/replay_determinism_baseline_v0_2.json");
+        let baseline: Value = serde_json::from_str(baseline_json).expect("baseline json");
+        let baseline_hash = baseline["replay_signature_hash"]
+            .as_str()
+            .expect("replay_signature_hash");
+        let run_hash = stage34_replay_signature();
+        println!(
+            "STAGE34_REPLAY_BASELINE baseline_hash={} run_hash={} match={}",
+            baseline_hash,
+            run_hash,
+            baseline_hash == run_hash
+        );
+        assert_eq!(run_hash, baseline_hash);
     }
 
     #[tokio::test]

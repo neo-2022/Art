@@ -1,0 +1,19 @@
+{
+  "budget_ms": 50,
+  "normal": {
+    "node_count": 1000,
+    "p95_ms": 0.082,
+    "p99_ms": 0.147,
+    "pass": true
+  },
+  "overload": {
+    "node_count": 1000,
+    "p95_ms": 56.275,
+    "p99_ms": 57.687
+  },
+  "watchdog": {
+    "activated": true,
+    "reason": "p95_exceeded",
+    "effective_profile": "read-only"
+  }
+}

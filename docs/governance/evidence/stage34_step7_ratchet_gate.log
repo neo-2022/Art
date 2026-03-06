@@ -1,0 +1,5 @@
+stage34 perf ratchet gate
+snapshot_ms: baseline=40.000000 actual=19.000000 threshold=42.000000 pass=True
+stream_response_start_ms: baseline=60.000000 actual=35.000000 threshold=63.000000 pass=True
+local_index_p95_ms: baseline=0.500000 actual=0.150000 threshold=0.525000 pass=True
+status=PASS
