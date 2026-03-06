@@ -32,7 +32,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
    - правило обработки (store/redact/drop)
    - владелец (owner_component)
 
-3. [ ] **Сделать:** Зафиксировать политику минимизации данных: “no HTTP bodies by default”, запрет записи произвольных headers/cookies, allowlist полей контекста.  
+3. [x] **Сделать:** Зафиксировать политику минимизации данных: “no HTTP bodies by default”, запрет записи произвольных headers/cookies, allowlist полей контекста.  
    **Проверка (pass/fail):** существует `docs/privacy/data_minimization_policy.md`, содержит:
    - явное правило “no HTTP bodies by default”
    - явный allowlist записываемых HTTP-полей (если есть) и запрет по умолчанию для остального
