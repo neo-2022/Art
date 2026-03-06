@@ -9,6 +9,7 @@
 6. smoke-check
 
 ## signature keys
-- Путь публичного ключа: `docs/security/keys/cosign.pub`
-- Ротация ключа документирована и обязательна
-- Установка packs без валидной подписи запрещена
+- Статический `cosign.pub` для production baseline не используется.
+- Verify выполняется по `signature + certificate (.pem) + OIDC issuer + certificate identity regexp`.
+- Ротация signing baseline определяется release workflow и provenance policy.
+- Установка packs и release artifacts без валидной подписи запрещена.

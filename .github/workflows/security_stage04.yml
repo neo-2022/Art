@@ -24,29 +24,100 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-      - name: semgrep
-        run: echo "semgrep placeholder"
+      - name: Setup Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38
+        with:
+          python-version: "3.12"
+      - name: Install semgrep
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install "semgrep==1.95.0"
+      - name: Run semgrep
+        shell: bash
+        run: |
+          set -euo pipefail
+          semgrep scan --config auto --error --json --output semgrep-report.json
+      - name: Upload semgrep report
+        if: always()
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
+        with:
+          name: semgrep-report
+          path: semgrep-report.json
 
   sca:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-      - name: osv-scanner
-        run: echo "osv-scanner placeholder"
+      - name: Install osv-scanner
+        shell: bash
+        run: |
+          set -euo pipefail
+          OSV_VERSION="2.0.1"
+          curl -sSfL "https://github.com/google/osv-scanner/releases/download/v${OSV_VERSION}/osv-scanner_linux_amd64" -o osv-scanner
+          install -m 0755 osv-scanner /usr/local/bin/osv-scanner
+          osv-scanner --version
+      - name: Run osv-scanner
+        shell: bash
+        run: |
+          set -euo pipefail
+          osv-scanner scan source -r . --format json --output osv-report.json
+          test -s osv-report.json
+      - name: Upload osv report
+        if: always()
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
+        with:
+          name: osv-report
+          path: osv-report.json
 
   license:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-      - name: license
-        run: echo "cargo deny + license-checker placeholder"
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
+        with:
+          toolchain: stable
+      - name: Install cargo-deny
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo install cargo-deny --locked
+      - name: cargo deny check licenses
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo deny check licenses
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+      - name: JS licenses summary
+        shell: bash
+        working-directory: browser
+        run: |
+          set -euo pipefail
+          npx --yes license-checker --production --summary > ../license-summary.txt
+          test -s ../license-summary.txt
+      - name: Upload license summary
+        if: always()
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
+        with:
+          name: license-summary
+          path: license-summary.txt
 
   secrets:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-      - name: gitleaks
-        run: echo "gitleaks placeholder"
+        with:
+          fetch-depth: 0
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: docs/security/allowlist.gitleaks.toml

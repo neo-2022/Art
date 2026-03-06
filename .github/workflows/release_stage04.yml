@@ -83,7 +83,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sha256sum "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" sbom.spdx.json > SHA256SUMS
+          sha256sum "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" sbom.spdx.json > checksums.txt
 
       - name: Generate provenance attestation payload
         shell: bash
@@ -104,7 +104,7 @@ jobs:
               pathlib.Path(os.environ["CORE_ARTIFACT"]),
               pathlib.Path(os.environ["AGENT_ARTIFACT"]),
               pathlib.Path("sbom.spdx.json"),
-              pathlib.Path("SHA256SUMS"),
+              pathlib.Path("checksums.txt"),
           ]
           payload = {
               "type": "stage04.provenance",
@@ -138,7 +138,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for f in "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" sbom.spdx.json SHA256SUMS provenance.attestation.json; do
+          for f in "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" sbom.spdx.json checksums.txt provenance.attestation.json; do
             cosign sign-blob --yes \
               --output-signature "${f}.sig" \
               --output-certificate "${f}.pem" \
@@ -150,7 +150,7 @@ jobs:
         run: |
           set -euo pipefail
           ID_RE="https://github.com/neo-2022/Art/.github/workflows/release_stage04.yml@.*"
-          for f in "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" sbom.spdx.json SHA256SUMS provenance.attestation.json; do
+          for f in "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" sbom.spdx.json checksums.txt provenance.attestation.json; do
             cosign verify-blob \
               --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
               --certificate-identity-regexp "$ID_RE" \
@@ -178,7 +178,7 @@ jobs:
           assert os.environ["CORE_ARTIFACT"] in names
           assert os.environ["AGENT_ARTIFACT"] in names
           assert "sbom.spdx.json" in names
-          assert "SHA256SUMS" in names
+          assert "checksums.txt" in names
           PY
 
       - name: Publish release assets
@@ -191,7 +191,7 @@ jobs:
             "${CORE_ARTIFACT}"
             "${AGENT_ARTIFACT}"
             sbom.spdx.json
-            SHA256SUMS
+            checksums.txt
             provenance.attestation.json
             "${CORE_ARTIFACT}.sig"
             "${CORE_ARTIFACT}.pem"
@@ -199,8 +199,8 @@ jobs:
             "${AGENT_ARTIFACT}.pem"
             sbom.spdx.json.sig
             sbom.spdx.json.pem
-            SHA256SUMS.sig
-            SHA256SUMS.pem
+            checksums.txt.sig
+            checksums.txt.pem
             provenance.attestation.json.sig
             provenance.attestation.json.pem
           )

@@ -17,7 +17,7 @@
 - публикация без зелёных security jobs запрещена
 
 ## Обязательные Требования Перед Публикацией
-- сформированы SBOM, checksums и provenance attestation
+- сформированы SBOM, `checksums.txt` и provenance attestation
 - выполнена verify-проверка подписей
 - release artifacts соответствуют release checklist
 - release decision оформлен через `GO/NO-GO`

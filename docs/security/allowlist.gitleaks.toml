@@ -1,1 +1,11 @@
-# allowlist placeholder
+title = "Art gitleaks allowlist"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Reviewed false positives for Art. Baseline is intentionally empty; new entries require code review."
+paths = []
+commits = []
+regexes = []
+stopwords = []

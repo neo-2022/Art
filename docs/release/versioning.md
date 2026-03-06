@@ -23,7 +23,7 @@
 ## Обязательные Релизные Артефакты
 - `artcore-<version>-linux-x86_64-static.tar.gz`
 - `artagent-<version>-linux-x86_64-static.tar.gz`
-- `SHA256SUMS`
+- `checksums.txt`
 - SBOM (формат по текущей release policy)
 
 ## Коммуникация Совместимости Для Клиентов

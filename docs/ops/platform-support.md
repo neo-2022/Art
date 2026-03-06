@@ -45,7 +45,7 @@
 ## Контракт Релизных Артефактов
 - `artcore-<version>-linux-x86_64-static.tar.gz`
 - `artagent-<version>-linux-x86_64-static.tar.gz`
-- `SHA256SUMS`
+- `checksums.txt`
 - `sbom.spdx.json`
 - Docker runtime skeletons: `docker/core.Dockerfile`, `docker/agent.Dockerfile` (`FROM scratch`, static binaries).
 

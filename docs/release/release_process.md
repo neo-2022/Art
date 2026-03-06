@@ -17,7 +17,7 @@
 1. Подготовка release PR с changelog и evidence.
 2. Прогон обязательных CI gates.
 3. Создание подписанного тега `vX.Y.Z` (или `vX.Y.Z-rc.N`).
-4. Публикация GitHub Release с артефактами и checksum/SBOM.
+4. Публикация GitHub Release с артефактами, `checksums.txt`, SBOM и provenance bundle.
 5. Публикация compatibility note для клиентов:
    - `docs/release/compat_matrix.md`
    - `docs/ops/platform-runtime-compatibility-matrix.md`
