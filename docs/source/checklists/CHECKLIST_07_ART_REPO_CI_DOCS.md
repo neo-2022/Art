@@ -70,6 +70,18 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] содержит список env vars (название + назначение)
   - [ ] **Проверка (pass/fail):** документ существует и заполнен.
 
+- [ ] **7A. Сделать:** Зафиксировать документационный вход проекта как product-facing и evidence-aware контур.
+  - [ ] `README.md` и `docs/README.md` содержат ссылки на architecture/integration/source-of-truth/release evidence/compatibility matrix/security posture.
+  - [ ] `docs/portal/INDEX.md` существует и работает как навигационный вход.
+  - [ ] `docs/portal/DELIVERY_EVIDENCE.md` существует как публичная лента подтверждённого прогресса.
+  - [ ] `docs/portal/COMPATIBILITY_MATRIX_ART_REGART.md` и `docs/portal/SECURITY_POSTURE.md` существуют как entry docs.
+  - [ ] **Проверка (pass/fail):** portal entry docs существуют и связаны относительными ссылками без битых entry references.
+
+- [ ] **7B. Сделать:** Зафиксировать baseline knowledge/RAG contour проекта.
+  - [ ] `docs/rag/README.md`, `docs/rag/sources.yaml`, `docs/rag/context_packs.md`, `docs/rag/security_policy.md` существуют.
+  - [ ] В документации явно указано, что normative source-of-truth остаётся в `docs/source/*`, а RAG — производный knowledge contour.
+  - [ ] **Проверка (pass/fail):** docs gate подтверждает наличие RAG baseline files и source-of-truth disclaimers.
+
 - [ ] **8. Сделать:** Добавить CI gate Stage 07 для минимальной валидации содержимого (не только существование файлов).
   - [ ] существует `scripts/ci/check_art_repo_stage07.sh`
   - [ ] скрипт исполняемый
@@ -87,6 +99,14 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/development/getting_started.md
 - [ ] docs/development/dev_env.md
 - [ ] scripts/ci/check_art_repo_stage07.sh
+- [ ] docs/portal/INDEX.md
+- [ ] docs/portal/DELIVERY_EVIDENCE.md
+- [ ] docs/portal/COMPATIBILITY_MATRIX_ART_REGART.md
+- [ ] docs/portal/SECURITY_POSTURE.md
+- [ ] docs/rag/README.md
+- [ ] docs/rag/sources.yaml
+- [ ] docs/rag/context_packs.md
+- [ ] docs/rag/security_policy.md
 
 ## Тестирование
 - [ ] smoke: единая команда `make smoke`, которая прогоняет lint/test/build для Rust и Browser (указана в docs)
@@ -103,6 +123,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Структура репозитория создана.
 - [ ] CI jobs существуют, запускаются на PR в main и blocking.
 - [ ] RU dev docs существуют и содержат реальные команды.
+- [ ] Документационный вход проекта и delivery evidence contour оформлены как обязательная часть репозитория.
+- [ ] Базовый knowledge/RAG contour присутствует и не конфликтует с source-of-truth.
 - [ ] README фиксирует декларацию Contracts и помечает, что файлы контрактов добавляются на Stage 08; CI Stage 07 проверяет только декларацию.
 - [ ] CI gate Stage 07 проходит.
 

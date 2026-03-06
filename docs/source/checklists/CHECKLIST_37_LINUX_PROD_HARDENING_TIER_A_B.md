@@ -100,6 +100,14 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] Проверка (pass/fail): release-blockers описаны в `formats/platform_support.yaml` и `docs/ops/platform-runtime-compatibility-matrix.md`.
   - [ ] Проверка (pass/fail): stage37 CI-gates проверяют наличие blocker policy.
   - [ ] Артефакт результата: policy diff + CI gate log.
+ - [ ] 21. Сделать: зафиксировать Linux-ready контур agent/bridge interaction для REGART и Console.
+   - [ ] Проверка (pass/fail): systemd/Linux readiness учитывает `Level0 -> Art bridge`, `UI Proxy -> Art`, `agent backlog/recovery`, `human-agent interaction safety`.
+   - [ ] Проверка (pass/fail): anti-breakage suite подтверждает, что locale, agent proposal path и evidence-first labels не ломаются в Linux headless/profiled режиме.
+   - [ ] Артефакт результата: Linux agent-interaction readiness report.
+ - [ ] 22. Сделать: заложить Linux policy boundary для будущего forensic/ebpf/sandbox контура.
+   - [ ] Проверка (pass/fail): platform docs и risk register фиксируют kernel/profile/privacy ограничения для `eBPF evidence linking` и capability policy для `Wasm sandbox`.
+   - [ ] Проверка (pass/fail): production hardening описывает opt-in boundary и release blockers до stage45.
+   - [ ] Артефакт результата: Linux policy boundary diff + risk update log.
 
 ## Документация (RU)
 - [ ] docs/ops/panel0_linux_prod_readiness.md
@@ -120,6 +128,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/runbooks/console_linux_readiness_failed.md
 - [ ] docs/runbooks/dna_canary_divergence.md
 - [ ] docs/source/risk_register_v0_2.md
+- [ ] docs/source/console_agent_interaction_model_v0_2.md
 
 ## Тестирование
 - [ ] e2e: Linux headless сценарии Panel0 + Console.
@@ -131,6 +140,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] load: readiness under sustained traffic.
 - [ ] soak: длительный backlog/recovery прогон.
 - [ ] regression: L0/L1/L2 interface anti-breakage под Linux canary.
+- [ ] regression: Linux headless agent interaction and locale/evidence labels anti-breakage.
 - [ ] vm: validate-mode smoke для Ubuntu и одного A-level distro в VM harness.
 - [ ] container: Docker smoke validate/execute сценарии.
 - [ ] container: Kubernetes smoke validate/execute сценарии (kind/k3d profile).
@@ -161,6 +171,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Operational debt register ведётся и не содержит просроченных critical debt без mitigation.
 - [ ] Риски R5 и R9 из risk register закрыты rollout controls и alert gates.
 - [ ] Интерфейсная лестница L0/L1/L2 проходит Linux anti-breakage suite без регрессий.
+- [ ] Linux-ready контур agent/bridge interaction подтверждён как production-safe.
+- [ ] Linux policy boundary для будущих `eBPF`/`Wasm sandbox` возможностей зафиксирован до их финального внедрения.
 
 ## Метаданные
 - Ответственный: @neo-2022

@@ -81,6 +81,16 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] Budget: `1000 nodes pan/zoom p95 <= 50 ms`.
   - [ ] Проверка (pass/fail): perf suite подтверждает budget и auto-downgrade profile при превышении.
   - [ ] Артефакт результата: flow perf report + watchdog activation log.
+ - [ ] 15. Сделать: заложить perf hooks для bilingual UI, settings/audio и agent interaction contour.
+   - [ ] Проверка (pass/fail): perf doc фиксирует budgets для locale switch, settings search, audio preview и agent proposal rendering.
+   - [ ] Артефакт результата: UI ergonomics perf report.
+ - [ ] 16. Сделать: ввести ранние perf/replay hooks для approved differentiators до их финализации в 42..45.
+   - [ ] Proof Completeness Score: budget на вычисление/рендер.
+   - [ ] DNA Drift Radar: budget на drift computation и replay corpus pass.
+   - [ ] Counterfactual Action Simulator: budget на no-side-effect simulation.
+   - [ ] Incident Capsule / Twin: replay parity time budget.
+   - [ ] Проверка (pass/fail): baseline perf report содержит эти hooks и не допускает “позднего неизвестного perf риска”.
+   - [ ] Артефакт результата: differentiator perf hooks report.
 
 ## Документация (RU)
 - [ ] docs/source/perf_load_coverage_v0_2.md
@@ -92,6 +102,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/runbooks/local_store_latency_exceeded.md
 - [ ] docs/source/risk_register_v0_2.md
 - [ ] docs/foundation/revolutionary_hypotheses.md
+- [ ] docs/source/console_settings_architecture_v0_2.md
 
 ## Тестирование
 - [ ] Tier4 load: ingest/snapshot/stream/local index.
@@ -103,6 +114,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] perf regression: replay determinism against baseline.
 - [ ] Tier4 experiment regression: RTP/LRC/NRAC KPI against baseline.
 - [ ] Tier4 perf: flow mode 2D (`1000 nodes`) p95 budget + watchdog fallback.
+- [ ] Tier4 perf: locale/settings/audio/agent interaction ergonomics budgets.
+- [ ] Tier4 perf: differentiator hooks (`Proof Completeness`, `Drift`, `Counterfactual`, `Capsule/Twin`) baselined.
 - [ ] coverage: global non-decrease + module targets.
 - [ ] chaos: degradation under throttling/partial failures.
 
@@ -119,6 +132,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Риск R8 из risk register закрыт тестами и perf budget контролем.
 - [ ] Экспериментальные треки RTP/LRC/NRAC имеют измеримый KPI status и не деградируют базовые SLO.
 - [ ] Flow mode 2D baseline и watchdog деградации зафиксированы и проверяются CI-gate.
+- [ ] Ранние perf hooks для bilingual UI, settings/audio и agent interaction введены до поздних этапов.
+- [ ] Approved differentiators получили baseline perf/replay hooks до этапов 42..45.
 
 ## Метаданные
 - Ответственный: @neo-2022
