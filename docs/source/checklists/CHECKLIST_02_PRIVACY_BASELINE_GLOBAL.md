@@ -107,7 +107,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - различия retention/DSR (таблично)
     - механизм выбора профиля (конфиг, ключ/параметр) и default profile
 
-14. [ ] **Сделать:** Определить тестовую матрицу privacy и минимальные обязательные тесты (unit/integration) для redaction + attachments + DSR.  
+14. [x] **Сделать:** Определить тестовую матрицу privacy и минимальные обязательные тесты (unit/integration) для redaction + attachments + DSR.  
     **Проверка (pass/fail):** существует `docs/privacy/test_matrix.md`, содержит:
     - unit: redaction rules (секреты/PII) + генерация `privacy.redaction_applied`
     - integration: секреты не попадают в логи/ответы/аудит
