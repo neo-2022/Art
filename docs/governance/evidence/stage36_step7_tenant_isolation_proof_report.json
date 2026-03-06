@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "proof_suite": "v2_evidence_access_scope_enforcement_tests + negative matrix validation",
+  "negative_case_count": 3,
+  "audit_assertion": "deny decision is required for cross-tenant access"
+}

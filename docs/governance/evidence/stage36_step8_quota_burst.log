@@ -1,0 +1,2 @@
+stage36 step8 quota burst: PASS
+{"status": "PASS", "quota_rps": 100, "burst_requests": 350, "accepted": 100, "denied": 250, "policy": "deny when tenant quota exceeded"}

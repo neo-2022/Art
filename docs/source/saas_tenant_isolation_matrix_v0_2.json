@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "tenant_model": "org/project/env",
+  "negative_cross_tenant_matrix": [
+    {
+      "request_tenant": "org-a/proj-a/prod",
+      "target_tenant": "org-b/proj-b/prod",
+      "operation": "evidence.read",
+      "expected_decision": "deny"
+    },
+    {
+      "request_tenant": "org-a/proj-a/prod",
+      "target_tenant": "org-a/proj-b/prod",
+      "operation": "snapshot.read",
+      "expected_decision": "deny"
+    },
+    {
+      "request_tenant": "org-a/proj-a/stage",
+      "target_tenant": "org-a/proj-a/prod",
+      "operation": "actions.execute",
+      "expected_decision": "deny"
+    }
+  ]
+}

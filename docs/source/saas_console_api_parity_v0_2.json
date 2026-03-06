@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "parity_scope": "Console read/write contract behavior between self-hosted and SaaS",
+  "required_endpoints": [
+    "/api/v1/snapshot",
+    "/api/v1/stream",
+    "/api/v1/ingest",
+    "/api/v2/snapshot",
+    "/api/v2/stream",
+    "/api/v2/ingest"
+  ],
+  "required_response_keys": [
+    "cursor",
+    "effective_profile_id",
+    "events"
+  ],
+  "status": "parity-required"
+}
