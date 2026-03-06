@@ -4,6 +4,14 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
+filter_repo_paths() {
+  if command -v rg >/dev/null 2>&1; then
+    rg '^(docs/|tests/|scripts/)'
+  else
+    grep -E '^(docs/|tests/|scripts/)'
+  fi
+}
+
 MASTER="docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md"
 LEDGER="docs/governance/evidence/evidence_ledger.yaml"
 RU_DOC="docs/portal/DELIVERY_EVIDENCE.md"
@@ -19,7 +27,11 @@ grep -q '^## Source of truth' "$RU_DOC"
 grep -q '^## Source of truth' "$EN_DOC"
 
 # Closed program stages (28..38) must exist in ledger as STAGE-XX entries.
-closed_stages="$(grep -E '^\| \[x\] (2[8-9]|3[0-8]) \|' "$MASTER" | sed -E 's/^\| \[x\] ([0-9]{2}) \|.*/\1/')"
+closed_stages="$(
+  {
+    grep -E '^\| \[x\] (2[8-9]|3[0-8]) \|' "$MASTER" || true
+  } | sed -E 's/^\| \[x\] ([0-9]{2}) \|.*/\1/'
+)"
 for stage in $closed_stages; do
   id="STAGE-${stage}"
   if ! grep -q "stage_id: \"${id}\"" "$LEDGER"; then
@@ -35,6 +47,12 @@ while IFS= read -r file; do
     echo "missing evidence file referenced in ledger: $file"
     exit 1
   fi
-done < <(sed -n 's/^      - "\(.*\)"$/\1/p' "$LEDGER" | rg '^(docs/|tests/|scripts/)')
+done < <(
+  {
+    sed -n 's/^      - "\(.*\)"$/\1/p' "$LEDGER" || true
+  } | {
+    filter_repo_paths || true
+  }
+)
 
 echo "evidence ledger gate: OK"

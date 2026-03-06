@@ -4,6 +4,15 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
+has_open_checkboxes() {
+  local file="$1"
+  if command -v rg >/dev/null 2>&1; then
+    rg -q '^- \[ \]' "$file"
+  else
+    grep -Eq '^- \[ \]' "$file"
+  fi
+}
+
 RU_TEMPLATE="docs/ops/go_no_go_template.md"
 EN_TEMPLATE="docs/en/ops/go_no_go_template.md"
 DECISIONS_DIR="docs/governance/release_decisions"
@@ -27,7 +36,7 @@ grep -Eq '^- CI run URL: .+' "$LATEST_FILE"
 grep -Eq '^- Decision: `GO`$|^- Decision: `NO-GO`$' "$LATEST_FILE"
 
 if grep -Eq '^- Decision: `GO`$' "$LATEST_FILE"; then
-  if rg -q '^- \[ \]' "$LATEST_FILE"; then
+  if has_open_checkboxes "$LATEST_FILE"; then
     echo "GO/NO-GO gate: GO decision contains unchecked mandatory items"
     exit 1
   fi

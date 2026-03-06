@@ -23,11 +23,13 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Resolve tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
         shell: bash
         run: |
           set -euo pipefail
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            echo "RELEASE_TAG=${{ inputs.tag }}" >> "$GITHUB_ENV"
+            echo "RELEASE_TAG=${INPUT_TAG}" >> "$GITHUB_ENV"
           else
             echo "RELEASE_TAG=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
           fi

@@ -4,6 +4,24 @@ set -euo pipefail
 MASTER="docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md"
 INCIDENT_STATE="docs/ops/runtime_incident_status.json"
 
+find_open_tasks() {
+  local file="$1"
+  if command -v rg >/dev/null 2>&1; then
+    rg -n '^- \[ \]' "$file"
+  else
+    grep -En '^- \[ \]' "$file"
+  fi
+}
+
+find_closed_dependency_claims() {
+  local file="$1"
+  if command -v rg >/dev/null 2>&1; then
+    rg -No 'CHECKLIST[[:space:]]+([0-9]{2})[[:space:]]*\(закрыт\)' "$file"
+  else
+    grep -Eo 'CHECKLIST[[:space:]]+([0-9]{2})[[:space:]]*\(закрыт\)' "$file"
+  fi
+}
+
 bash scripts/ci/check_master_checklist_binding.sh
 bash scripts/ci/check_checklist_status_integrity.sh
 bash scripts/ci/check_docs_master_traceability.sh
@@ -70,9 +88,9 @@ for stage in $(seq 28 45); do
   if [[ "$marker" == "x" ]]; then
     checklist="$(get_checklist_file "$stage")"
     test -s "$checklist"
-    if rg -n '^- \[ \]' "$checklist" >/dev/null; then
+    if find_open_tasks "$checklist" >/dev/null; then
       echo "status integrity violation: stage ${stage} marked [x] but checklist has open tasks"
-      rg -n '^- \[ \]' "$checklist" || true
+      find_open_tasks "$checklist" || true
       exit 1
     fi
   fi
@@ -91,7 +109,7 @@ for checklist in $(rg --files docs/source/checklists -g 'CHECKLIST_2[8-9]_*.md' 
       echo "dependency consistency violation: ${checklist} declares CHECKLIST ${dep_stage} as '(закрыт)' but MASTER is [ ]"
       exit 1
     fi
-  done < <(rg -No 'CHECKLIST[[:space:]]+([0-9]{2})[[:space:]]*\(закрыт\)' "$checklist" \
+  done < <(find_closed_dependency_claims "$checklist" \
     | sed -E 's/.*CHECKLIST[[:space:]]+([0-9]{2}).*/\1/')
 done
 

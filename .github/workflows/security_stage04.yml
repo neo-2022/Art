@@ -65,6 +65,11 @@ jobs:
           set -euo pipefail
           osv-scanner scan source --recursive --format json --output osv-report.json .
           test -s osv-report.json
+      - name: Enforce SCA policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/evaluate_osv_report.py osv-report.json docs/security/osv_risk_accept.yaml
       - name: Upload osv report
         if: always()
         uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874

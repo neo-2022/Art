@@ -13,3 +13,4 @@
 Для основного входа используйте:
 - [../README.md](../README.md)
 - [../portal/INDEX.md](../portal/INDEX.md)
+- [../ops/go_no_go_template.md](../ops/go_no_go_template.md)
