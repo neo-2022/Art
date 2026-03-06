@@ -143,7 +143,7 @@ A) Полный запрет опциональности:
 
 | № | Файл | Этап | Кратко | Выполнено |
 |---:|---|---|---|---|
-| [ ] 01 | CHECKLIST_01_GOVERNANCE_SRE.md | Governance/SRE | incident/postmortem/change mgmt + gap escalation + SLO | reopened 2026-03-06, deep audit: governance content/evidence insufficient |
+| [x] 01 | CHECKLIST_01_GOVERNANCE_SRE.md | Governance/SRE | incident/postmortem/change mgmt + gap escalation + SLO | 2026-03-07, neo-2022, commit 26e3ff5 |
 | [ ] 02 | CHECKLIST_02_PRIVACY_BASELINE_GLOBAL.md | Privacy baseline | PII surface + redaction_applied + attachments PII retention | 2026-03-05, neo-2022, stage02 docs |
 | [ ] 03 | CHECKLIST_03_REGIONAL_PROFILES.md | Региональные профили | profile switch + airgapped packs update | 2026-03-05, neo-2022, stage03 runtime+tests |
 | [ ] 04 | CHECKLIST_04 _Secure SDLC + Supply-chain.md | Secure SDLC | clean builds + branch policy + signed commits + sigstore/cosign | reopened 2026-03-06, audit: signing/allowlist placeholders remain |
