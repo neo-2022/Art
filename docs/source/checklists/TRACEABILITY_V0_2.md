@@ -1,14 +1,17 @@
-# TRACEABILITY v0.2 (01..27 -> 28..38)
+# TRACEABILITY v0.2 (01..27 -> 28..45)
 
 Последняя актуализация: 2026-03-06
-Назначение: связать закрытые baseline этапы `01..27` с новой программой `28..38` и явно разделить reused baseline и новые требования.
+Назначение: связать закрытые baseline этапы `01..27` с новой программой `28..45` и явно разделить reused baseline и новые требования, включая continuation backlog уникальных approved-концепций.
 
 ## 1. Принципы трассировки
+Обязательный baseline marker для legacy CI/gates: `01..27 -> 28..38`.
+Continuation expansion marker: `01..27 -> 28..45`.
+
 - `01..27` не отменяются и остаются baseline.
 - `28..38` расширяют программу Incident OS без удаления уже принятых инвариантов.
 - Новый этап может переиспользовать артефакты старых этапов только при явном указании reuse.
 
-## 2. Mapping
+## 2. Mapping для 28..38
 
 | Baseline (01..27) | v0.2 Stage (28..38) | Reuse | Новые обязательства |
 |---|---|---|---|
@@ -23,6 +26,19 @@
 | 01, 23, 25 | 36 (SaaS readiness architecture) | governance/compliance baseline | tenant model + control/data plane contracts |
 | 16, 22, 23 | 37 (Linux prod hardening Tier A/B) | panel0 linux readiness | console linux hardening + rollout/rollback + DNA canary divergence control |
 | 00, 07 | 38 (Stage ladder enforcement) | process/ci baseline | CI-enforced stage order + status integrity guard |
+
+
+## 2A. Continuation mapping для 39..45
+
+| Continuation stage | Источник замысла | Что закрывает | Почему это обязательно |
+|---|---|---|---|
+| 39 | AI engineering operating model | role map, review split, lessons learned, truthfulness gate | без этого большая программа снова скатывается в формальные отметки и потерю замысла |
+| 40 | Art visual language + showcase layer | клиентский и брендовый product layer | проект должен быть не только инженерно корректным, но и демонстрируемым без разрыва с реальностью |
+| 41 | advanced automation backlog | AST UI laws, self-healing test/doc maintenance | ручная дисциплина больше не масштабируется на весь контур Art |
+| 42 | revolutionary hypotheses / tech radar | proof completeness, drift radar, proof-carrying AI | ключевые differentiators должны стать частью продукта, а не остаться в backlog |
+| 43 | revolutionary hypotheses / secure actions | counterfactual simulation, mature NRAC, sandbox extensibility | actions должны быть не только безопасными, но и интеллектуально ограниченными до execute |
+| 44 | investigations + audit roadmap | reproducible incident capsule, deterministic twin | воспроизводимость инцидентов должна быть переносимой и проверяемой end-to-end |
+| 45 | advanced automation + platform/deep forensics | eBPF evidence linking, graph-backed exploration | forensic и relationship navigation — часть заявленной уникальности продукта |
 
 ## 3. Baseline already covering v0.2
 - Stage16 уже покрывает embedded Panel0 fallback, backlog и runtime docs-gates.
@@ -41,3 +57,14 @@
 2. Артефактов проверки в репозитории.
 3. Отметки в `CHECKLIST_00_MASTER_ART_REGART.md`.
 4. Актуализации `docs/source/risk_register_v0_2.md` для затронутых рисков.
+
+## 6. Foundation continuation set (post-stage38 governance backlog)
+- `docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md` — единый историко-концептуальный корпус проекта.
+- `docs/foundation/revolutionary_hypotheses.md` — experimental/approved backlog уникальных гипотез продукта.
+- `docs/foundation/frontier_tech_radar.md` — technology radar с checklist mapping.
+- `docs/foundation/lens_audit_report.md` — governance-аудит линз и gaps.
+- `docs/foundation/AI_ENGINEERING_OPERATING_MODEL.md` — operating model AI-команды, связанный с stage28/stage29/stage38.
+- `docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md` — backlog глубокой автоматизации, привязанный к stages 28/29/30/31/33/34/35/38.
+- `docs/portal/ART_VISUAL_LANGUAGE.md` — брендово-операционный визуальный слой, привязанный к stages 28 и 35.
+
+Эти документы не открывают новый этап сами по себе, но задают обязательный continuation backlog для следующего цикла развития после текущей программы 28..38.

@@ -1,6 +1,6 @@
 # Индекс чек-листов
 
-Этот каталог содержит полный набор чек-листов `CHECKLIST_00..38`.
+Этот каталог содержит полный набор чек-листов `CHECKLIST_00..45`.
 
 ## Мастер и управление
 
@@ -48,7 +48,7 @@
 - `CHECKLIST_26_RU_PROFILE.md` — RU профиль (152-ФЗ/локализация/экспорт/аудит/air-gapped).
 - `CHECKLIST_27_AUDIT_REMEDIATION_PLAN.md` — итоговый аудит закрытия этапов и план/факт ремедиации.
 
-## Программа v0.2 (Console + API v2)
+## Программа v0.2 (Console + API v2) и continuation backlog
 
 - `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md` — foundation Console в monorepo (apps+packages).
 - `CHECKLIST_29_EVENT_DNA_CORE_V2.md` — API v2 Event DNA core (formal model + property 1M + reference parity).
@@ -61,7 +61,14 @@
 - `CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md` — SaaS readiness architecture.
 - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md` — Linux prod hardening Tier A/B (canary divergence stop + feature-flag fallback).
 - `CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md` — enforcement правила “лестницы” этапов.
-- `TRACEABILITY_V0_2.md` — трассировка baseline 01..27 к новой программе 28..38.
+- `CHECKLIST_39_AI_ENGINEERING_GOVERNANCE.md` — enforceable AI engineering governance и truthfulness gate.
+- `CHECKLIST_40_PRODUCT_SHOWCASE_VISUAL_LANGUAGE.md` — brand/showcase layer и client-facing demo contour.
+- `CHECKLIST_41_AST_UI_LAWS_AUTOMATION.md` — AST/static UI laws и self-healing docs/tests automation.
+- `CHECKLIST_42_EVIDENCE_INTELLIGENCE_AND_DRIFT.md` — Proof Completeness Score, DNA Drift Radar, Proof-Carrying AI Claims.
+- `CHECKLIST_43_SAFE_ACTION_INTELLIGENCE.md` — Counterfactual Action Simulator, NRAC maturation, Wasm sandbox.
+- `CHECKLIST_44_INCIDENT_CAPSULE_AND_TWIN.md` — Reproducible Incident Capsule и Deterministic Incident Twin.
+- `CHECKLIST_45_FORENSIC_ENRICHMENT_AND_GRAPH.md` — eBPF evidence linking, graph-backed exploration, future-safe crypto extension path.
+- `TRACEABILITY_V0_2.md` — трассировка baseline 01..27 к новой программе 28..45.
 - `../risk_register_v0_2.md` — принятые риски v0.2, контрмеры, release blockers.
 
 ## Порядок прохождения
@@ -72,4 +79,4 @@
 4. `07..20`
 5. `21..26`
 6. `27`
-7. `28..38`
+7. `28..45`

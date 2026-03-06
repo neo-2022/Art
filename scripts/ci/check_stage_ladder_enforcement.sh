@@ -25,6 +25,13 @@ get_checklist_file() {
     36) echo "docs/source/checklists/CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md" ;;
     37) echo "docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md" ;;
     38) echo "docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md" ;;
+    39) echo "docs/source/checklists/CHECKLIST_39_AI_ENGINEERING_GOVERNANCE.md" ;;
+    40) echo "docs/source/checklists/CHECKLIST_40_PRODUCT_SHOWCASE_VISUAL_LANGUAGE.md" ;;
+    41) echo "docs/source/checklists/CHECKLIST_41_AST_UI_LAWS_AUTOMATION.md" ;;
+    42) echo "docs/source/checklists/CHECKLIST_42_EVIDENCE_INTELLIGENCE_AND_DRIFT.md" ;;
+    43) echo "docs/source/checklists/CHECKLIST_43_SAFE_ACTION_INTELLIGENCE.md" ;;
+    44) echo "docs/source/checklists/CHECKLIST_44_INCIDENT_CAPSULE_AND_TWIN.md" ;;
+    45) echo "docs/source/checklists/CHECKLIST_45_FORENSIC_ENRICHMENT_AND_GRAPH.md" ;;
     *)
       echo "unknown stage: $1" >&2
       exit 1
@@ -33,7 +40,7 @@ get_checklist_file() {
 }
 
 declare -A status
-for stage in $(seq 28 38); do
+for stage in $(seq 28 45); do
   row="$(grep -E "^\| \[[ x]\] ${stage} \|" "$MASTER" || true)"
   if [[ -z "$row" ]]; then
     echo "missing stage row ${stage} in MASTER"
@@ -45,7 +52,7 @@ done
 
 # Ladder rule: after first unchecked stage, all following must be unchecked.
 found_open=0
-for stage in $(seq 28 38); do
+for stage in $(seq 28 45); do
   marker="${status[$stage]}"
   if [[ "$marker" == "x" ]]; then
     if [[ "$found_open" -eq 1 ]]; then
@@ -58,7 +65,7 @@ for stage in $(seq 28 38); do
 done
 
 # If stage is marked [x] in MASTER, corresponding checklist must have no open [ ] items.
-for stage in $(seq 28 38); do
+for stage in $(seq 28 45); do
   marker="${status[$stage]}"
   if [[ "$marker" == "x" ]]; then
     checklist="$(get_checklist_file "$stage")"
@@ -73,7 +80,7 @@ done
 
 # Dependency consistency: if checklist text says "CHECKLIST N (закрыт)",
 # MASTER must mark stage N as closed.
-for checklist in $(rg --files docs/source/checklists -g 'CHECKLIST_2[8-9]_*.md' -g 'CHECKLIST_3[0-8]_*.md'); do
+for checklist in $(rg --files docs/source/checklists -g 'CHECKLIST_2[8-9]_*.md' -g 'CHECKLIST_3[0-9]_*.md' -g 'CHECKLIST_4[0-5]_*.md'); do
   while IFS= read -r dep_stage; do
     dep_marker="${status[$dep_stage]:-}"
     if [[ -z "$dep_marker" ]]; then

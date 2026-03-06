@@ -126,6 +126,10 @@ Art проектируется как `Incident OS`, где:
 ## Навигация
 
 - корень документации: [docs/README.md](docs/README.md)
+- исторический корпус концепций: [PROJECT_HISTORY_AND_CONCEPTS.md](docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md)
+- AI operating model: [AI_ENGINEERING_OPERATING_MODEL.md](docs/foundation/AI_ENGINEERING_OPERATING_MODEL.md)
+- advanced automation backlog: [ADVANCED_AUTOMATION_BACKLOG.md](docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md)
+- visual language: [ART_VISUAL_LANGUAGE.md](docs/portal/ART_VISUAL_LANGUAGE.md)
 - портал: [docs/portal/INDEX.md](docs/portal/INDEX.md)
 - source docs: [docs/source/README.md](docs/source/README.md)
 - index чек-листов: [docs/source/checklists/README.md](docs/source/checklists/README.md)

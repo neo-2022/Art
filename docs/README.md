@@ -16,6 +16,14 @@
 - мастер-чек-лист: [CHECKLIST_00_MASTER_ART_REGART.md](source/checklists/CHECKLIST_00_MASTER_ART_REGART.md)
 - портал документации: [INDEX.md](portal/INDEX.md)
 
+## Foundation И История Замысла
+- модель работы AI-команды: [AI_ENGINEERING_OPERATING_MODEL.md](foundation/AI_ENGINEERING_OPERATING_MODEL.md)
+- backlog продвинутой автоматизации: [ADVANCED_AUTOMATION_BACKLOG.md](foundation/ADVANCED_AUTOMATION_BACKLOG.md)
+- корпус концепций и истории проекта: [PROJECT_HISTORY_AND_CONCEPTS.md](foundation/PROJECT_HISTORY_AND_CONCEPTS.md)
+- backlog революционных гипотез: [revolutionary_hypotheses.md](foundation/revolutionary_hypotheses.md)
+- radar перспективных технологий: [frontier_tech_radar.md](foundation/frontier_tech_radar.md)
+- lens audit report: [lens_audit_report.md](foundation/lens_audit_report.md)
+
 ## Основные разделы
 
 ### Продукт и архитектура

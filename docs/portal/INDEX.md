@@ -11,6 +11,13 @@
 
 ## Быстрые Пути
 
+### Foundation
+- AI operating model: [AI_ENGINEERING_OPERATING_MODEL.md](../foundation/AI_ENGINEERING_OPERATING_MODEL.md)
+- Advanced automation backlog: [ADVANCED_AUTOMATION_BACKLOG.md](../foundation/ADVANCED_AUTOMATION_BACKLOG.md)
+- История и корпус концепций: [PROJECT_HISTORY_AND_CONCEPTS.md](../foundation/PROJECT_HISTORY_AND_CONCEPTS.md)
+- Революционные гипотезы: [revolutionary_hypotheses.md](../foundation/revolutionary_hypotheses.md)
+- Radar технологий: [frontier_tech_radar.md](../foundation/frontier_tech_radar.md)
+
 ### Продукт
 - Архитектура: [ARCHITECTURE.md](../ARCHITECTURE.md)
 - Интеграция: [INTEGRATION.md](../INTEGRATION.md)
@@ -24,6 +31,7 @@
 - GO/NO-GO шаблон: [go_no_go_template.md](../ops/go_no_go_template.md)
 
 ### Governance
+- Visual language: [ART_VISUAL_LANGUAGE.md](./ART_VISUAL_LANGUAGE.md)
 - Delivery evidence: [DELIVERY_EVIDENCE.md](./DELIVERY_EVIDENCE.md)
 - Security posture: [SECURITY_POSTURE.md](./SECURITY_POSTURE.md)
 - Матрица совместимости Art↔REGART: [COMPATIBILITY_MATRIX_ART_REGART.md](./COMPATIBILITY_MATRIX_ART_REGART.md)
