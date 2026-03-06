@@ -25,7 +25,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
    - список примеров secrets (keys, tokens, cookies, auth headers)
    - отдельный раздел “Attachments как потенциальная PII”
 
-2. [ ] **Сделать:** Определить PII surface (полевая карта) для всех записываемых сущностей: RawEvent, Incident, AuditEntry, AttachmentMeta.  
+2. [x] **Сделать:** Определить PII surface (полевая карта) для всех записываемых сущностей: RawEvent, Incident, AuditEntry, AttachmentMeta.  
    **Проверка (pass/fail):** в `docs/privacy/pii_surface.md` есть таблица/список `field_paths`, и для каждой сущности указан:
    - `field_path`
    - категория (PII/secrets/telemetry/operational)
