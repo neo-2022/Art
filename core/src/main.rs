@@ -2722,6 +2722,8 @@ async fn audit_verify(State(state): State<Shared>, headers: HeaderMap) -> impl I
             StatusCode::OK,
             Json(json!({
                 "ok": true,
+                "status": "verified",
+                "chain_reason": "chain_valid",
                 "count": s.audits.len(),
                 "head_hash": s.audit_chain_head.clone(),
             })),
@@ -2731,8 +2733,9 @@ async fn audit_verify(State(state): State<Shared>, headers: HeaderMap) -> impl I
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({
                 "ok": false,
+                "status": "failed",
                 "error": "audit_chain_broken",
-                "reason": reason,
+                "chain_reason": reason,
                 "count": s.audits.len(),
             })),
         )
@@ -3278,6 +3281,11 @@ async fn actions_execute(
     Json(req): Json<ActionExecuteRequest>,
 ) -> impl IntoResponse {
     let target = req.target.clone().unwrap_or_else(|| "none".to_string());
+    let preflight_id = headers
+        .get("x-action-preflight-id")
+        .and_then(|value| value.to_str().ok())
+        .map(str::trim)
+        .unwrap_or("");
     let deny = if let Err(resp) = enforce_rbac(
         &state,
         &headers,
@@ -3307,6 +3315,55 @@ async fn actions_execute(
     let mut s = state.write().await;
     let (sanitized_params, redacted) =
         sanitize_sensitive(&req.params.clone().unwrap_or(Value::Null));
+    if preflight_id.is_empty() {
+        push_gap_event_locked(
+            &mut s,
+            "observability_gap.action_preflight_missing",
+            json!({
+                "action": req.action,
+                "target": target,
+                "actor_role": role_from_headers(&headers)
+                    .map(ActorRole::as_str)
+                    .unwrap_or("unknown"),
+                "policy_id": "action_preflight_v1",
+                "trace_id": trace_id_from_headers(&headers)
+            }),
+        );
+        append_audit_entry(
+            &mut s,
+            build_audit_entry_with_params(
+                &headers,
+                &req.action,
+                &target,
+                "denied",
+                "docs/runbooks/action_preflight_missing.md",
+                sanitized_params,
+            ),
+        );
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "accepted": false,
+                "error": "preflight_required",
+                "code": "action_preflight_missing"
+            })),
+        )
+            .into_response();
+    }
+    append_audit_entry(
+        &mut s,
+        build_audit_entry_with_params(
+            &headers,
+            "action.preflight",
+            &target,
+            "success",
+            "none",
+            json!({
+                "preflight_id": preflight_id,
+                "action": req.action
+            }),
+        ),
+    );
     if redacted {
         push_gap_event_locked(
             &mut s,
@@ -5294,6 +5351,7 @@ updates_mode = "online"
         let viewer_action = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "viewer")
             .body(Body::from(
@@ -5306,6 +5364,7 @@ updates_mode = "online"
         let operator_action = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "operator")
             .body(Body::from(
@@ -5339,12 +5398,51 @@ updates_mode = "online"
     }
 
     #[tokio::test]
+    async fn actions_execute_without_preflight_is_deterministically_denied() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "admin")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core"}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["accepted"], false);
+        assert_eq!(json["error"], "preflight_required");
+        assert_eq!(json["code"], "action_preflight_missing");
+
+        let snapshot = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.oneshot(snapshot).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        let has_gap = json["events"]
+            .as_array()
+            .unwrap_or(&Vec::new())
+            .iter()
+            .any(|row| row["event"]["kind"] == "observability_gap.action_preflight_missing");
+        assert!(has_gap);
+    }
+
+    #[tokio::test]
     async fn mcp_modes_enforced_for_actions() {
         let app = build_app(test_state());
 
         let ro = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "admin")
             .header("x-mcp-mode", "read_only")
@@ -5358,6 +5456,7 @@ updates_mode = "online"
         let limited_block = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "operator")
             .header("x-mcp-mode", "limited_actions")
@@ -5369,6 +5468,7 @@ updates_mode = "online"
         let full_admin = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "operator")
             .header("x-mcp-mode", "full_admin")
@@ -5386,6 +5486,7 @@ updates_mode = "online"
         let req = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "operator")
             .header("x-actor-id", "u-1")
@@ -5420,6 +5521,7 @@ updates_mode = "online"
         let req = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "viewer")
             .body(Body::from(
@@ -5458,6 +5560,7 @@ updates_mode = "online"
         let req = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "operator")
             .body(Body::from(
@@ -5507,6 +5610,7 @@ updates_mode = "online"
         let create = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "operator")
             .body(Body::from(
@@ -5569,6 +5673,7 @@ updates_mode = "online"
         let exec = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "admin")
             .header("x-actor-id", "ops")
@@ -5591,6 +5696,8 @@ updates_mode = "online"
         let body = resp.into_body().collect().await.expect("body").to_bytes();
         let json: Value = serde_json::from_slice(&body).expect("json");
         assert_eq!(json["ok"], true);
+        assert_eq!(json["status"], "verified");
+        assert_eq!(json["chain_reason"], "chain_valid");
         assert!(json["count"].as_u64().unwrap_or(0) >= 1);
         assert!(json["head_hash"].as_str().unwrap_or("").len() == 64);
     }
@@ -5602,6 +5709,7 @@ updates_mode = "online"
         let exec = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "admin")
             .header("x-actor-id", "ops")
@@ -5629,7 +5737,20 @@ updates_mode = "online"
         let body = resp.into_body().collect().await.expect("body").to_bytes();
         let json: Value = serde_json::from_slice(&body).expect("json");
         assert_eq!(json["ok"], false);
+        assert_eq!(json["status"], "failed");
         assert_eq!(json["error"], "audit_chain_broken");
+        assert!(json["chain_reason"]
+            .as_str()
+            .unwrap_or("")
+            .contains("entry_hash_mismatch")
+            || json["chain_reason"]
+                .as_str()
+                .unwrap_or("")
+                .contains("proof_")
+            || json["chain_reason"]
+                .as_str()
+                .unwrap_or("")
+                .contains("prev_hash_mismatch"));
     }
 
     #[tokio::test]
@@ -5639,6 +5760,7 @@ updates_mode = "online"
         let exec = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "admin")
             .header("x-actor-id", "ops")
@@ -5666,7 +5788,12 @@ updates_mode = "online"
         let body = resp.into_body().collect().await.expect("body").to_bytes();
         let json: Value = serde_json::from_slice(&body).expect("json");
         assert_eq!(json["ok"], false);
+        assert_eq!(json["status"], "failed");
         assert_eq!(json["error"], "audit_chain_broken");
+        assert!(json["chain_reason"]
+            .as_str()
+            .unwrap_or("")
+            .contains("proof_root_mismatch"));
     }
 
     #[tokio::test]

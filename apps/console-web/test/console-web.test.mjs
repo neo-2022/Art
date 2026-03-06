@@ -86,3 +86,32 @@ test("console-web: investigation library baseline contract is rendered", () => {
   assert.ok(html.includes("data-investigation-verify-btn"));
   assert.ok(html.includes("data-investigation-replay-btn"));
 });
+
+test("console-web: audit verify panel renders deterministic proof chain", () => {
+  const html = renderConsoleShell("en");
+  assert.ok(html.includes("id=\"audit-verify-panel\""));
+  assert.ok(html.includes("data-audit-verify-panel=\"true\""));
+  assert.ok(html.includes("data-audit-verify-status=\"verified\""));
+  assert.ok(html.includes("data-audit-proof-chain"));
+  assert.ok(html.includes("data-audit-chain-step=\"leaf:aud-shell-1\""));
+  assert.ok(html.includes("data-audit-chain-step=\"root:sha256-chain-v1\""));
+  assert.ok(html.includes("data-audit-lineage-link"));
+  assert.ok(html.includes("/console/evidence/audit-proof-chain"));
+});
+
+test("console-web: verify action is reachable from incident room, investigation library and flow mode", () => {
+  const html = renderConsoleShell("en");
+  assert.ok(html.includes("data-audit-verify-trigger=\"incident-room\""));
+  assert.ok(html.includes("data-audit-verify-trigger=\"investigation-library\""));
+  assert.ok(html.includes("data-audit-verify-trigger=\"flow-mode\""));
+});
+
+test("console-web: audit verify texts are rendered for EN and RU locales", () => {
+  const en = renderConsoleShell("en");
+  assert.ok(en.includes("Audit Verify"));
+  assert.ok(en.includes("Proof chain"));
+
+  const ru = renderConsoleShell("ru");
+  assert.ok(ru.includes("Проверка Audit"));
+  assert.ok(ru.includes("Цепочка доказательства"));
+});

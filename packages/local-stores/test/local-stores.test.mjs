@@ -216,3 +216,21 @@ test("local-stores: investigation library cycle import -> list -> verify -> repl
   assert.equal(replayed.ok, true);
   assert.ok(replayed.steps.includes("actions:1"));
 });
+
+test("local-stores: investigation doc replay keeps attached audit proof refs", () => {
+  const stores = createLocalStores();
+  stores.importInvestigationDoc({
+    doc_id: "inv-proof",
+    version: "v1",
+    claims: [],
+    decisions: [],
+    actions: [],
+    results: [],
+    evidence_refs: ["ev-1"],
+    audit_refs: ["aud-1"],
+    proof_refs: ["proof://merkle/aud-1"]
+  });
+  const replayed = stores.replayInvestigationDoc("inv-proof");
+  assert.equal(replayed.ok, true);
+  assert.ok(replayed.steps.includes("proof_refs:1"));
+});

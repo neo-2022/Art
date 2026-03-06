@@ -1,0 +1,90 @@
+
+> @art/local-stores@0.2.0 test /home/art/Art/packages/local-stores
+> npm run build && node --test test/*.test.mjs
+
+
+> @art/local-stores@0.2.0 build
+> tsc -p tsconfig.json
+
+TAP version 13
+# Subtest: flow inspectability: every semantic node type resolves evidence lineage
+ok 1 - flow inspectability: every semantic node type resolves evidence lineage
+  ---
+  duration_ms: 0.580702
+  type: 'test'
+  ...
+# Subtest: local-stores: cache and dna lookup
+ok 2 - local-stores: cache and dna lookup
+  ---
+  duration_ms: 0.876419
+  type: 'test'
+  ...
+# Subtest: local-stores: analytics summary returns charts and instructions
+ok 3 - local-stores: analytics summary returns charts and instructions
+  ---
+  duration_ms: 4.52161
+  type: 'test'
+  ...
+# Subtest: local-stores: sensitive payload fields are redacted before cache/index use
+ok 4 - local-stores: sensitive payload fields are redacted before cache/index use
+  ---
+  duration_ms: 0.177558
+  type: 'test'
+  ...
+# Subtest: local-stores: lineage trace path event -> evidence -> claim -> investigation
+ok 5 - local-stores: lineage trace path event -> evidence -> claim -> investigation
+  ---
+  duration_ms: 0.442918
+  type: 'test'
+  ...
+# Subtest: local-stores: investigation parser/serializer produce deterministic canonical output
+ok 6 - local-stores: investigation parser/serializer produce deterministic canonical output
+  ---
+  duration_ms: 0.302549
+  type: 'test'
+  ...
+# Subtest: local-stores: parser rejects investigation doc with missing required fields
+ok 7 - local-stores: parser rejects investigation doc with missing required fields
+  ---
+  duration_ms: 0.226739
+  type: 'test'
+  ...
+# Subtest: local-stores: fork/replay/compare investigation docs integration
+ok 8 - local-stores: fork/replay/compare investigation docs integration
+  ---
+  duration_ms: 0.37379
+  type: 'test'
+  ...
+# Subtest: local-stores: backward compatibility for investigation docs keeps replay operable
+ok 9 - local-stores: backward compatibility for investigation docs keeps replay operable
+  ---
+  duration_ms: 0.166257
+  type: 'test'
+  ...
+# Subtest: local-stores: LRC compiles runbook into condition graph and marks invalid steps
+ok 10 - local-stores: LRC compiles runbook into condition graph and marks invalid steps
+  ---
+  duration_ms: 0.244271
+  type: 'test'
+  ...
+# Subtest: local-stores: investigation library cycle import -> list -> verify -> replay
+ok 11 - local-stores: investigation library cycle import -> list -> verify -> replay
+  ---
+  duration_ms: 0.356759
+  type: 'test'
+  ...
+# Subtest: local-stores: investigation doc replay keeps attached audit proof refs
+ok 12 - local-stores: investigation doc replay keeps attached audit proof refs
+  ---
+  duration_ms: 0.148995
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 43.291834

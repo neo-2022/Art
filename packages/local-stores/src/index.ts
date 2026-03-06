@@ -89,6 +89,7 @@ export interface InvestigationDoc {
   results: Array<Record<string, unknown>>;
   evidence_refs: string[];
   audit_refs: string[];
+  proof_refs?: string[];
   signature?: string;
 }
 
@@ -245,6 +246,9 @@ function assertInvestigationDocShape(input: unknown): asserts input is Investiga
     if (!Array.isArray(doc[field])) {
       throw new Error(`investigation_doc_invalid_field_type:${field}`);
     }
+  }
+  if (doc.proof_refs !== undefined && !Array.isArray(doc.proof_refs)) {
+    throw new Error("investigation_doc_invalid_field_type:proof_refs");
   }
 }
 
@@ -596,7 +600,8 @@ export function createLocalStores() {
         `actions:${doc.actions.length}`,
         `results:${doc.results.length}`,
         `evidence_refs:${doc.evidence_refs.length}`,
-        `audit_refs:${doc.audit_refs.length}`
+        `audit_refs:${doc.audit_refs.length}`,
+        `proof_refs:${Array.isArray(doc.proof_refs) ? doc.proof_refs.length : 0}`
       ];
       return { ok: true, steps };
     },

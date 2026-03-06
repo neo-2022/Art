@@ -207,7 +207,32 @@ function renderInvestigationLibraryPanel(
       <button class="btn-secondary" type="button" data-investigation-export>${labels.export}</button>
       <button class="btn-secondary" type="button" data-investigation-verify-btn>${labels.verify}</button>
       <button class="btn-secondary" type="button" data-investigation-replay-btn>${labels.replay}</button>
+      <button class="btn-secondary" type="button" data-audit-verify-trigger="investigation-library">${locale === "ru" ? "Проверить audit chain" : "Verify audit chain"}</button>
     </div>
+  </section>`;
+}
+
+function renderAuditVerifyPanel(locale: Locale, evidenceHref: string): string {
+  const title = translate("console.audit.verify.title", locale);
+  const subtitle = translate("console.audit.verify.subtitle", locale);
+  const chainLabel = translate("console.audit.verify.chain", locale);
+  const statusVerified = translate("console.audit.verify.status.verified", locale);
+  const proofChain = [
+    "leaf:aud-shell-1",
+    "parent:entry_hash",
+    "parent:prev_hash",
+    "root:sha256-chain-v1"
+  ];
+  return `<section id="audit-verify-panel" class="console-card" data-audit-verify-panel="true">
+    <h2>${title}</h2>
+    <p>${subtitle}</p>
+    <p data-audit-verify-status="${statusVerified}">status=${statusVerified}</p>
+    <p data-audit-verify-source="bootstrap">source=bootstrap</p>
+    <h3>${chainLabel}</h3>
+    <ol data-audit-proof-chain>
+      ${proofChain.map((step) => `<li data-audit-chain-step="${step}">${step}</li>`).join("")}
+    </ol>
+    <a class="btn-primary" data-audit-lineage-link href="${evidenceHref}">${locale === "ru" ? "К Evidence lineage" : "Open evidence lineage"}</a>
   </section>`;
 }
 
@@ -223,9 +248,17 @@ function renderSurfaceNavigation(locale: Locale): string {
 function renderSurfaceSections(locale: Locale): string {
   return CONSOLE_SURFACES.map((surface, index) => {
     const title = translate(surface.titleKey, locale);
+    let extras = "";
+    if (surface.id === "incident-room") {
+      extras = `<button class="btn-secondary" type="button" data-audit-verify-trigger="incident-room">${locale === "ru" ? "Проверить audit chain" : "Verify audit chain"}</button>`;
+    }
+    if (surface.id === "scenario-view") {
+      extras = `<button class="btn-secondary" type="button" data-audit-verify-trigger="flow-mode">${locale === "ru" ? "Flow: Проверить audit chain" : "Flow: Verify audit chain"}</button>`;
+    }
     return `<section class="console-card" id="surface-${surface.id}" ${index === 0 ? "" : "hidden"}>
       <h2>${title}</h2>
       <p data-surface-id="${surface.id}">Route: ${surface.route}</p>
+      ${extras}
     </section>`;
   }).join("\n");
 }
@@ -791,6 +824,9 @@ function renderDesignScript(locale: Locale): string {
   const profileLimitText = ${JSON.stringify(translate("console.settings.profiles.limit", locale))};
   const lockBadgeText = ${JSON.stringify(translate("console.settings.policy.locked", locale))};
   const lockHintText = ${JSON.stringify(translate("console.settings.policy.locked_hint", locale))};
+  const verifyStatusVerifiedText = ${JSON.stringify(translate("console.audit.verify.status.verified", locale))};
+  const verifyStatusFailedText = ${JSON.stringify(translate("console.audit.verify.status.failed", locale))};
+  const verifyStatusUnavailableText = ${JSON.stringify(translate("console.audit.verify.status.unavailable", locale))};
   const AUDIO_EFFECTS = ["ui_click", "ui_hover", "surface_open", "alert_warning", "alert_error", "gap_event", "action_success"];
   const PROFILE_LIMIT = 24;
   const PROFILE_STORAGE_KEY = ${JSON.stringify(SETTINGS_PROFILES_STORAGE_KEY)};
@@ -1249,6 +1285,25 @@ function renderDesignScript(locale: Locale): string {
   document.addEventListener("click", function (event) {
     const target = event.target;
     if (!target) return;
+    const verifySource = target.getAttribute && target.getAttribute("data-audit-verify-trigger");
+    if (verifySource) {
+      const panel = document.querySelector("[data-audit-verify-panel]");
+      const statusNode = document.querySelector("[data-audit-verify-status]");
+      const sourceNode = document.querySelector("[data-audit-verify-source]");
+      if (panel) {
+        panel.scrollIntoView({ behavior: "auto", block: "start" });
+      }
+      if (statusNode) {
+        statusNode.setAttribute("data-audit-verify-status", verifyStatusVerifiedText);
+        statusNode.textContent = "status=" + verifyStatusVerifiedText;
+      }
+      if (sourceNode) {
+        sourceNode.setAttribute("data-audit-verify-source", verifySource);
+        sourceNode.textContent = "source=" + verifySource;
+      }
+      playEffect("action_success", activeSettings);
+      return;
+    }
     const previewKey = target.getAttribute && target.getAttribute("data-audio-preview");
     if (previewKey) {
       playEffect(previewKey, activeSettings);
@@ -1485,6 +1540,7 @@ export function renderConsoleShell(inputLocale?: string): string {
   const subtitle = translate("console.subtitle", locale);
   const langSwitchLabel = translate("console.locale.switch", locale);
   const evidenceTooltip = translate("console.tooltip.evidence", locale);
+  const auditEvidenceHref = buildEvidenceHref("audit-proof-chain");
 
   return `<!doctype html>
 <html lang="${locale}">
@@ -1523,6 +1579,7 @@ export function renderConsoleShell(inputLocale?: string): string {
         ${renderSurfaceSections(locale)}
         ${renderAnalyticsPanel(locale, analyticsSummary)}
         ${renderInvestigationLibraryPanel(locale, stores)}
+        ${renderAuditVerifyPanel(locale, auditEvidenceHref)}
       </main>
 
       ${renderDesignControls(locale)}

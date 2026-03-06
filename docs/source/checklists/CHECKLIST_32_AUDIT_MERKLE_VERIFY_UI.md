@@ -20,50 +20,50 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [x] 1. Сделать: attach merkle proof к audit entries.
   - [x] Проверка (pass/fail): proof consistency tests PASS.
   - [x] Артефакт результата: hash/proof test log.
-- [ ] 2. Сделать: verify endpoint возвращает детерминированный статус и chain reason.
-  - [ ] Проверка (pass/fail): integration tests verify endpoint PASS.
-  - [ ] Артефакт результата: API test output.
-- [ ] 3. Сделать: UI verify flow отображает proof chain.
-  - [ ] Проверка (pass/fail): e2e verify tests PASS.
-  - [ ] Артефакт результата: e2e logs + screenshots.
-- [ ] 4. Сделать: attach proof refs в InvestigationDoc.
-  - [ ] Проверка (pass/fail): replay tests подтверждают наличие audit proof refs.
-  - [ ] Артефакт результата: replay fixture diff.
-- [ ] 5. Сделать: observability-gap контроль verify failures.
-  - [ ] Событие: `observability_gap.audit_merkle_verify_failed`.
-  - [ ] evidence_min: `audit_id`, `proof_hash`, `step`, `error`, `trace_id`.
-  - [ ] action_ref: `docs/runbooks/audit_merkle_verify_failed.md`.
-  - [ ] Проверка (pass/fail): registry запись + runbook файл.
-  - [ ] Артефакт результата: registry/runbook diff.
-- [ ] 6. Сделать: зафиксировать безразрывную интеграцию Audit Verify в интерфейсную лестницу L1->L2.
-  - [ ] Требование: verify-действие доступно из `Incident Room`, `Investigation Library` и из контекстов `Flow Mode` для узлов с `audit_refs`.
-  - [ ] Требование: verify-статус (`verified|failed|unavailable`) отображается единообразно и локализуется (EN/RU).
-  - [ ] Проверка (pass/fail): e2e подтверждает стабильный маршрут `surface -> verify panel -> evidence lineage` без потери контекста.
-  - [ ] Артефакт результата: anti-breakage e2e report + screenshots.
+- [x] 2. Сделать: verify endpoint возвращает детерминированный статус и chain reason.
+  - [x] Проверка (pass/fail): integration tests verify endpoint PASS.
+  - [x] Артефакт результата: API test output.
+- [x] 3. Сделать: UI verify flow отображает proof chain.
+  - [x] Проверка (pass/fail): e2e verify tests PASS.
+  - [x] Артефакт результата: e2e logs + screenshots.
+- [x] 4. Сделать: attach proof refs в InvestigationDoc.
+  - [x] Проверка (pass/fail): replay tests подтверждают наличие audit proof refs.
+  - [x] Артефакт результата: replay fixture diff.
+- [x] 5. Сделать: observability-gap контроль verify failures.
+  - [x] Событие: `observability_gap.audit_merkle_verify_failed`.
+  - [x] evidence_min: `audit_id`, `proof_hash`, `step`, `error`, `trace_id`.
+  - [x] action_ref: `docs/runbooks/audit_merkle_verify_failed.md`.
+  - [x] Проверка (pass/fail): registry запись + runbook файл.
+  - [x] Артефакт результата: registry/runbook diff.
+- [x] 6. Сделать: зафиксировать безразрывную интеграцию Audit Verify в интерфейсную лестницу L1->L2.
+  - [x] Требование: verify-действие доступно из `Incident Room`, `Investigation Library` и из контекстов `Flow Mode` для узлов с `audit_refs`.
+  - [x] Требование: verify-статус (`verified|failed|unavailable`) отображается единообразно и локализуется (EN/RU).
+  - [x] Проверка (pass/fail): e2e подтверждает стабильный маршрут `surface -> verify panel -> evidence lineage` без потери контекста.
+  - [x] Артефакт результата: anti-breakage e2e report + screenshots.
 
 ## Документация (RU)
-- [ ] docs/source/audit_merkle_verify.md
-- [ ] docs/runbooks/audit_merkle_verify_failed.md
+- [x] docs/source/audit_merkle_verify.md
+- [x] docs/runbooks/audit_merkle_verify_failed.md
 
 ## Тестирование
-- [ ] Tier0 unit: hash/proof validation.
-- [ ] Tier1 integration: verify endpoint.
-- [ ] Tier2 e2e: UI verify flow.
-- [ ] Tier2 e2e: anti-breakage маршруты verify из `Incident Room`/`Investigation Library`/`Flow Mode`.
-- [ ] Tier2 i18n: verify labels/tooltips/errors присутствуют и консистентны для EN/RU.
-- [ ] chaos: tampered chain detection.
-- [ ] load: переносится в этап 34.
-- [ ] soak: переносится в этап 34.
+- [x] Tier0 unit: hash/proof validation.
+- [x] Tier1 integration: verify endpoint.
+- [x] Tier2 e2e: UI verify flow.
+- [x] Tier2 e2e: anti-breakage маршруты verify из `Incident Room`/`Investigation Library`/`Flow Mode`.
+- [x] Tier2 i18n: verify labels/tooltips/errors присутствуют и консистентны для EN/RU.
+- [x] chaos: tampered chain detection.
+- [x] load: переносится в этап 34.
+- [x] soak: переносится в этап 34.
 
 ## CI gate
-- [ ] `stage32-audit-merkle-tests`
-- [ ] `stage32-audit-ux-anti-breakage`
+- [x] `stage32-audit-merkle-tests`
+- [x] `stage32-audit-ux-anti-breakage`
 
 ## DoD
-- [ ] Любое действие имеет проверяемый proof-chain.
-- [ ] verify endpoint/UI детерминированно объясняют причину fail.
-- [ ] verify UX встраивается в L1/L2 поверхности без интерфейсного разрыва и подтверждён anti-breakage e2e.
-- [ ] observability-gap событие этапа 32 зарегистрировано и имеет runbook.
+- [x] Любое действие имеет проверяемый proof-chain.
+- [x] verify endpoint/UI детерминированно объясняют причину fail.
+- [x] verify UX встраивается в L1/L2 поверхности без интерфейсного разрыва и подтверждён anti-breakage e2e.
+- [x] observability-gap событие этапа 32 зарегистрировано и имеет runbook.
 
 ## Метаданные
 - Ответственный: @neo-2022
@@ -71,4 +71,4 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - Артефакты закрытия: tests + screenshots + registry/runbook diff.
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)
-- [ ] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

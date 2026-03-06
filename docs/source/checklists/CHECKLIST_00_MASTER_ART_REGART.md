@@ -135,7 +135,7 @@ A) Полный запрет опциональности:
 | [x] 29 | CHECKLIST_29_EVENT_DNA_CORE_V2.md | Event DNA Core v2 | deterministic DNA core: formal model + property 1M + reference parity + `/api/v2/*` | 2026-03-06, neo-2022, stage29-dna-assurance-gate+stage29-dna-tests+stage29-dna-property-million+stage29-contract-fingerprint+stage29-nightly-replay-determinism+stage28-docs-gate PASS |
 | [x] 30 | CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md | Evidence/Claims/Dialogic | evidence blocks, claim lifecycle, dialog schemas, UI law checks | 2026-03-06, neo-2022, stage30-evidence-claims-tests+stage30-truth-modes-tests+console-test+stage30_dod_validation_artifact PASS |
 | [x] 31 | CHECKLIST_31_INVESTIGATIONS_AS_CODE.md | Investigations-as-Code | versioned InvestigationDoc, fork/replay/compare | 2026-03-06, neo-2022, stage31-investigation-doc-tests+stage31-investigation-library-tests+local-stores integration/e2e artifacts PASS |
-| [ ] 32 | CHECKLIST_32_AUDIT_MERKLE_VERIFY_UI.md | Audit+Merkle | crypto verify flow and proof attachment | -- |
+| [x] 32 | CHECKLIST_32_AUDIT_MERKLE_VERIFY_UI.md | Audit+Merkle | crypto verify flow and proof attachment | 2026-03-06, neo-2022, stage32-audit-merkle-tests+stage32-audit-ux-anti-breakage+stage32 artifacts PASS |
 | [ ] 33 | CHECKLIST_33_SECURE_ACTIONS_PROTOCOL_V2.md | Secure Actions v2 | preflight/policy gates, no silent actions | -- |
 | [ ] 34 | CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md | Perf/Load/Coverage | DNA perf budgets 10k/100k + overload 2x/3x + ratchet 5% + coverage ratchet | -- |
 | [ ] 35 | CHECKLIST_35_SPATIAL_STORE_3D_READINESS.md | Spatial/3D readiness | spatial store contracts, picking/visibility invariants | -- |

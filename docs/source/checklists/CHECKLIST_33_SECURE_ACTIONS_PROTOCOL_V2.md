@@ -17,9 +17,9 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - CHECKLIST 32 (audit verify закрыт)
 
 ## Шаги (строго линейно)
-- [ ] 1. Сделать: preflight log обязателен для каждого action execute.
-  - [ ] Проверка (pass/fail): action без preflight получает deterministic deny.
-  - [ ] Артефакт результата: integration test output.
+- [x] 1. Сделать: preflight log обязателен для каждого action execute.
+  - [x] Проверка (pass/fail): action без preflight получает deterministic deny.
+  - [x] Артефакт результата: integration test output.
 - [ ] 2. Сделать: policy-as-ui в Action Studio (доступные поля/действия только по policy).
   - [ ] Проверка (pass/fail): UI policy tests PASS.
   - [ ] Артефакт результата: UI test logs.
