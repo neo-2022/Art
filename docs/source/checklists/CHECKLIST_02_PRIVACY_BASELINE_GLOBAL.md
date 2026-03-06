@@ -65,7 +65,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
    - обязательные поля evidence_min (ошибка/контекст/счётчики)
    - требование зарегистрировать событие в `docs/governance/observability_gap_registry.md` (Stage 01) с `incident_rule` и `action_ref`
 
-8. [ ] **Сделать:** Зафиксировать retention matrix для: events, incidents, audit, attachments, raw archive (если существует).  
+8. [x] **Сделать:** Зафиксировать retention matrix для: events, incidents, audit, attachments, raw archive (если существует).  
    **Проверка (pass/fail):** существует `docs/privacy/retention_matrix.md`, содержит таблицу:
    - тип данных
    - срок хранения (число + единица)
