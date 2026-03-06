@@ -63,7 +63,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          osv-scanner scan source --recursive . --format json --output osv-report.json
+          osv-scanner scan source --recursive --format json --output osv-report.json .
           test -s osv-report.json
       - name: Upload osv report
         if: always()
