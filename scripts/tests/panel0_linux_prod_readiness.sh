@@ -258,7 +258,26 @@ fi
 set_modes "http_error" "pass"
 out="$("$PWCLI" goto "http://127.0.0.1:${PROXY_PORT}/panel0/")"
 assert_contains "$out" "Page URL: http://127.0.0.1:${PROXY_PORT}/panel0/" "reopen panel0 for backlog flush"
-out="$("$PWCLI" eval 'async () => { await new Promise((resolve) => setTimeout(resolve, 2500)); const raw = localStorage.getItem("art.panel0.console_boot_failed.backlog.v1"); if (!raw) return {backlog_len: 0, backlog_cleared: true}; try { const len = JSON.parse(raw).length; return {backlog_len: len, backlog_cleared: len === 0}; } catch { return {backlog_len: -1, backlog_cleared: false}; } }')"
+out="$("$PWCLI" eval 'async () => {
+  const readState = () => {
+    const raw = localStorage.getItem("art.panel0.console_boot_failed.backlog.v1");
+    if (!raw) return {backlog_len: 0, backlog_cleared: true};
+    try {
+      const len = JSON.parse(raw).length;
+      return {backlog_len: len, backlog_cleared: len === 0};
+    } catch {
+      return {backlog_len: -1, backlog_cleared: false};
+    }
+  };
+  for (let i = 0; i < 24; i += 1) {
+    const state = readState();
+    if (state.backlog_cleared) {
+      return state;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  return readState();
+}')"
 assert_contains "$out" '"backlog_cleared": true' "backlog flush after ingest recovery"
 after_count="$(boot_count)"
 if (( after_count <= base_count )); then

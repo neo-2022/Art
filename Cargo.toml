@@ -4,3 +4,18 @@ members = [
   "core",
   "agent",
 ]
+
+[profile.general]
+inherits = "release"
+codegen-units = 1
+incremental = false
+lto = "thin"
+strip = "symbols"
+
+[profile.certified]
+inherits = "release"
+codegen-units = 1
+incremental = false
+lto = "fat"
+panic = "abort"
+strip = "symbols"

@@ -6,10 +6,14 @@
 
 ## Цель
 Подготовить Linux-only production hardening для Tier A Panel0 и Tier B Console с обязательной безопасностью rollout DNA Core.
+Дополнительно: заложить OS-матрицу (A/B/C), certified build profile и натурные test-skeletons так, чтобы текущий CI оставался Ubuntu-only, но переход на full natural matrix включался флагом без переработки архитектуры.
 
 ## Границы
 - Включено: canary rollout, alert gates, rollback drills, readiness suites.
 - Включено: dual-run контроль DNA на canary и feature-flag rollback.
+- Включено: единый source-of-truth `formats/platform_support.yaml`.
+- Включено: build profiles `general`/`certified`, contract tests `tests/platform/contract/*`, install skeletons `tests/platform/install/*`.
+- Включено: CI workflow `stage37-platform-matrix` с Ubuntu active и natural jobs under flag.
 - Исключено: non-linux production targets.
 
 ## Зависимости
@@ -58,10 +62,30 @@
 - [ ] 10. Сделать: ввести Linux anti-breakage suite для интерфейсной лестницы L0/L1/L2.
   - [ ] Проверка (pass/fail): suite подтверждает, что после rollout сохраняются базовые сценарии shell, truth modes, investigation library и flow mode inspectability.
   - [ ] Артефакт результата: interface anti-breakage report.
+- [ ] 11. Сделать: ввести OS-матрицу как единый контракт поддержки платформ.
+  - [ ] Проверка (pass/fail): `formats/platform_support.yaml` существует и используется gate-скриптами.
+  - [ ] Артефакт результата: matrix yaml + gate log.
+- [ ] 12. Сделать: реализовать certified profile contract (без dynamic loading, allowlist deps, reproducible profile flags).
+  - [ ] Проверка (pass/fail): `scripts/ci/check_certified_profile.sh` PASS.
+  - [ ] Артефакт результата: certified gate log.
+- [ ] 13. Сделать: добавить platform contract tests и install skeletons под все distro из матрицы.
+  - [ ] Проверка (pass/fail): `tests/platform/contract/run_contract_suite.sh` PASS и `scripts/ci/check_platform_install_skeletons.sh` PASS.
+  - [ ] Проверка (pass/fail): `tests/platform/contract/check_docker_runtime_contract.sh` PASS.
+  - [ ] Артефакт результата: contract suite log + install skeleton validation log.
+- [ ] 14. Сделать: добавить CI-matrix jobs (Ubuntu enabled, остальные disabled через `ENABLE_NATURAL_MATRIX=false`).
+  - [ ] Проверка (pass/fail): `.github/workflows/platform_matrix_stage37.yml` валиден; `ubuntu-smoke` PASS; natural jobs помечены условием флага.
+  - [ ] Артефакт результата: workflow run log + job list.
+- [ ] 15. Сделать: обеспечить RU/EN docs sync для платформенной части.
+  - [ ] Проверка (pass/fail): `scripts/ci/check_platform_docs_sync.sh` PASS.
+  - [ ] Артефакт результата: docs sync gate log.
 
 ## Документация (RU)
 - [ ] docs/ops/panel0_linux_prod_readiness.md
 - [ ] docs/ops/console_linux_prod_readiness.md
+- [ ] docs/ops/platform-support.md
+- [ ] docs/en/ops/platform-support.md
+- [ ] docs/security/fstec-certified-profile.md
+- [ ] docs/en/security/fstec-certified-profile.md
 - [ ] docs/source/dna_core_determinism_performance_assurance.md
 - [ ] docs/ops/art_regart_contract_parity.md
 - [ ] docs/ops/operational_debt_register.md
@@ -82,9 +106,14 @@
 
 ## CI gate
 - [ ] `stage37-linux-hardening-gate`
+- [ ] `platform-matrix-contract-gate`
+- [ ] `ubuntu-smoke` (stage37-platform-matrix workflow)
 
 ## DoD
 - [ ] Linux rollout/rollback воспроизводим и документирован.
+- [ ] OS-матрица закреплена в `formats/platform_support.yaml` и используется CI/docs/gates.
+- [ ] `general`/`certified` профили сборки реализованы и проходят contract checks на Ubuntu.
+- [ ] Contract suite на Ubuntu генерирует evidence bundle, включая placeholders для natural matrix.
 - [ ] Alert gates блокируют rollout при превышении порога.
 - [ ] DNA divergence автоматически останавливает rollout.
 - [ ] observability-gap события этапа 37 зарегистрированы и имеют runbook.

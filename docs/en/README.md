@@ -7,3 +7,7 @@
 
 This EN tree mirrors key RU pages. Normative languages are RU and EN.
 Runtime translations for other locales are non-normative.
+
+Key platform pages:
+- `docs/en/ops/platform-support.md`
+- `docs/en/security/fstec-certified-profile.md`

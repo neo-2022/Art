@@ -1081,6 +1081,46 @@ jobs:
       - name: Stage 37 linux hardening gate
         run: bash scripts/ci/check_stage37_linux_hardening.sh
 
+  platform-matrix-contract-gate:
+    name: platform-matrix-contract-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
+        with:
+          toolchain: stable
+      - name: Platform matrix consistency
+        run: bash scripts/ci/check_platform_support_consistency.sh
+      - name: Platform docs sync
+        run: bash scripts/ci/check_platform_docs_sync.sh
+      - name: Install skeletons gate
+        run: bash scripts/ci/check_platform_install_skeletons.sh
+      - name: Certified profile gate
+        run: bash scripts/ci/check_certified_profile.sh
+      - name: Package layout contract
+        run: bash tests/platform/contract/check_package_layout_contract.sh
+      - name: Docker runtime contract
+        run: bash tests/platform/contract/check_docker_runtime_contract.sh
+
+  ubuntu-smoke:
+    name: ubuntu-smoke
+    runs-on: ubuntu-latest
+    needs: platform-matrix-contract-gate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Ubuntu REGART integration smoke
+        run: bash tests/platform/contract/ubuntu_regart_smoke.sh
+      - name: Generate platform evidence bundle
+        run: bash tests/platform/contract/generate_evidence_bundle.sh artifacts/platform-evidence
+      - name: Upload platform evidence
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        with:
+          name: platform-evidence-ubuntu
+          path: artifacts/platform-evidence
+
   stage38-ladder-gate:
     name: stage38-ladder-gate
     runs-on: ubuntu-latest

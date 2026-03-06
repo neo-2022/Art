@@ -1,0 +1,7 @@
+Package: art-core
+Version: 0.1.0
+Section: admin
+Priority: optional
+Architecture: amd64
+Maintainer: Art Team <ops@art.local>
+Description: Art Core service package skeleton

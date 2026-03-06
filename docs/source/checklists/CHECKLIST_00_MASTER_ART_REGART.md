@@ -125,5 +125,5 @@ A) Полный запрет опциональности:
 | [ ] 34 | CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md | Perf/Load/Coverage | DNA perf budgets 10k/100k + overload 2x/3x + ratchet 5% + coverage ratchet | -- |
 | [ ] 35 | CHECKLIST_35_SPATIAL_STORE_3D_READINESS.md | Spatial/3D readiness | spatial store contracts, picking/visibility invariants | -- |
 | [ ] 36 | CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md | SaaS readiness | tenant/control-data-plane architecture contracts | -- |
-| [ ] 37 | CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md | Linux hardening | canary/rollback readiness + DNA divergence stop + feature-flag fallback | -- |
+| [ ] 37 | CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md | Linux hardening | canary/rollback + OS matrix source-of-truth + certified/general profiles + Ubuntu-only natural gate | -- |
 | [ ] 38 | CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md | Process ladder | CI-enforced stage order and status integrity | -- |
