@@ -44,7 +44,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
    - идентификаторы правил `rule_id` и область действия (field paths)
    - требования: redaction применяется ДО записи в AuditEntry и ДО выдачи наружу (UI/API)
 
-5. [ ] **Сделать:** Зафиксировать требование: redaction rules изменяются конфигом без перекомпиляции/релиза кода (смена правил = смена конфигурации).  
+5. [x] **Сделать:** Зафиксировать требование: redaction rules изменяются конфигом без перекомпиляции/релиза кода (смена правил = смена конфигурации).  
    **Проверка (pass/fail):** `docs/privacy/redaction_policy.md` содержит раздел `configurable rules`, в котором указано:
    - где хранится конфиг rules
    - как версионируются rules
