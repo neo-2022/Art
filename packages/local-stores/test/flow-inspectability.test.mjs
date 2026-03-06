@@ -17,3 +17,26 @@ test("flow inspectability: every semantic node type resolves evidence lineage", 
 
   assert.equal(nodeTypes.size, 0, "all semantic node types must be represented in flow scene");
 });
+
+test("flow snapshot replay: serialize/restore keeps positions and visibility", () => {
+  const stores = createLocalStores();
+  const scene = stores.buildFlowScene();
+  const snapshotId = "snap-flow-1";
+  const snapshot = {
+    layout_id: "flow-layout",
+    positions: {},
+    visibility: {},
+    lod: "standard",
+    flow_complexity: "advanced"
+  };
+
+  scene.nodes.forEach((node, index) => {
+    stores.setPosition(node.node_id, { x: index * 3, y: index * 5 }, "flow-layout");
+    snapshot.positions[node.node_id] = { x: index * 3, y: index * 5 };
+    snapshot.visibility[node.node_id] = index % 2 === 0;
+  });
+
+  stores.saveSnapshot(snapshotId, snapshot);
+  const restored = stores.loadSnapshot(snapshotId);
+  assert.deepEqual(restored, snapshot);
+});

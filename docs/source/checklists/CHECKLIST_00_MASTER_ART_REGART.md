@@ -138,7 +138,7 @@ A) Полный запрет опциональности:
 | [x] 32 | CHECKLIST_32_AUDIT_MERKLE_VERIFY_UI.md | Audit+Merkle | crypto verify flow and proof attachment | 2026-03-06, neo-2022, stage32-audit-merkle-tests+stage32-audit-ux-anti-breakage+stage32 artifacts PASS |
 | [x] 33 | CHECKLIST_33_SECURE_ACTIONS_PROTOCOL_V2.md | Secure Actions v2 | preflight/policy gates, no silent actions | 2026-03-06, neo-2022, stage33-secure-actions-tests+stage33-action-ux-anti-breakage+NRAC/simulation artifacts PASS |
 | [x] 34 | CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md | Perf/Load/Coverage | DNA perf budgets 10k/100k + overload 2x/3x + ratchet 5% + coverage ratchet | 2026-03-06, neo-2022, stage34-perf-load-tests+coverage-ratchet-gate+stage35-flow-perf-2d-gate+replay-regression+innovation-kpi-gate PASS |
-| [ ] 35 | CHECKLIST_35_SPATIAL_STORE_3D_READINESS.md | Spatial/3D readiness | spatial store contracts, picking/visibility invariants | -- |
+| [x] 35 | CHECKLIST_35_SPATIAL_STORE_3D_READINESS.md | Spatial/3D readiness | spatial store contracts, picking/visibility invariants | 2026-03-06, neo-2022, stage35-spatial-readiness-tests+stage35-flow-inspectability-tests+stage35-flow-snapshot-replay-tests+stage35-flow-perf-2d-gate PASS |
 | [ ] 36 | CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md | SaaS readiness | tenant/control-data-plane architecture contracts | -- |
 | [ ] 37 | CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md | Linux hardening | canary/rollback + OS matrix source-of-truth + certified/general profiles + Ubuntu-only natural gate | -- |
 | [ ] 38 | CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md | Process ladder | CI-enforced stage order and status integrity | -- |

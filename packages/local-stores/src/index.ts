@@ -70,6 +70,12 @@ export interface Vec2 {
   y: number;
 }
 
+export interface Vec3 {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export type FlowComplexity = "read-only" | "advanced";
 
 export interface FlowSnapshotState {
@@ -309,6 +315,96 @@ function defaultFlowSnapshot(layoutId = "default"): FlowSnapshotState {
   };
 }
 
+function encodeSpatialChunk(layoutId: string, entries: Array<{ node_id: string; x: number; y: number; z: number }>): Uint8Array {
+  const metadataJson = JSON.stringify({
+    version: "v0.2",
+    layout_id: layoutId,
+    count: entries.length
+  });
+  const metadataBytes = new TextEncoder().encode(metadataJson);
+  const payload = new Uint8Array(entries.length * 12);
+  const payloadView = new DataView(payload.buffer);
+  const nodeIds = entries.map((entry) => entry.node_id);
+
+  entries.forEach((entry, idx) => {
+    const base = idx * 12;
+    payloadView.setFloat32(base, entry.x, true);
+    payloadView.setFloat32(base + 4, entry.y, true);
+    payloadView.setFloat32(base + 8, entry.z, true);
+  });
+
+  const idsJson = JSON.stringify(nodeIds);
+  const idsBytes = new TextEncoder().encode(idsJson);
+  const out = new Uint8Array(4 + metadataBytes.length + 4 + idsBytes.length + payload.length);
+  const view = new DataView(out.buffer);
+  let offset = 0;
+  view.setUint32(offset, metadataBytes.length, true);
+  offset += 4;
+  out.set(metadataBytes, offset);
+  offset += metadataBytes.length;
+  view.setUint32(offset, idsBytes.length, true);
+  offset += 4;
+  out.set(idsBytes, offset);
+  offset += idsBytes.length;
+  out.set(payload, offset);
+  return out;
+}
+
+function decodeSpatialChunk(chunk: Uint8Array): {
+  layout_id: string;
+  entries: Array<{ node_id: string; x: number; y: number; z: number }>;
+} {
+  const view = new DataView(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+  if (chunk.byteLength < 8) {
+    throw new Error("spatial_chunk_too_small");
+  }
+  let offset = 0;
+  const metadataLen = view.getUint32(offset, true);
+  offset += 4;
+  if (offset + metadataLen > chunk.byteLength) {
+    throw new Error("spatial_chunk_bad_metadata_length");
+  }
+  const metadataJson = new TextDecoder().decode(chunk.slice(offset, offset + metadataLen));
+  offset += metadataLen;
+  const metadata = JSON.parse(metadataJson) as { layout_id?: string; count?: number };
+  if (!metadata.layout_id) {
+    throw new Error("spatial_chunk_missing_layout_id");
+  }
+  const count = Number(metadata.count || 0);
+
+  if (offset + 4 > chunk.byteLength) {
+    throw new Error("spatial_chunk_missing_ids_length");
+  }
+  const idsLen = view.getUint32(offset, true);
+  offset += 4;
+  if (offset + idsLen > chunk.byteLength) {
+    throw new Error("spatial_chunk_bad_ids_length");
+  }
+  const idsJson = new TextDecoder().decode(chunk.slice(offset, offset + idsLen));
+  offset += idsLen;
+  const nodeIds = JSON.parse(idsJson) as string[];
+  if (!Array.isArray(nodeIds) || nodeIds.length !== count) {
+    throw new Error("spatial_chunk_ids_count_mismatch");
+  }
+
+  const remaining = chunk.byteLength - offset;
+  if (remaining !== count * 12) {
+    throw new Error("spatial_chunk_payload_length_mismatch");
+  }
+  const payload = new DataView(chunk.buffer, chunk.byteOffset + offset, remaining);
+  const entries: Array<{ node_id: string; x: number; y: number; z: number }> = [];
+  for (let idx = 0; idx < count; idx += 1) {
+    const base = idx * 12;
+    entries.push({
+      node_id: nodeIds[idx],
+      x: payload.getFloat32(base, true),
+      y: payload.getFloat32(base + 4, true),
+      z: payload.getFloat32(base + 8, true)
+    });
+  }
+  return { layout_id: metadata.layout_id, entries };
+}
+
 export function createLocalStores() {
   const cache = new Map<string, CachedEvent>();
   const analyticsCounters = new Map<string, number>();
@@ -317,12 +413,28 @@ export function createLocalStores() {
   const kindCounters = new Map<string, number>();
   const dnaCounters = new Map<string, number>();
   const layoutStore = new Map<string, Map<string, Vec2>>();
+  const spatialGridIndexStore = new Map<
+    string,
+    {
+      cell_size: number;
+      cells: Map<string, string[]>;
+    }
+  >();
   const snapshots = new Map<string, FlowSnapshotState>();
   const investigationStore = new Map<string, InvestigationDoc>();
   const investigationMeta = new Map<string, InvestigationLibraryItem>();
+  let selection2d: string[] = [];
+  let selection3d: string[] = [];
   let flowComplexity: FlowComplexity = "advanced";
   let totalEvents = 0;
   let gapEvents = 0;
+  let soaCapacity = 256;
+  let soaCount = 0;
+  let soaX = new Float32Array(soaCapacity);
+  let soaY = new Float32Array(soaCapacity);
+  let soaZ = new Float32Array(soaCapacity);
+  const soaIndexByNodeId = new Map<string, number>();
+  const soaNodeIdByIndex: string[] = new Array(soaCapacity);
 
   function ensureLayout(layoutId: string): Map<string, Vec2> {
     const existing = layoutStore.get(layoutId);
@@ -332,6 +444,47 @@ export function createLocalStores() {
     const created = new Map<string, Vec2>();
     layoutStore.set(layoutId, created);
     return created;
+  }
+
+  function gridKey(x: number, y: number, cellSize: number): string {
+    const gx = Math.floor(x / cellSize);
+    const gy = Math.floor(y / cellSize);
+    return `${gx}:${gy}`;
+  }
+
+  function ensureSoaCapacity(nextCount: number): void {
+    if (nextCount <= soaCapacity) {
+      return;
+    }
+    let nextCapacity = soaCapacity;
+    while (nextCapacity < nextCount) {
+      nextCapacity *= 2;
+    }
+    const nx = new Float32Array(nextCapacity);
+    const ny = new Float32Array(nextCapacity);
+    const nz = new Float32Array(nextCapacity);
+    nx.set(soaX.subarray(0, soaCount));
+    ny.set(soaY.subarray(0, soaCount));
+    nz.set(soaZ.subarray(0, soaCount));
+    soaX = nx;
+    soaY = ny;
+    soaZ = nz;
+    soaNodeIdByIndex.length = nextCapacity;
+    soaCapacity = nextCapacity;
+  }
+
+  function upsertSoaNode(nodeId: string, vec: Vec3): void {
+    let idx = soaIndexByNodeId.get(nodeId);
+    if (idx === undefined) {
+      ensureSoaCapacity(soaCount + 1);
+      idx = soaCount;
+      soaCount += 1;
+      soaIndexByNodeId.set(nodeId, idx);
+      soaNodeIdByIndex[idx] = nodeId;
+    }
+    soaX[idx] = vec.x;
+    soaY[idx] = vec.y;
+    soaZ[idx] = vec.z;
   }
 
   function recordTelemetry(input: StoreTelemetryRecord): void {
@@ -535,6 +688,7 @@ export function createLocalStores() {
     setPosition(nodeId: string, vec: Vec2, layoutId = "default"): void {
       const layout = ensureLayout(layoutId);
       layout.set(nodeId, { x: vec.x, y: vec.y });
+      upsertSoaNode(nodeId, { x: vec.x, y: vec.y, z: 0 });
     },
     getLayout(layoutId = "default"): Record<string, Vec2> {
       const layout = ensureLayout(layoutId);
@@ -550,6 +704,119 @@ export function createLocalStores() {
     listSnapshots(): string[] {
       return [...snapshots.keys()].sort();
     },
+    spatialUpsertNode(nodeId: string, vec: Vec3): void {
+      upsertSoaNode(nodeId, vec);
+    },
+    spatialGetNode(nodeId: string): Vec3 | null {
+      const idx = soaIndexByNodeId.get(nodeId);
+      if (idx === undefined) {
+        return null;
+      }
+      return { x: soaX[idx], y: soaY[idx], z: soaZ[idx] };
+    },
+    spatialNodeCount(): number {
+      return soaCount;
+    },
+    spatialPersistBinaryChunk(layoutId = "default"): Uint8Array {
+      const layout = ensureLayout(layoutId);
+      const entries = [...layout.entries()].map(([nodeId, vec]) => ({
+        node_id: nodeId,
+        x: vec.x,
+        y: vec.y,
+        z: 0
+      }));
+      return encodeSpatialChunk(layoutId, entries);
+    },
+    spatialLoadBinaryChunk(chunk: Uint8Array): { layout_id: string; restored: number } {
+      const decoded = decodeSpatialChunk(chunk);
+      const layout = ensureLayout(decoded.layout_id);
+      layout.clear();
+      decoded.entries.forEach((entry) => {
+        layout.set(entry.node_id, { x: entry.x, y: entry.y });
+        upsertSoaNode(entry.node_id, { x: entry.x, y: entry.y, z: entry.z });
+      });
+      return { layout_id: decoded.layout_id, restored: decoded.entries.length };
+    },
+    spatialBuildGridIndex(layoutId = "default", cellSize = 32): {
+      layout_id: string;
+      cell_size: number;
+      cells: number;
+      indexed_nodes: number;
+    } {
+      const layout = ensureLayout(layoutId);
+      const cells = new Map<string, string[]>();
+      for (const [nodeId, vec] of layout.entries()) {
+        const key = gridKey(vec.x, vec.y, cellSize);
+        const bucket = cells.get(key) || [];
+        bucket.push(nodeId);
+        cells.set(key, bucket);
+      }
+      spatialGridIndexStore.set(layoutId, { cell_size: cellSize, cells });
+      return {
+        layout_id: layoutId,
+        cell_size: cellSize,
+        cells: cells.size,
+        indexed_nodes: layout.size
+      };
+    },
+    spatialPick(layoutId: string, x: number, y: number, radius = 48): {
+      node_id: string | null;
+      examined_nodes: number;
+      candidate_nodes: number;
+      used_full_scan: boolean;
+    } {
+      const layout = ensureLayout(layoutId);
+      const index = spatialGridIndexStore.get(layoutId);
+      let candidates: string[] = [];
+      let usedFullScan = false;
+
+      if (index) {
+        const gx = Math.floor(x / index.cell_size);
+        const gy = Math.floor(y / index.cell_size);
+        for (let dy = -1; dy <= 1; dy += 1) {
+          for (let dx = -1; dx <= 1; dx += 1) {
+            const key = `${gx + dx}:${gy + dy}`;
+            const bucket = index.cells.get(key);
+            if (bucket && bucket.length > 0) {
+              candidates = candidates.concat(bucket);
+            }
+          }
+        }
+      }
+
+      if (candidates.length === 0) {
+        return {
+          node_id: null,
+          examined_nodes: 0,
+          candidate_nodes: 0,
+          used_full_scan: false
+        };
+      }
+
+      let bestNode: string | null = null;
+      let bestDist = Number.POSITIVE_INFINITY;
+      let examined = 0;
+      for (const nodeId of candidates) {
+        const vec = layout.get(nodeId);
+        if (!vec) {
+          continue;
+        }
+        examined += 1;
+        const dx = vec.x - x;
+        const dy = vec.y - y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist <= radius && dist < bestDist) {
+          bestDist = dist;
+          bestNode = nodeId;
+        }
+      }
+      return {
+        node_id: bestNode,
+        examined_nodes: examined,
+        candidate_nodes: candidates.length,
+        used_full_scan: usedFullScan
+      };
+    },
     applyFlowGuardrail(metrics: { p95_ms: number; budget_ms: number; error_count: number }): {
       mode: FlowComplexity;
       downgrade_applied: boolean;
@@ -564,6 +831,58 @@ export function createLocalStores() {
     },
     currentFlowComplexity(): FlowComplexity {
       return flowComplexity;
+    },
+    profileGpuCapability(input: {
+      renderer: string;
+      is_vm?: boolean;
+      vram_mb?: number;
+    }): {
+      gpu_class: "weak" | "standard" | "strong";
+      fallback_profile: "read-only" | "advanced";
+      reason: string;
+    } {
+      const renderer = (input.renderer || "").toLowerCase();
+      const isWeakRenderer =
+        renderer.includes("uhd 620") ||
+        renderer.includes("intel uhd") ||
+        renderer.includes("llvmpipe") ||
+        renderer.includes("virtio") ||
+        renderer.includes("vmware");
+      const lowVram = typeof input.vram_mb === "number" && input.vram_mb > 0 && input.vram_mb < 1024;
+      if (isWeakRenderer || lowVram || input.is_vm) {
+        return {
+          gpu_class: "weak",
+          fallback_profile: "read-only",
+          reason: "weak_gpu_or_vm_profile"
+        };
+      }
+      if (typeof input.vram_mb === "number" && input.vram_mb >= 4096) {
+        return {
+          gpu_class: "strong",
+          fallback_profile: "advanced",
+          reason: "high_vram_profile"
+        };
+      }
+      return {
+        gpu_class: "standard",
+        fallback_profile: "advanced",
+        reason: "standard_profile"
+      };
+    },
+    syncSelection2dTo3d(nodeIds: string[]): { selection_2d: string[]; selection_3d: string[] } {
+      const normalized = [...new Set(nodeIds.filter(Boolean))].sort();
+      selection2d = normalized;
+      selection3d = [...normalized];
+      return { selection_2d: [...selection2d], selection_3d: [...selection3d] };
+    },
+    syncSelection3dTo2d(nodeIds: string[]): { selection_2d: string[]; selection_3d: string[] } {
+      const normalized = [...new Set(nodeIds.filter(Boolean))].sort();
+      selection3d = normalized;
+      selection2d = [...normalized];
+      return { selection_2d: [...selection2d], selection_3d: [...selection3d] };
+    },
+    currentSelectionSyncState(): { selection_2d: string[]; selection_3d: string[] } {
+      return { selection_2d: [...selection2d], selection_3d: [...selection3d] };
     },
     importInvestigationDoc,
     listInvestigationDocs(): InvestigationLibraryItem[] {
@@ -667,7 +986,17 @@ export function createLocalStores() {
       return {
         status: "stubbed",
         model: "typed-array-contract",
-        interface: ["setPosition", "getLayout", "saveSnapshot", "loadSnapshot", "listSnapshots"]
+        interface: [
+          "setPosition",
+          "getLayout",
+          "saveSnapshot",
+          "loadSnapshot",
+          "listSnapshots",
+          "spatialUpsertNode",
+          "spatialGetNode",
+          "spatialPersistBinaryChunk",
+          "spatialLoadBinaryChunk"
+        ]
       } as const;
     },
     benchmarkFlowPanZoom(nodeCount: number, frames = 50): { p95_ms: number; samples_ms: number[] } {

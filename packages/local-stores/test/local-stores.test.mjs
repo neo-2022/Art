@@ -20,6 +20,148 @@ test("local-stores: cache and dna lookup", () => {
   assert.ok(stores.spatialStoreStub().interface.includes("saveSnapshot"));
 });
 
+test("local-stores: spatial SoA contract + binary chunk persist/load roundtrip", () => {
+  const stores = createLocalStores();
+  stores.setPosition("node-a", { x: 10, y: 20 }, "layout-a");
+  stores.setPosition("node-b", { x: 30, y: 40 }, "layout-a");
+  stores.spatialUpsertNode("node-c", { x: 50, y: 60, z: 7 });
+
+  const node = stores.spatialGetNode("node-c");
+  assert.equal(node?.x, 50);
+  assert.equal(node?.y, 60);
+  assert.equal(node?.z, 7);
+  assert.ok(stores.spatialNodeCount() >= 3);
+
+  const chunk = stores.spatialPersistBinaryChunk("layout-a");
+  assert.ok(chunk instanceof Uint8Array);
+  assert.ok(chunk.byteLength > 16);
+
+  stores.setPosition("node-a", { x: 999, y: 999 }, "layout-a");
+  const restored = stores.spatialLoadBinaryChunk(chunk);
+  assert.equal(restored.layout_id, "layout-a");
+  assert.equal(restored.restored, 2);
+
+  const layout = stores.getLayout("layout-a");
+  assert.equal(layout["node-a"].x, 10);
+  assert.equal(layout["node-a"].y, 20);
+  assert.equal(layout["node-b"].x, 30);
+  assert.equal(layout["node-b"].y, 40);
+});
+
+test("local-stores: spatial picking uses grid index without full scan", () => {
+  const stores = createLocalStores();
+  for (let i = 0; i < 1500; i += 1) {
+    stores.setPosition(`node-${i}`, { x: i % 200, y: Math.floor(i / 200) * 3 }, "layout-grid");
+  }
+
+  const indexInfo = stores.spatialBuildGridIndex("layout-grid", 16);
+  assert.equal(indexInfo.indexed_nodes, 1500);
+  assert.ok(indexInfo.cells > 0);
+
+  const picked = stores.spatialPick("layout-grid", 55, 12, 12);
+  assert.equal(picked.used_full_scan, false);
+  assert.ok(picked.node_id);
+  assert.ok(picked.examined_nodes < 1500);
+  assert.ok(picked.candidate_nodes < 1500);
+});
+
+test("local-stores: deterministic layout and 2D<->3D selection sync", () => {
+  const stores = createLocalStores();
+  stores.setPosition("n-1", { x: 11, y: 21 }, "layout-sync");
+  stores.setPosition("n-2", { x: 31, y: 41 }, "layout-sync");
+  stores.setPosition("n-3", { x: 51, y: 61 }, "layout-sync");
+
+  const firstLayout = stores.getLayout("layout-sync");
+  const chunk = stores.spatialPersistBinaryChunk("layout-sync");
+  stores.setPosition("n-1", { x: 999, y: 999 }, "layout-sync");
+  stores.spatialLoadBinaryChunk(chunk);
+  const restoredLayout = stores.getLayout("layout-sync");
+  assert.deepEqual(restoredLayout, firstLayout);
+
+  const syncA = stores.syncSelection2dTo3d(["n-3", "n-1", "n-1"]);
+  assert.deepEqual(syncA.selection_2d, ["n-1", "n-3"]);
+  assert.deepEqual(syncA.selection_3d, ["n-1", "n-3"]);
+
+  const syncB = stores.syncSelection3dTo2d(["n-2", "n-1"]);
+  assert.deepEqual(syncB.selection_2d, ["n-1", "n-2"]);
+  assert.deepEqual(syncB.selection_3d, ["n-1", "n-2"]);
+  assert.deepEqual(stores.currentSelectionSyncState(), syncB);
+});
+
+test("local-stores: GPU capability profiling selects deterministic fallback profile", () => {
+  const stores = createLocalStores();
+  const weak = stores.profileGpuCapability({
+    renderer: "Intel(R) UHD Graphics 620",
+    is_vm: true,
+    vram_mb: 512
+  });
+  assert.equal(weak.gpu_class, "weak");
+  assert.equal(weak.fallback_profile, "read-only");
+
+  const standard = stores.profileGpuCapability({
+    renderer: "Intel Iris Xe",
+    is_vm: false,
+    vram_mb: 2048
+  });
+  assert.equal(standard.gpu_class, "standard");
+  assert.equal(standard.fallback_profile, "advanced");
+
+  const strong = stores.profileGpuCapability({
+    renderer: "NVIDIA RTX",
+    is_vm: false,
+    vram_mb: 8192
+  });
+  assert.equal(strong.gpu_class, "strong");
+  assert.equal(strong.fallback_profile, "advanced");
+});
+
+test("local-stores: advanced flow guardrail auto-downgrades to read-only on perf breach", () => {
+  const stores = createLocalStores();
+  const normal = stores.applyFlowGuardrail({ p95_ms: 18, budget_ms: 50, error_count: 0 });
+  assert.equal(normal.mode, "advanced");
+  assert.equal(normal.downgrade_applied, false);
+
+  const degraded = stores.applyFlowGuardrail({ p95_ms: 71, budget_ms: 50, error_count: 0 });
+  assert.equal(degraded.mode, "read-only");
+  assert.equal(degraded.downgrade_applied, true);
+  assert.equal(stores.currentFlowComplexity(), "read-only");
+});
+
+test("local-stores: corrupted spatial chunk is rejected and does not mutate layout", () => {
+  const stores = createLocalStores();
+  stores.setPosition("c-1", { x: 10, y: 20 }, "layout-corrupt");
+  const original = stores.getLayout("layout-corrupt");
+  const chunk = stores.spatialPersistBinaryChunk("layout-corrupt");
+  const corrupted = new Uint8Array(chunk);
+  corrupted[0] = 255;
+  corrupted[1] = 255;
+
+  assert.throws(() => stores.spatialLoadBinaryChunk(corrupted), /spatial_chunk_/);
+  assert.deepEqual(stores.getLayout("layout-corrupt"), original);
+});
+
+test("local-stores: scene scale-up benchmark remains bounded", () => {
+  const stores = createLocalStores();
+  const perf = stores.benchmarkFlowPanZoom(10000, 80);
+  assert.ok(perf.p95_ms < 50);
+});
+
+test("local-stores: soak spatial updates keep deterministic node count", () => {
+  const stores = createLocalStores();
+  const layoutId = "layout-soak";
+  for (let i = 0; i < 5000; i += 1) {
+    stores.setPosition(`s-${i}`, { x: i % 200, y: Math.floor(i / 200) }, layoutId);
+  }
+  for (let round = 0; round < 20; round += 1) {
+    for (let i = 0; i < 5000; i += 1) {
+      stores.setPosition(`s-${i}`, { x: (i + round) % 200, y: Math.floor(i / 200) }, layoutId);
+    }
+  }
+  const layout = stores.getLayout(layoutId);
+  assert.equal(Object.keys(layout).length, 5000);
+  assert.ok(stores.spatialNodeCount() >= 5000);
+});
+
 test("local-stores: analytics summary returns charts and instructions", () => {
   const stores = createLocalStores();
   const now = Date.now();

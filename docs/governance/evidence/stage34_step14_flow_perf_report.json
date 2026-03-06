@@ -2,14 +2,14 @@
   "budget_ms": 50,
   "normal": {
     "node_count": 1000,
-    "p95_ms": 0.082,
-    "p99_ms": 0.147,
+    "p95_ms": 0.087,
+    "p99_ms": 0.116,
     "pass": true
   },
   "overload": {
     "node_count": 1000,
-    "p95_ms": 56.275,
-    "p99_ms": 57.687
+    "p95_ms": 56.61,
+    "p99_ms": 60.436
   },
   "watchdog": {
     "activated": true,

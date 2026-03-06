@@ -1,0 +1,19 @@
+{
+  "profile": {
+    "name": "weak-gpu",
+    "target_device_class": "Intel UHD 620 / equivalent VM GPU"
+  },
+  "budget_ms": 50,
+  "metrics": {
+    "picking_p95_ms": 0.044,
+    "picking_p99_ms": 0.093,
+    "scene_update_p95_ms": 0.065
+  },
+  "guardrail": {
+    "normal_mode": "advanced",
+    "normal_downgrade_applied": false,
+    "overload_mode": "read-only",
+    "overload_downgrade_applied": true
+  },
+  "pass": true
+}

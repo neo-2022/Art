@@ -1,0 +1,4 @@
+CHECKLIST35 step4 registry/runbook verification
+date=2026-03-06T16:08:27Z
+65:| observability_gap.spatial_index_degraded | what=degraded spatial index; where=console/spatial; why=picking_slow | layout_id, node_count, picking_ms, threshold_ms, trace_id | перестроить spatial index и повторить perf checks | console/spatial | On-call | create_incident_min_sev2 | docs/runbooks/spatial_index_degraded.md | picking latency > threshold |
+docs/runbooks/spatial_index_degraded.md

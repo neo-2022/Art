@@ -1,0 +1,42 @@
+{
+  "policy": {
+    "weak": "fallback read-only",
+    "standard": "advanced mode",
+    "strong": "advanced mode"
+  },
+  "matrix": [
+    {
+      "profile": "weak-vm",
+      "renderer": "Intel(R) UHD Graphics 620",
+      "is_vm": true,
+      "vram_mb": 512,
+      "result": {
+        "gpu_class": "weak",
+        "fallback_profile": "read-only",
+        "reason": "weak_gpu_or_vm_profile"
+      }
+    },
+    {
+      "profile": "standard-laptop",
+      "renderer": "Intel Iris Xe",
+      "is_vm": false,
+      "vram_mb": 2048,
+      "result": {
+        "gpu_class": "standard",
+        "fallback_profile": "advanced",
+        "reason": "standard_profile"
+      }
+    },
+    {
+      "profile": "strong-desktop",
+      "renderer": "NVIDIA RTX",
+      "is_vm": false,
+      "vram_mb": 8192,
+      "result": {
+        "gpu_class": "strong",
+        "fallback_profile": "advanced",
+        "reason": "high_vram_profile"
+      }
+    }
+  ]
+}
