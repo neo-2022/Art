@@ -50,7 +50,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
    - как версионируются rules
    - как происходит rollout/rollback rules
 
-6. [ ] **Сделать:** Зафиксировать обязательное событие `privacy.redaction_applied` при любом факте применения redaction.  
+6. [x] **Сделать:** Зафиксировать обязательное событие `privacy.redaction_applied` при любом факте применения redaction.  
    **Проверка (pass/fail):** `docs/privacy/redaction_policy.md` содержит раздел `privacy.redaction_applied`, в котором определено минимальное содержимое события:
    - `timestamp`
    - `rule_id`
