@@ -1,0 +1,20 @@
+Stage 04 release-stage04 evidence
+Run URL: https://github.com/neo-2022/Art/actions/runs/22780090334
+Workflow: release-stage04
+Head SHA: b251ae4a2ee075b8d2ea21a56d131246ecde9ef3
+Conclusion: success
+Release URL: https://github.com/neo-2022/Art/releases/tag/v0.2.0-stage04-proof-20260306200925
+
+Published assets:
+- artcore-0.2.0-stage04-proof-20260306200925-linux-x86_64-static.tar.gz
+- artagent-0.2.0-stage04-proof-20260306200925-linux-x86_64-static.tar.gz
+- sbom.spdx.json
+- checksums.txt
+- provenance.attestation.json
+- detached signatures and certificates for all artifacts
+
+Verification completed in workflow:
+- cosign keyless sign-blob
+- cosign verify-blob
+- provenance.attestation.json payload verification
+- GitHub Release asset publication
