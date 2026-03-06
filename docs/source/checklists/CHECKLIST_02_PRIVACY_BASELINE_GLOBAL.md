@@ -38,7 +38,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
    - явный allowlist записываемых HTTP-полей (если есть) и запрет по умолчанию для остального
    - правила для message/payload/context: что разрешено, что дропается
 
-4. [ ] **Сделать:** Зафиксировать redaction policy для PII/secrets (маскирование/удаление) по `field_paths` + детерминированные `rule_id`.  
+4. [x] **Сделать:** Зафиксировать redaction policy для PII/secrets (маскирование/удаление) по `field_paths` + детерминированные `rule_id`.  
    **Проверка (pass/fail):** существует `docs/privacy/redaction_policy.md`, содержит:
    - источники, где применяется redaction (message/payload/context/attachments meta/audit pre-write)
    - идентификаторы правил `rule_id` и область действия (field paths)
