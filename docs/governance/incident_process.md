@@ -20,6 +20,7 @@
 - `Scribe` — фиксирует timeline, решения и evidence
 
 ## Правила Эскалации
+- `observability_gap escalation` является обязательным контуром управления инцидентами.
 - все `observability_gap.*` должны быть видимы в snapshot/stream
 - для критичных контуров автоинциденты создаются по правилам registry
 - если registry требует incident, обязательно должен быть `action_ref` на runbook

@@ -89,10 +89,17 @@ Art проектируется как `Incident OS`, где:
 
 ## Контракты и API
 
+Этот раздел сохраняет совместимость с историческим `Stage 08` docs-gate и остаётся публичной точкой входа в контрактный слой.
+
 - OpenAPI v1: [docs/api/openapi.yaml](docs/api/openapi.yaml)
 - API v2 contracts: [docs/contracts/v2/openapi.yaml](docs/contracts/v2/openapi.yaml)
 - схемы: [docs/contracts/v2/schemas/](docs/contracts/v2/schemas)
 - platform support contract: [formats/platform_support.yaml](formats/platform_support.yaml)
+
+### Contracts
+- `Stage 08` зафиксировал обязательный контрактный baseline репозитория.
+- `OpenAPI` используется как публичный API-контракт.
+- `JSON Schema` используется как машинно-проверяемый формат контрактов и payload-моделей.
 
 ## Platform Readiness
 

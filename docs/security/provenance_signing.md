@@ -15,6 +15,13 @@
 - checksum-файлы
 - provenance attestation
 
+Технические идентификаторы релизного контура:
+- `agent/dist/*`
+- `ui/dist/*`
+- `sbom.spdx.json`
+- `checksums.txt`
+- `provenance.attestation.json`
+
 ## Требования
 - verify подписи обязателен в release CI
 - provenance должен содержать привязку к repository/ref/sha/run_id
