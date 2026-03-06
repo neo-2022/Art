@@ -10,8 +10,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Context;
 use async_stream::stream;
-use axum::extract::{Path, State};
-use axum::http::{Extensions, HeaderMap, HeaderValue, StatusCode, Version};
+use axum::extract::{Path, Query, State};
+use axum::http::{header::CONTENT_TYPE, Extensions, HeaderMap, HeaderValue, StatusCode, Version};
 use axum::response::sse::{Event, Sse};
 use axum::response::IntoResponse;
 use axum::response::Response;
@@ -33,12 +33,70 @@ const OTLP_MAX_SIZE_BYTES: usize = 524_288;
 const OTLP_RETRY_AFTER_MS: u64 = 500;
 const RESERVED_OTLP_ATTR_KEYS: [&str; 6] =
     ["severity", "ts", "kind", "scope", "message", "trace_id"];
+const PANEL0_BOOT_TIMEOUT_MS: u64 = 5_000;
+const PANEL0_DEFAULT_BUILD_ID: &str = "dev";
+const PANEL0_DEFAULT_CONSOLE_BASE_PATH: &str = "/console";
+const PANEL0_BOOTSTRAP_TEMPLATE: &str = include_str!("../embedded/panel0/bootstrap.html");
+const PANEL0_INDEX_HTML: &str = include_str!("../embedded/panel0/index.html");
+const PANEL0_CSS: &str = include_str!("../embedded/panel0/panel0.css");
+const PANEL0_JS_TEMPLATE: &str = include_str!("../embedded/panel0/panel0.js");
+const PANEL0_SW_TEMPLATE: &str = include_str!("../embedded/panel0/panel0_sw.js");
+const PANEL0_FAVICON: &[u8] = include_bytes!("../embedded/panel0/favicon.ico");
+const DNA_SCHEMA_VERSION: &str = "2.0.0";
+const DEFAULT_ANALYTICS_MAX_BUCKETS: usize = 1_440;
+const DEFAULT_ANALYTICS_STATE_PATH: &str = "/tmp/art_core_analytics_state.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct StoredEvent {
     seq: u64,
     ts_ms: u64,
     event: Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DnaSignature {
+    dna_id: String,
+    canonical_hash: String,
+    payload_hash: String,
+    dna_schema_version: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct EvidenceBlock {
+    evidence_id: String,
+    source_type: String,
+    source_ref: String,
+    trust_score: f64,
+    freshness_ms: u64,
+    redaction_policy_id: String,
+    access_scope: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct StoredEventV2 {
+    seq: u64,
+    ts_ms: u64,
+    raw_event: Value,
+    dna_signature: DnaSignature,
+    evidence_refs: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct DnaClusterRecord {
+    dna_signature: DnaSignature,
+    event_count: u64,
+    last_seen_ts_ms: u64,
+    sample_event_seq: u64,
+    evidence_refs: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct DnaClusterState {
+    signature: DnaSignature,
+    event_count: u64,
+    last_seen_ts_ms: u64,
+    sample_event_seq: u64,
+    evidence_refs: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,10 +118,58 @@ struct Counters {
     ingest_dropped_total: u64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct AnalyticsBucket {
+    minute_ts_ms: u64,
+    total_events: u64,
+    gap_events: u64,
+    severity_counts: HashMap<String, u64>,
+    kind_counts: HashMap<String, u64>,
+    dna_counts: HashMap<String, u64>,
+}
+
+impl AnalyticsBucket {
+    fn new(minute_ts_ms: u64) -> Self {
+        Self {
+            minute_ts_ms,
+            total_events: 0,
+            gap_events: 0,
+            severity_counts: HashMap::new(),
+            kind_counts: HashMap::new(),
+            dna_counts: HashMap::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct AnalyticsState {
+    max_buckets: usize,
+    buckets: VecDeque<AnalyticsBucket>,
+    total_events: u64,
+    total_gap_events: u64,
+    last_updated_ms: u64,
+}
+
+impl AnalyticsState {
+    fn new(max_buckets: usize) -> Self {
+        Self {
+            max_buckets,
+            buckets: VecDeque::new(),
+            total_events: 0,
+            total_gap_events: 0,
+            last_updated_ms: 0,
+        }
+    }
+}
+
 #[derive(Debug)]
 struct CoreState {
     next_seq: u64,
     events: VecDeque<StoredEvent>,
+    next_seq_v2: u64,
+    events_v2: VecDeque<StoredEventV2>,
+    dna_clusters: HashMap<String, DnaClusterState>,
+    evidence_blocks: HashMap<String, EvidenceBlock>,
     incidents: Vec<Incident>,
     fingerprint_index: HashMap<String, String>,
     source_last_seen: HashMap<String, u64>,
@@ -78,6 +184,8 @@ struct CoreState {
     limited_actions_allowlist: Vec<String>,
     otlp_tokens: f64,
     otlp_last_refill_ms: u64,
+    analytics: AnalyticsState,
+    analytics_state_path: PathBuf,
 }
 
 impl CoreState {
@@ -87,10 +195,16 @@ impl CoreState {
         max_batch_events: usize,
         max_payload_bytes: usize,
         limited_actions_allowlist: Vec<String>,
+        analytics: AnalyticsState,
+        analytics_state_path: PathBuf,
     ) -> Self {
         Self {
             next_seq: 1,
             events: VecDeque::new(),
+            next_seq_v2: 1,
+            events_v2: VecDeque::new(),
+            dna_clusters: HashMap::new(),
+            evidence_blocks: HashMap::new(),
             incidents: Vec::new(),
             fingerprint_index: HashMap::new(),
             source_last_seen: HashMap::new(),
@@ -105,6 +219,8 @@ impl CoreState {
             limited_actions_allowlist,
             otlp_tokens: OTLP_BURST,
             otlp_last_refill_ms: 0,
+            analytics,
+            analytics_state_path,
         }
     }
 }
@@ -152,6 +268,94 @@ struct SnapshotResponse {
     incidents: Vec<Incident>,
 }
 
+#[derive(Debug, Serialize)]
+struct SnapshotV2Response {
+    cursor: u64,
+    effective_profile_id: String,
+    events: Vec<StoredEventV2>,
+    dna_clusters: Vec<DnaClusterRecord>,
+    incidents: Vec<Incident>,
+}
+
+#[derive(Debug, Serialize)]
+struct DnaClustersResponse {
+    items: Vec<DnaClusterRecord>,
+    total: usize,
+}
+
+#[derive(Debug, Serialize)]
+struct DnaSimilarItem {
+    dna_id: String,
+    score: f64,
+    cluster: DnaClusterRecord,
+}
+
+#[derive(Debug, Serialize)]
+struct DnaSimilarResponse {
+    base_dna_id: String,
+    items: Vec<DnaSimilarItem>,
+}
+
+#[derive(Debug, Serialize)]
+struct AnalyticsTopItem {
+    key: String,
+    count: u64,
+    share_pct: f64,
+}
+
+#[derive(Debug, Serialize)]
+struct AnalyticsTimelinePoint {
+    minute_ts_ms: u64,
+    total_events: u64,
+    gap_events: u64,
+}
+
+#[derive(Debug, Serialize)]
+struct AnalyticsInstruction {
+    id: String,
+    priority: String,
+    title: String,
+    description: String,
+    action_ref: String,
+}
+
+#[derive(Debug, Serialize)]
+struct AnalyticsTotals {
+    total_events: u64,
+    gap_events: u64,
+    gap_rate_pct: f64,
+    ingest_invalid_total: u64,
+    ingest_dropped_total: u64,
+}
+
+#[derive(Debug, Serialize)]
+struct AnalyticsCharts {
+    timeline: Vec<AnalyticsTimelinePoint>,
+    severity_distribution: Vec<AnalyticsTopItem>,
+    top_kinds: Vec<AnalyticsTopItem>,
+    top_dna: Vec<AnalyticsTopItem>,
+}
+
+#[derive(Debug, Serialize)]
+struct AnalyticsSummaryResponse {
+    generated_at_ms: u64,
+    window_minutes: u64,
+    totals: AnalyticsTotals,
+    charts: AnalyticsCharts,
+    instructions: Vec<AnalyticsInstruction>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DnaListQuery {
+    limit: Option<usize>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AnalyticsQuery {
+    window_minutes: Option<u64>,
+    top: Option<usize>,
+}
+
 #[derive(Debug, Deserialize)]
 struct ActionExecuteRequest {
     action: String,
@@ -164,6 +368,32 @@ struct ActionExecuteResponse {
     accepted: bool,
     action: String,
     target: Option<String>,
+    audit_attach: ActionAuditAttach,
+    nrac: NracResult,
+}
+
+#[derive(Debug, Serialize)]
+struct ActionAuditAttach {
+    audit_id: u64,
+    trace_id: String,
+    entry_hash: String,
+    merkle_proof: AuditMerkleProof,
+}
+
+#[derive(Debug, Serialize)]
+struct NracResult {
+    required: bool,
+    status: String,
+    regret: Option<f64>,
+    threshold: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct AuditMerkleProof {
+    algorithm: String,
+    leaf_hash: String,
+    parent_hashes: Vec<String>,
+    root_hash: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -182,6 +412,7 @@ struct AuditEntry {
     user_agent: String,
     prev_hash: String,
     entry_hash: String,
+    merkle_proof: AuditMerkleProof,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -221,10 +452,13 @@ impl McpMode {
 #[derive(Debug, Clone, Copy)]
 enum Endpoint {
     Snapshot,
+    SnapshotV2,
     Stream,
+    StreamV2,
     IncidentsGet,
     IncidentAck,
     IncidentResolve,
+    ActionsSimulate,
     ActionsExecute,
     AuditGet,
     AuditVerify,
@@ -300,6 +534,16 @@ async fn main() -> anyhow::Result<()> {
                 .collect::<Vec<_>>()
         })
         .unwrap_or_else(|| vec!["service.restart".to_string(), "service.status".to_string()]);
+    let analytics_max_buckets = env::var("CORE_ANALYTICS_MAX_BUCKETS")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(DEFAULT_ANALYTICS_MAX_BUCKETS)
+        .clamp(60, 10_080);
+    let analytics_state_path = env::var("CORE_ANALYTICS_STATE_PATH")
+        .ok()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(DEFAULT_ANALYTICS_STATE_PATH));
+    let analytics = load_analytics_state(&analytics_state_path, analytics_max_buckets);
 
     let state = Arc::new(RwLock::new(CoreState::new(
         effective_profile_id,
@@ -307,6 +551,8 @@ async fn main() -> anyhow::Result<()> {
         max_batch_events,
         max_payload_bytes,
         limited_actions_allowlist,
+        analytics,
+        analytics_state_path,
     )));
 
     install_runtime_signal_handlers();
@@ -377,22 +623,164 @@ fn install_runtime_signal_handlers() {
     }
 }
 
+fn load_analytics_state(path: &PathBuf, max_buckets: usize) -> AnalyticsState {
+    match fs::read_to_string(path) {
+        Ok(raw) => match serde_json::from_str::<AnalyticsState>(&raw) {
+            Ok(mut state) => {
+                state.max_buckets = max_buckets;
+                while state.buckets.len() > max_buckets {
+                    state.buckets.pop_front();
+                }
+                state
+            }
+            Err(error) => {
+                warn!(
+                    "failed to parse analytics state from {}: {}",
+                    path.display(),
+                    error
+                );
+                AnalyticsState::new(max_buckets)
+            }
+        },
+        Err(_) => AnalyticsState::new(max_buckets),
+    }
+}
+
+fn persist_analytics_state(path: &PathBuf, state: &AnalyticsState) {
+    if let Some(parent) = path.parent() {
+        if let Err(error) = fs::create_dir_all(parent) {
+            warn!(
+                "failed to create analytics state directory {}: {}",
+                parent.display(),
+                error
+            );
+            return;
+        }
+    }
+    let serialized = match serde_json::to_string_pretty(state) {
+        Ok(value) => value,
+        Err(error) => {
+            warn!("failed to serialize analytics state: {}", error);
+            return;
+        }
+    };
+    let tmp = path.with_extension("tmp");
+    if let Err(error) = fs::write(&tmp, serialized) {
+        warn!(
+            "failed to write analytics temp file {}: {}",
+            tmp.display(),
+            error
+        );
+        return;
+    }
+    if let Err(error) = fs::rename(&tmp, path) {
+        warn!(
+            "failed to replace analytics state file {}: {}",
+            path.display(),
+            error
+        );
+    }
+}
+
+fn increment_count(map: &mut HashMap<String, u64>, key: &str) {
+    let entry = map.entry(key.to_string()).or_insert(0);
+    *entry = entry.saturating_add(1);
+}
+
+fn analytics_bucket_for_minute_mut(
+    analytics: &mut AnalyticsState,
+    minute_ts_ms: u64,
+) -> &mut AnalyticsBucket {
+    if let Some(index) = analytics
+        .buckets
+        .iter()
+        .position(|bucket| bucket.minute_ts_ms == minute_ts_ms)
+    {
+        return analytics
+            .buckets
+            .get_mut(index)
+            .expect("bucket index must exist");
+    }
+    analytics
+        .buckets
+        .push_back(AnalyticsBucket::new(minute_ts_ms));
+    while analytics.buckets.len() > analytics.max_buckets {
+        analytics.buckets.pop_front();
+    }
+    analytics
+        .buckets
+        .back_mut()
+        .expect("bucket appended for minute")
+}
+
+fn record_analytics_event_locked(
+    s: &mut CoreState,
+    ts_ms: u64,
+    event: &Value,
+    dna_id: Option<&str>,
+) {
+    let minute_ts_ms = (ts_ms / 60_000) * 60_000;
+    let kind = event
+        .get("kind")
+        .and_then(Value::as_str)
+        .unwrap_or("unknown");
+    let severity = event
+        .get("severity")
+        .and_then(Value::as_str)
+        .unwrap_or("unknown");
+    let is_gap = kind.starts_with("observability_gap.");
+
+    let bucket = analytics_bucket_for_minute_mut(&mut s.analytics, minute_ts_ms);
+    bucket.total_events = bucket.total_events.saturating_add(1);
+    increment_count(&mut bucket.kind_counts, kind);
+    increment_count(&mut bucket.severity_counts, severity);
+    if let Some(id) = dna_id {
+        increment_count(&mut bucket.dna_counts, id);
+    }
+    if is_gap {
+        bucket.gap_events = bucket.gap_events.saturating_add(1);
+        s.analytics.total_gap_events = s.analytics.total_gap_events.saturating_add(1);
+    }
+    s.analytics.total_events = s.analytics.total_events.saturating_add(1);
+    s.analytics.last_updated_ms = ts_ms;
+}
+
 fn build_app(state: Shared) -> Router {
     Router::new()
+        .route("/", get(root_bootstrap))
+        .route("/panel0", get(panel0_index))
+        .route("/panel0/", get(panel0_index))
+        .route("/panel0/index.html", get(panel0_index))
+        .route("/panel0/panel0.js", get(panel0_js))
+        .route("/panel0/panel0.css", get(panel0_css))
+        .route("/panel0/panel0_sw.js", get(panel0_service_worker))
+        .route("/panel0/favicon.ico", get(panel0_favicon))
         .route("/health", get(health))
         .route("/api/v1/profile/effective", get(effective_profile))
         .route("/api/v1/profile/apply", post(apply_profile))
         .route("/metrics", get(metrics))
         .route("/api/v1/ingest", post(ingest))
+        .route("/api/v2/ingest", post(ingest_v2))
         .route(OTLP_ENDPOINT, post(otlp_logs))
         .route("/api/v1/snapshot", get(snapshot))
+        .route("/api/v2/snapshot", get(snapshot_v2))
         .route(
             "/api/v1/stream",
             get(stream_events).layer(CompressionLayer::new().compress_when(always_compress)),
         )
+        .route(
+            "/api/v2/stream",
+            get(stream_events_v2).layer(CompressionLayer::new().compress_when(always_compress)),
+        )
+        .route("/api/v2/dna/clusters", get(dna_clusters_list))
+        .route("/api/v2/dna/:dna_id/similar", get(dna_cluster_similar))
+        .route("/api/v2/dna/:dna_id", get(dna_cluster_get))
+        .route("/api/v2/evidence/:evidence_id", get(evidence_get))
+        .route("/api/v2/analytics/summary", get(analytics_summary))
         .route("/api/v1/incidents", get(incidents))
         .route("/api/v1/incidents/:id/ack", post(incident_ack))
         .route("/api/v1/incidents/:id/resolve", post(incident_resolve))
+        .route("/api/v1/actions/simulate", post(actions_simulate))
         .route("/api/v1/actions/execute", post(actions_execute))
         .route("/api/v1/audit", get(audit_list))
         .route("/api/v1/audit/verify", get(audit_verify))
@@ -401,6 +789,115 @@ fn build_app(state: Shared) -> Router {
             axum::routing::put(audit_mutation_forbidden).delete(audit_mutation_forbidden),
         )
         .with_state(state)
+}
+
+fn panel0_build_id() -> String {
+    let raw = env::var("PANEL0_BUILD_ID").unwrap_or_else(|_| PANEL0_DEFAULT_BUILD_ID.to_string());
+    match sanitize_panel0_build_id(&raw) {
+        Some(value) => value,
+        None => {
+            warn!(
+                "invalid PANEL0_BUILD_ID='{}', fallback to '{}'",
+                raw, PANEL0_DEFAULT_BUILD_ID
+            );
+            PANEL0_DEFAULT_BUILD_ID.to_string()
+        }
+    }
+}
+
+fn sanitize_panel0_build_id(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() || trimmed.len() > 64 {
+        return None;
+    }
+    if !trimmed
+        .chars()
+        .all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' || ch == '.')
+    {
+        return None;
+    }
+    Some(trimmed.to_string())
+}
+
+fn panel0_console_base_path() -> String {
+    let raw = env::var("ART_CONSOLE_BASE_PATH")
+        .unwrap_or_else(|_| PANEL0_DEFAULT_CONSOLE_BASE_PATH.to_string());
+    if is_valid_console_base_path(&raw) {
+        return raw.trim().to_string();
+    }
+    warn!(
+        "invalid ART_CONSOLE_BASE_PATH='{}', fallback to '{}'",
+        raw, PANEL0_DEFAULT_CONSOLE_BASE_PATH
+    );
+    PANEL0_DEFAULT_CONSOLE_BASE_PATH.to_string()
+}
+
+fn is_valid_console_base_path(raw: &str) -> bool {
+    let value = raw.trim();
+    if value.is_empty()
+        || !value.starts_with('/')
+        || value.starts_with("//")
+        || value.contains("://")
+        || value.contains("..")
+        || value.contains('\\')
+    {
+        return false;
+    }
+    !value.chars().any(|ch| ch.is_control())
+}
+
+fn render_panel0_bootstrap_html(build_id: &str, console_base_path: &str) -> String {
+    let build_id_json = serde_json::to_string(build_id).unwrap_or_else(|_| "\"dev\"".to_string());
+    let console_base_path_json =
+        serde_json::to_string(console_base_path).unwrap_or_else(|_| "\"/console\"".to_string());
+    PANEL0_BOOTSTRAP_TEMPLATE
+        .replace("__CONSOLE_BASE_PATH_JSON__", &console_base_path_json)
+        .replace("__PANEL0_BUILD_ID_JSON__", &build_id_json)
+        .replace("__BOOT_TIMEOUT_MS__", &PANEL0_BOOT_TIMEOUT_MS.to_string())
+}
+
+fn render_panel0_js(build_id: &str) -> String {
+    PANEL0_JS_TEMPLATE.replace("__PANEL0_BUILD_ID__", build_id)
+}
+
+fn render_panel0_service_worker(build_id: &str) -> String {
+    PANEL0_SW_TEMPLATE.replace("__PANEL0_BUILD_ID__", build_id)
+}
+
+async fn root_bootstrap() -> impl IntoResponse {
+    let html = render_panel0_bootstrap_html(&panel0_build_id(), &panel0_console_base_path());
+    ([(CONTENT_TYPE, "text/html; charset=utf-8")], html)
+}
+
+async fn panel0_index() -> impl IntoResponse {
+    (
+        [(CONTENT_TYPE, "text/html; charset=utf-8")],
+        PANEL0_INDEX_HTML,
+    )
+}
+
+async fn panel0_js() -> impl IntoResponse {
+    let body = render_panel0_js(&panel0_build_id());
+    (
+        [(CONTENT_TYPE, "application/javascript; charset=utf-8")],
+        body,
+    )
+}
+
+async fn panel0_css() -> impl IntoResponse {
+    ([(CONTENT_TYPE, "text/css; charset=utf-8")], PANEL0_CSS)
+}
+
+async fn panel0_service_worker() -> impl IntoResponse {
+    let body = render_panel0_service_worker(&panel0_build_id());
+    (
+        [(CONTENT_TYPE, "application/javascript; charset=utf-8")],
+        body,
+    )
+}
+
+async fn panel0_favicon() -> impl IntoResponse {
+    ([(CONTENT_TYPE, "image/x-icon")], PANEL0_FAVICON)
 }
 
 async fn health() -> impl IntoResponse {
@@ -766,6 +1263,7 @@ async fn ingest(
                     string_field(&processed_event, "trace_id"),
                     string_field(&processed_event, "span_id"),
                 );
+                record_analytics_event_locked(&mut s, now, &processed_event, None);
                 accepted += 1;
                 s.counters.ingest_accepted_total += 1;
             }
@@ -791,7 +1289,697 @@ async fn ingest(
         invalid: invalid_details.len(),
         invalid_details,
     };
+    persist_analytics_state(&s.analytics_state_path, &s.analytics);
     (StatusCode::OK, Json(response)).into_response()
+}
+
+async fn ingest_v2(
+    State(state): State<Shared>,
+    Json(payload): Json<IngestEnvelope>,
+) -> impl IntoResponse {
+    if payload.events.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "error": "invalid_payload",
+                "code": "v2_empty_batch",
+                "message": "events[] must contain at least one event"
+            })),
+        )
+            .into_response();
+    }
+
+    let mut invalid_details = Vec::new();
+    for (idx, event) in payload.events.iter().enumerate() {
+        if let Some(invalid) = validate_event(event) {
+            invalid_details.push(InvalidDetail {
+                index: idx,
+                reason: invalid.0,
+                path: invalid.1,
+                code: invalid.2,
+            });
+        }
+    }
+    if !invalid_details.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "error": "invalid_payload",
+                "code": "v2_invalid_event",
+                "details": invalid_details,
+            })),
+        )
+            .into_response();
+    }
+
+    let now = now_ms();
+    let events = payload.events;
+    let accepted = events.len();
+    let mut s = state.write().await;
+    let mut upto_seq = s.next_seq_v2.saturating_sub(1);
+
+    for event in events {
+        let seq = s.next_seq_v2;
+        s.next_seq_v2 += 1;
+        upto_seq = seq;
+
+        let dna_signature = build_dna_signature(&event);
+        let evidence_blocks = parse_evidence_blocks(&event, seq, now);
+        let evidence_refs: Vec<String> = evidence_blocks
+            .iter()
+            .map(|block| block.evidence_id.clone())
+            .collect();
+        for block in evidence_blocks {
+            s.evidence_blocks.insert(block.evidence_id.clone(), block);
+        }
+        upsert_dna_cluster_locked(&mut s, &dna_signature, seq, now, &evidence_refs);
+        record_analytics_event_locked(&mut s, now, &event, Some(&dna_signature.dna_id));
+
+        s.events_v2.push_back(StoredEventV2 {
+            seq,
+            ts_ms: now,
+            raw_event: event,
+            dna_signature,
+            evidence_refs,
+        });
+        if s.events_v2.len() > s.queue_depth_limit {
+            s.events_v2.pop_front();
+        }
+    }
+
+    s.counters.ingest_accepted_total = s
+        .counters
+        .ingest_accepted_total
+        .saturating_add(accepted as u64);
+    let response = IngestResponse {
+        ack: Ack { upto_seq },
+        accepted,
+        invalid: 0,
+        invalid_details: Vec::new(),
+    };
+    persist_analytics_state(&s.analytics_state_path, &s.analytics);
+    (StatusCode::OK, Json(response)).into_response()
+}
+
+fn canonical_v2_should_ignore_key(key: &str) -> bool {
+    matches!(
+        key,
+        "ts" | "ts_ms"
+            | "timestamp"
+            | "ingest_ts_ms"
+            | "event_id"
+            | "received_at"
+            | "ingested_at_ms"
+    )
+}
+
+fn canonical_json_v2(value: &Value) -> String {
+    fn normalize(value: &Value) -> Value {
+        match value {
+            Value::Array(items) => Value::Array(items.iter().map(normalize).collect()),
+            Value::Object(map) => {
+                let mut keys: Vec<&String> = map.keys().collect();
+                keys.sort();
+                let mut out = serde_json::Map::new();
+                for key in keys {
+                    if canonical_v2_should_ignore_key(key) {
+                        continue;
+                    }
+                    if let Some(nested) = map.get(key) {
+                        out.insert(key.clone(), normalize(nested));
+                    }
+                }
+                Value::Object(out)
+            }
+            _ => value.clone(),
+        }
+    }
+    normalize(value).to_string()
+}
+
+fn build_dna_signature(event: &Value) -> DnaSignature {
+    let canonical = canonical_json_v2(event);
+    let canonical_hash = sha256_hex(&canonical);
+    let payload_hash = sha256_hex(&event.to_string());
+    let dna_id = sha256_hex(&format!("{}:{}", DNA_SCHEMA_VERSION, canonical_hash));
+    DnaSignature {
+        dna_id,
+        canonical_hash,
+        payload_hash,
+        dna_schema_version: DNA_SCHEMA_VERSION.to_string(),
+    }
+}
+
+fn parse_evidence_blocks(event: &Value, seq: u64, ts_ms: u64) -> Vec<EvidenceBlock> {
+    let mut out = Vec::new();
+    if let Some(items) = event.get("evidence_blocks").and_then(Value::as_array) {
+        for (idx, item) in items.iter().enumerate() {
+            out.push(evidence_block_from_value(item, seq, idx, ts_ms));
+        }
+    }
+    if out.is_empty() {
+        out.push(EvidenceBlock {
+            evidence_id: format!("evd-{}-0", seq),
+            source_type: "raw_event".to_string(),
+            source_ref: format!("/api/v2/events/{}", seq),
+            trust_score: 1.0,
+            freshness_ms: 0,
+            redaction_policy_id: "default".to_string(),
+            access_scope: event
+                .get("access_scope")
+                .and_then(Value::as_str)
+                .unwrap_or("internal")
+                .to_string(),
+        });
+    }
+    out
+}
+
+fn evidence_block_from_value(value: &Value, seq: u64, idx: usize, ts_ms: u64) -> EvidenceBlock {
+    let evidence_id = value
+        .get("evidence_id")
+        .and_then(Value::as_str)
+        .map(|v| v.trim())
+        .filter(|v| !v.is_empty())
+        .map(ToString::to_string)
+        .unwrap_or_else(|| format!("evd-{}-{}", seq, idx));
+    let source_type = value
+        .get("source_type")
+        .and_then(Value::as_str)
+        .unwrap_or("raw_event")
+        .to_string();
+    let source_ref = value
+        .get("source_ref")
+        .and_then(Value::as_str)
+        .unwrap_or("/api/v2/events")
+        .to_string();
+    let trust_score = value
+        .get("trust_score")
+        .and_then(Value::as_f64)
+        .filter(|v| v.is_finite())
+        .map(|v| v.clamp(0.0, 1.0))
+        .unwrap_or(1.0);
+    let freshness_ms = value
+        .get("freshness_ms")
+        .and_then(Value::as_u64)
+        .unwrap_or_else(|| now_ms().saturating_sub(ts_ms));
+    let redaction_policy_id = value
+        .get("redaction_policy_id")
+        .and_then(Value::as_str)
+        .unwrap_or("default")
+        .to_string();
+    let access_scope = value
+        .get("access_scope")
+        .and_then(Value::as_str)
+        .unwrap_or("internal")
+        .to_string();
+    EvidenceBlock {
+        evidence_id,
+        source_type,
+        source_ref,
+        trust_score,
+        freshness_ms,
+        redaction_policy_id,
+        access_scope,
+    }
+}
+
+fn upsert_dna_cluster_locked(
+    state: &mut CoreState,
+    signature: &DnaSignature,
+    seq: u64,
+    ts_ms: u64,
+    evidence_refs: &[String],
+) {
+    let entry = state
+        .dna_clusters
+        .entry(signature.dna_id.clone())
+        .or_insert_with(|| DnaClusterState {
+            signature: signature.clone(),
+            event_count: 0,
+            last_seen_ts_ms: ts_ms,
+            sample_event_seq: seq,
+            evidence_refs: Vec::new(),
+        });
+    entry.event_count = entry.event_count.saturating_add(1);
+    entry.last_seen_ts_ms = ts_ms;
+    if entry.sample_event_seq == 0 {
+        entry.sample_event_seq = seq;
+    }
+    for evidence_id in evidence_refs {
+        if !entry
+            .evidence_refs
+            .iter()
+            .any(|existing| existing == evidence_id)
+        {
+            entry.evidence_refs.push(evidence_id.clone());
+        }
+    }
+}
+
+fn cluster_record_from_state(cluster: &DnaClusterState) -> DnaClusterRecord {
+    DnaClusterRecord {
+        dna_signature: cluster.signature.clone(),
+        event_count: cluster.event_count,
+        last_seen_ts_ms: cluster.last_seen_ts_ms,
+        sample_event_seq: cluster.sample_event_seq,
+        evidence_refs: cluster.evidence_refs.clone(),
+    }
+}
+
+fn sorted_dna_clusters_locked(state: &CoreState, limit: usize) -> Vec<DnaClusterRecord> {
+    let mut clusters: Vec<DnaClusterRecord> = state
+        .dna_clusters
+        .values()
+        .map(cluster_record_from_state)
+        .collect();
+    clusters.sort_by(|left, right| {
+        right
+            .event_count
+            .cmp(&left.event_count)
+            .then_with(|| right.last_seen_ts_ms.cmp(&left.last_seen_ts_ms))
+            .then_with(|| left.dna_signature.dna_id.cmp(&right.dna_signature.dna_id))
+    });
+    clusters.truncate(limit);
+    clusters
+}
+
+fn similarity_score_by_prefix(left_hash: &str, right_hash: &str) -> f64 {
+    let left = left_hash.as_bytes();
+    let right = right_hash.as_bytes();
+    if left.is_empty() || right.is_empty() {
+        return 0.0;
+    }
+    let max = left.len().min(right.len());
+    let mut same_prefix = 0usize;
+    for index in 0..max {
+        if left[index] != right[index] {
+            break;
+        }
+        same_prefix += 1;
+    }
+    same_prefix as f64 / max as f64
+}
+
+async fn snapshot_v2(State(state): State<Shared>, headers: HeaderMap) -> impl IntoResponse {
+    if let Err(deny) = enforce_rbac(&state, &headers, Endpoint::SnapshotV2, None, None).await {
+        return deny;
+    }
+    let s = state.read().await;
+    let events: Vec<StoredEventV2> = s.events_v2.iter().rev().take(200).cloned().collect();
+    let cursor = events.iter().map(|e| e.seq).max().unwrap_or(0);
+    let dna_clusters = sorted_dna_clusters_locked(&s, 200);
+    let body = SnapshotV2Response {
+        cursor,
+        effective_profile_id: s.effective_profile_id.clone(),
+        events,
+        dna_clusters,
+        incidents: s.incidents.clone(),
+    };
+    (StatusCode::OK, Json(body)).into_response()
+}
+
+async fn stream_events_v2(State(state): State<Shared>, headers: HeaderMap) -> Response {
+    if let Err(deny) = enforce_rbac(&state, &headers, Endpoint::StreamV2, None, None).await {
+        return deny;
+    }
+    let last_event_id = headers
+        .get("last-event-id")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|v| v.parse::<u64>().ok());
+    let hold_seconds = headers
+        .get("x-core-stream-hold-seconds")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(0)
+        .min(600);
+
+    let (
+        cursor_now,
+        min_retained_seq,
+        events_for_stream,
+        incidents,
+        effective_profile_id,
+        clusters,
+    ) = {
+        let s = state.read().await;
+        let cursor = s.next_seq_v2.saturating_sub(1);
+        let min_retained = s.events_v2.front().map(|event| event.seq).unwrap_or(cursor);
+        let from_seq = last_event_id.unwrap_or(0);
+        let events = s
+            .events_v2
+            .iter()
+            .filter(|event| event.seq > from_seq)
+            .cloned()
+            .collect::<Vec<_>>();
+        (
+            cursor,
+            min_retained,
+            events,
+            s.incidents.clone(),
+            s.effective_profile_id.clone(),
+            sorted_dna_clusters_locked(&s, 200),
+        )
+    };
+
+    if let Some(cursor) = last_event_id {
+        if cursor != 0 && cursor < min_retained_seq {
+            let snapshot = SnapshotV2Response {
+                cursor: cursor_now,
+                effective_profile_id,
+                events: events_for_stream.into_iter().rev().take(200).collect(),
+                dna_clusters: clusters,
+                incidents,
+            };
+            let mut resp = (StatusCode::OK, Json(snapshot)).into_response();
+            if let Ok(v) = HeaderValue::from_str(&cursor_now.to_string()) {
+                resp.headers_mut().insert("x-stream-cursor", v);
+            }
+            return resp;
+        }
+    }
+
+    let tick = Duration::from_secs(1);
+    let out = stream! {
+        for stored in events_for_stream {
+            let payload = json!({
+                "seq": stored.seq,
+                "ts_ms": stored.ts_ms,
+                "raw_event": stored.raw_event,
+                "dna_signature": stored.dna_signature,
+                "evidence_refs": stored.evidence_refs,
+            });
+            yield Ok::<Event, Infallible>(
+                Event::default()
+                    .id(stored.seq.to_string())
+                    .event("message")
+                    .data(payload.to_string()),
+            );
+        }
+        for _ in 0..hold_seconds {
+            tokio::time::sleep(tick).await;
+            let cursor = {
+                let s = state.read().await;
+                s.next_seq_v2.saturating_sub(1)
+            };
+            let payload = json!({
+                "type": "keepalive",
+                "cursor": cursor
+            });
+            yield Ok::<Event, Infallible>(
+                Event::default()
+                    .id(cursor.to_string())
+                    .event("message")
+                    .data(payload.to_string()),
+            );
+        }
+    };
+
+    let mut resp = Sse::new(out).into_response();
+    resp.headers_mut()
+        .insert("cache-control", HeaderValue::from_static("no-cache"));
+    resp
+}
+
+async fn dna_clusters_list(
+    State(state): State<Shared>,
+    Query(query): Query<DnaListQuery>,
+) -> impl IntoResponse {
+    let limit = query.limit.unwrap_or(50).clamp(1, 500);
+    let s = state.read().await;
+    let total = s.dna_clusters.len();
+    let items = sorted_dna_clusters_locked(&s, limit);
+    (StatusCode::OK, Json(DnaClustersResponse { items, total })).into_response()
+}
+
+async fn dna_cluster_get(
+    Path(dna_id): Path<String>,
+    State(state): State<Shared>,
+) -> impl IntoResponse {
+    let s = state.read().await;
+    if let Some(cluster) = s.dna_clusters.get(&dna_id) {
+        return (StatusCode::OK, Json(cluster_record_from_state(cluster))).into_response();
+    }
+    (
+        StatusCode::NOT_FOUND,
+        Json(json!({"error":"dna_not_found","dna_id": dna_id})),
+    )
+        .into_response()
+}
+
+async fn dna_cluster_similar(
+    Path(dna_id): Path<String>,
+    State(state): State<Shared>,
+    Query(query): Query<DnaListQuery>,
+) -> impl IntoResponse {
+    let limit = query.limit.unwrap_or(5).clamp(1, 25);
+    let s = state.read().await;
+    let Some(base) = s.dna_clusters.get(&dna_id) else {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({"error":"dna_not_found","dna_id": dna_id})),
+        )
+            .into_response();
+    };
+    let base_hash = base.signature.canonical_hash.clone();
+    let mut items = Vec::new();
+    for (candidate_id, candidate) in &s.dna_clusters {
+        if candidate_id == &dna_id {
+            continue;
+        }
+        let score = similarity_score_by_prefix(&base_hash, &candidate.signature.canonical_hash);
+        items.push(DnaSimilarItem {
+            dna_id: candidate_id.clone(),
+            score,
+            cluster: cluster_record_from_state(candidate),
+        });
+    }
+    items.sort_by(|left, right| {
+        right
+            .score
+            .total_cmp(&left.score)
+            .then_with(|| right.cluster.event_count.cmp(&left.cluster.event_count))
+            .then_with(|| left.dna_id.cmp(&right.dna_id))
+    });
+    items.truncate(limit);
+    (
+        StatusCode::OK,
+        Json(DnaSimilarResponse {
+            base_dna_id: dna_id,
+            items,
+        }),
+    )
+        .into_response()
+}
+
+async fn evidence_get(
+    Path(evidence_id): Path<String>,
+    State(state): State<Shared>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let scope_header = headers
+        .get("x-access-scope")
+        .and_then(|value| value.to_str().ok())
+        .map(|value| value.to_string());
+    let role = role_from_headers(&headers);
+    let s = state.read().await;
+    let Some(block) = s.evidence_blocks.get(&evidence_id) else {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({"error":"evidence_not_found","evidence_id": evidence_id})),
+        )
+            .into_response();
+    };
+    if block.access_scope != "public"
+        && scope_header.as_deref() != Some(block.access_scope.as_str())
+        && role != Some(ActorRole::Admin)
+    {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({
+                "error":"evidence_access_denied",
+                "evidence_id": evidence_id,
+                "required_scope": block.access_scope
+            })),
+        )
+            .into_response();
+    }
+    (StatusCode::OK, Json(block.clone())).into_response()
+}
+
+fn top_items_from_counts(
+    counts: &HashMap<String, u64>,
+    total: u64,
+    top: usize,
+) -> Vec<AnalyticsTopItem> {
+    let mut items: Vec<(String, u64)> = counts.iter().map(|(k, v)| (k.clone(), *v)).collect();
+    items.sort_by(|left, right| right.1.cmp(&left.1).then_with(|| left.0.cmp(&right.0)));
+    items
+        .into_iter()
+        .take(top)
+        .map(|(key, count)| {
+            let share_pct = if total == 0 {
+                0.0
+            } else {
+                (count as f64 / total as f64) * 100.0
+            };
+            AnalyticsTopItem {
+                key,
+                count,
+                share_pct: (share_pct * 100.0).round() / 100.0,
+            }
+        })
+        .collect()
+}
+
+fn build_analytics_instructions(
+    totals: &AnalyticsTotals,
+    top_kinds: &[AnalyticsTopItem],
+    top_dna: &[AnalyticsTopItem],
+) -> Vec<AnalyticsInstruction> {
+    let mut out = Vec::new();
+    if totals.gap_rate_pct > 5.0 {
+        out.push(AnalyticsInstruction {
+            id: "gap-rate-high".to_string(),
+            priority: "high".to_string(),
+            title: "High observability gap rate".to_string(),
+            description: format!(
+                "Gap rate is {:.2}%. Stabilize data pipeline first and execute related runbooks.",
+                totals.gap_rate_pct
+            ),
+            action_ref: "docs/runbooks/console_boot_failed.md".to_string(),
+        });
+    }
+    if totals.ingest_invalid_total > 0 {
+        out.push(AnalyticsInstruction {
+            id: "invalid-payloads-present".to_string(),
+            priority: "medium".to_string(),
+            title: "Invalid ingest payloads detected".to_string(),
+            description: format!(
+                "Found {} invalid payloads. Check schema compliance in producers.",
+                totals.ingest_invalid_total
+            ),
+            action_ref: "docs/runbooks/ingest_payload_too_large.md".to_string(),
+        });
+    }
+    if let Some(kind) = top_kinds.first() {
+        out.push(AnalyticsInstruction {
+            id: "top-kind-focus".to_string(),
+            priority: "medium".to_string(),
+            title: "Primary incident pattern".to_string(),
+            description: format!(
+                "Most frequent event kind is '{}' ({} events). Focus triage and mitigation around this pattern.",
+                kind.key, kind.count
+            ),
+            action_ref: "docs/source/dna_core_determinism_performance_assurance.md".to_string(),
+        });
+    }
+    if let Some(dna) = top_dna.first() {
+        out.push(AnalyticsInstruction {
+            id: "top-dna-recurrence".to_string(),
+            priority: "medium".to_string(),
+            title: "Recurring DNA cluster".to_string(),
+            description: format!(
+                "DNA '{}' dominates with {} events. Consider dedicated investigation and automation.",
+                dna.key, dna.count
+            ),
+            action_ref: "docs/source/investigations_as_code.md".to_string(),
+        });
+    }
+    if out.is_empty() {
+        out.push(AnalyticsInstruction {
+            id: "stable-signal".to_string(),
+            priority: "low".to_string(),
+            title: "Signal quality is stable".to_string(),
+            description: "No critical anomalies in selected window. Continue monitoring and scheduled replay checks."
+                .to_string(),
+            action_ref: "docs/source/checklists/CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md"
+                .to_string(),
+        });
+    }
+    out
+}
+
+async fn analytics_summary(
+    State(state): State<Shared>,
+    headers: HeaderMap,
+    Query(query): Query<AnalyticsQuery>,
+) -> impl IntoResponse {
+    if let Err(deny) = enforce_rbac(&state, &headers, Endpoint::SnapshotV2, None, None).await {
+        return deny;
+    }
+    let window_minutes = query.window_minutes.unwrap_or(60).clamp(5, 10_080);
+    let top = query.top.unwrap_or(5).clamp(1, 20);
+    let now = now_ms();
+    let cutoff = now.saturating_sub(window_minutes.saturating_mul(60_000));
+
+    let s = state.read().await;
+    let mut timeline = Vec::new();
+    let mut severity_counts: HashMap<String, u64> = HashMap::new();
+    let mut kind_counts: HashMap<String, u64> = HashMap::new();
+    let mut dna_counts: HashMap<String, u64> = HashMap::new();
+    let mut total_events = 0u64;
+    let mut gap_events = 0u64;
+
+    for bucket in &s.analytics.buckets {
+        if bucket.minute_ts_ms < cutoff {
+            continue;
+        }
+        timeline.push(AnalyticsTimelinePoint {
+            minute_ts_ms: bucket.minute_ts_ms,
+            total_events: bucket.total_events,
+            gap_events: bucket.gap_events,
+        });
+        total_events = total_events.saturating_add(bucket.total_events);
+        gap_events = gap_events.saturating_add(bucket.gap_events);
+        for (key, value) in &bucket.severity_counts {
+            let entry = severity_counts.entry(key.clone()).or_insert(0);
+            *entry = entry.saturating_add(*value);
+        }
+        for (key, value) in &bucket.kind_counts {
+            let entry = kind_counts.entry(key.clone()).or_insert(0);
+            *entry = entry.saturating_add(*value);
+        }
+        for (key, value) in &bucket.dna_counts {
+            let entry = dna_counts.entry(key.clone()).or_insert(0);
+            *entry = entry.saturating_add(*value);
+        }
+    }
+
+    timeline.sort_by(|left, right| left.minute_ts_ms.cmp(&right.minute_ts_ms));
+    let gap_rate_pct = if total_events == 0 {
+        0.0
+    } else {
+        ((gap_events as f64 / total_events as f64) * 10000.0).round() / 100.0
+    };
+    let totals = AnalyticsTotals {
+        total_events,
+        gap_events,
+        gap_rate_pct,
+        ingest_invalid_total: s.counters.ingest_invalid_total,
+        ingest_dropped_total: s.counters.ingest_dropped_total,
+    };
+    let severity_distribution = top_items_from_counts(&severity_counts, total_events, top);
+    let top_kinds = top_items_from_counts(&kind_counts, total_events, top);
+    let top_dna = top_items_from_counts(&dna_counts, total_events, top);
+    let instructions = build_analytics_instructions(&totals, &top_kinds, &top_dna);
+
+    (
+        StatusCode::OK,
+        Json(AnalyticsSummaryResponse {
+            generated_at_ms: now,
+            window_minutes,
+            totals,
+            charts: AnalyticsCharts {
+                timeline,
+                severity_distribution,
+                top_kinds,
+                top_dna,
+            },
+            instructions,
+        }),
+    )
+        .into_response()
 }
 
 async fn otlp_logs(
@@ -1130,17 +2318,20 @@ fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
         .get("trace_id")
         .and_then(Value::as_str)
         .map(|v| v.to_string());
+    let ts_ms = now_ms();
     let seq = s.next_seq;
     s.next_seq += 1;
+    let gap_event = json!({
+        "kind": kind,
+        "severity": "error",
+        "details": details
+    });
     s.events.push_back(StoredEvent {
         seq,
-        ts_ms: now_ms(),
-        event: json!({
-            "kind": kind,
-            "severity": "error",
-            "details": details
-        }),
+        ts_ms,
+        event: gap_event.clone(),
     });
+    record_analytics_event_locked(s, ts_ms, &gap_event, None);
     if s.events.len() > s.queue_depth_limit {
         s.events.pop_front();
     }
@@ -1155,6 +2346,7 @@ fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
             None,
         );
     }
+    persist_analytics_state(&s.analytics_state_path, &s.analytics);
 }
 
 fn validate_event(event: &Value) -> Option<(String, String, String)> {
@@ -1550,6 +2742,8 @@ async fn audit_verify(State(state): State<Shared>, headers: HeaderMap) -> impl I
             StatusCode::OK,
             Json(json!({
                 "ok": true,
+                "status": "verified",
+                "chain_reason": "chain_valid",
                 "count": s.audits.len(),
                 "head_hash": s.audit_chain_head.clone(),
             })),
@@ -1559,8 +2753,9 @@ async fn audit_verify(State(state): State<Shared>, headers: HeaderMap) -> impl I
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({
                 "ok": false,
+                "status": "failed",
                 "error": "audit_chain_broken",
-                "reason": reason,
+                "chain_reason": reason,
                 "count": s.audits.len(),
             })),
         )
@@ -1615,8 +2810,15 @@ fn role_from_headers(headers: &HeaderMap) -> Option<ActorRole> {
 
 fn rbac_allows(role: ActorRole, endpoint: Endpoint) -> bool {
     match endpoint {
-        Endpoint::Snapshot | Endpoint::Stream | Endpoint::IncidentsGet => true,
-        Endpoint::IncidentAck | Endpoint::IncidentResolve | Endpoint::ActionsExecute => {
+        Endpoint::Snapshot
+        | Endpoint::SnapshotV2
+        | Endpoint::Stream
+        | Endpoint::StreamV2
+        | Endpoint::IncidentsGet => true,
+        Endpoint::IncidentAck
+        | Endpoint::IncidentResolve
+        | Endpoint::ActionsSimulate
+        | Endpoint::ActionsExecute => {
             matches!(role, ActorRole::Operator | ActorRole::Admin)
         }
         Endpoint::AuditGet | Endpoint::AuditVerify => matches!(role, ActorRole::Admin),
@@ -1658,44 +2860,30 @@ async fn enforce_mcp_mode(
     target: &str,
     allowlist: &[String],
 ) -> Result<(), Response> {
+    if mcp_allows(mode, action, allowlist) {
+        return Ok(());
+    }
+    push_access_denied(
+        state,
+        headers,
+        endpoint_name(Endpoint::ActionsExecute),
+        "mcp_denied",
+        action,
+        target,
+    )
+    .await;
+    Err((
+        StatusCode::FORBIDDEN,
+        Json(json!({"ok": false, "error": "access_denied"})),
+    )
+        .into_response())
+}
+
+fn mcp_allows(mode: McpMode, action: &str, allowlist: &[String]) -> bool {
     match mode {
-        McpMode::ReadOnly => {
-            push_access_denied(
-                state,
-                headers,
-                endpoint_name(Endpoint::ActionsExecute),
-                "mcp_denied",
-                action,
-                target,
-            )
-            .await;
-            Err((
-                StatusCode::FORBIDDEN,
-                Json(json!({"ok": false, "error": "access_denied"})),
-            )
-                .into_response())
-        }
-        McpMode::LimitedActions => {
-            if allowlist.iter().any(|allowed| allowed == action) {
-                Ok(())
-            } else {
-                push_access_denied(
-                    state,
-                    headers,
-                    endpoint_name(Endpoint::ActionsExecute),
-                    "mcp_denied",
-                    action,
-                    target,
-                )
-                .await;
-                Err((
-                    StatusCode::FORBIDDEN,
-                    Json(json!({"ok": false, "error": "access_denied"})),
-                )
-                    .into_response())
-            }
-        }
-        McpMode::FullAdmin => Ok(()),
+        McpMode::ReadOnly => false,
+        McpMode::LimitedActions => allowlist.iter().any(|allowed| allowed == action),
+        McpMode::FullAdmin => true,
     }
 }
 
@@ -1738,10 +2926,13 @@ async fn push_access_denied(
 fn endpoint_name(endpoint: Endpoint) -> &'static str {
     match endpoint {
         Endpoint::Snapshot => "/api/v1/snapshot",
+        Endpoint::SnapshotV2 => "/api/v2/snapshot",
         Endpoint::Stream => "/api/v1/stream",
+        Endpoint::StreamV2 => "/api/v2/stream",
         Endpoint::IncidentsGet => "/api/v1/incidents",
         Endpoint::IncidentAck => "/api/v1/incidents/{id}/ack",
         Endpoint::IncidentResolve => "/api/v1/incidents/{id}/resolve",
+        Endpoint::ActionsSimulate => "/api/v1/actions/simulate",
         Endpoint::ActionsExecute => "/api/v1/actions/execute",
         Endpoint::AuditGet => "/api/v1/audit",
         Endpoint::AuditVerify => "/api/v1/audit/verify",
@@ -1890,6 +3081,21 @@ fn build_audit_entry_with_params(
         user_agent: user_agent_clean,
         prev_hash: String::new(),
         entry_hash: String::new(),
+        merkle_proof: AuditMerkleProof {
+            algorithm: "sha256-chain-v1".to_string(),
+            leaf_hash: String::new(),
+            parent_hashes: Vec::new(),
+            root_hash: String::new(),
+        },
+    }
+}
+
+fn build_merkle_proof(prev_hash: &str, entry_hash: &str) -> AuditMerkleProof {
+    AuditMerkleProof {
+        algorithm: "sha256-chain-v1".to_string(),
+        leaf_hash: entry_hash.to_string(),
+        parent_hashes: vec![prev_hash.to_string()],
+        root_hash: sha256_hex(&format!("{}:{}", prev_hash, entry_hash)),
     }
 }
 
@@ -1897,9 +3103,51 @@ fn append_audit_entry(state: &mut CoreState, mut entry: AuditEntry) {
     entry.id = state.next_audit_id;
     entry.prev_hash = state.audit_chain_head.clone();
     entry.entry_hash = sha256_hex(&audit_hash_material(&entry));
+    entry.merkle_proof = build_merkle_proof(&entry.prev_hash, &entry.entry_hash);
     state.next_audit_id += 1;
     state.audit_chain_head = entry.entry_hash.clone();
     state.audits.push(entry);
+}
+
+fn append_audit_entry_and_get(state: &mut CoreState, mut entry: AuditEntry) -> AuditEntry {
+    entry.id = state.next_audit_id;
+    entry.prev_hash = state.audit_chain_head.clone();
+    entry.entry_hash = sha256_hex(&audit_hash_material(&entry));
+    entry.merkle_proof = build_merkle_proof(&entry.prev_hash, &entry.entry_hash);
+    state.next_audit_id += 1;
+    state.audit_chain_head = entry.entry_hash.clone();
+    state.audits.push(entry.clone());
+    entry
+}
+
+fn action_audit_attach(entry: &AuditEntry) -> ActionAuditAttach {
+    ActionAuditAttach {
+        audit_id: entry.id,
+        trace_id: entry.trace_id.clone(),
+        entry_hash: entry.entry_hash.clone(),
+        merkle_proof: entry.merkle_proof.clone(),
+    }
+}
+
+fn nrac_threshold() -> f64 {
+    let raw = env::var("CORE_NRAC_REGRET_THRESHOLD").unwrap_or_else(|_| "0.05".to_string());
+    raw.parse::<f64>()
+        .ok()
+        .filter(|value| value.is_finite())
+        .map(|value| value.clamp(0.0, 1.0))
+        .unwrap_or(0.05)
+}
+
+fn is_critical_action_for_nrac(action: &str) -> bool {
+    matches!(action, "service.terminate" | "service.rollback")
+}
+
+fn nrac_regret_from_headers(headers: &HeaderMap) -> Option<f64> {
+    headers
+        .get("x-action-nrac-regret")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.trim().parse::<f64>().ok())
+        .filter(|value| value.is_finite())
 }
 
 fn audit_hash_material(entry: &AuditEntry) -> String {
@@ -1935,6 +3183,38 @@ fn verify_audit_chain(entries: &[AuditEntry]) -> Result<(), String> {
             return Err(format!(
                 "entry_hash_mismatch id={} expected={} actual={}",
                 entry.id, expected_hash, entry.entry_hash
+            ));
+        }
+        if entry.merkle_proof.leaf_hash != entry.entry_hash {
+            return Err(format!(
+                "proof_leaf_mismatch id={} expected={} actual={}",
+                entry.id, entry.entry_hash, entry.merkle_proof.leaf_hash
+            ));
+        }
+        let expected_root = sha256_hex(&format!("{}:{}", entry.prev_hash, entry.entry_hash));
+        if entry.merkle_proof.root_hash != expected_root {
+            return Err(format!(
+                "proof_root_mismatch id={} expected={} actual={}",
+                entry.id, expected_root, entry.merkle_proof.root_hash
+            ));
+        }
+        if entry
+            .merkle_proof
+            .parent_hashes
+            .first()
+            .map(|value| value.as_str())
+            != Some(entry.prev_hash.as_str())
+        {
+            return Err(format!(
+                "proof_parent_mismatch id={} expected={} actual={}",
+                entry.id,
+                entry.prev_hash,
+                entry
+                    .merkle_proof
+                    .parent_hashes
+                    .first()
+                    .cloned()
+                    .unwrap_or_default()
             ));
         }
         prev_hash = entry.entry_hash.clone();
@@ -2052,6 +3332,13 @@ async fn actions_execute(
     Json(req): Json<ActionExecuteRequest>,
 ) -> impl IntoResponse {
     let target = req.target.clone().unwrap_or_else(|| "none".to_string());
+    let critical_nrac = is_critical_action_for_nrac(&req.action);
+    let nrac_threshold_value = nrac_threshold();
+    let preflight_id = headers
+        .get("x-action-preflight-id")
+        .and_then(|value| value.to_str().ok())
+        .map(str::trim)
+        .unwrap_or("");
     let deny = if let Err(resp) = enforce_rbac(
         &state,
         &headers,
@@ -2081,6 +3368,62 @@ async fn actions_execute(
     let mut s = state.write().await;
     let (sanitized_params, redacted) =
         sanitize_sensitive(&req.params.clone().unwrap_or(Value::Null));
+    if preflight_id.is_empty() {
+        push_gap_event_locked(
+            &mut s,
+            "observability_gap.action_preflight_missing",
+            json!({
+                "action": req.action,
+                "target": target,
+                "actor_role": role_from_headers(&headers)
+                    .map(ActorRole::as_str)
+                    .unwrap_or("unknown"),
+                "policy_id": "action_preflight_v1",
+                "trace_id": trace_id_from_headers(&headers)
+            }),
+        );
+        let denied_audit = append_audit_entry_and_get(
+            &mut s,
+            build_audit_entry_with_params(
+                &headers,
+                &req.action,
+                &target,
+                "denied",
+                "docs/runbooks/action_preflight_missing.md",
+                sanitized_params,
+            ),
+        );
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "accepted": false,
+                "error": "preflight_required",
+                "code": "action_preflight_missing",
+                "audit_attach": action_audit_attach(&denied_audit),
+                "nrac": NracResult {
+                    required: critical_nrac,
+                    status: if critical_nrac { "missing".to_string() } else { "not_required".to_string() },
+                    regret: nrac_regret_from_headers(&headers),
+                    threshold: if critical_nrac { Some(nrac_threshold_value) } else { None }
+                }
+            })),
+        )
+            .into_response();
+    }
+    append_audit_entry(
+        &mut s,
+        build_audit_entry_with_params(
+            &headers,
+            "action.preflight",
+            &target,
+            "success",
+            "none",
+            json!({
+                "preflight_id": preflight_id,
+                "action": req.action
+            }),
+        ),
+    );
     if redacted {
         push_gap_event_locked(
             &mut s,
@@ -2107,7 +3450,72 @@ async fn actions_execute(
         );
         return resp;
     }
-    append_audit_entry(
+    let mut nrac = NracResult {
+        required: critical_nrac,
+        status: "not_required".to_string(),
+        regret: None,
+        threshold: if critical_nrac {
+            Some(nrac_threshold_value)
+        } else {
+            None
+        },
+    };
+    if critical_nrac {
+        let regret = nrac_regret_from_headers(&headers);
+        nrac.regret = regret;
+        if regret.is_none() {
+            nrac.status = "missing".to_string();
+            let denied_audit = append_audit_entry_and_get(
+                &mut s,
+                build_audit_entry_with_params(
+                    &headers,
+                    &req.action,
+                    &target,
+                    "denied",
+                    "docs/foundation/revolutionary_hypotheses.md",
+                    sanitized_params.clone(),
+                ),
+            );
+            return (
+                StatusCode::FORBIDDEN,
+                Json(json!({
+                    "accepted": false,
+                    "error": "nrac_required",
+                    "code": "action_nrac_missing",
+                    "audit_attach": action_audit_attach(&denied_audit),
+                    "nrac": nrac
+                })),
+            )
+                .into_response();
+        }
+        if regret.unwrap_or(1.0) > nrac_threshold_value {
+            nrac.status = "regret_exceeded".to_string();
+            let denied_audit = append_audit_entry_and_get(
+                &mut s,
+                build_audit_entry_with_params(
+                    &headers,
+                    &req.action,
+                    &target,
+                    "denied",
+                    "docs/foundation/revolutionary_hypotheses.md",
+                    sanitized_params.clone(),
+                ),
+            );
+            return (
+                StatusCode::FORBIDDEN,
+                Json(json!({
+                    "accepted": false,
+                    "error": "nrac_regret_exceeded",
+                    "code": "action_nrac_regret_exceeded",
+                    "audit_attach": action_audit_attach(&denied_audit),
+                    "nrac": nrac
+                })),
+            )
+                .into_response();
+        }
+        nrac.status = "accepted".to_string();
+    }
+    let execution_audit = append_audit_entry_and_get(
         &mut s,
         build_audit_entry_with_params(
             &headers,
@@ -2122,8 +3530,64 @@ async fn actions_execute(
         accepted: true,
         action: req.action,
         target: req.target,
+        audit_attach: action_audit_attach(&execution_audit),
+        nrac,
     };
     (StatusCode::OK, Json(response)).into_response()
+}
+
+async fn actions_simulate(
+    State(state): State<Shared>,
+    headers: HeaderMap,
+    Json(req): Json<ActionExecuteRequest>,
+) -> impl IntoResponse {
+    let target = req.target.clone().unwrap_or_else(|| "none".to_string());
+    let preflight_id = headers
+        .get("x-action-preflight-id")
+        .and_then(|value| value.to_str().ok())
+        .map(str::trim)
+        .unwrap_or("");
+    let actor_role = role_from_headers(&headers);
+    let mcp_mode = McpMode::from_headers(&headers);
+    let allowlist = {
+        let s = state.read().await;
+        s.limited_actions_allowlist.clone()
+    };
+    let rbac_allowed = actor_role
+        .map(|role| rbac_allows(role, Endpoint::ActionsSimulate))
+        .unwrap_or(false);
+    let mcp_allowed = mcp_allows(mcp_mode, &req.action, &allowlist);
+    let policy_allowed = rbac_allowed && mcp_allowed;
+    let preflight_provided = !preflight_id.is_empty();
+    let preflight_diff = if preflight_provided {
+        Vec::<String>::new()
+    } else {
+        vec!["missing:x-action-preflight-id".to_string()]
+    };
+    (
+        StatusCode::OK,
+        Json(json!({
+            "ok": true,
+            "side_effects": false,
+            "action": req.action,
+            "target": target,
+            "preflight": {
+                "required": true,
+                "provided": preflight_provided,
+                "preflight_id": if preflight_provided { preflight_id } else { "" },
+                "diff": preflight_diff
+            },
+            "policy_verdict": {
+                "allowed": policy_allowed,
+                "rbac_allowed": rbac_allowed,
+                "mcp_allowed": mcp_allowed,
+                "actor_role": actor_role.map(ActorRole::as_str).unwrap_or("unknown"),
+                "mcp_mode": mcp_mode.as_str(),
+                "policy_id": "action_preflight_v1"
+            }
+        })),
+    )
+        .into_response()
 }
 
 fn load_core_config(path: &str) -> anyhow::Result<CoreConfig> {
@@ -2260,6 +3724,8 @@ mod tests {
     use axum::http::{Request, StatusCode};
     use flate2::read::GzDecoder;
     use http_body_util::BodyExt;
+    use proptest::prelude::*;
+    use std::collections::HashSet;
     use std::io::Read;
     use tower::ServiceExt;
 
@@ -2270,6 +3736,8 @@ mod tests {
             200,
             524_288,
             vec!["service.restart".to_string(), "service.status".to_string()],
+            AnalyticsState::new(1_440),
+            PathBuf::from("/tmp/art_core_analytics_state_test.json"),
         )))
     }
 
@@ -2326,6 +3794,1026 @@ mod tests {
             .filter_map(|line| line.strip_prefix("id: "))
             .filter_map(|id| id.trim().parse::<u64>().ok())
             .collect()
+    }
+
+    fn percentile_ms(samples: &[u128], quantile: f64) -> u128 {
+        if samples.is_empty() {
+            return 0;
+        }
+        let mut sorted = samples.to_vec();
+        sorted.sort_unstable();
+        let idx = ((sorted.len() as f64) * quantile).floor() as usize;
+        sorted[idx.min(sorted.len().saturating_sub(1))]
+    }
+
+    fn stage34_profile_event(profile: &str, idx: usize) -> Value {
+        let seed = (idx as u64)
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        let mut event = dna_seed_to_event(seed, idx as u64);
+
+        if profile == "burst" {
+            event["severity"] = Value::String("error".to_string());
+            event["kind"] = Value::String(format!("burst.{}", idx % 5));
+        } else if profile == "skewed" && !idx.is_multiple_of(10) {
+            event["kind"] = Value::String("svc.hotspot".to_string());
+            event["payload"]["service"] = Value::String("service-hot".to_string());
+        }
+
+        event
+    }
+
+    fn lcg_next(state: &mut u64) -> u64 {
+        *state = state
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        *state
+    }
+
+    fn dna_seed_to_event(seed: u64, seq: u64) -> Value {
+        let severity = match seed % 3 {
+            0 => "info",
+            1 => "warn",
+            _ => "error",
+        };
+        let region = if seed & 1 == 0 { "eu" } else { "us" };
+        json!({
+            "severity": severity,
+            "kind": format!("svc.{}", seed % 37),
+            "payload": {
+                "service": format!("service-{}", seed % 17),
+                "region": region,
+                "bucket": format!("b-{}", (seed >> 4) % 97),
+                "error_code": seed % 4096
+            },
+            "ts_ms": seq + (seed % 10_000),
+            "received_at": format!("2026-03-06T{:02}:00:00Z", seed % 24),
+            "ingested_at_ms": seed % 1_000_000
+        })
+    }
+
+    fn dna_seed_to_event_variant(seed: u64, seq: u64) -> Value {
+        let severity = match seed % 3 {
+            0 => "info",
+            1 => "warn",
+            _ => "error",
+        };
+        let region = if seed & 1 == 0 { "eu" } else { "us" };
+        json!({
+            "payload": {
+                "error_code": seed % 4096,
+                "bucket": format!("b-{}", (seed >> 4) % 97),
+                "region": region,
+                "service": format!("service-{}", seed % 17)
+            },
+            "kind": format!("svc.{}", seed % 37),
+            "severity": severity,
+            "ts_ms": seq + 99_999_999,
+            "received_at": "2099-01-01T00:00:00Z",
+            "ingested_at_ms": 777_777_777
+        })
+    }
+
+    fn reference_ignore_key(key: &str) -> bool {
+        matches!(
+            key,
+            "ts" | "ts_ms"
+                | "timestamp"
+                | "ingest_ts_ms"
+                | "event_id"
+                | "received_at"
+                | "ingested_at_ms"
+        )
+    }
+
+    fn canonicalize_reference(value: &Value) -> Value {
+        match value {
+            Value::Object(map) => {
+                let mut keys: Vec<&String> = map.keys().collect();
+                keys.sort();
+                let mut normalized = serde_json::Map::new();
+                for key in keys {
+                    if reference_ignore_key(key) {
+                        continue;
+                    }
+                    if let Some(inner) = map.get(key) {
+                        normalized.insert(key.clone(), canonicalize_reference(inner));
+                    }
+                }
+                Value::Object(normalized)
+            }
+            Value::Array(items) => {
+                let normalized: Vec<Value> = items.iter().map(canonicalize_reference).collect();
+                Value::Array(normalized)
+            }
+            _ => value.clone(),
+        }
+    }
+
+    fn canonical_json_reference_v2(value: &Value) -> String {
+        let normalized = canonicalize_reference(value);
+        serde_json::to_string(&normalized).unwrap_or_else(|_| "{}".to_string())
+    }
+
+    fn mutated_canonical_json_without_ignore(value: &Value) -> String {
+        fn normalize(value: &Value) -> Value {
+            match value {
+                Value::Object(map) => {
+                    let mut keys: Vec<&String> = map.keys().collect();
+                    keys.sort();
+                    let mut out = serde_json::Map::new();
+                    for key in keys {
+                        if let Some(inner) = map.get(key) {
+                            out.insert(key.clone(), normalize(inner));
+                        }
+                    }
+                    Value::Object(out)
+                }
+                Value::Array(items) => Value::Array(items.iter().map(normalize).collect()),
+                _ => value.clone(),
+            }
+        }
+        normalize(value).to_string()
+    }
+
+    #[test]
+    fn console_base_path_validation_is_strict() {
+        assert!(is_valid_console_base_path("/console"));
+        assert!(is_valid_console_base_path("/console/v2"));
+        assert!(!is_valid_console_base_path("http://console"));
+        assert!(!is_valid_console_base_path("https://console"));
+        assert!(!is_valid_console_base_path("//console"));
+        assert!(!is_valid_console_base_path("/../console"));
+        assert!(!is_valid_console_base_path("/console/.."));
+    }
+
+    #[test]
+    fn panel0_templates_replace_placeholders() {
+        let build_id = "build-42";
+        let bootstrap = render_panel0_bootstrap_html(build_id, "/console");
+        assert!(bootstrap.contains("const BOOT_TIMEOUT_MS = 5000;"));
+        assert!(bootstrap.contains("const EVENT_KIND = \"observability_gap.console_boot_failed\";"));
+        assert!(bootstrap.contains("const CONSOLE_BASE_PATH = \"/console\";"));
+        assert!(bootstrap.contains("const PANEL0_BUILD_ID = \"build-42\";"));
+        assert!(!bootstrap.contains("__CONSOLE_BASE_PATH_JSON__"));
+        assert!(!bootstrap.contains("__PANEL0_BUILD_ID_JSON__"));
+        assert!(!bootstrap.contains("__BOOT_TIMEOUT_MS__"));
+
+        let panel_js = render_panel0_js(build_id);
+        assert!(panel_js.contains("const PANEL0_BUILD_ID = \"build-42\";"));
+        assert!(!panel_js.contains("__PANEL0_BUILD_ID__"));
+
+        let panel_sw = render_panel0_service_worker(build_id);
+        assert!(panel_sw.contains("const CACHE_NAME = \"panel0-cache-build-42\";"));
+        assert!(!panel_sw.contains("__PANEL0_BUILD_ID__"));
+    }
+
+    #[tokio::test]
+    async fn panel0_routes_serve_embedded_assets_with_content_types() {
+        let app = build_app(test_state());
+        let cases = vec![
+            ("/panel0", "text/html"),
+            ("/panel0/", "text/html"),
+            ("/panel0/index.html", "text/html"),
+            ("/panel0/panel0.js", "application/javascript"),
+            ("/panel0/panel0.css", "text/css"),
+            ("/panel0/panel0_sw.js", "application/javascript"),
+            ("/panel0/favicon.ico", "image/x-icon"),
+        ];
+
+        for (uri, expected_ct) in cases {
+            let req = Request::builder()
+                .method("GET")
+                .uri(uri)
+                .body(Body::empty())
+                .expect("request");
+            let resp = app.clone().oneshot(req).await.expect("response");
+            assert_eq!(resp.status(), StatusCode::OK, "uri={uri}");
+            let content_type = resp
+                .headers()
+                .get(CONTENT_TYPE)
+                .and_then(|h| h.to_str().ok())
+                .unwrap_or("");
+            assert!(
+                content_type.starts_with(expected_ct),
+                "uri={uri} content-type={content_type}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn root_route_serves_bootstrap_with_timeout_and_event_contract() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("GET")
+            .uri("/")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let content_type = resp
+            .headers()
+            .get(CONTENT_TYPE)
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or("");
+        assert!(content_type.starts_with("text/html"));
+
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let html = String::from_utf8(body.to_vec()).expect("utf8");
+        assert!(html.contains("const BOOT_TIMEOUT_MS = 5000;"));
+        assert!(html.contains("const EVENT_KIND = \"observability_gap.console_boot_failed\";"));
+        assert!(html.contains("Ctrl+Shift+P"));
+        assert!(html.contains("globalThis.location.replace(\"/panel0/\")"));
+        assert!(!html.contains("__CONSOLE_BASE_PATH_JSON__"));
+    }
+
+    #[test]
+    fn dna_canonicalization_determinism_corpus_tests() {
+        let event_a = json!({
+            "severity": "error",
+            "kind": "db.timeout",
+            "payload": {
+                "region": "eu",
+                "service": "orders"
+            },
+            "ts_ms": 1000
+        });
+        let event_b = json!({
+            "payload": {
+                "service": "orders",
+                "region": "eu"
+            },
+            "kind": "db.timeout",
+            "severity": "error",
+            "ts_ms": 9999
+        });
+
+        let canon_a = canonical_json_v2(&event_a);
+        let canon_b = canonical_json_v2(&event_b);
+        assert_eq!(canon_a, canon_b);
+
+        let sig_a = build_dna_signature(&event_a);
+        let sig_b = build_dna_signature(&event_b);
+        assert_eq!(sig_a.dna_id, sig_b.dna_id);
+        assert_eq!(sig_a.canonical_hash, sig_b.canonical_hash);
+        assert_eq!(sig_a.dna_schema_version, DNA_SCHEMA_VERSION);
+    }
+
+    #[test]
+    fn dna_schema_version_migration_compatibility_tests() {
+        let event = json!({"severity":"warn","kind":"cache.degraded","msg":"x"});
+        let sig = build_dna_signature(&event);
+        assert_eq!(sig.dna_schema_version, DNA_SCHEMA_VERSION);
+        assert!(!sig.dna_id.is_empty());
+        assert_eq!(sig.canonical_hash.len(), 64);
+        assert_eq!(sig.payload_hash.len(), 64);
+    }
+
+    proptest! {
+        #[test]
+        fn dna_property_determinism_proptest(seed in 0_u64..u64::MAX, seq in 0_u64..1_000_000_u64) {
+            let event_a = dna_seed_to_event(seed, seq);
+            let event_b = dna_seed_to_event_variant(seed, seq);
+
+            let canonical_a = canonical_json_v2(&event_a);
+            let canonical_b = canonical_json_v2(&event_b);
+            prop_assert_eq!(canonical_a, canonical_b);
+
+            let sig_a = build_dna_signature(&event_a);
+            let sig_b = build_dna_signature(&event_b);
+            prop_assert_eq!(sig_a.dna_id, sig_b.dna_id);
+            prop_assert_eq!(sig_a.canonical_hash, sig_b.canonical_hash);
+        }
+    }
+
+    #[test]
+    #[ignore = "heavy deterministic gate for CI stage29"]
+    fn dna_property_determinism_million_sequences_gate() {
+        let mut prng_state = 0xA1B2_C3D4_E5F6_7788_u64;
+        for seq in 0_u64..1_000_000_u64 {
+            let seed = lcg_next(&mut prng_state);
+            let event_a = dna_seed_to_event(seed, seq);
+            let event_b = dna_seed_to_event_variant(seed, seq);
+
+            let sig_a = build_dna_signature(&event_a);
+            let sig_b = build_dna_signature(&event_b);
+            assert_eq!(sig_a.dna_id, sig_b.dna_id, "seq={seq}");
+            assert_eq!(sig_a.canonical_hash, sig_b.canonical_hash, "seq={seq}");
+        }
+    }
+
+    #[test]
+    fn dna_reference_implementation_parity_corpus() {
+        for seq in 0_u64..10_000_u64 {
+            let seed = seq.wrapping_mul(7_919).wrapping_add(12_345);
+            let event = dna_seed_to_event(seed, seq);
+            let rust_canonical = canonical_json_v2(&event);
+            let ref_canonical = canonical_json_reference_v2(&event);
+            assert_eq!(rust_canonical, ref_canonical, "seq={seq}");
+
+            let signature = build_dna_signature(&event);
+            assert_eq!(
+                signature.canonical_hash,
+                sha256_hex(&ref_canonical),
+                "seq={seq}"
+            );
+        }
+    }
+
+    #[test]
+    fn dna_mutation_resilience_sentinel_test() {
+        let event_a = dna_seed_to_event(77, 10);
+        let event_b = dna_seed_to_event_variant(77, 10);
+
+        let stable_a = build_dna_signature(&event_a);
+        let stable_b = build_dna_signature(&event_b);
+        assert_eq!(stable_a.dna_id, stable_b.dna_id);
+
+        let mutated_a = mutated_canonical_json_without_ignore(&event_a);
+        let mutated_b = mutated_canonical_json_without_ignore(&event_b);
+        assert_ne!(
+            sha256_hex(&mutated_a),
+            sha256_hex(&mutated_b),
+            "mutation sentinel must detect volatile-field sensitivity"
+        );
+    }
+
+    #[test]
+    fn dna_clusters_are_monotonic_for_append_only_sequence() {
+        let mut observed = HashSet::new();
+        let mut state = 0x4E_45_4F_32_30_32_32_u64;
+        let mut prev_len = 0usize;
+        for seq in 0_u64..25_000_u64 {
+            let seed = lcg_next(&mut state);
+            let event = dna_seed_to_event(seed, seq);
+            let signature = build_dna_signature(&event);
+            observed.insert(signature.dna_id);
+            let current_len = observed.len();
+            assert!(current_len >= prev_len);
+            prev_len = current_len;
+        }
+    }
+
+    #[tokio::test]
+    async fn v2_ingest_snapshot_stream_integration() {
+        let app = build_app(test_state());
+        let payload = json!({
+            "events": [
+                {
+                    "severity":"error",
+                    "kind":"db.timeout",
+                    "msg":"database timeout",
+                    "evidence_blocks":[
+                        {
+                            "evidence_id":"ev-v2-1",
+                            "source_type":"log",
+                            "source_ref":"log://db/1",
+                            "trust_score":0.9,
+                            "freshness_ms":1200,
+                            "redaction_policy_id":"default",
+                            "access_scope":"public"
+                        }
+                    ]
+                },
+                {
+                    "severity":"error",
+                    "kind":"db.timeout",
+                    "msg":"database timeout replica"
+                }
+            ]
+        });
+
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let ingest_resp = app.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::OK);
+
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.clone().oneshot(snapshot_req).await.expect("response");
+        assert_eq!(snapshot_resp.status(), StatusCode::OK);
+        let snapshot_body = snapshot_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let snapshot_json: Value = serde_json::from_slice(&snapshot_body).expect("json");
+        assert!(snapshot_json["events"]
+            .as_array()
+            .map(|v| !v.is_empty())
+            .unwrap_or(false));
+        assert!(snapshot_json["dna_clusters"]
+            .as_array()
+            .map(|v| !v.is_empty())
+            .unwrap_or(false));
+        assert_eq!(
+            snapshot_json["events"][0]["dna_signature"]["dna_schema_version"],
+            DNA_SCHEMA_VERSION
+        );
+
+        let stream_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/stream")
+            .header("last-event-id", "0")
+            .body(Body::empty())
+            .expect("request");
+        let stream_resp = app.oneshot(stream_req).await.expect("response");
+        assert_eq!(stream_resp.status(), StatusCode::OK);
+        let stream_body = stream_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let stream_text = String::from_utf8(stream_body.to_vec()).expect("utf8");
+        assert!(stream_text.contains("\"dna_signature\""));
+        assert!(stream_text.contains("\"evidence_refs\""));
+    }
+
+    #[tokio::test]
+    async fn v2_evidence_access_scope_enforcement_tests() {
+        let app = build_app(test_state());
+        let payload = json!({
+            "events": [
+                {
+                    "severity":"info",
+                    "kind":"scope.check",
+                    "evidence_blocks":[
+                        {
+                            "evidence_id":"ev-private-1",
+                            "source_type":"log",
+                            "source_ref":"log://secure/1",
+                            "trust_score":1.0,
+                            "freshness_ms":0,
+                            "redaction_policy_id":"default",
+                            "access_scope":"tenant:alpha"
+                        }
+                    ]
+                }
+            ]
+        });
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let ingest_resp = app.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::OK);
+
+        let denied_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/evidence/ev-private-1")
+            .body(Body::empty())
+            .expect("request");
+        let denied_resp = app.clone().oneshot(denied_req).await.expect("response");
+        assert_eq!(denied_resp.status(), StatusCode::FORBIDDEN);
+
+        let scoped_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/evidence/ev-private-1")
+            .header("x-access-scope", "tenant:alpha")
+            .body(Body::empty())
+            .expect("request");
+        let scoped_resp = app.clone().oneshot(scoped_req).await.expect("response");
+        assert_eq!(scoped_resp.status(), StatusCode::OK);
+
+        let admin_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/evidence/ev-private-1")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let admin_resp = app.oneshot(admin_req).await.expect("response");
+        assert_eq!(admin_resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn v2_invalid_payload_returns_deterministic_error_codes() {
+        let app = build_app(test_state());
+        let invalid_payload = json!({
+            "events": [
+                {"kind":"missing-severity"}
+            ]
+        });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(invalid_payload.to_string()))
+            .expect("request");
+        let resp = app.oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["error"], "invalid_payload");
+        assert_eq!(json["code"], "v2_invalid_event");
+        assert_eq!(json["details"][0]["path"], "severity");
+        assert_eq!(json["details"][0]["code"], "validation_error");
+    }
+
+    #[tokio::test]
+    async fn v2_dna_clusters_and_similar_lookup() {
+        let app = build_app(test_state());
+        let payload = json!({
+            "events": [
+                {"severity":"error","kind":"db.timeout","payload":{"service":"orders","region":"eu"}},
+                {"severity":"error","kind":"db.timeout","payload":{"service":"orders","region":"eu"}},
+                {"severity":"error","kind":"db.timeout","payload":{"service":"billing","region":"eu"}}
+            ]
+        });
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let ingest_resp = app.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::OK);
+
+        let clusters_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/dna/clusters?limit=10")
+            .body(Body::empty())
+            .expect("request");
+        let clusters_resp = app.clone().oneshot(clusters_req).await.expect("response");
+        assert_eq!(clusters_resp.status(), StatusCode::OK);
+        let clusters_body = clusters_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let clusters_json: Value = serde_json::from_slice(&clusters_body).expect("json");
+        let first_dna_id = clusters_json["items"][0]["dna_signature"]["dna_id"]
+            .as_str()
+            .expect("dna_id")
+            .to_string();
+
+        let similar_req = Request::builder()
+            .method("GET")
+            .uri(format!("/api/v2/dna/{first_dna_id}/similar"))
+            .body(Body::empty())
+            .expect("request");
+        let similar_resp = app.oneshot(similar_req).await.expect("response");
+        assert_eq!(similar_resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn v2_analytics_summary_returns_chart_data_and_instructions() {
+        let app = build_app(test_state());
+        let payload = json!({
+            "events": [
+                {"severity":"error","kind":"db.timeout","payload":{"service":"orders","region":"eu"}},
+                {"severity":"warn","kind":"cache.degraded","payload":{"service":"orders","region":"eu"}},
+                {"severity":"error","kind":"db.timeout","payload":{"service":"orders","region":"eu"}}
+            ]
+        });
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let ingest_resp = app.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::OK);
+
+        let metrics_req = Request::builder()
+            .method("GET")
+            .uri("/metrics")
+            .header("x-core-metrics-force-unavailable", "1")
+            .body(Body::empty())
+            .expect("request");
+        let metrics_resp = app.clone().oneshot(metrics_req).await.expect("response");
+        assert_eq!(metrics_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+
+        let analytics_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/analytics/summary?window_minutes=120&top=3")
+            .body(Body::empty())
+            .expect("request");
+        let analytics_resp = app.oneshot(analytics_req).await.expect("response");
+        assert_eq!(analytics_resp.status(), StatusCode::OK);
+        let analytics_body = analytics_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let analytics_json: Value = serde_json::from_slice(&analytics_body).expect("json");
+        assert!(analytics_json["totals"]["total_events"]
+            .as_u64()
+            .map(|value| value >= 3)
+            .unwrap_or(false));
+        assert!(analytics_json["charts"]["timeline"]
+            .as_array()
+            .map(|arr| !arr.is_empty())
+            .unwrap_or(false));
+        assert!(analytics_json["instructions"]
+            .as_array()
+            .map(|arr| !arr.is_empty())
+            .unwrap_or(false));
+    }
+
+    #[tokio::test]
+    #[ignore = "stage34 load suite: 10k/100k steady-burst-skewed profiles"]
+    async fn stage34_v2_ingest_profile_load_report() {
+        let scenarios = [
+            ("steady-10k", "steady", 10_000usize, 120u128),
+            ("steady-100k", "steady", 100_000usize, 350u128),
+            ("burst-10k", "burst", 10_000usize, 120u128),
+            ("burst-100k", "burst", 100_000usize, 350u128),
+            ("skewed-10k", "skewed", 10_000usize, 120u128),
+            ("skewed-100k", "skewed", 100_000usize, 350u128),
+        ];
+
+        println!("STAGE34_LOAD_BEGIN");
+        for (scenario, profile, total_events, p95_budget_ms) in scenarios {
+            let app = build_app(test_state());
+            let mut left = total_events;
+            let mut req_idx: usize = 0;
+            let mut latency_samples_ms = Vec::new();
+            let started = std::time::Instant::now();
+            let mut accepted_total = 0usize;
+            while left > 0 {
+                let chunk = left.min(200);
+                let base = req_idx * 200;
+                let events: Vec<Value> = (0..chunk)
+                    .map(|offset| stage34_profile_event(profile, base + offset))
+                    .collect();
+                let payload = json!({ "events": events });
+                let req = Request::builder()
+                    .method("POST")
+                    .uri("/api/v2/ingest")
+                    .header("content-type", "application/json")
+                    .body(Body::from(payload.to_string()))
+                    .expect("request");
+                let req_started = std::time::Instant::now();
+                let resp = app.clone().oneshot(req).await.expect("response");
+                let elapsed_ms = req_started.elapsed().as_millis();
+                latency_samples_ms.push(elapsed_ms);
+                assert_eq!(
+                    resp.status(),
+                    StatusCode::OK,
+                    "scenario={scenario} request={req_idx}"
+                );
+                let body = resp.into_body().collect().await.expect("body").to_bytes();
+                let ack: Value = serde_json::from_slice(&body).expect("json");
+                accepted_total += ack["accepted"].as_u64().unwrap_or(0) as usize;
+                req_idx += 1;
+                left -= chunk;
+            }
+
+            let snapshot_req = Request::builder()
+                .method("GET")
+                .uri("/api/v2/snapshot")
+                .body(Body::empty())
+                .expect("request");
+            let snapshot_resp = app.clone().oneshot(snapshot_req).await.expect("response");
+            assert_eq!(snapshot_resp.status(), StatusCode::OK);
+            let snapshot_body = snapshot_resp
+                .into_body()
+                .collect()
+                .await
+                .expect("body")
+                .to_bytes();
+            let snapshot_json: Value = serde_json::from_slice(&snapshot_body).expect("json");
+            let snapshot_events = snapshot_json["events"]
+                .as_array()
+                .map(|arr| arr.len())
+                .unwrap_or(0);
+            let snapshot_clusters = snapshot_json["dna_clusters"]
+                .as_array()
+                .map(|arr| arr.len())
+                .unwrap_or(0);
+            assert_eq!(
+                accepted_total, total_events,
+                "scenario={scenario} accepted_total={accepted_total} expected={total_events}"
+            );
+            assert!(
+                snapshot_clusters > 0,
+                "scenario={scenario} dna_clusters must be non-empty"
+            );
+
+            let elapsed = started.elapsed().as_secs_f64();
+            let throughput_eps = if elapsed > 0.0 {
+                (total_events as f64) / elapsed
+            } else {
+                0.0
+            };
+            let p95_ms = percentile_ms(&latency_samples_ms, 0.95);
+            let p99_ms = percentile_ms(&latency_samples_ms, 0.99);
+            let error_rate = 0.0f64;
+            println!(
+                "STAGE34_LOAD scenario={} profile={} events={} requests={} accepted={} p95_ms={} p99_ms={} throughput_eps={:.2} error_rate={:.4} snapshot_events={} snapshot_clusters={}",
+                scenario,
+                profile,
+                total_events,
+                req_idx,
+                accepted_total,
+                p95_ms,
+                p99_ms,
+                throughput_eps,
+                error_rate,
+                snapshot_events,
+                snapshot_clusters
+            );
+            assert!(
+                p95_ms <= p95_budget_ms,
+                "scenario={scenario} p95_ms={} exceeds budget_ms={}",
+                p95_ms,
+                p95_budget_ms
+            );
+        }
+        println!("STAGE34_LOAD_END");
+    }
+
+    #[tokio::test]
+    #[ignore = "stage34 overload suite: controlled degradation at 2x/3x budget"]
+    async fn stage34_v2_overload_degradation_report() {
+        let budgets = [
+            (2usize, 20_000usize, 240u128),
+            (3usize, 30_000usize, 360u128),
+        ];
+        let mut p95_values = Vec::new();
+
+        println!("STAGE34_OVERLOAD_BEGIN");
+        for (factor, total_events, p95_budget_ms) in budgets {
+            let app = build_app(test_state());
+            let mut latency_samples_ms = Vec::new();
+            let mut left = total_events;
+            let mut req_idx = 0usize;
+            let mut accepted_total = 0usize;
+            let started = std::time::Instant::now();
+
+            while left > 0 {
+                let chunk = left.min(200);
+                let base = req_idx * 200;
+                let events: Vec<Value> = (0..chunk)
+                    .map(|offset| stage34_profile_event("burst", base + offset))
+                    .collect();
+                let payload = json!({ "events": events });
+                let req = Request::builder()
+                    .method("POST")
+                    .uri("/api/v2/ingest")
+                    .header("content-type", "application/json")
+                    .body(Body::from(payload.to_string()))
+                    .expect("request");
+                let req_started = std::time::Instant::now();
+                let resp = app.clone().oneshot(req).await.expect("response");
+                let elapsed_ms = req_started.elapsed().as_millis();
+                latency_samples_ms.push(elapsed_ms);
+                assert_eq!(
+                    resp.status(),
+                    StatusCode::OK,
+                    "factor={factor} req={req_idx}"
+                );
+                let body = resp.into_body().collect().await.expect("body").to_bytes();
+                let ack: Value = serde_json::from_slice(&body).expect("json");
+                accepted_total += ack["accepted"].as_u64().unwrap_or(0) as usize;
+                left -= chunk;
+                req_idx += 1;
+            }
+
+            let elapsed = started.elapsed().as_secs_f64();
+            let throughput_eps = if elapsed > 0.0 {
+                (total_events as f64) / elapsed
+            } else {
+                0.0
+            };
+            let p95_ms = percentile_ms(&latency_samples_ms, 0.95);
+            let p99_ms = percentile_ms(&latency_samples_ms, 0.99);
+            p95_values.push((factor, p95_ms));
+
+            let data_path_ok = accepted_total == total_events;
+            println!(
+                "STAGE34_OVERLOAD factor={}x events={} requests={} accepted={} p95_ms={} p99_ms={} throughput_eps={:.2} budget_p95_ms={} data_path_ok={}",
+                factor,
+                total_events,
+                req_idx,
+                accepted_total,
+                p95_ms,
+                p99_ms,
+                throughput_eps,
+                p95_budget_ms,
+                data_path_ok
+            );
+            assert!(data_path_ok, "factor={factor}x data path lost events");
+            assert!(
+                p95_ms <= p95_budget_ms,
+                "factor={factor}x p95_ms={} exceeds overload budget_ms={}",
+                p95_ms,
+                p95_budget_ms
+            );
+        }
+
+        if p95_values.len() == 2 {
+            let p95_2x = p95_values[0].1 as f64;
+            let p95_3x = p95_values[1].1 as f64;
+            let degrade_ratio = if p95_2x > 0.0 { p95_3x / p95_2x } else { 1.0 };
+            println!(
+                "STAGE34_OVERLOAD_DEGRADE p95_2x={} p95_3x={} ratio={:.3}",
+                p95_values[0].1, p95_values[1].1, degrade_ratio
+            );
+        }
+        println!("STAGE34_OVERLOAD_END");
+    }
+
+    #[tokio::test]
+    #[ignore = "stage34 soak suite: backlog/recovery with zero-loss assertion"]
+    async fn stage34_v2_soak_backlog_recovery_zero_loss() {
+        let state = test_state();
+        {
+            let mut s = state.write().await;
+            s.queue_depth_limit = 250_000;
+        }
+        let app = build_app(state);
+        let total_events = 20_000usize;
+        let mut produced = 0usize;
+        let mut accepted_total = 0usize;
+        let mut backlog_batches: Vec<Vec<Value>> = Vec::new();
+        let mut forced_failures = 0usize;
+        let mut batch_idx = 0usize;
+        let started = std::time::Instant::now();
+
+        while produced < total_events {
+            let chunk = (total_events - produced).min(200);
+            let events: Vec<Value> = (0..chunk)
+                .map(|offset| stage34_profile_event("skewed", produced + offset))
+                .collect();
+
+            let force_fail = batch_idx.is_multiple_of(3);
+            let payload = json!({ "events": events.clone() });
+            let mut req_builder = Request::builder()
+                .method("POST")
+                .uri("/api/v1/ingest")
+                .header("content-type", "application/json");
+            if force_fail {
+                req_builder = req_builder.header("x-core-ingest-force-storage-error", "1");
+            }
+            let req = req_builder
+                .body(Body::from(payload.to_string()))
+                .expect("request");
+            let resp = app.clone().oneshot(req).await.expect("response");
+            if force_fail {
+                assert_eq!(resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+                forced_failures += 1;
+                backlog_batches.push(events);
+            } else {
+                assert_eq!(resp.status(), StatusCode::OK);
+                let body = resp.into_body().collect().await.expect("body").to_bytes();
+                let ack: Value = serde_json::from_slice(&body).expect("json");
+                accepted_total += ack["accepted"].as_u64().unwrap_or(0) as usize;
+            }
+            produced += chunk;
+            batch_idx += 1;
+        }
+
+        let mut retries = 0usize;
+        for events in backlog_batches {
+            let payload = json!({ "events": events });
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/ingest")
+                .header("content-type", "application/json")
+                .body(Body::from(payload.to_string()))
+                .expect("request");
+            let resp = app.clone().oneshot(req).await.expect("response");
+            assert_eq!(resp.status(), StatusCode::OK);
+            let body = resp.into_body().collect().await.expect("body").to_bytes();
+            let ack: Value = serde_json::from_slice(&body).expect("json");
+            accepted_total += ack["accepted"].as_u64().unwrap_or(0) as usize;
+            retries += 1;
+        }
+
+        let zero_loss = accepted_total == total_events;
+        println!(
+            "STAGE34_SOAK total_events={} accepted_total={} forced_failures={} backlog_retries={} zero_loss={} elapsed_sec={}",
+            total_events,
+            accepted_total,
+            forced_failures,
+            retries,
+            zero_loss,
+            started.elapsed().as_secs()
+        );
+        assert!(zero_loss, "zero-loss assertion failed");
+    }
+
+    #[tokio::test]
+    #[ignore = "stage34 perf regression: snapshot/stream budgets"]
+    async fn stage34_snapshot_stream_perf_regression_report() {
+        let app = build_app(test_state());
+        let mut left = 10_000usize;
+        let mut req_idx = 0usize;
+        while left > 0 {
+            let chunk = left.min(200);
+            let base = req_idx * 200;
+            let events: Vec<Value> = (0..chunk)
+                .map(|offset| stage34_profile_event("steady", base + offset))
+                .collect();
+            let payload = json!({ "events": events });
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v2/ingest")
+                .header("content-type", "application/json")
+                .body(Body::from(payload.to_string()))
+                .expect("request");
+            let resp = app.clone().oneshot(req).await.expect("response");
+            assert_eq!(resp.status(), StatusCode::OK);
+            left -= chunk;
+            req_idx += 1;
+        }
+
+        let snapshot_started = std::time::Instant::now();
+        let snapshot_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let snapshot_resp = app.clone().oneshot(snapshot_req).await.expect("response");
+        assert_eq!(snapshot_resp.status(), StatusCode::OK);
+        let snapshot_ms = snapshot_started.elapsed().as_millis();
+
+        let stream_started = std::time::Instant::now();
+        let stream_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/stream")
+            .header("last-event-id", "0")
+            .body(Body::empty())
+            .expect("request");
+        let stream_resp = app.clone().oneshot(stream_req).await.expect("response");
+        let stream_response_start_ms = stream_started.elapsed().as_millis();
+        assert_eq!(stream_resp.status(), StatusCode::OK);
+        let stream_body = stream_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let stream_text = String::from_utf8(stream_body.to_vec()).expect("utf8");
+        let event_count = stream_text
+            .lines()
+            .filter(|line| line.starts_with("id: "))
+            .count();
+        let stream_ms = stream_started.elapsed().as_millis();
+
+        println!(
+            "STAGE34_REGRESSION snapshot_ms={} stream_response_start_ms={} stream_total_ms={} stream_events={}",
+            snapshot_ms, stream_response_start_ms, stream_ms, event_count
+        );
+        assert!(
+            snapshot_ms <= 200,
+            "snapshot budget exceeded: {snapshot_ms}ms"
+        );
+        assert!(
+            stream_response_start_ms <= 250,
+            "stream response start budget exceeded: {stream_response_start_ms}ms"
+        );
+        assert!(event_count >= 10_000, "stream did not include full payload");
+    }
+
+    fn stage34_replay_signature() -> String {
+        let events: Vec<Value> = (0..2_048usize)
+            .map(|idx| stage34_profile_event("steady", idx))
+            .collect();
+        let joined = events
+            .iter()
+            .map(|event| build_dna_signature(event).dna_id)
+            .collect::<Vec<String>>()
+            .join("|");
+        sha256_hex(&joined)
+    }
+
+    #[test]
+    fn stage34_replay_signature_probe() {
+        let run_hash = stage34_replay_signature();
+        println!("STAGE34_REPLAY_PROBE run_hash={}", run_hash);
+        assert_eq!(run_hash.len(), 64);
+    }
+
+    #[test]
+    fn stage34_replay_determinism_against_baseline() {
+        let baseline_json = include_str!("../../docs/source/replay_determinism_baseline_v0_2.json");
+        let baseline: Value = serde_json::from_str(baseline_json).expect("baseline json");
+        let baseline_hash = baseline["replay_signature_hash"]
+            .as_str()
+            .expect("replay_signature_hash");
+        let run_hash = stage34_replay_signature();
+        println!(
+            "STAGE34_REPLAY_BASELINE baseline_hash={} run_hash={} match={}",
+            baseline_hash,
+            run_hash,
+            baseline_hash == run_hash
+        );
+        assert_eq!(run_hash, baseline_hash);
     }
 
     #[tokio::test]
@@ -3464,6 +5952,7 @@ updates_mode = "online"
         let viewer_action = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "viewer")
             .body(Body::from(
@@ -3476,6 +5965,7 @@ updates_mode = "online"
         let operator_action = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "operator")
             .body(Body::from(
@@ -3509,12 +5999,206 @@ updates_mode = "online"
     }
 
     #[tokio::test]
+    async fn actions_execute_without_preflight_is_deterministically_denied() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "admin")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core"}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["accepted"], false);
+        assert_eq!(json["error"], "preflight_required");
+        assert_eq!(json["code"], "action_preflight_missing");
+        assert!(json["audit_attach"]["audit_id"].as_u64().unwrap_or(0) >= 1);
+        assert_eq!(
+            json["audit_attach"]["merkle_proof"]["algorithm"],
+            "sha256-chain-v1"
+        );
+
+        let snapshot = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.oneshot(snapshot).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        let has_gap = json["events"]
+            .as_array()
+            .unwrap_or(&Vec::new())
+            .iter()
+            .any(|row| row["event"]["kind"] == "observability_gap.action_preflight_missing");
+        assert!(has_gap);
+    }
+
+    #[tokio::test]
+    async fn actions_simulation_mode_returns_policy_verdict_without_side_effects() {
+        let state = test_state();
+        let app = build_app(state.clone());
+        let before = {
+            let s = state.read().await;
+            (s.events.len(), s.audits.len())
+        };
+
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/simulate")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "viewer")
+            .header("x-mcp-mode", "read_only")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core","params":{"ticket":"INC-1"}}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["ok"], true);
+        assert_eq!(json["side_effects"], false);
+        assert_eq!(json["preflight"]["required"], true);
+        assert_eq!(json["preflight"]["provided"], false);
+        assert_eq!(json["policy_verdict"]["allowed"], false);
+        assert_eq!(json["policy_verdict"]["rbac_allowed"], false);
+        assert_eq!(json["policy_verdict"]["mcp_allowed"], false);
+        assert_eq!(
+            json["preflight"]["diff"][0].as_str(),
+            Some("missing:x-action-preflight-id")
+        );
+
+        let after = {
+            let s = state.read().await;
+            (s.events.len(), s.audits.len())
+        };
+        assert_eq!(before.0, after.0);
+        assert_eq!(before.1, after.1);
+    }
+
+    #[tokio::test]
+    async fn critical_action_requires_nrac_and_blocks_on_high_regret() {
+        let app = build_app(test_state());
+
+        let missing = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-critical")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "admin")
+            .body(Body::from(
+                r#"{"action":"service.terminate","target":"core","params":{"reason":"test"}}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(missing).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["error"], "nrac_required");
+        assert_eq!(json["code"], "action_nrac_missing");
+        assert_eq!(json["nrac"]["required"], true);
+        assert_eq!(json["nrac"]["status"], "missing");
+
+        let high = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-critical")
+            .header("x-action-nrac-regret", "0.40")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "admin")
+            .body(Body::from(
+                r#"{"action":"service.terminate","target":"core","params":{"reason":"test"}}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(high).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["error"], "nrac_regret_exceeded");
+        assert_eq!(json["code"], "action_nrac_regret_exceeded");
+        assert_eq!(json["nrac"]["status"], "regret_exceeded");
+
+        let low = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-critical")
+            .header("x-action-nrac-regret", "0.01")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "admin")
+            .body(Body::from(
+                r#"{"action":"service.terminate","target":"core","params":{"reason":"test"}}"#,
+            ))
+            .expect("request");
+        let resp = app.oneshot(low).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["accepted"], true);
+        assert_eq!(json["nrac"]["required"], true);
+        assert_eq!(json["nrac"]["status"], "accepted");
+    }
+
+    #[tokio::test]
+    async fn actions_execute_response_attaches_audit_merkle_proof() {
+        let app = build_app(test_state());
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-proof")
+            .header("x-trace-id", "trace-action-proof")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .body(Body::from(
+                r#"{"action":"service.status","target":"core","params":{"note":"ok"}}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["accepted"], true);
+        assert_eq!(json["audit_attach"]["trace_id"], "trace-action-proof");
+        assert!(json["audit_attach"]["audit_id"].as_u64().unwrap_or(0) >= 1);
+        assert_eq!(
+            json["audit_attach"]["merkle_proof"]["algorithm"],
+            "sha256-chain-v1"
+        );
+        assert_eq!(
+            json["audit_attach"]["entry_hash"],
+            json["audit_attach"]["merkle_proof"]["leaf_hash"]
+        );
+        assert_eq!(
+            json["audit_attach"]["merkle_proof"]["parent_hashes"]
+                .as_array()
+                .map(|rows| rows.len())
+                .unwrap_or(0),
+            1
+        );
+        assert_eq!(
+            json["audit_attach"]["merkle_proof"]["root_hash"]
+                .as_str()
+                .unwrap_or("")
+                .len(),
+            64
+        );
+    }
+
+    #[tokio::test]
     async fn mcp_modes_enforced_for_actions() {
         let app = build_app(test_state());
 
         let ro = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "admin")
             .header("x-mcp-mode", "read_only")
@@ -3528,6 +6212,7 @@ updates_mode = "online"
         let limited_block = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "operator")
             .header("x-mcp-mode", "limited_actions")
@@ -3539,6 +6224,7 @@ updates_mode = "online"
         let full_admin = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "operator")
             .header("x-mcp-mode", "full_admin")
@@ -3556,6 +6242,7 @@ updates_mode = "online"
         let req = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "operator")
             .header("x-actor-id", "u-1")
@@ -3590,6 +6277,7 @@ updates_mode = "online"
         let req = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "viewer")
             .body(Body::from(
@@ -3628,6 +6316,7 @@ updates_mode = "online"
         let req = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "operator")
             .body(Body::from(
@@ -3646,9 +6335,13 @@ updates_mode = "online"
         let resp = app.clone().oneshot(audit).await.expect("response");
         let body = resp.into_body().collect().await.expect("body").to_bytes();
         let json: Value = serde_json::from_slice(&body).expect("json");
-        let target = json["items"][0]["target"].as_str().unwrap_or("");
-        assert!(!target.contains("abc123"));
-        assert!(target.contains("***redacted***"));
+        let has_redacted_target = json["items"]
+            .as_array()
+            .unwrap_or(&Vec::new())
+            .iter()
+            .filter_map(|row| row["target"].as_str())
+            .any(|target| !target.contains("abc123") && target.contains("***redacted***"));
+        assert!(has_redacted_target);
 
         let snap_req = Request::builder()
             .method("GET")
@@ -3677,6 +6370,7 @@ updates_mode = "online"
         let create = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "operator")
             .body(Body::from(
@@ -3739,6 +6433,7 @@ updates_mode = "online"
         let exec = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "admin")
             .header("x-actor-id", "ops")
@@ -3761,6 +6456,8 @@ updates_mode = "online"
         let body = resp.into_body().collect().await.expect("body").to_bytes();
         let json: Value = serde_json::from_slice(&body).expect("json");
         assert_eq!(json["ok"], true);
+        assert_eq!(json["status"], "verified");
+        assert_eq!(json["chain_reason"], "chain_valid");
         assert!(json["count"].as_u64().unwrap_or(0) >= 1);
         assert!(json["head_hash"].as_str().unwrap_or("").len() == 64);
     }
@@ -3772,6 +6469,7 @@ updates_mode = "online"
         let exec = Request::builder()
             .method("POST")
             .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
             .header("content-type", "application/json")
             .header("x-actor-role", "admin")
             .header("x-actor-id", "ops")
@@ -3799,7 +6497,65 @@ updates_mode = "online"
         let body = resp.into_body().collect().await.expect("body").to_bytes();
         let json: Value = serde_json::from_slice(&body).expect("json");
         assert_eq!(json["ok"], false);
+        assert_eq!(json["status"], "failed");
         assert_eq!(json["error"], "audit_chain_broken");
+        assert!(
+            json["chain_reason"]
+                .as_str()
+                .unwrap_or("")
+                .contains("entry_hash_mismatch")
+                || json["chain_reason"]
+                    .as_str()
+                    .unwrap_or("")
+                    .contains("proof_")
+                || json["chain_reason"]
+                    .as_str()
+                    .unwrap_or("")
+                    .contains("prev_hash_mismatch")
+        );
+    }
+
+    #[tokio::test]
+    async fn audit_merkle_proof_consistency_detects_tampered_proof() {
+        let state = test_state();
+        let app = build_app(state.clone());
+        let exec = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-test")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "admin")
+            .header("x-actor-id", "ops")
+            .header("x-trace-id", "trace-audit-proof-broken")
+            .body(Body::from(
+                r#"{"action":"service.status","target":"core","params":{"k":"v"}}"#,
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(exec).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        {
+            let mut s = state.write().await;
+            s.audits[0].merkle_proof.root_hash = "tampered-proof-root".to_string();
+        }
+
+        let verify = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit/verify")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.oneshot(verify).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        let body = resp.into_body().collect().await.expect("body").to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["ok"], false);
+        assert_eq!(json["status"], "failed");
+        assert_eq!(json["error"], "audit_chain_broken");
+        assert!(json["chain_reason"]
+            .as_str()
+            .unwrap_or("")
+            .contains("proof_root_mismatch"));
     }
 
     #[tokio::test]

@@ -1,0 +1,8 @@
+CHECKLIST: 30 / Testing / regression L0 shell invariants
+Date: 2026-03-06
+
+Command:
+bash scripts/ci/check_panel0_stage16_runtime.sh
+
+Result:
+PASS

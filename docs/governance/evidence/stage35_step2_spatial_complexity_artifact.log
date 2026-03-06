@@ -1,0 +1,117 @@
+CHECKLIST35 step2 spatial index complexity
+date=2026-03-06T16:07:19Z
+command=corepack pnpm --filter @art/local-stores run test
+
+> @art/local-stores@0.2.0 test /home/art/Art/packages/local-stores
+> npm run build && node --test test/*.test.mjs
+
+
+> @art/local-stores@0.2.0 build
+> tsc -p tsconfig.json
+
+TAP version 13
+# Subtest: flow inspectability: every semantic node type resolves evidence lineage
+ok 1 - flow inspectability: every semantic node type resolves evidence lineage
+  ---
+  duration_ms: 0.60424
+  type: 'test'
+  ...
+# Subtest: local-stores: cache and dna lookup
+ok 2 - local-stores: cache and dna lookup
+  ---
+  duration_ms: 1.369681
+  type: 'test'
+  ...
+# Subtest: local-stores: spatial SoA contract + binary chunk persist/load roundtrip
+ok 3 - local-stores: spatial SoA contract + binary chunk persist/load roundtrip
+  ---
+  duration_ms: 0.483965
+  type: 'test'
+  ...
+# Subtest: local-stores: spatial picking uses grid index without full scan
+ok 4 - local-stores: spatial picking uses grid index without full scan
+  ---
+  duration_ms: 2.113623
+  type: 'test'
+  ...
+# Subtest: local-stores: analytics summary returns charts and instructions
+ok 5 - local-stores: analytics summary returns charts and instructions
+  ---
+  duration_ms: 4.242574
+  type: 'test'
+  ...
+# Subtest: local-stores: sensitive payload fields are redacted before cache/index use
+ok 6 - local-stores: sensitive payload fields are redacted before cache/index use
+  ---
+  duration_ms: 0.185777
+  type: 'test'
+  ...
+# Subtest: local-stores: lineage trace path event -> evidence -> claim -> investigation
+ok 7 - local-stores: lineage trace path event -> evidence -> claim -> investigation
+  ---
+  duration_ms: 0.437909
+  type: 'test'
+  ...
+# Subtest: local-stores: investigation parser/serializer produce deterministic canonical output
+ok 8 - local-stores: investigation parser/serializer produce deterministic canonical output
+  ---
+  duration_ms: 0.261379
+  type: 'test'
+  ...
+# Subtest: local-stores: parser rejects investigation doc with missing required fields
+ok 9 - local-stores: parser rejects investigation doc with missing required fields
+  ---
+  duration_ms: 0.21955
+  type: 'test'
+  ...
+# Subtest: local-stores: fork/replay/compare investigation docs integration
+ok 10 - local-stores: fork/replay/compare investigation docs integration
+  ---
+  duration_ms: 0.431357
+  type: 'test'
+  ...
+# Subtest: local-stores: backward compatibility for investigation docs keeps replay operable
+ok 11 - local-stores: backward compatibility for investigation docs keeps replay operable
+  ---
+  duration_ms: 0.284061
+  type: 'test'
+  ...
+# Subtest: local-stores: LRC compiles runbook into condition graph and marks invalid steps
+ok 12 - local-stores: LRC compiles runbook into condition graph and marks invalid steps
+  ---
+  duration_ms: 0.160961
+  type: 'test'
+  ...
+# Subtest: local-stores: investigation library cycle import -> list -> verify -> replay
+ok 13 - local-stores: investigation library cycle import -> list -> verify -> replay
+  ---
+  duration_ms: 0.206787
+  type: 'test'
+  ...
+# Subtest: local-stores: investigation doc replay keeps attached audit proof refs
+ok 14 - local-stores: investigation doc replay keeps attached audit proof refs
+  ---
+  duration_ms: 0.095819
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 45.549302
+command=node spatial complexity report
+{
+  "layout": "layout-complexity",
+  "total_nodes": 5000,
+  "index_cells": 25,
+  "probes": 30,
+  "max_examined_nodes": 600,
+  "avg_examined_nodes": 573.33,
+  "full_scan_used": false,
+  "complexity_ratio_max": 0.12,
+  "pass": true
+}

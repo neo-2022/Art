@@ -1,0 +1,2 @@
+stage36 step9 retention soak: PASS
+{"status": "PASS", "samples_checked": 3, "tiers": ["operational<=30", "incident<=90", "compliance>=365"], "long_term_pii_mode": "anonymized"}

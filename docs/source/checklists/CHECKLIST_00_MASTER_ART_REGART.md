@@ -1,9 +1,9 @@
 A) Полный запрет опциональности:
 # CHECKLIST 00 — MASTER (Art v1 + REGART) + STANDARD (единые правила)
 Файл: CHECKLIST_00_MASTER_ART_REGART.md  
-Последняя актуализация: 2026-03-05  
-Дата последней проверки: 2026-03-05 (аудит соответствия)  
-Триггер пересмотра: любые изменения в Art_v1_spec_final.md / REGART↔Art описание / CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md / CHECKLIST_06_REGART_ART_BRIDGE.md / внешние источники в my_langgraph_agent
+Последняя актуализация: 2026-03-06  
+Дата последней проверки: 2026-03-06 (усиление программы v0.2: stages 28..38 + ladder enforcement)  
+Триггер пересмотра: любые изменения в Art_v1_spec_final.md / FOUNDATION_CONSTITUTION_V0_2.md / REGART↔Art описание / CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md / CHECKLIST_06_REGART_ART_BRIDGE.md / внешние источники в my_langgraph_agent
 Отчёт аудита: docs/source/checklists/CHECKLIST_27_AUDIT_REMEDIATION_PLAN.md
 
 Источники требований:
@@ -15,6 +15,7 @@ A) Полный запрет опциональности:
   GitHub: `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`
 - REGART Bridge source-of-truth (внешний репозиторий): `my_langgraph_agent/CHECKLIST_REGART_ART_INTEGRATION.md`  
   GitHub: `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_REGART_ART_INTEGRATION.md`
+- Risk register v0.2: `docs/source/risk_register_v0_2.md`
 
 ⚠️ ПРАВИЛО: переход к следующему этапу возможен только после полного закрытия предыдущего.  
 ⚠️ ПРАВИЛО: запрещено удалять пункты из чек-листов без согласования с владельцем проекта.  
@@ -22,6 +23,7 @@ A) Полный запрет опциональности:
 ⚠️ ПРАВИЛО: запрещены “временные решения” в репозитории — только финальные реализации (временное — только локально и сразу удалить).  
 ⚠️ ПРАВИЛО: полный запрет опциональности — запрещены формулировки “опционально/где применимо/если нужно/решение зафиксировано/либо A либо B”.
 ⚠️ ПРАВИЛО: запрещено создавать и хранить копии чек-листов (`*.bak`, `*_copy*`, `*_old*` и аналоги). Разрешён только один актуальный файл каждого чек-листа.
+⚠️ ПРАВИЛО: всегда держать в контексте файл `/home/art/my_langgraph_agent/AGENTS.md`; для Codex он считается системным промтом проекта.
 
 ---
 
@@ -76,6 +78,24 @@ A) Полный запрет опциональности:
 - обновить “Последняя актуализация”
 - выполнить повторную проверку и заполнить “Дата последней проверки”.
 
+### A8) Обязательный контроль release-blockers
+- Для программы 28..38 обязательна проверка `docs/source/risk_register_v0_2.md`.
+- Если активен release blocker из risk register, продвижение этапа запрещено.
+
+### A9) Протокол прохождения чек-листов (обязательный, без исключений)
+1) Начинать только с `CHECKLIST_00_MASTER_ART_REGART.md`.
+2) Выбирать первый этап со статусом `[ ]`.
+3) Открывать соответствующий чек-лист и идти строго сверху вниз.
+4) Каждый пункт закрывается только после закрытия всех его подпунктов.
+5) Подпункты закрываются по одному, сразу после фактического выполнения.
+6) Родительский пункт нельзя отмечать `[x]`, пока в нём есть хотя бы один `[ ]` подпункт.
+7) Если в подпункте указана проверка, она выполняется ровно в указанном виде; `[x]` только после PASS.
+8) Если в подпункте указан артефакт, `[x]` ставится только после подтверждения существования артефакта.
+9) Переход к следующему пункту разрешён только после полного закрытия текущего пункта.
+10) Переход к следующему этапу разрешён только после полного закрытия текущего чек-листа.
+11) После завершения этапа исполнитель делает короткий отчёт: “сделано/не сделано”.
+12) Для продолжения работ всегда возвращаться в MASTER и брать следующий этап по порядку.
+
 ---
 
 ## B) MASTER: этапы проекта (строго по порядку)
@@ -99,7 +119,7 @@ A) Полный запрет опциональности:
 | [x] 13 | CHECKLIST_13_ART_CORE_PIPELINE_ENRICH_RULES.md | Pipeline | correlation→Incident + collision + template injection security | 2026-03-05, neo-2022, stage13 runtime+tests+docs-gate |
 | [x] 14 | CHECKLIST_14_ART_CORE_STREAM_SNAPSHOT_SSE.md | Stream/Snapshot | Last-Event-ID too old→snapshot + 10k events + 1000 subs + gzip | 2026-03-05, neo-2022, stream-integration+stream-load-smoke+stage14-docs-gate (local recheck) |
 | [x] 15 | CHECKLIST_15_ART_CORE_ACTIONS_AUDIT_RBAC_PII.md | Actions/Audit/RBAC/PII | client_ip/user_agent + access_denied event + immutability | 2026-03-05, neo-2022, actions-audit-tests+stage15-docs-gate (local recheck) |
-| [x] 16 | CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md | Panel0 | gap highlight + core-down placeholder + SW cache | 2026-03-05, neo-2022, panel0-e2e+stage16-docs-gate (local recheck) |
+| [x] 16 | CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md | Panel0 | embedded `/panel0/*` + `/` auto-fallback 5s + console_boot_failed backlog | 2026-03-06, neo-2022, panel0-e2e+stage16-docs-gate(docs+runtime)+panel0-linux-readiness |
 | [x] 17 | CHECKLIST_17_ART_AGENT_SPOOL_OUTBOX.md | Agent Spool | block receivers on full + spool_corrupted recovery + concurrency + chaos | 2026-03-05, neo-2022, agent-spool-tests+agent-spool-chaos-smoke+stage17-docs-gate |
 | [x] 18 | CHECKLIST_18_ART_AGENT_RECEIVERS.md | Agent Receivers | per-receiver buffer policy+gap + SIGHUP tests + journald perms gap | 2026-03-05, neo-2022, agent-receivers-tests+stage18-docs-gate |
 | [x] 19 | CHECKLIST_19_PACKS_FRAMEWORK.md | Packs | manual updates only + cosign signature verify + dependencies | 2026-03-05, neo-2022, packs-tests+stage19-docs-gate |
@@ -111,3 +131,17 @@ A) Полный запрет опциональности:
 | [x] 25 | CHECKLIST_25_COMPLIANCE_AUDIT_READY.md | Compliance | export scripts + immutable evidence + data destruction policy | 2026-03-05, neo-2022, compliance-export+stage25-docs-gate |
 | [x] 26 | CHECKLIST_26_RU_PROFILE.md | RU profile | PDn fields list + PII access audit + block cross-border export | 2026-03-05, neo-2022, ru-profile-tests+stage26-docs-gate |
 | [x] 27 | CHECKLIST_27_AUDIT_REMEDIATION_PLAN.md | Audit/remediation | сводный аудит соответствия и закрытие найденных рисков | 2026-03-05, neo-2022, checklist27 remediation closed |
+| [x] 28 | CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md | Console foundation | monorepo apps+packages, workspace boundaries, console shell surfaces | 2026-03-06, neo-2022, stage28-docs-gate+stage28-lens-gate+stage28-audio-settings-e2e+workspace-boundary(-negative) PASS |
+| [x] 29 | CHECKLIST_29_EVENT_DNA_CORE_V2.md | Event DNA Core v2 | deterministic DNA core: formal model + property 1M + reference parity + `/api/v2/*` | 2026-03-06, neo-2022, stage29-dna-assurance-gate+stage29-dna-tests+stage29-dna-property-million+stage29-contract-fingerprint+stage29-nightly-replay-determinism+stage28-docs-gate PASS |
+| [x] 30 | CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md | Evidence/Claims/Dialogic | evidence blocks, claim lifecycle, dialog schemas, UI law checks | 2026-03-06, neo-2022, stage30-evidence-claims-tests+stage30-truth-modes-tests+console-test+stage30_dod_validation_artifact PASS |
+| [x] 31 | CHECKLIST_31_INVESTIGATIONS_AS_CODE.md | Investigations-as-Code | versioned InvestigationDoc, fork/replay/compare | 2026-03-06, neo-2022, stage31-investigation-doc-tests+stage31-investigation-library-tests+local-stores integration/e2e artifacts PASS |
+| [x] 32 | CHECKLIST_32_AUDIT_MERKLE_VERIFY_UI.md | Audit+Merkle | crypto verify flow and proof attachment | 2026-03-06, neo-2022, stage32-audit-merkle-tests+stage32-audit-ux-anti-breakage+stage32 artifacts PASS |
+| [x] 33 | CHECKLIST_33_SECURE_ACTIONS_PROTOCOL_V2.md | Secure Actions v2 | preflight/policy gates, no silent actions | 2026-03-06, neo-2022, stage33-secure-actions-tests+stage33-action-ux-anti-breakage+NRAC/simulation artifacts PASS |
+| [x] 34 | CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md | Perf/Load/Coverage | DNA perf budgets 10k/100k + overload 2x/3x + ratchet 5% + coverage ratchet | 2026-03-06, neo-2022, stage34-perf-load-tests+coverage-ratchet-gate+stage35-flow-perf-2d-gate+replay-regression+innovation-kpi-gate PASS |
+| [x] 35 | CHECKLIST_35_SPATIAL_STORE_3D_READINESS.md | Spatial/3D readiness | spatial store contracts, picking/visibility invariants | 2026-03-06, neo-2022, stage35-spatial-readiness-tests+stage35-flow-inspectability-tests+stage35-flow-snapshot-replay-tests+stage35-flow-perf-2d-gate PASS |
+| [x] 36 | CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md | SaaS readiness | tenant/control-data-plane architecture contracts | 2026-03-06, neo-2022, stage36-saas-architecture-gate+tenant-contract-tests+tenant-isolation-proof+quota-burst+retention-soak PASS |
+| [x] 37 | CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md | Linux hardening | canary/rollback + OS matrix source-of-truth + certified/general profiles + Ubuntu-only natural gate | 2026-03-06, neo-2022, stage37-linux-hardening-gate+platform-matrix-contract-gate+vm/container/k8s/runtime-compatibility gates PASS |
+| [x] 38 | CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md | Process ladder | CI-enforced stage order and status integrity | 2026-03-06, neo-2022, stage38-ladder-gate+evidence-ledger gate PASS |
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

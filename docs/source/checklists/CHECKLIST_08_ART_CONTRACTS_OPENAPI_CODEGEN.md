@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05 (contracts/openapi/codegen pass)  
 Триггер пересмотра: изменение Art_v1_spec_final.md (контракты); добавление/изменение полей схем; изменение OpenAPI; изменение генераторов codegen
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Сделать контракты v1 однозначными и проверяемыми: schema registry, сверка со спецификацией, unknown-fields tests, negative contract tests, OpenAPI codegen, human-readable docs.
@@ -163,3 +164,6 @@ CHECKLIST 07 — Art repo WP0 (структура, CI, RU dev docs)
 - [x] OpenAPI v1 существует и проходит validate.
 - [x] Codegen Rust/TS фиксирован, воспроизводим и контролируется CI gate “diff clean”.
 - [x] `docs/api/schemas.md` генерируется детерминированно и контролируется CI gate.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

@@ -1,0 +1,12 @@
+CHECKLIST: 30 / Step 6
+Date: 2026-03-06
+
+Command:
+corepack pnpm --filter @art/local-stores run test
+
+Result:
+PASS
+
+Coverage note:
+- Added redaction policy in local stores cache/index path.
+- Test `local-stores: sensitive payload fields are redacted before cache/index use` confirms secrets are replaced with [REDACTED].

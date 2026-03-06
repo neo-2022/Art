@@ -1,0 +1,7 @@
+stage34 flow watchdog activation
+normal_p95_ms=0.087
+overload_p95_ms=56.61
+budget_ms=50
+watchdog_activated=true
+effective_profile=read-only
+status=PASS

@@ -1,0 +1,5 @@
+stage34 innovation kpi gate
+false_positive_rate: baseline=0.100000 actual=0.000000 threshold=0.105000 pass=True
+runbook_mismatch_rate: baseline=0.600000 actual=0.500000 threshold=0.630000 pass=True
+rollback_rate: baseline=0.100000 actual=0.000000 threshold=0.105000 pass=True
+status=PASS

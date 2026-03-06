@@ -1,0 +1,28 @@
+{
+  "rows": [
+    {
+      "factor": 2,
+      "events": 20000,
+      "requests": 100,
+      "accepted": 20000,
+      "p95_ms": 46,
+      "p99_ms": 54,
+      "throughput_eps": 6415.99,
+      "budget_p95_ms": 240,
+      "data_path_ok": true
+    },
+    {
+      "factor": 3,
+      "events": 30000,
+      "requests": 150,
+      "accepted": 30000,
+      "p95_ms": 65,
+      "p99_ms": 67,
+      "throughput_eps": 4792.41,
+      "budget_p95_ms": 360,
+      "data_path_ok": true
+    }
+  ],
+  "degradation_ratio_p95_3x_to_2x": 1.4130434782608696,
+  "status": "PASS"
+}

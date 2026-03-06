@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://art.local/contracts/v2/schemas/evidence_block.json",
+  "title": "EvidenceBlock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evidence_id",
+    "source_type",
+    "source_ref",
+    "trust_score",
+    "freshness_ms",
+    "redaction_policy_id",
+    "access_scope"
+  ],
+  "properties": {
+    "evidence_id": {
+      "type": "string",
+      "minLength": 3
+    },
+    "source_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "trust_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "freshness_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "redaction_policy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "access_scope": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

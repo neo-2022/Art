@@ -1,0 +1,12 @@
+CHECKLIST: 30 / Step 5
+Date: 2026-03-06
+
+Command:
+corepack pnpm run console:lint
+
+Result:
+PASS
+
+Coverage note:
+- static lint/type checks for apps/packages (including ui-laws package) are green.
+- command acts as static contract guard for tooltip/evidence-link invariants in workspace code.

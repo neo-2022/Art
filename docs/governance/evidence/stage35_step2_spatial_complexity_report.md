@@ -1,0 +1,10 @@
+# Stage35 Spatial Complexity Report
+
+- total_nodes: 5000
+- index_cells: 25
+- probes: 30
+- max_examined_nodes: 600
+- avg_examined_nodes: 573.33
+- full_scan_used: false
+- complexity_ratio_max: 0.12
+- verdict: PASS

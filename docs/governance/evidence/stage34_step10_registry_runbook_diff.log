@@ -1,0 +1,12 @@
+stage34 step10 registry/runbook verification
+date=2026-03-06T15:54:17Z
+46:| observability_gap.dna_determinism_violation | what=нарушен детерминизм DNA; where=core/dna; why=non_deterministic_clusterization | build_id, dna_id, canonical_hash, payload_hash, replay_window, trace_id | остановить rollout, включить fallback и повторить stage29 deterministic gates | core/dna | On-call | create_incident_min_sev1 | docs/runbooks/dna_determinism_violation.md | replay одного окна даёт разные dna_id |
+53:| observability_gap.local_store_latency_exceeded | what=превышена latency local-store; where=console/local-stores; why=index_or_worker_overload | store_type, operation, p95_ms, budget_ms, trace_id | оптимизировать index/worker и повторить perf suite | console/local-stores | On-call | create_incident_min_sev2 | docs/runbooks/local_store_latency_exceeded.md | find similar by DNA > budget |
+60:| observability_gap.perf_budget_exceeded | what=перф бюджет превышен; where=perf gates; why=regression | suite, metric, actual, budget, trace_id | устранить регрессию и повторить perf suite | perf/gates | On-call | create_incident_min_sev2 | docs/runbooks/perf_budget_exceeded.md | p95 выше budget |
+61:| observability_gap.coverage_ratchet_failed | what=нарушен coverage ratchet; where=ci/coverage; why=coverage_drop | module, metric, baseline, actual, trace_id | добавить тесты или откатить регрессию покрытия | ci/coverage | On-call | create_incident_min_sev2 | docs/runbooks/coverage_ratchet_failed.md | coverage ниже baseline |
+62:| observability_gap.innovation_experiment_regression | what=экспериментальный трек ухудшает SLO/KPI; where=console/innovation; why=kpi_regression | experiment, metric, baseline, actual, threshold, trace_id | auto-disable feature flag, rollback canary, повторить KPI suite | console/innovation | On-call | create_incident_min_sev1 | docs/runbooks/innovation_experiment_regression.md | RTP/LRC/NRAC KPI ниже policy |
+docs/runbooks/coverage_ratchet_failed.md
+docs/runbooks/dna_determinism_violation.md
+docs/runbooks/innovation_experiment_regression.md
+docs/runbooks/local_store_latency_exceeded.md
+docs/runbooks/perf_budget_exceeded.md

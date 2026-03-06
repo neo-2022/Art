@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение RBAC; изменение схемы audit; изменение PII/secret политики; изменение MCP режимов runtime
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Сделать Actions/Audit/RBAC/PII без двусмысленности: строгая матрица ролей viewer/operator/admin + enforcement MCP runtime; audit содержит client_ip и user_agent (после фильтрации); access_denied генерирует `security.access_denied`; PII/secret filtering применяется ДО записи в audit; audit append-only immutability test обязателен.
@@ -141,3 +142,6 @@ A) Полный запрет опциональности:
 - [x] PII/secret filtering применяется ДО записи в audit; `privacy.redaction_applied` генерируется при фактическом редактировании.
 - [x] Audit append-only + hash-chain immutability tests зелёные.
 - [x] CI gate Stage 15 зелёный.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

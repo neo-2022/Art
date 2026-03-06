@@ -1,0 +1,243 @@
+version: "1.0"
+source_of_truth: "formats/platform_support.yaml"
+ci_mode:
+  natural_matrix_enabled_by_default: false
+  toggle_env: "ENABLE_NATURAL_MATRIX"
+  currently_executed_natural_targets:
+    - "ubuntu"
+  note: "Natural matrix jobs exist for all declared distros but are disabled until dedicated runners are attached."
+levels:
+  A:
+    name: "certified"
+    description: "Strict profile for regulated/FSTEC-like contours."
+    must_checks:
+      - certified_profile_contract
+      - dependency_allowlist
+      - reproducible_build_flags
+      - signed_release_hook
+      - sbom_present
+  B:
+    name: "native_supported"
+    description: "Full native support with packaging/install smoke readiness."
+    must_checks:
+      - package_layout_contract
+      - systemd_unit_contract
+      - install_scenario_present
+      - ubuntu_smoke_runtime
+  C:
+    name: "developer_universal"
+    description: "Developer/universal support via static binary or container."
+    must_checks:
+      - static_tarball_available
+      - docker_image_available
+      - docs_install_method_present
+platforms:
+  - id: "astra_linux_se"
+    level: "A"
+    install_methods: ["deb", "static", "docker"]
+    package_family: "deb"
+    natural_test_required: true
+    evidence_ids:
+      - "EVIDENCE_NATURAL_TEST_astra_linux_se"
+  - id: "redos"
+    level: "A"
+    install_methods: ["rpm", "static", "docker"]
+    package_family: "rpm"
+    natural_test_required: true
+    evidence_ids:
+      - "EVIDENCE_NATURAL_TEST_redos"
+  - id: "alt_linux"
+    level: "B"
+    install_methods: ["rpm", "static", "docker"]
+    package_family: "rpm"
+    natural_test_required: true
+    evidence_ids:
+      - "EVIDENCE_NATURAL_TEST_alt_linux"
+  - id: "rosa_linux"
+    level: "B"
+    install_methods: ["rpm", "static", "docker"]
+    package_family: "rpm"
+    natural_test_required: true
+    evidence_ids:
+      - "EVIDENCE_NATURAL_TEST_rosa_linux"
+  - id: "osnova_linux"
+    level: "B"
+    install_methods: ["deb", "static", "docker"]
+    package_family: "deb"
+    natural_test_required: true
+    evidence_ids:
+      - "EVIDENCE_NATURAL_TEST_osnova_linux"
+  - id: "ubuntu"
+    level: "B"
+    install_methods: ["deb", "static", "docker"]
+    package_family: "deb"
+    natural_test_required: true
+    evidence_ids:
+      - "EVIDENCE_REGART_INTEGRATION_UBUNTU_SMOKE"
+      - "EVIDENCE_NATURAL_TEST_ubuntu"
+  - id: "debian"
+    level: "B"
+    install_methods: ["deb", "static", "docker"]
+    package_family: "deb"
+    natural_test_required: true
+    evidence_ids:
+      - "EVIDENCE_NATURAL_TEST_debian"
+  - id: "almalinux"
+    level: "B"
+    install_methods: ["rpm", "static", "docker"]
+    package_family: "rpm"
+    natural_test_required: true
+    evidence_ids:
+      - "EVIDENCE_NATURAL_TEST_almalinux"
+  - id: "rocky_linux"
+    level: "B"
+    install_methods: ["rpm", "static", "docker"]
+    package_family: "rpm"
+    natural_test_required: true
+    evidence_ids:
+      - "EVIDENCE_NATURAL_TEST_rocky_linux"
+  - id: "fedora"
+    level: "B"
+    install_methods: ["rpm", "static", "docker"]
+    package_family: "rpm"
+    natural_test_required: true
+    evidence_ids:
+      - "EVIDENCE_NATURAL_TEST_fedora"
+  - id: "opensuse_leap"
+    level: "B"
+    install_methods: ["rpm", "static", "docker"]
+    package_family: "rpm"
+    natural_test_required: true
+    evidence_ids:
+      - "EVIDENCE_NATURAL_TEST_opensuse_leap"
+  - id: "arch_linux"
+    level: "C"
+    install_methods: ["static", "docker"]
+    package_family: "none"
+    natural_test_required: false
+    evidence_ids:
+      - "EVIDENCE_NATURAL_TEST_arch_linux"
+  - id: "calculate_linux"
+    level: "C"
+    install_methods: ["static", "docker"]
+    package_family: "none"
+    natural_test_required: false
+    evidence_ids:
+      - "EVIDENCE_NATURAL_TEST_calculate_linux"
+  - id: "mcc_linux"
+    level: "C"
+    install_methods: ["static", "docker"]
+    package_family: "none"
+    natural_test_required: false
+    evidence_ids:
+      - "EVIDENCE_NATURAL_TEST_mcc_linux"
+natural_test_definition:
+  description: "A distro-specific install + startup + smoke verification with preserved evidence bundle."
+  mandatory_steps:
+    - install_artifacts
+    - verify_systemd_units
+    - run_health_ingest_stream_actions_smoke
+    - export_evidence_bundle
+vm_test_definition:
+  description: "VM-based natural smoke harness for non-host validation across Linux distro/version matrix."
+  source_of_truth: "formats/platform_support.yaml"
+  default_mode: "validate"
+  providers:
+    - id: "vagrant-libvirt"
+      type: "vm"
+      enabled_by_default: true
+      note: "Primary provider for multi-distro matrix on Linux hosts."
+    - id: "qemu-cloudimg"
+      type: "vm"
+      enabled_by_default: false
+      note: "Fallback provider for custom enterprise images."
+  default_resources:
+    vcpu: 2
+    memory_mb: 4096
+    disk_gb: 25
+  mandatory_steps:
+    - resolve_vm_profile
+    - provision_vm
+    - run_install_skeleton_inside_vm
+    - run_health_ingest_stream_actions_smoke
+    - collect_vm_evidence_bundle
+  evidence_ids:
+    - "EVIDENCE_VM_MATRIX_READINESS"
+    - "EVIDENCE_VM_TEST_<distro>"
+container_test_surfaces:
+  description: "Container-native runtime compatibility track."
+  mandatory_now:
+    - "docker_runtime"
+    - "kubernetes_runtime"
+  docker_runtime:
+    smoke_runner: "tests/platform/container/run_docker_smoke.sh"
+    modes:
+      - "validate"
+      - "execute"
+    ci_default_mode: "validate"
+    evidence_ids:
+      - "EVIDENCE_DOCKER_SMOKE"
+      - "EVIDENCE_CONTAINER_TEST_docker"
+  kubernetes_runtime:
+    smoke_runner: "tests/platform/k8s/run_k8s_smoke.sh"
+    providers:
+      - "kind"
+      - "k3d"
+      - "external"
+    modes:
+      - "validate"
+      - "execute"
+    ci_default_mode: "validate"
+    evidence_ids:
+      - "EVIDENCE_K8S_SMOKE"
+      - "EVIDENCE_CONTAINER_TEST_kubernetes"
+runtime_compatibility_matrix:
+  source_of_truth_docs:
+    - "docs/ops/platform-runtime-compatibility-matrix.md"
+    - "docs/en/ops/platform-runtime-compatibility-matrix.md"
+  versions:
+    linux_kernel:
+      minimum: "5.10"
+      target_range: "5.10-6.8"
+    systemd:
+      minimum: "247"
+      target_range: "247+"
+    docker_engine:
+      minimum: "24.0"
+      target_range: "24.x-27.x"
+    kubernetes:
+      minimum: "1.28"
+      target_range: "1.28-1.31"
+    kind:
+      minimum: "0.22"
+      target_range: "0.22+"
+    k3d:
+      minimum: "5.6"
+      target_range: "5.6+"
+  release_blockers:
+    - "mandatory execute-smoke failure on VM/Docker/Kubernetes surfaces"
+    - "version mismatch outside declared ranges"
+    - "k8s production scenarios failure"
+    - "missing mandatory platform evidence bundle"
+  mandatory_k8s_production_scenarios:
+    - "tls_ingress_path"
+    - "persistent_storage_recovery"
+    - "rolling_update_zero_downtime"
+    - "node_pressure_and_drain_recovery"
+    - "rbac_policy_audit_enforcement"
+evidence_ids:
+  mandatory_now:
+    - "EVIDENCE_PLATFORM_MATRIX"
+    - "EVIDENCE_CERTIFIED_BUILD"
+    - "EVIDENCE_DEB_PACKAGE_LAYOUT"
+    - "EVIDENCE_RPM_PACKAGE_LAYOUT"
+    - "EVIDENCE_SYSTEMD_UNITS"
+    - "EVIDENCE_DOCKER_REPRODUCIBLE"
+    - "EVIDENCE_SBOM"
+    - "EVIDENCE_REGART_INTEGRATION_UBUNTU_SMOKE"
+    - "EVIDENCE_VM_MATRIX_READINESS"
+    - "EVIDENCE_DOCKER_SMOKE"
+    - "EVIDENCE_K8S_SMOKE"
+  natural_placeholders:
+    pattern: "EVIDENCE_NATURAL_TEST_<distro>"
+    note: "Placeholder IDs are mandatory now; real artifacts are required after ENABLE_NATURAL_MATRIX=true."

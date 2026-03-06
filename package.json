@@ -1,0 +1,16 @@
+{
+  "name": "art-monorepo",
+  "private": true,
+  "version": "0.2.0",
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "console:install": "corepack pnpm install --frozen-lockfile",
+    "console:lint": "corepack pnpm -r --filter './apps/*' --filter './packages/*' run lint",
+    "console:test": "corepack pnpm -r --filter './apps/*' --filter './packages/*' run test",
+    "console:build": "corepack pnpm -r --filter './packages/*' run build && corepack pnpm --filter ./apps/console-web run build",
+    "workspace:boundary-check": "bash scripts/ci/check_workspace_boundaries.sh"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3"
+  }
+}

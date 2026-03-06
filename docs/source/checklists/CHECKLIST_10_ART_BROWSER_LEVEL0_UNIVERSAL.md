@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05 (pass)  
 Триггер пересмотра: изменение backpressure/ack; изменение browser storage policy; изменение DLQ/TTL; изменение политики multi-tab; изменение политики worker/fallback
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Сделать Level0 без двусмысленности: multi-tab дедуп отправки, CORS gap, gzip>1024B, TTL=7 суток→DLQ, cleanup schedule, Worker обязателен + fallback gap, overflow политики outbox (never_drop_unacked / drop_oldest_when_full) и lossy_mode_active.
@@ -174,3 +175,6 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
 - [x] Все события `observability_gap.*` зарегистрированы в реестре и имеют `action_ref` на конкретные runbook.
 - [x] Тесты (unit+integration/e2e) зелёные.
 - [x] CI gate Stage 10 зелёный.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

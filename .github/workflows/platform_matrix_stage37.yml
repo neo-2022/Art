@@ -1,0 +1,186 @@
+name: stage37-platform-matrix
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+env:
+  ENABLE_NATURAL_MATRIX: "false"
+
+jobs:
+  platform-matrix-contract-gate:
+    name: platform-matrix-contract-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
+        with:
+          toolchain: stable
+      - name: Stage37 platform consistency
+        run: bash scripts/ci/check_platform_support_consistency.sh
+      - name: Platform docs RU/EN sync
+        run: bash scripts/ci/check_platform_docs_sync.sh
+      - name: Install skeleton validation
+        run: bash scripts/ci/check_platform_install_skeletons.sh
+      - name: VM skeleton validation
+        run: bash scripts/ci/check_platform_vm_skeletons.sh
+      - name: Container/K8s skeleton validation
+        run: bash scripts/ci/check_platform_container_k8s_skeletons.sh
+      - name: Certified profile gate
+        run: bash scripts/ci/check_certified_profile.sh
+      - name: Package layout contract
+        run: bash tests/platform/contract/check_package_layout_contract.sh
+      - name: Docker runtime contract
+        run: bash tests/platform/contract/check_docker_runtime_contract.sh
+      - name: REGART cross-repo parity
+        run: bash tests/platform/contract/check_regart_cross_repo_parity.sh
+      - name: VM validate smoke (ubuntu profile)
+        run: DISTRO=ubuntu MODE=validate tests/platform/vm/run_vm_smoke.sh
+
+  docker-smoke:
+    name: docker-smoke
+    runs-on: ubuntu-latest
+    needs: platform-matrix-contract-gate
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: MODE=validate tests/platform/container/run_docker_smoke.sh
+
+  docker-smoke-execute:
+    name: docker-smoke-execute
+    if: ${{ env.ENABLE_NATURAL_MATRIX == 'true' }}
+    runs-on: ubuntu-latest
+    needs: platform-matrix-contract-gate
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: MODE=execute tests/platform/container/run_docker_smoke.sh
+
+  kubernetes-smoke:
+    name: kubernetes-smoke
+    runs-on: ubuntu-latest
+    needs: platform-matrix-contract-gate
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: MODE=validate K8S_PROFILE=kind-default tests/platform/k8s/run_k8s_smoke.sh
+
+  kubernetes-smoke-execute:
+    name: kubernetes-smoke-execute
+    if: ${{ env.ENABLE_NATURAL_MATRIX == 'true' }}
+    runs-on: ubuntu-latest
+    needs: platform-matrix-contract-gate
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: MODE=execute K8S_PROVIDER=kind K8S_PROFILE=kind-default tests/platform/k8s/run_k8s_smoke.sh
+
+  ubuntu-smoke:
+    name: ubuntu-smoke
+    runs-on: ubuntu-latest
+    needs: platform-matrix-contract-gate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
+        with:
+          toolchain: stable
+      - name: Ubuntu REGART smoke
+        run: bash tests/platform/contract/ubuntu_regart_smoke.sh
+      - name: Generate platform evidence
+        run: bash tests/platform/contract/generate_evidence_bundle.sh artifacts/platform-evidence
+      - name: Upload evidence artifact
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        with:
+          name: platform-evidence-ubuntu
+          path: artifacts/platform-evidence
+
+  platform-vm-skeleton-gate:
+    name: platform-vm-skeleton-gate
+    runs-on: ubuntu-latest
+    needs: platform-matrix-contract-gate
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: bash scripts/ci/check_platform_vm_skeletons.sh
+      - run: DISTRO=ubuntu MODE=validate tests/platform/vm/run_vm_smoke.sh
+      - run: DISTRO=astra_linux_se MODE=validate tests/platform/vm/run_vm_smoke.sh
+
+  platform-runtime-compatibility-gate:
+    name: platform-runtime-compatibility-gate
+    runs-on: ubuntu-latest
+    needs: platform-matrix-contract-gate
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: bash scripts/ci/check_platform_runtime_compatibility.sh
+
+  debian-smoke:
+    name: debian-smoke
+    if: ${{ env.ENABLE_NATURAL_MATRIX == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: MODE=execute tests/platform/install/debian.sh
+
+  fedora-smoke:
+    name: fedora-smoke
+    if: ${{ env.ENABLE_NATURAL_MATRIX == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: MODE=execute tests/platform/install/fedora.sh
+
+  opensuse-smoke:
+    name: opensuse-smoke
+    if: ${{ env.ENABLE_NATURAL_MATRIX == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: MODE=execute tests/platform/install/opensuse_leap.sh
+
+  almalinux-rocky-smoke:
+    name: almalinux-rocky-smoke
+    if: ${{ env.ENABLE_NATURAL_MATRIX == 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [almalinux, rocky_linux]
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: MODE=execute tests/platform/install/${{ matrix.distro }}.sh
+
+  alt-smoke:
+    name: alt-smoke
+    if: ${{ env.ENABLE_NATURAL_MATRIX == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: MODE=execute tests/platform/install/alt_linux.sh
+
+  rosa-smoke:
+    name: rosa-smoke
+    if: ${{ env.ENABLE_NATURAL_MATRIX == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: MODE=execute tests/platform/install/rosa_linux.sh
+
+  astra-certified-smoke:
+    name: astra-certified-smoke
+    if: ${{ env.ENABLE_NATURAL_MATRIX == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: MODE=execute tests/platform/install/astra_linux_se.sh
+
+  redos-certified-smoke:
+    name: redos-certified-smoke
+    if: ${{ env.ENABLE_NATURAL_MATRIX == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - run: MODE=execute tests/platform/install/redos.sh

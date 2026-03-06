@@ -1,0 +1,64 @@
+site_name: Art Documentation Portal
+site_description: Art Incident OS documentation portal (RU/EN)
+site_url: /docs/
+repo_url: https://github.com/neo-2022/Art
+repo_name: neo-2022/Art
+
+theme:
+  name: material
+  language: ru
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - i18n:
+      default_language: ru
+      languages:
+        - locale: ru
+          name: Русский
+          default: true
+          build: true
+        - locale: en
+          name: English
+          build: true
+          nav_translations:
+            Портал: Portal
+            RAG: RAG
+            Канон: Canon
+            Шаблоны: Templates
+
+nav:
+  - Портал:
+      - Главная: docs/portal/INDEX.md
+      - Навигация: docs/portal/NAVIGATION.md
+      - Стиль: docs/portal/DOC_STYLE_GUIDE.md
+      - Авторитет документов: docs/portal/DOC_AUTHORITY.md
+      - Глоссарий: docs/portal/GLOSSARY.md
+      - Compatibility Matrix: docs/portal/COMPATIBILITY_MATRIX_ART_REGART.md
+      - Product Guarantees: docs/portal/PRODUCT_GUARANTEES.md
+      - Security Posture: docs/portal/SECURITY_POSTURE.md
+      - Шаблоны:
+          - Tutorial: docs/portal/templates/tutorial.md
+          - How-to: docs/portal/templates/howto.md
+          - Reference: docs/portal/templates/reference.md
+          - Explanation: docs/portal/templates/explanation.md
+          - Runbook: docs/portal/templates/runbook.md
+          - ADR: docs/portal/templates/adr.md
+  - RAG:
+      - Overview: docs/rag/README.md
+      - Sources: docs/rag/sources.yaml
+      - Context Packs: docs/rag/context_packs.md
+      - Security Policy: docs/rag/security_policy.md
+  - Канон:
+      - Docs Entry: docs/README.md
+      - Source Entry: docs/source/README.md
+      - Foundation: docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+      - Integration: docs/INTEGRATION.md
+      - Platform Support: docs/ops/platform-support.md
+      - Certified Profile: docs/security/fstec-certified-profile.md

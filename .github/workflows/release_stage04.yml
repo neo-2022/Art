@@ -32,13 +32,36 @@ jobs:
             echo "RELEASE_TAG=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
           fi
 
-      - name: Prepare release artifacts
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
+        with:
+          toolchain: stable
+
+      - name: Build Linux static artifacts
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p agent/dist ui/dist
-          printf "agent artifact for %s\n" "${GITHUB_SHA}" > agent/dist/agent.txt
-          printf "ui artifact for %s\n" "${GITHUB_SHA}" > ui/dist/ui.txt
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          rustup target add x86_64-unknown-linux-musl
+
+          VERSION="${RELEASE_TAG#v}"
+          CORE_NAME="artcore-${VERSION}-linux-x86_64-static"
+          AGENT_NAME="artagent-${VERSION}-linux-x86_64-static"
+
+          cargo build -p art-core --profile general --target x86_64-unknown-linux-musl --locked
+          cargo build -p art-agent --profile general --target x86_64-unknown-linux-musl --locked
+
+          mkdir -p "dist/${CORE_NAME}" "dist/${AGENT_NAME}"
+          cp target/x86_64-unknown-linux-musl/general/art-core "dist/${CORE_NAME}/art-core"
+          cp target/x86_64-unknown-linux-musl/general/art-agent "dist/${AGENT_NAME}/art-agent"
+          chmod 0755 "dist/${CORE_NAME}/art-core" "dist/${AGENT_NAME}/art-agent"
+
+          tar -C dist -czf "dist/${CORE_NAME}.tar.gz" "${CORE_NAME}"
+          tar -C dist -czf "dist/${AGENT_NAME}.tar.gz" "${AGENT_NAME}"
+
+          echo "CORE_ARTIFACT=dist/${CORE_NAME}.tar.gz" >> "$GITHUB_ENV"
+          echo "AGENT_ARTIFACT=dist/${AGENT_NAME}.tar.gz" >> "$GITHUB_ENV"
 
       - name: Install syft
         shell: bash
@@ -54,13 +77,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          syft dir:. -o spdx-json=sbom.spdx.json
+          syft "file:${CORE_ARTIFACT}" -o spdx-json=sbom.spdx.json
 
       - name: Generate checksums
         shell: bash
         run: |
           set -euo pipefail
-          sha256sum agent/dist/* ui/dist/* sbom.spdx.json > checksums.txt
+          sha256sum "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" sbom.spdx.json > SHA256SUMS
 
       - name: Generate provenance attestation payload
         shell: bash
@@ -78,10 +101,10 @@ jobs:
               return out.split()[0]
 
           artifacts = [
-              pathlib.Path("agent/dist/agent.txt"),
-              pathlib.Path("ui/dist/ui.txt"),
+              pathlib.Path(os.environ["CORE_ARTIFACT"]),
+              pathlib.Path(os.environ["AGENT_ARTIFACT"]),
               pathlib.Path("sbom.spdx.json"),
-              pathlib.Path("checksums.txt"),
+              pathlib.Path("SHA256SUMS"),
           ]
           payload = {
               "type": "stage04.provenance",
@@ -115,7 +138,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for f in agent/dist/agent.txt ui/dist/ui.txt sbom.spdx.json checksums.txt provenance.attestation.json; do
+          for f in "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" sbom.spdx.json SHA256SUMS provenance.attestation.json; do
             cosign sign-blob --yes \
               --output-signature "${f}.sig" \
               --output-certificate "${f}.pem" \
@@ -127,7 +150,7 @@ jobs:
         run: |
           set -euo pipefail
           ID_RE="https://github.com/neo-2022/Art/.github/workflows/release_stage04.yml@.*"
-          for f in agent/dist/agent.txt ui/dist/ui.txt sbom.spdx.json checksums.txt provenance.attestation.json; do
+          for f in "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" sbom.spdx.json SHA256SUMS provenance.attestation.json; do
             cosign verify-blob \
               --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
               --certificate-identity-regexp "$ID_RE" \
@@ -152,10 +175,10 @@ jobs:
           subjects = payload.get("subjects", [])
           assert len(subjects) == 4
           names = {s["name"] for s in subjects}
-          assert "agent/dist/agent.txt" in names
-          assert "ui/dist/ui.txt" in names
+          assert os.environ["CORE_ARTIFACT"] in names
+          assert os.environ["AGENT_ARTIFACT"] in names
           assert "sbom.spdx.json" in names
-          assert "checksums.txt" in names
+          assert "SHA256SUMS" in names
           PY
 
       - name: Publish release assets
@@ -165,19 +188,19 @@ jobs:
         run: |
           set -euo pipefail
           ASSETS=(
-            agent/dist/agent.txt
-            ui/dist/ui.txt
+            "${CORE_ARTIFACT}"
+            "${AGENT_ARTIFACT}"
             sbom.spdx.json
-            checksums.txt
+            SHA256SUMS
             provenance.attestation.json
-            agent/dist/agent.txt.sig
-            agent/dist/agent.txt.pem
-            ui/dist/ui.txt.sig
-            ui/dist/ui.txt.pem
+            "${CORE_ARTIFACT}.sig"
+            "${CORE_ARTIFACT}.pem"
+            "${AGENT_ARTIFACT}.sig"
+            "${AGENT_ARTIFACT}.pem"
             sbom.spdx.json.sig
             sbom.spdx.json.pem
-            checksums.txt.sig
-            checksums.txt.pem
+            SHA256SUMS.sig
+            SHA256SUMS.pem
             provenance.attestation.json.sig
             provenance.attestation.json.pem
           )

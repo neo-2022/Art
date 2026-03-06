@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://art.local/contracts/v2/schemas/tenant_context_v2.json",
+  "title": "TenantContextV2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "org_id",
+    "project_id",
+    "env_id",
+    "tenant_id",
+    "isolation_policy_id",
+    "trace_id"
+  ],
+  "properties": {
+    "org_id": {"type": "string", "minLength": 1},
+    "project_id": {"type": "string", "minLength": 1},
+    "env_id": {"type": "string", "minLength": 1},
+    "tenant_id": {"type": "string", "minLength": 1},
+    "isolation_policy_id": {"type": "string", "minLength": 1},
+    "trace_id": {"type": "string", "minLength": 1}
+  }
+}

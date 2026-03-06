@@ -1,0 +1,11 @@
+CHECKLIST: 30 / Step 1
+Date: 2026-03-06
+
+Command:
+cargo test -p art-core v2_evidence_access_scope_enforcement_tests
+
+Result:
+PASS
+
+Coverage note:
+- evidence endpoint scope enforcement includes 200/403/404 branches in runtime test suite for `/api/v2/evidence/{evidence_id}`.

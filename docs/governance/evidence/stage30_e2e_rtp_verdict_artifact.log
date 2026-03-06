@@ -1,0 +1,11 @@
+CHECKLIST: 30 / Testing / e2e RTP verdict
+Date: 2026-03-06
+
+Command:
+corepack pnpm --filter @art/console-web run test
+
+Result:
+PASS
+
+Relevant test:
+- console-web: RTP verdict is rendered and contested promotion is blocked

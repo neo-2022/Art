@@ -1,0 +1,21 @@
+version: 1
+
+source_of_truth:
+  - path: docs/source/Art_v1_spec_final.md
+  - path: docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+  - path: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
+  - path: docs/INTEGRATION.md
+
+regart_external:
+  - url: https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md
+  - url: https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_REGART_ART_INTEGRATION.md
+  - url: https://github.com/neo-2022/my_langgraph_agent/blob/main/README.md
+
+allow_list_domains:
+  - github.com
+  - raw.githubusercontent.com
+
+runtime_uploads:
+  storage: user_data_dir
+  indexed: true
+  committed_to_git: false

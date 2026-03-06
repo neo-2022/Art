@@ -6,6 +6,7 @@
 
 - `docs/source/Art_v1_spec_final.md` — нормативная мастер-спецификация Art v1.
 - `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md` — целевая модель интеграции REGART с Art.
+- `docs/source/risk_register_v0_2.md` — обязательный реестр рисков программы 28..38.
 - `docs/source/checklists/` — полный набор чек-листов реализации, приёмки и аудита.
 
 Подробный индекс исходников: `docs/source/README.md`.
@@ -14,6 +15,24 @@
 
 - `docs/ARCHITECTURE.md` — сжатая архитектурная проекция по компонентам Core/Agent/Browser.
 - `docs/INTEGRATION.md` — рабочий план интеграции REGART с Art по этапам.
+- `docs/portal/INDEX.md` — навигационная главная документационного портала.
+- `docs/rag/README.md` — правила RAG/Knowledge Base и доверенных источников.
+- `docs/ops/platform-support.md` — OS-матрица поддержки (A/B/C) и режим Ubuntu-only для nat-tests.
+- `docs/ops/platform-vm-testing.md` — VM-контур проверок multi-Linux без физического железа.
+- `docs/ops/platform-container-k8s-testing.md` — Docker/Kubernetes как обязательные платформы тестирования.
+- `docs/ops/platform-runtime-compatibility-matrix.md` — version matrix + release-blockers по runtime-совместимости.
+- `docs/security/fstec-certified-profile.md` — certified build profile (контракт и ограничения).
+- `docs/release/versioning.md` — клиентски-наглядная политика версионирования и тегирования.
+- `docs/release/release_process.md` — release flow для GitHub Releases и обязательных артефактов.
+- `docs/governance/evidence/README.md` — политика и структура evidence-артефактов реализации.
+- `docs/portal/DELIVERY_EVIDENCE.md` — клиентская лента фактического прогресса проекта.
+- `docs/governance/docs_traceability_matrix.yaml` — полная трассируемость документации к чек-листам и MASTER.
+
+## 2.1. Языки и маршрутизация
+
+- RU (нормативный): `/docs/` и файлы `docs/**`.
+- EN (нормативный): `/docs/en/` и файлы `docs/en/**`.
+- Прочие языки допустимы только как runtime-перевод (не нормативны и не коммитятся).
 
 ## 3. Карта чек-листов
 
@@ -25,6 +44,7 @@
 - `19..20` — framework паков и pack REGART.
 - `21..26` — self-observability, тестирование, ops, release, compliance, RU-профиль.
 - `27` — аудит соответствия и ремедиация (runtime/CI hardening).
+- `28..38` — программа v0.2: monorepo Console foundation, API v2 DNA/Evidence, performance/coverage, SaaS/Linux hardening, ladder enforcement.
 
 Подробный индекс чек-листов: `docs/source/checklists/README.md`.
 Детализация этапов `05..06` хранится в репозитории REGART: `https://github.com/neo-2022/my_langgraph_agent`.

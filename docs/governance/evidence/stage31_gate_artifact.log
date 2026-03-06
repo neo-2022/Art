@@ -1,0 +1,94 @@
+
+running 1 test
+test tests::v2_ingest_snapshot_stream_integration ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 53 filtered out; finished in 0.00s
+
+
+running 1 test
+test tests::v2_dna_clusters_and_similar_lookup ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 53 filtered out; finished in 0.00s
+
+
+> @art/console-web@0.2.0 test /home/art/Art/apps/console-web
+> corepack pnpm -C ../.. run console:build && node --test test/*.test.mjs
+
+
+> art-monorepo@0.2.0 console:build /home/art/Art
+> corepack pnpm -r --filter './packages/*' run build && corepack pnpm --filter ./apps/console-web run build
+
+Scope: 5 of 7 workspace projects
+packages/evidence-linking build$ tsc -p tsconfig.json
+packages/i18n build$ tsc -p tsconfig.json
+packages/local-stores build$ tsc -p tsconfig.json
+packages/ui-laws build$ tsc -p tsconfig.json
+packages/evidence-linking build: Done
+packages/worker-runtime build$ tsc -p tsconfig.json
+packages/i18n build: Done
+packages/ui-laws build: Done
+packages/local-stores build: Done
+packages/worker-runtime build: Done
+
+> @art/console-web@0.2.0 build /home/art/Art/apps/console-web
+> tsc -p tsconfig.json && node ./scripts/generate-static.mjs
+
+TAP version 13
+# Subtest: console-web: has 7 foundation surfaces
+ok 1 - console-web: has 7 foundation surfaces
+  ---
+  duration_ms: 0.487497
+  type: 'test'
+  ...
+# Subtest: console-web: default locale en and ru switch render
+ok 2 - console-web: default locale en and ru switch render
+  ---
+  duration_ms: 7.322061
+  type: 'test'
+  ...
+# Subtest: console-web: one-click-to-evidence and tooltip invariants rendered
+ok 3 - console-web: one-click-to-evidence and tooltip invariants rendered
+  ---
+  duration_ms: 0.297626
+  type: 'test'
+  ...
+# Subtest: console-web: analytics memory renders chart-ready data and instructions
+ok 4 - console-web: analytics memory renders chart-ready data and instructions
+  ---
+  duration_ms: 0.23351
+  type: 'test'
+  ...
+# Subtest: console-web: design controls include reset and guardrails
+ok 5 - console-web: design controls include reset and guardrails
+  ---
+  duration_ms: 0.713785
+  type: 'test'
+  ...
+# Subtest: console-web: semantic interaction tokens are present
+ok 6 - console-web: semantic interaction tokens are present
+  ---
+  duration_ms: 0.299079
+  type: 'test'
+  ...
+# Subtest: console-web: RTP verdict is rendered and contested promotion is blocked
+ok 7 - console-web: RTP verdict is rendered and contested promotion is blocked
+  ---
+  duration_ms: 0.299258
+  type: 'test'
+  ...
+# Subtest: console-web: investigation library baseline contract is rendered
+ok 8 - console-web: investigation library baseline contract is rendered
+  ---
+  duration_ms: 0.254819
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 48.902122
+stage31 investigation doc gate: OK

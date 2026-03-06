@@ -1,0 +1,4 @@
+stage36 step6 registry/runbook: PASS
+registry=docs/governance/observability_gap_registry.md
+runbook1=docs/runbooks/saas_tenant_isolation_failed.md
+runbook2=docs/runbooks/evidence_privacy_violation.md

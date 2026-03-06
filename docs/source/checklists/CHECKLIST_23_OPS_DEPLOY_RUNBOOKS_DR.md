@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение TLS; изменение миграций БД; изменение deploy моделей; изменение формата backup; изменение runbook registry
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Ops/DR без двусмысленности: k8s TLS через cert-manager обязателен; systemd TLS rotation выполняется через SIGHUP без простоя; DB migration runbook с integrity check; WAL-aware backups фиксированным способом; DR drill воспроизводим; `observability_gap.tls_config_invalid` обязателен.
@@ -137,3 +138,6 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
 - [x] DR drill выполнен и зафиксирован отчётом с pass/fail.
 - [x] `observability_gap.tls_config_invalid` реализован, зарегистрирован и покрыт induced test (включая публикацию startup backlog в snapshot/stream).
 - [x] CI gate Stage 23 зелёный.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

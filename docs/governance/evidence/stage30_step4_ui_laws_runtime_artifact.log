@@ -1,0 +1,12 @@
+CHECKLIST: 30 / Step 4
+Date: 2026-03-06
+
+Command:
+corepack pnpm --filter @art/ui-laws run test
+
+Result:
+PASS
+
+Coverage note:
+- runtime rule "claim without evidence_refs forbidden" validated by ui-laws suite.
+- test summary: 8 passed, 0 failed.

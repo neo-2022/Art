@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение retention; изменение SSE поведения; изменение нагрузочных целей; изменение контракта cursors/Last-Event-ID
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 SSE однозначен и проверяем: Last-Event-ID too old → snapshot+new_cursor; gzip обязателен при Accept-Encoding:gzip; нагрузочные цели фиксированы (10k events, 1000 subs); деградации stream порождают `observability_gap.stream_unavailable` и `observability_gap.stream_lag`.
@@ -132,3 +133,6 @@ SSE однозначен и проверяем: Last-Event-ID too old → snapsh
 - [x] `observability_gap.stream_unavailable` и `observability_gap.stream_lag` реализованы, зарегистрированы и имеют runbook.
 - [x] Нагрузочные тесты выполнены и имеют отчёты с pass/fail критериями.
 - [x] CI gate Stage 14 зелёный.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

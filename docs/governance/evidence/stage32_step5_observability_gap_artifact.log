@@ -1,0 +1,4 @@
+[stage32 step5 observability-gap] 2026-03-06T14:44:06Z
+58:| observability_gap.audit_merkle_verify_failed | what=ошибка verify proof-chain; where=core/audit; why=proof_invalid | audit_id, proof_hash, step, error, trace_id | восстановить целостность chain и повторить verify | core/audit | On-call | create_incident_min_sev1 | docs/runbooks/audit_merkle_verify_failed.md | tampered entry hash |
+58:| observability_gap.audit_merkle_verify_failed | what=ошибка verify proof-chain; where=core/audit; why=proof_invalid | audit_id, proof_hash, step, error, trace_id | восстановить целостность chain и повторить verify | core/audit | On-call | create_incident_min_sev1 | docs/runbooks/audit_merkle_verify_failed.md | tampered entry hash |
+runbook_exists=PASS

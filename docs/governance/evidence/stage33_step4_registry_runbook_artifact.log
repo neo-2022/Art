@@ -1,0 +1,7 @@
+# stage33 step4 registry+runbook verification
+
+59:| observability_gap.action_preflight_missing | what=action без preflight; where=core/actions; why=protocol_violation | action, target, actor_role, policy_id, trace_id | enforce preflight-first и заблокировать silent action | core/actions | Security | create_incident_min_sev1 | docs/runbooks/action_preflight_missing.md | execute action без preflight |
+
+1:# Runbook: observability_gap.action_preflight_missing
+8:1. Проверить `action/target/actor_role/policy_id`.
+9:2. Запустить stage33 action protocol tests.

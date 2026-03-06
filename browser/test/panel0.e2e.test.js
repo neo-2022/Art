@@ -79,6 +79,7 @@ test("e2e: offline cache script uses panel0-cache-<build_id> and skipWaiting", (
   assert.ok(script.includes("/panel0/index.html"));
   assert.ok(script.includes("/panel0/panel0.js"));
   assert.ok(script.includes("/panel0/panel0.css"));
+  assert.ok(script.includes('url.pathname.startsWith("/panel0/")'));
   assert.equal(shouldRegisterServiceWorker("/panel0"), true);
   assert.equal(shouldRegisterServiceWorker("/panel0", false), false);
   assert.equal(shouldRegisterServiceWorker("/"), false);
@@ -108,6 +109,19 @@ test("e2e: sw negative — offline + cache miss возвращает 503 offline
   assert.equal(resolved.status, 503);
   assert.equal(resolved.headers["x-art-offline"], "1");
   assert.equal(resolved.body, "offline");
+});
+
+test("e2e: sw pass-through — non-panel0 запросы не кешируются SW fallback-логикой", async () => {
+  await assert.rejects(
+    resolvePanel0Fetch({
+      request: { method: "GET", url: "/health" },
+      fetchFn: async () => {
+        throw new Error("network down");
+      },
+      cacheMatchFn: async () => ({ status: 200, body: "should-not-be-used" }),
+    }),
+    /network down/
+  );
 });
 
 test("e2e: diagnostics shows build_id and effective_profile_id", () => {

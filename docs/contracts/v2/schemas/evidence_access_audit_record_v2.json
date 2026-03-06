@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://art.local/contracts/v2/schemas/evidence_access_audit_record_v2.json",
+  "title": "EvidenceAccessAuditRecordV2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evidence_id",
+    "actor_role",
+    "access_scope",
+    "decision",
+    "trace_id",
+    "ts_ms"
+  ],
+  "properties": {
+    "evidence_id": {"type": "string", "minLength": 1},
+    "actor_role": {"type": "string", "minLength": 1},
+    "access_scope": {"type": "string", "minLength": 1},
+    "decision": {"type": "string", "enum": ["allow", "deny"]},
+    "trace_id": {"type": "string", "minLength": 1},
+    "ts_ms": {"type": "integer", "minimum": 0}
+  }
+}

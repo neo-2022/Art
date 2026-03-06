@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://art.local/contracts/v2/schemas/dna_cluster.json",
+  "title": "DnaCluster",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["dna_id", "size", "first_seen", "last_seen", "time_range", "navigation_tags", "meta"],
+  "properties": {
+    "dna_id": { "type": "string", "minLength": 1 },
+    "size": { "type": "integer", "minimum": 1 },
+    "first_seen": { "type": "integer", "minimum": 0 },
+    "last_seen": { "type": "integer", "minimum": 0 },
+    "time_range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_ts_ms", "end_ts_ms"],
+      "properties": {
+        "start_ts_ms": { "type": "integer", "minimum": 0 },
+        "end_ts_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "navigation_tags": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["truth_mode", "evidence_refs"],
+      "properties": {
+        "truth_mode": { "type": "string", "enum": ["observed", "derived", "predicted"] },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "derived": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm_id", "params"],
+          "properties": {
+            "algorithm_id": { "type": "string", "minLength": 1 },
+            "params": { "type": "object" }
+          }
+        },
+        "predicted": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["assumptions", "confidence"],
+          "properties": {
+            "assumptions": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+            "dataset_ref": { "type": "string" },
+            "data_window": { "type": "string" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "truth_mode": { "const": "observed" } } },
+          "then": { "properties": { "evidence_refs": { "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "truth_mode": { "const": "derived" } } },
+          "then": { "required": ["derived"] }
+        },
+        {
+          "if": { "properties": { "truth_mode": { "const": "predicted" } } },
+          "then": { "required": ["predicted"] }
+        }
+      ]
+    }
+  }
+}

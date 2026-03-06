@@ -1,3 +1,9 @@
 target/
 __pycache__/
 *.pyc
+node_modules/
+dist/
+artifacts/
+.playwright-cli/
+core/proptest-regressions/
+certs/

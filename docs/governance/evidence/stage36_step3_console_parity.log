@@ -1,0 +1,2 @@
+stage36 step3 console parity: PASS
+{"status": "PASS", "checked_endpoints": ["/api/v1/snapshot", "/api/v1/stream", "/api/v1/ingest", "/api/v2/snapshot", "/api/v2/stream", "/api/v2/ingest"], "required_response_keys": ["cursor", "effective_profile_id", "events"], "parity_scope": "Console read/write contract behavior between self-hosted and SaaS"}

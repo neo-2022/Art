@@ -1,0 +1,171 @@
+[stage30 DoD validation] 2026-03-06T14:23:31Z
+== cargo evidence scope ==
+
+running 1 test
+test tests::v2_evidence_access_scope_enforcement_tests ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 53 filtered out; finished in 0.00s
+
+== stage30 truth modes gate ==
+
+> @art/ui-laws@0.2.0 test /home/art/Art/packages/ui-laws
+> npm run build && node --test test/*.test.mjs
+
+
+> @art/ui-laws@0.2.0 build
+> tsc -p tsconfig.json
+
+TAP version 13
+# Subtest: ui-laws: claim requires evidence refs
+ok 1 - ui-laws: claim requires evidence refs
+  ---
+  duration_ms: 0.735918
+  type: 'test'
+  ...
+# Subtest: ui-laws: tooltip key is mandatory
+ok 2 - ui-laws: tooltip key is mandatory
+  ---
+  duration_ms: 0.12855
+  type: 'test'
+  ...
+# Subtest: ui-laws: evidence link format
+ok 3 - ui-laws: evidence link format
+  ---
+  duration_ms: 0.482123
+  type: 'test'
+  ...
+# Subtest: ui-laws: truth meta contract
+ok 4 - ui-laws: truth meta contract
+  ---
+  duration_ms: 0.126266
+  type: 'test'
+  ...
+# Subtest: ui-laws: observed mode always requires evidence
+ok 5 - ui-laws: observed mode always requires evidence
+  ---
+  duration_ms: 0.089268
+  type: 'test'
+  ...
+# Subtest: ui-laws: truth badge and prediction labels
+ok 6 - ui-laws: truth badge and prediction labels
+  ---
+  duration_ms: 0.13858
+  type: 'test'
+  ...
+# Subtest: ui-laws: semantic tokens required for state components
+ok 7 - ui-laws: semantic tokens required for state components
+  ---
+  duration_ms: 0.183875
+  type: 'test'
+  ...
+# Subtest: ui-laws: error vs danger model is explicit
+ok 8 - ui-laws: error vs danger model is explicit
+  ---
+  duration_ms: 0.10712
+  type: 'test'
+  ...
+# Subtest: ui-laws: RTP tournament verdict and trace payload
+ok 9 - ui-laws: RTP tournament verdict and trace payload
+  ---
+  duration_ms: 0.280195
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 36.943048
+stage30 truth-modes tests: OK
+== ui-laws runtime ==
+
+> @art/ui-laws@0.2.0 test /home/art/Art/packages/ui-laws
+> npm run build && node --test test/*.test.mjs
+
+
+> @art/ui-laws@0.2.0 build
+> tsc -p tsconfig.json
+
+TAP version 13
+# Subtest: ui-laws: claim requires evidence refs
+ok 1 - ui-laws: claim requires evidence refs
+  ---
+  duration_ms: 0.837709
+  type: 'test'
+  ...
+# Subtest: ui-laws: tooltip key is mandatory
+ok 2 - ui-laws: tooltip key is mandatory
+  ---
+  duration_ms: 0.150492
+  type: 'test'
+  ...
+# Subtest: ui-laws: evidence link format
+ok 3 - ui-laws: evidence link format
+  ---
+  duration_ms: 0.589795
+  type: 'test'
+  ...
+# Subtest: ui-laws: truth meta contract
+ok 4 - ui-laws: truth meta contract
+  ---
+  duration_ms: 0.135073
+  type: 'test'
+  ...
+# Subtest: ui-laws: observed mode always requires evidence
+ok 5 - ui-laws: observed mode always requires evidence
+  ---
+  duration_ms: 0.091952
+  type: 'test'
+  ...
+# Subtest: ui-laws: truth badge and prediction labels
+ok 6 - ui-laws: truth badge and prediction labels
+  ---
+  duration_ms: 0.124904
+  type: 'test'
+  ...
+# Subtest: ui-laws: semantic tokens required for state components
+ok 7 - ui-laws: semantic tokens required for state components
+  ---
+  duration_ms: 0.18676
+  type: 'test'
+  ...
+# Subtest: ui-laws: error vs danger model is explicit
+ok 8 - ui-laws: error vs danger model is explicit
+  ---
+  duration_ms: 0.108132
+  type: 'test'
+  ...
+# Subtest: ui-laws: RTP tournament verdict and trace payload
+ok 9 - ui-laws: RTP tournament verdict and trace payload
+  ---
+  duration_ms: 0.287739
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 36.358554
+== docs/risk gate ==
+stage28 lens gate: OK
+docs portal quality gate: OK
+v0.2 checklists quality: OK
+dna assurance program gate: OK
+v0.2 risk register gate: OK
+stage28 docs gate: OK
+== runbooks exist ==
+docs/runbooks/claim_without_evidence.md
+docs/runbooks/evidence_privacy_violation.md
+docs/runbooks/evidence_scope_violation.md
+docs/runbooks/ui_law_violation.md
+== risk register R3/R9 ==
+15:| R3 | Неполные/устаревшие UI laws | Средняя | Среднее | Static lint + runtime sampling checks, law test generation, law semver policy | 30 | stage30-evidence-claims-tests, console-test | observability_gap.ui_law_violation | critical UI-law violation count > 0 |
+18:| R9 | Privacy/compliance риски evidence | Низкая->Высокая в прод | Критическое | privacy-by-design, redaction enforcement, evidence access audit, request-driven anonymization flow | 30,36,37 | stage30-evidence-claims-tests, stage36-saas-architecture-gate, stage37-linux-hardening-gate | observability_gap.evidence_privacy_violation | unauthorized evidence access > 0 |
+20:| R11 | Инновационные треки RTP/LRC/NRAC ухудшают базовые SLO | Средняя | Высокое | feature flags, KPI baseline/ratchet, Linux canary rollout, auto-disable on regression | 30,31,33,34,37 | stage30-evidence-claims-tests, stage31-investigation-doc-tests, stage33-secure-actions-tests, stage34-perf-load-tests, stage37-linux-hardening-gate | observability_gap.innovation_experiment_regression | KPI regression beyond policy threshold |

@@ -1,0 +1,23 @@
+[panel0-linux] build art-core
+[panel0-linux] start mock proxy
+[panel0-linux] scenario 1 ok
+[panel0-linux] scenario 2 ok
+[panel0-linux] scenario 3 ok
+[panel0-linux] scenario 4 ok
+[panel0-linux] scenario 5 ok
+[panel0-linux] auto recovery not observed in headless loop, checking reload recovery
+[panel0-linux] scenario 6 ok
+[panel0-linux] all scenarios passed
+[console-linux] install workspace
+[console-linux] build console foundation
+[console-linux] foundation readiness OK
+platform support consistency gate: OK
+platform install skeletons gate: OK
+platform VM skeleton gate: OK
+platform container+k8s skeleton gate: OK
+platform runtime compatibility gate: OK
+certified profile gate: OK
+platform package layout contract: OK
+docker runtime contract: OK
+regart cross-repo parity: OK
+stage37 linux hardening gate: OK

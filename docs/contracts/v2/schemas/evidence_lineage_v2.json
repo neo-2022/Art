@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://art.local/contracts/v2/schemas/evidence_lineage_v2.json",
+  "title": "EvidenceLineageV2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["evidence_lineage_id", "event_ref", "evidence_ref", "claim_ref", "investigation_ref"],
+  "properties": {
+    "evidence_lineage_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claim_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "investigation_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "trace_id": {
+      "type": "string"
+    },
+    "created_at_ms": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

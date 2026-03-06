@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение spool политики; изменение recovery; изменение concurrency модели; изменение TTL/DLQ; изменение runbook registry
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Spool однозначен и проверяем: default `never_drop_unacked` блокирует receivers при full; альтернативный `drop_oldest_when_full` включает lossy события и инцидент; recovery при corruption детерминирован; concurrency тест 10 потоков; chaos обязателен; все `observability_gap.*` зарегистрированы с `incident_rule` и `action_ref`.
@@ -140,3 +141,6 @@ Spool/outbox Agent (локальная очередь, persistence, retry/backof
 - [x] Concurrency test (10 потоков) зелёный.
 - [x] Chaos сценарии воспроизводимы и smoke прогоняется в CI.
 - [x] CI gate Stage 17 зелёный.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

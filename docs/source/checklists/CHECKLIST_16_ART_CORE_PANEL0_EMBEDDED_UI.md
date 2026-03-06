@@ -1,94 +1,99 @@
 A) Полный запрет опциональности:
-# CHECKLIST 16 — Panel0 embedded UI
-Файл: CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md  
-Последняя актуализация: 2026-03-04  
-Дата последней проверки: 2026-03-05  
-Триггер пересмотра: изменение UI; изменение gap событий; изменение offline требований
+# CHECKLIST 16 — Art Core Panel0 Embedded UI (auto-fallback v1)
+Файл: CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md
+Последняя актуализация: 2026-03-06
+Дата последней проверки: 2026-03-06
+Триггер пересмотра: изменение fallback-контракта `/`, изменение `/panel0/*` роутов, изменение evidence `observability_gap.console_boot_failed`
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
-Panel0 без двусмысленности: gap подсветка; core-down placeholder; service worker cache обязателен; минимальная диагностика (effective_profile_id, build/version).
+Реализовать детерминированный аварийный вход в Panel0: `GET /` пытается открыть Console и при сбое за 5 секунд переводит в Panel0 с обязательной фиксацией `observability_gap.console_boot_failed`.
 
 ## Границы
-Минимальная встроенная панель (embedded UI), без “полного” UI Art.
+- Только Art Core + embedded Panel0.
+- REGART код не изменяется.
+- Проверяются runtime-роуты, fallback-контракт, backlog-доставка события, docs и CI gate Stage16.
 
 ## Зависимости
-- CHECKLIST 14 — Stream/Snapshot v1 (SSE)
+- CHECKLIST 00 — MASTER
+- CHECKLIST 14 — Stream/Snapshot
 - CHECKLIST 15 — Actions/Audit/RBAC/PII
 
 ## Шаги (строго линейно)
 
-- [x] **1. Сделать:** Реализовать визуальное выделение всех `observability_gap.*` в Panel0 (единый дизайн).
-  - [x] Для каждого события с `kind` начинающимся на `observability_gap.` отображается:
-    - [x] иконка (фиксированная: ⚠)
-    - [x] цвет (фиксированный: amber)
-    - [x] tooltip содержит:
-      - [x] `kind`
-      - [x] `what`
-      - [x] `where`
-      - [x] `why`
-      - [x] `action_ref` (если присутствует)
-      - [x] `trace_id`
-  - [x] Tooltip не показывает PII/секреты (включая tokens/headers/cookies)
-  - [x] **Проверка (pass/fail):** e2e UI test создаёт synthetic `observability_gap.*` и проверяет иконку/цвет/tooltip поля.
+- [x] **1. Сделать:** Встроить Panel0 assets в бинарник Core и отдать их через фиксированные роуты.
+  - [x] `GET /panel0` и `GET /panel0/` отдают `index.html`
+  - [x] `GET /panel0/index.html`
+  - [x] `GET /panel0/panel0.js`
+  - [x] `GET /panel0/panel0.css`
+  - [x] `GET /panel0/panel0_sw.js`
+  - [x] `GET /panel0/favicon.ico`
+  - [x] Для каждого роута возвращается корректный `Content-Type`
+  - [x] Runtime не читает panel0-ассеты с ФС
+  - [x] **Проверка (pass/fail):** интеграционный тест `panel0_routes_serve_embedded_assets_with_content_types` + runtime gate `scripts/ci/check_panel0_stage16_runtime.sh`.
 
-- [x] **2. Сделать:** Реализовать core-down placeholder: при недоступности API Panel0 показывает заглушку + кнопку reload.
-  - [x] Условие “core down” фиксировано: любая из ситуаций:
-    - [x] `/health` недоступен (network error) или HTTP 503
-    - [x] `/api/v1/snapshot` недоступен (network error) или HTTP 503
-  - [x] UI показывает placeholder с фиксированными элементами:
-    - [x] текст `Core недоступен`
-    - [x] краткая причина (network error / HTTP code)
-    - [x] кнопка `Reload` (перезапускает попытку загрузки snapshot/health)
-  - [x] При восстановлении Core UI автоматически уходит с placeholder и отображает нормальный вид
-  - [x] **Проверка (pass/fail):** e2e test “Core stopped”: останавливает Core, проверяет placeholder+Reload, затем поднимает Core и проверяет авто-восстановление UI.
+- [x] **2. Сделать:** Реализовать bootstrap на `GET /` с auto-fallback в Panel0.
+  - [x] Источник Console path: env `ART_CONSOLE_BASE_PATH`, default `/console`
+  - [x] Валидация `ART_CONSOLE_BASE_PATH`: только относительный путь `/...`, запрет `http(s)://`, `//`, `..`
+  - [x] Timeout фиксирован: ровно `5000ms`
+  - [x] При недоступности Console выполняется переход на `/panel0`
+  - [x] **Проверка (pass/fail):** тест `root_route_serves_bootstrap_with_timeout_and_event_contract` + runtime gate проверяет контракт bootstrap.
 
-- [x] **3. Сделать:** Реализовать service worker cache для embedded assets Panel0.
-  - [x] Service Worker существует и регистрируется только для Panel0 (scope фиксирован)
-  - [x] Precache фиксированного набора ассетов (без двусмысленности):
-    - [x] `index.html`
-    - [x] `panel0.js`
-    - [x] `panel0.css`
-    - [x] `favicon` (если есть)
-  - [x] Cache versioning фиксирован: `panel0-cache-<build_id>`
-  - [x] Update стратегия фиксирована:
-    - [x] новый SW активируется сразу (skipWaiting)
-    - [x] новые ассеты начинают использоваться после reload
-  - [x] **Проверка (pass/fail):** offline reload test:
-    - [x] первый заход online прогревает cache
-    - [x] затем отключаем сеть
-    - [x] reload страницы загружает UI из cache (без сети) и показывает offline-индикатор.
+- [x] **3. Сделать:** Фиксировать `observability_gap.console_boot_failed` с обязательным evidence и backlog доставкой.
+  - [x] Причины fallback фиксированы: `network_error`, `http_error`, `timeout`, `runtime_crash`
+  - [x] `evidence_min` включает поля: `reason_type`, `url`, `http_status`, `error_text`, `timeout_ms`, `build_id`, `effective_profile_id`, `trace_id`
+  - [x] Нормализация evidence: `http_status`/`timeout_ms` как число или `null`, `error_text` как строка
+  - [x] Если Core DOWN, событие сохраняется в browser backlog и отправляется после восстановления Core
+  - [x] **Проверка (pass/fail):** runtime gate публикует `observability_gap.console_boot_failed` и подтверждает наличие в snapshot/stream с полным набором evidence.
 
-- [x] **4. Сделать:** Добавить в Panel0 минимальную диагностику сборки и профиля (для оперативной поддержки).
-  - [x] В Panel0 отображается `build_id` (строка)
-  - [x] В Panel0 отображается `effective_profile_id` (строка)
-  - [x] Источник `effective_profile_id` фиксирован: `GET /api/v1/snapshot` возвращает поле `effective_profile_id` в payload (одно фиксированное решение)
-  - [x] **Проверка (pass/fail):** e2e test проверяет, что `build_id` и `effective_profile_id` видны в UI и не пустые.
+- [x] **4. Сделать:** Зафиксировать поведение hotkey и core-down placeholder.
+  - [x] `Ctrl+Shift+P` открывает `/panel0`
+  - [x] hotkey не создаёт отдельный `reason_type` и не эмитит `console_boot_failed` без фактического падения Console
+  - [x] При Core DOWN показывается placeholder `Core недоступен` (network error / HTTP code)
+  - [x] Tier A i18n backport: EN default + runtime RU switch для статусов/tooltip
+  - [x] При восстановлении Core panel автоматически перепроверяет API и выходит из placeholder
+  - [x] **Проверка (pass/fail):** runtime/embedded проверки содержимого bootstrap/panel0.js + browser e2e для hotkey и placeholder.
+
+- [x] **5. Сделать:** Обновить registry/runbook/docs под единый контракт Stage16.
+  - [x] В `docs/governance/observability_gap_registry.md` добавлено `observability_gap.console_boot_failed`
+  - [x] `owner_component=browser/panel0`, `incident_rule=log_only`, `action_ref=docs/runbooks/console_boot_failed.md`
+  - [x] Создан `docs/runbooks/console_boot_failed.md` с разделами `Symptoms`, `Diagnosis`, `Resolution`
+  - [x] Обновлён `docs/ui/panel0.md`: fallback, hotkey, env, Core DOWN + Console DOWN
+  - [x] **Проверка (pass/fail):** `bash scripts/ci/check_panel0_stage16_docs.sh`.
 
 ## Документация (RU)
 - [x] docs/ui/panel0.md
 - [x] docs/ui/panel0_offline.md
 - [x] docs/ui/panel0_sw_cache.md
+- [x] docs/runbooks/console_boot_failed.md
+- [x] docs/governance/observability_gap_registry.md
+- [x] docs/ops/panel0_linux_prod_readiness.md
 
 ## Тестирование
-- [x] e2e: gap highlight (шаг 1)
-- [x] e2e: core-down placeholder (шаг 2)
-- [x] e2e: offline cache (шаг 3)
-- [x] e2e: offline/SW negative scenarios (cache-miss→503 `x-art-offline`, cache put fail, insecure-context no-register)
-- [x] e2e: build_id + effective_profile_id (шаг 4)
+- [x] e2e: gap highlight (историческое покрытие panel0-e2e)
+- [x] e2e: core-down placeholder (историческое покрытие panel0-e2e + runtime markers)
+- [x] e2e: offline cache и negative SW сценарии (историческое покрытие panel0-e2e)
+- [x] e2e: EN default + RU switch (panel0-i18n-law-tests)
+- [x] e2e: auto-fallback при Console DOWN (5s timeout)
+- [x] e2e: observability_gap.console_boot_failed появляется в snapshot/stream
+- [x] e2e: hotkey Ctrl+Shift+P открывает Panel0
+- [x] e2e: Core DOWN + Console DOWN -> core-down placeholder
+- [x] linux prod-readiness: `bash scripts/tests/panel0_linux_prod_readiness.sh` (Console UP/HTTP error/timeout/hotkey/backlog/Core DOWN recovery)
 
 ## CI gate
-- [x] CI job `panel0-e2e` существует и запускается на PR в main; job зелёный
-- [x] CI job `stage16-docs-gate` существует и запускает `scripts/ci/check_panel0_stage16_docs.sh`, который:
-  - [x] проверяет существование файлов из раздела “Документация (RU)”
-  - [x] проверяет минимальный контент (grep):
-    - [x] `docs/ui/panel0.md` содержит `observability_gap.`
-    - [x] `docs/ui/panel0_offline.md` содержит `offline` и `reload`
-    - [x] `docs/ui/panel0_sw_cache.md` содержит `panel0-cache-`, `skipWaiting`, `x-art-offline`, `secure context`
-  - [x] exit 1 при нарушении любой проверки
+- [x] `panel0-e2e` запускает `node --test test/panel0.e2e.test.js`
+- [x] `stage16-docs-gate` запускает:
+  - [x] `bash scripts/ci/check_panel0_stage16_docs.sh`
+  - [x] `bash scripts/ci/check_panel0_stage16_runtime.sh`
+- [x] Runtime gate проверяет `/`, `/panel0/*`, event-контракт `console_boot_failed`, snapshot/stream.
 
 ## DoD
-- [x] Panel0 отображает `observability_gap.*` с фиксированным дизайном и без утечек PII.
-- [x] Panel0 корректно показывает core-down placeholder и восстанавливается после подъёма Core.
-- [x] Panel0 работает офлайн (embedded assets через SW cache).
-- [x] Panel0 показывает `build_id` и `effective_profile_id`.
-- [x] CI gate Stage 16 зелёный.
+- [x] Документация обновлена и непротиворечива (registry + runbook + panel0 docs).
+- [x] Core отдаёт embedded `/panel0/*` без зависимости от ФС.
+- [x] `GET /` реализует fallback Console -> Panel0 за 5 секунд.
+- [x] Событие `observability_gap.console_boot_failed` проходит в snapshot/stream с обязательным evidence.
+- [x] Горячая клавиша `Ctrl+Shift+P` открывает Panel0 и не создаёт искусственный `reason_type`.
+- [x] CI Stage16 (docs + runtime) проходит.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

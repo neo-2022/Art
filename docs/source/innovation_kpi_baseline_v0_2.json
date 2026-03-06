@@ -1,0 +1,11 @@
+{
+  "version": "v0.2",
+  "metrics": {
+    "false_positive_rate": 0.10,
+    "runbook_mismatch_rate": 0.60,
+    "rollback_rate": 0.10
+  },
+  "policy": {
+    "max_degradation_ratio": 0.05
+  }
+}

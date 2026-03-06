@@ -1,0 +1,17 @@
+{
+  "deny_missing": {
+    "status": 403,
+    "error": "nrac_required",
+    "code": "action_nrac_missing"
+  },
+  "deny_high_regret": {
+    "status": 403,
+    "error": "nrac_regret_exceeded",
+    "code": "action_nrac_regret_exceeded"
+  },
+  "allow_low_regret": {
+    "status": 200,
+    "accepted": true,
+    "nrac_status": "accepted"
+  }
+}

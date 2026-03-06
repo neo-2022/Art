@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://art.local/contracts/v2/schemas/saas_quota_retention_policy_v2.json",
+  "title": "SaasQuotaRetentionPolicyV2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tenant_id",
+    "control_plane",
+    "data_plane",
+    "quotas",
+    "retention",
+    "compliance_export",
+    "trace_id"
+  ],
+  "properties": {
+    "tenant_id": {"type": "string", "minLength": 1},
+    "control_plane": {"type": "string", "enum": ["policy-only", "policy+metadata"]},
+    "data_plane": {"type": "string", "enum": ["events-evidence-audit"]},
+    "quotas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ingest_rps", "stream_subscriptions", "actions_per_minute"],
+      "properties": {
+        "ingest_rps": {"type": "integer", "minimum": 1},
+        "stream_subscriptions": {"type": "integer", "minimum": 1},
+        "actions_per_minute": {"type": "integer", "minimum": 1}
+      }
+    },
+    "retention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operational_days", "incident_days", "compliance_days", "pii_long_term_mode", "request_remediation_hours"],
+      "properties": {
+        "operational_days": {"type": "integer", "const": 30},
+        "incident_days": {"type": "integer", "const": 90},
+        "compliance_days": {"type": "integer", "minimum": 365},
+        "pii_long_term_mode": {"type": "string", "enum": ["auto-anonymize"]},
+        "request_remediation_hours": {"type": "integer", "maximum": 72}
+      }
+    },
+    "compliance_export": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "immutable_audit_required"],
+      "properties": {
+        "format": {"type": "string", "enum": ["json", "jsonl", "csv"]},
+        "immutable_audit_required": {"type": "boolean", "const": true}
+      }
+    },
+    "trace_id": {"type": "string", "minLength": 1}
+  }
+}

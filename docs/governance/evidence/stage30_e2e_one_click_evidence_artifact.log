@@ -1,0 +1,11 @@
+CHECKLIST: 30 / Testing / e2e one-click-to-evidence
+Date: 2026-03-06
+
+Command:
+corepack pnpm --filter @art/console-web run test
+
+Result:
+PASS
+
+Relevant test:
+- console-web: one-click-to-evidence and tooltip invariants rendered

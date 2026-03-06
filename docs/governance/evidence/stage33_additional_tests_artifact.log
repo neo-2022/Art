@@ -1,0 +1,129 @@
+
+running 1 test
+test tests::actions_execute_response_attaches_audit_merkle_proof ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 58 filtered out; finished in 0.00s
+
+
+running 1 test
+test tests::actions_simulation_mode_returns_policy_verdict_without_side_effects ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 58 filtered out; finished in 0.00s
+
+
+running 1 test
+test tests::critical_action_requires_nrac_and_blocks_on_high_regret ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 58 filtered out; finished in 0.00s
+
+
+> @art/console-web@0.2.0 test /home/art/Art/apps/console-web
+> corepack pnpm -C ../.. run console:build && node --test test/*.test.mjs
+
+
+> art-monorepo@0.2.0 console:build /home/art/Art
+> corepack pnpm -r --filter './packages/*' run build && corepack pnpm --filter ./apps/console-web run build
+
+Scope: 5 of 7 workspace projects
+packages/evidence-linking build$ tsc -p tsconfig.json
+packages/i18n build$ tsc -p tsconfig.json
+packages/local-stores build$ tsc -p tsconfig.json
+packages/ui-laws build$ tsc -p tsconfig.json
+packages/evidence-linking build: Done
+packages/worker-runtime build$ tsc -p tsconfig.json
+packages/i18n build: Done
+packages/ui-laws build: Done
+packages/local-stores build: Done
+packages/worker-runtime build: Done
+
+> @art/console-web@0.2.0 build /home/art/Art/apps/console-web
+> tsc -p tsconfig.json && node ./scripts/generate-static.mjs
+
+TAP version 13
+# Subtest: console-web: has 7 foundation surfaces
+ok 1 - console-web: has 7 foundation surfaces
+  ---
+  duration_ms: 0.553171
+  type: 'test'
+  ...
+# Subtest: console-web: default locale en and ru switch render
+ok 2 - console-web: default locale en and ru switch render
+  ---
+  duration_ms: 6.622987
+  type: 'test'
+  ...
+# Subtest: console-web: one-click-to-evidence and tooltip invariants rendered
+ok 3 - console-web: one-click-to-evidence and tooltip invariants rendered
+  ---
+  duration_ms: 0.319298
+  type: 'test'
+  ...
+# Subtest: console-web: analytics memory renders chart-ready data and instructions
+ok 4 - console-web: analytics memory renders chart-ready data and instructions
+  ---
+  duration_ms: 0.254101
+  type: 'test'
+  ...
+# Subtest: console-web: design controls include reset and guardrails
+ok 5 - console-web: design controls include reset and guardrails
+  ---
+  duration_ms: 0.754921
+  type: 'test'
+  ...
+# Subtest: console-web: semantic interaction tokens are present
+ok 6 - console-web: semantic interaction tokens are present
+  ---
+  duration_ms: 0.282356
+  type: 'test'
+  ...
+# Subtest: console-web: RTP verdict is rendered and contested promotion is blocked
+ok 7 - console-web: RTP verdict is rendered and contested promotion is blocked
+  ---
+  duration_ms: 0.287256
+  type: 'test'
+  ...
+# Subtest: console-web: investigation library baseline contract is rendered
+ok 8 - console-web: investigation library baseline contract is rendered
+  ---
+  duration_ms: 0.268209
+  type: 'test'
+  ...
+# Subtest: console-web: audit verify panel renders deterministic proof chain
+ok 9 - console-web: audit verify panel renders deterministic proof chain
+  ---
+  duration_ms: 0.579461
+  type: 'test'
+  ...
+# Subtest: console-web: verify action is reachable from incident room, investigation library and flow mode
+ok 10 - console-web: verify action is reachable from incident room, investigation library and flow mode
+  ---
+  duration_ms: 0.479007
+  type: 'test'
+  ...
+# Subtest: console-web: action studio policy-as-ui constrains role/action/fields
+ok 11 - console-web: action studio policy-as-ui constrains role/action/fields
+  ---
+  duration_ms: 0.33623
+  type: 'test'
+  ...
+# Subtest: console-web: action flow ladder renders L1->L2 statuses and cross-surface entry points
+ok 12 - console-web: action flow ladder renders L1->L2 statuses and cross-surface entry points
+  ---
+  duration_ms: 0.257699
+  type: 'test'
+  ...
+# Subtest: console-web: audit verify texts are rendered for EN and RU locales
+ok 13 - console-web: audit verify texts are rendered for EN and RU locales
+  ---
+  duration_ms: 0.543391
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 49.485879

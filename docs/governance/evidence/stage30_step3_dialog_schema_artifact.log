@@ -1,0 +1,12 @@
+CHECKLIST: 30 / Step 3
+Date: 2026-03-06
+
+Command:
+for t in Hypothesis Decision ActionRequest ActionResult Explanation; do rg -q "\"$t\"" docs/contracts/v2/schemas/dialog_message_v2.json; done && echo "dialog schema type enum check: OK"
+
+Result:
+PASS
+
+Schema assertion:
+- docs/contracts/v2/schemas/dialog_message_v2.json contains fixed enum types:
+  Hypothesis, Decision, ActionRequest, ActionResult, Explanation.

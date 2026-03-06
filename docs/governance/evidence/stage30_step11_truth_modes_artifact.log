@@ -1,0 +1,16 @@
+CHECKLIST: 30 / Step 11
+Date: 2026-03-06
+
+Checks:
+1) Truth-mode schema contract in:
+   - docs/contracts/v2/schemas/claim_v2.json
+   - docs/contracts/v2/schemas/dialog_message_v2.json
+   - docs/contracts/v2/schemas/snapshot_v2.json
+2) Observed payload without evidence refs rejected by ui-laws tests.
+
+Commands:
+- rg -n "truth_mode|meta|evidence_refs|predicted|derived" docs/contracts/v2/schemas/claim_v2.json docs/contracts/v2/schemas/dialog_message_v2.json docs/contracts/v2/schemas/snapshot_v2.json
+- corepack pnpm --filter @art/ui-laws run test
+
+Result:
+PASS

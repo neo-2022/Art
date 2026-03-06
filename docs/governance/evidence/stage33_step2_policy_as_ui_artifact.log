@@ -1,0 +1,216 @@
+
+> @art/console-web@0.2.0 test /home/art/Art/apps/console-web
+> corepack pnpm -C ../.. run console:build && node --test test/*.test.mjs
+
+
+> art-monorepo@0.2.0 console:build /home/art/Art
+> corepack pnpm -r --filter './packages/*' run build && corepack pnpm --filter ./apps/console-web run build
+
+Scope: 5 of 7 workspace projects
+packages/evidence-linking build$ tsc -p tsconfig.json
+packages/i18n build$ tsc -p tsconfig.json
+packages/local-stores build$ tsc -p tsconfig.json
+packages/ui-laws build$ tsc -p tsconfig.json
+packages/evidence-linking build: Done
+packages/worker-runtime build$ tsc -p tsconfig.json
+packages/i18n build: Done
+packages/ui-laws build: Done
+packages/local-stores build: Done
+packages/worker-runtime build: Done
+
+> @art/console-web@0.2.0 build /home/art/Art/apps/console-web
+> tsc -p tsconfig.json && node ./scripts/generate-static.mjs
+
+TAP version 13
+# Subtest: console-web: has 7 foundation surfaces
+ok 1 - console-web: has 7 foundation surfaces
+  ---
+  duration_ms: 0.513083
+  type: 'test'
+  ...
+# Subtest: console-web: default locale en and ru switch render
+ok 2 - console-web: default locale en and ru switch render
+  ---
+  duration_ms: 6.905106
+  type: 'test'
+  ...
+# Subtest: console-web: one-click-to-evidence and tooltip invariants rendered
+ok 3 - console-web: one-click-to-evidence and tooltip invariants rendered
+  ---
+  duration_ms: 0.344851
+  type: 'test'
+  ...
+# Subtest: console-web: analytics memory renders chart-ready data and instructions
+ok 4 - console-web: analytics memory renders chart-ready data and instructions
+  ---
+  duration_ms: 0.281563
+  type: 'test'
+  ...
+# Subtest: console-web: design controls include reset and guardrails
+ok 5 - console-web: design controls include reset and guardrails
+  ---
+  duration_ms: 0.390786
+  type: 'test'
+  ...
+# Subtest: console-web: semantic interaction tokens are present
+ok 6 - console-web: semantic interaction tokens are present
+  ---
+  duration_ms: 0.582873
+  type: 'test'
+  ...
+# Subtest: console-web: RTP verdict is rendered and contested promotion is blocked
+ok 7 - console-web: RTP verdict is rendered and contested promotion is blocked
+  ---
+  duration_ms: 0.389644
+  type: 'test'
+  ...
+# Subtest: console-web: investigation library baseline contract is rendered
+ok 8 - console-web: investigation library baseline contract is rendered
+  ---
+  duration_ms: 0.298184
+  type: 'test'
+  ...
+# Subtest: console-web: audit verify panel renders deterministic proof chain
+ok 9 - console-web: audit verify panel renders deterministic proof chain
+  ---
+  duration_ms: 0.540634
+  type: 'test'
+  ...
+# Subtest: console-web: verify action is reachable from incident room, investigation library and flow mode
+ok 10 - console-web: verify action is reachable from incident room, investigation library and flow mode
+  ---
+  duration_ms: 0.465254
+  type: 'test'
+  ...
+# Subtest: console-web: action studio policy-as-ui constrains role/action/fields
+ok 11 - console-web: action studio policy-as-ui constrains role/action/fields
+  ---
+  duration_ms: 0.32314
+  type: 'test'
+  ...
+# Subtest: console-web: audit verify texts are rendered for EN and RU locales
+ok 12 - console-web: audit verify texts are rendered for EN and RU locales
+  ---
+  duration_ms: 0.438585
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 48.660659
+
+> @art/console-web@0.2.0 test /home/art/Art/apps/console-web
+> corepack pnpm -C ../.. run console:build && node --test test/*.test.mjs
+
+
+> art-monorepo@0.2.0 console:build /home/art/Art
+> corepack pnpm -r --filter './packages/*' run build && corepack pnpm --filter ./apps/console-web run build
+
+Scope: 5 of 7 workspace projects
+packages/evidence-linking build$ tsc -p tsconfig.json
+packages/i18n build$ tsc -p tsconfig.json
+packages/local-stores build$ tsc -p tsconfig.json
+packages/ui-laws build$ tsc -p tsconfig.json
+packages/evidence-linking build: Done
+packages/worker-runtime build$ tsc -p tsconfig.json
+packages/i18n build: Done
+packages/ui-laws build: Done
+packages/local-stores build: Done
+packages/worker-runtime build: Done
+
+> @art/console-web@0.2.0 build /home/art/Art/apps/console-web
+> tsc -p tsconfig.json && node ./scripts/generate-static.mjs
+
+TAP version 13
+# Subtest: console-web: has 7 foundation surfaces
+ok 1 - console-web: has 7 foundation surfaces
+  ---
+  duration_ms: 0.56559
+  type: 'test'
+  ...
+# Subtest: console-web: default locale en and ru switch render
+ok 2 - console-web: default locale en and ru switch render
+  ---
+  duration_ms: 6.501059
+  type: 'test'
+  ...
+# Subtest: console-web: one-click-to-evidence and tooltip invariants rendered
+ok 3 - console-web: one-click-to-evidence and tooltip invariants rendered
+  ---
+  duration_ms: 0.301507
+  type: 'test'
+  ...
+# Subtest: console-web: analytics memory renders chart-ready data and instructions
+ok 4 - console-web: analytics memory renders chart-ready data and instructions
+  ---
+  duration_ms: 0.249896
+  type: 'test'
+  ...
+# Subtest: console-web: design controls include reset and guardrails
+ok 5 - console-web: design controls include reset and guardrails
+  ---
+  duration_ms: 0.68354
+  type: 'test'
+  ...
+# Subtest: console-web: semantic interaction tokens are present
+ok 6 - console-web: semantic interaction tokens are present
+  ---
+  duration_ms: 0.234526
+  type: 'test'
+  ...
+# Subtest: console-web: RTP verdict is rendered and contested promotion is blocked
+ok 7 - console-web: RTP verdict is rendered and contested promotion is blocked
+  ---
+  duration_ms: 0.263723
+  type: 'test'
+  ...
+# Subtest: console-web: investigation library baseline contract is rendered
+ok 8 - console-web: investigation library baseline contract is rendered
+  ---
+  duration_ms: 0.250457
+  type: 'test'
+  ...
+# Subtest: console-web: audit verify panel renders deterministic proof chain
+ok 9 - console-web: audit verify panel renders deterministic proof chain
+  ---
+  duration_ms: 0.541985
+  type: 'test'
+  ...
+# Subtest: console-web: verify action is reachable from incident room, investigation library and flow mode
+ok 10 - console-web: verify action is reachable from incident room, investigation library and flow mode
+  ---
+  duration_ms: 0.482388
+  type: 'test'
+  ...
+# Subtest: console-web: action studio policy-as-ui constrains role/action/fields
+ok 11 - console-web: action studio policy-as-ui constrains role/action/fields
+  ---
+  duration_ms: 0.319742
+  type: 'test'
+  ...
+# Subtest: console-web: action flow ladder renders L1->L2 statuses and cross-surface entry points
+ok 12 - console-web: action flow ladder renders L1->L2 statuses and cross-surface entry points
+  ---
+  duration_ms: 0.249235
+  type: 'test'
+  ...
+# Subtest: console-web: audit verify texts are rendered for EN and RU locales
+ok 13 - console-web: audit verify texts are rendered for EN and RU locales
+  ---
+  duration_ms: 0.514331
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 46.977441

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://art.local/contracts/v2/schemas/dna_signature.json",
+  "title": "DnaSignature",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "dna_id",
+    "canonical_hash",
+    "payload_hash",
+    "dna_schema_version"
+  ],
+  "properties": {
+    "dna_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "canonical_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "payload_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "dna_schema_version": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

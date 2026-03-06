@@ -1,0 +1,2 @@
+stage36 step5 evidence audit trail: PASS
+{"status": "PASS", "required_fields": ["access_scope", "actor_role", "decision", "evidence_id", "trace_id", "ts_ms"], "sample": {"evidence_id": "ev-123", "actor_role": "sre", "access_scope": "tenant:alpha", "decision": "deny", "trace_id": "trc-stage36-audit-1", "ts_ms": 1772805600000}}

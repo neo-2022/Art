@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: изменение формата RawEvent; изменение redaction rules; изменение spool/outbox политики; добавление/изменение receiver kinds; изменение политики multiline/парсинга
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Receivers в агенте однозначны и проверяемы: фиксированный список receiver kinds v1, детерминированный контракт `source_id/source_seq`, корректный парсинг (включая multiline), pre-write redaction, backpressure от spool/outbox, и обязательные `observability_gap.*`/`data_quality.*` события с runbook.
@@ -186,3 +187,6 @@ Core ingest/storage/pipeline — в других чек-листах.
 - [x] Backpressure от spool/outbox реализован и покрыт integration tests.
 - [x] Все `observability_gap.*` события receivers зарегистрированы и имеют runbook.
 - [x] CI gate Stage 18 зелёный.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

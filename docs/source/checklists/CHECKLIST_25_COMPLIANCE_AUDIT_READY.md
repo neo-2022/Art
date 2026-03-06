@@ -4,6 +4,7 @@ A) Полный запрет опциональности:
 Последняя актуализация: 2026-03-04  
 Дата последней проверки: 2026-03-05  
 Триггер пересмотра: требования аудитора; изменение форматов экспорта; изменение raw_archive; изменение retention/DSR; изменение audit policy
+Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
 Audit-ready однозначен и проверяем: export pack (incidents + audit) в CSV/JSON; immutable evidence policy (raw_archive + защита от изменений); data destruction policy (вывод из эксплуатации); `observability_gap.export_failed` при сбое экспорта; CI gate проверяет содержимое документов (не только наличие).
@@ -150,3 +151,6 @@ Audit-ready однозначен и проверяем: export pack (incidents +
 - [x] `observability_gap.export_failed` реализован, зарегистрирован и покрыт induced test (включая публикацию startup backlog).
 - [x] Control matrix и audit trail docs существуют и однозначны.
 - [x] CI gate Stage 25 зелёный.
+
+## Финальный блокирующий чекбокс (единое жёсткое правило)
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

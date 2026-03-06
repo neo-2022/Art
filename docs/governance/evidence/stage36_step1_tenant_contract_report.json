@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "tenant_model": "org/project/env",
+  "validated_cases": 3,
+  "required_fields": [
+    "env_id",
+    "isolation_policy_id",
+    "org_id",
+    "project_id",
+    "tenant_id",
+    "trace_id"
+  ]
+}
