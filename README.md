@@ -43,6 +43,7 @@
 - baseline startup config fail-closed: [startup_config_safety_validator_v0_2.md](docs/source/startup_config_safety_validator_v0_2.md)
 - baseline queue integrity protection: [queue_integrity_protection_v0_2.md](docs/source/queue_integrity_protection_v0_2.md)
 - baseline guard self-observability: [guard_self_observability_v0_2.md](docs/source/guard_self_observability_v0_2.md)
+- baseline monolith budget guard: [monolith_budget_guard_v0_2.md](docs/source/monolith_budget_guard_v0_2.md)
 - pinned external adversarial harness for REGART and partner-exposed proof: [regart_adversarial_integration_harness_v0_2.md](docs/source/regart_adversarial_integration_harness_v0_2.md)
 - baseline connected system visibility: [connected_system_visibility_v0_2.md](docs/source/connected_system_visibility_v0_2.md)
 - buyer due diligence triage: [buyer_due_diligence_signal_triage_v0_2.md](docs/testing/buyer_due_diligence_signal_triage_v0_2.md)

@@ -37,6 +37,8 @@ A) Полный запрет опциональности:
 - Authenticity baseline: `docs/source/authenticity_baseline_v0_2.md`
 - Regulatory claims drift control baseline: `docs/source/regulatory_claims_drift_control_v0_2.md`
 - Monolith budget guard baseline: `docs/source/monolith_budget_guard_v0_2.md`
+- Machine-readable monolith budget: `formats/monolith_budget_guard_v0_2.yaml`
+- Monolith budget CI guard: `scripts/ci/check_monolith_budget_guard.sh`
 - Test strength guard baseline: `docs/source/test_strength_guard_v0_2.md`
 - Documentation drift control baseline: `docs/source/documentation_drift_control_v0_2.md`
 - Machine-readable protective safeguards catalog: `formats/protective_safeguards_catalog_v0_2.yaml`

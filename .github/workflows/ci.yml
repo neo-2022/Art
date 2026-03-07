@@ -381,6 +381,17 @@ jobs:
       - name: Stage 10 docs gate
         run: bash scripts/ci/check_browser_level0_stage10_docs.sh
 
+  monolith-budget-guard:
+    name: monolith-budget-guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Monolith budget guard
+        run: |
+          python3 -m unittest scripts.tests.test_monolith_budget_guard -v
+          bash scripts/ci/check_monolith_budget_guard.sh
+
   stage10-chaos-e2e:
     name: stage10-chaos-e2e
     runs-on: ubuntu-latest

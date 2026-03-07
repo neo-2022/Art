@@ -130,6 +130,8 @@
 - Простыми словами:
   - это предохранитель от "код знает только один человек" и "любой фикс ломает всё вокруг".
 - Базовый документ: `docs/source/monolith_budget_guard_v0_2.md`
+- Machine-readable бюджет: `formats/monolith_budget_guard_v0_2.yaml`
+- Автоматический guard: `scripts/ci/check_monolith_budget_guard.sh`
 - Gap-событие:
   - `observability_gap.monolith_budget_exceeded`
 - Основные stages: `10`, `11`, `17`, `18`, `28`, `35`, `37`, `39`

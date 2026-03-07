@@ -758,6 +758,9 @@
   2. снизить code concentration в `core` и связанных runtime entrypoints;
   3. сделать так, чтобы security/runtime review и owner handoff не зависели от одного файла и одного человека;
   4. синхронизировать decomposition с architecture/docs и не потерять корневой замысел проекта.
+- Текущее состояние:
+  - дальнейший рост плотности в критичных файлах уже запрещён budget-guard'ом;
+  - defect остаётся открыт до реальной декомпозиции, а не до “наличия guard-а”.
 - Чем доказать закрытие:
   - decomposition report с line-count и responsibility split;
   - module-boundary tests;
@@ -891,6 +894,10 @@
   2. требовать decomposition plan до того, как монолит станет operational risk;
   3. связать budget exceed с architecture review и stage-blocking;
   4. сделать этот контур воспроизводимым для buyer due diligence.
+- Текущее состояние:
+  - machine-readable budget уже materialized;
+  - CI guard уже materialized;
+  - дальнейшая задача этой defect-линии — распространить guard по stage-level closure и decomposition evidence.
 - Чем доказать закрытие:
   - budget guard evidence;
   - `observability_gap.monolith_budget_exceeded`;

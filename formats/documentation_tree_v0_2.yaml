@@ -1,14 +1,14 @@
 version: '1.1'
 status: ACTIVE
 root: README.md
-total_documents: 80
+total_documents: 81
 total_collection_nodes: 3
-total_markdown_links_scanned: 213
-total_tree_edges: 176
-total_file_links_in_tree: 176
-total_lines_in_tree: 12446
+total_markdown_links_scanned: 214
+total_tree_edges: 177
+total_file_links_in_tree: 177
+total_lines_in_tree: 12548
 total_lines_in_collections: 2243
-root_direct_children: 52
+root_direct_children: 53
 root_influence_documents:
 - docs/INTEGRATION.md
 - docs/README.md
@@ -54,7 +54,7 @@ nodes:
   missing_index: false
 - path: README.md
   node_type: document
-  lines: 197
+  lines: 198
   files_count: 1
   root_influence: false
   children:
@@ -71,6 +71,7 @@ nodes:
   - docs/source/startup_config_safety_validator_v0_2.md
   - docs/source/queue_integrity_protection_v0_2.md
   - docs/source/guard_self_observability_v0_2.md
+  - docs/source/monolith_budget_guard_v0_2.md
   - docs/source/regart_adversarial_integration_harness_v0_2.md
   - docs/source/connected_system_visibility_v0_2.md
   - docs/testing/buyer_due_diligence_signal_triage_v0_2.md
@@ -136,7 +137,7 @@ nodes:
   missing_index: false
 - path: docs/ARCHITECTURE.md
   node_type: document
-  lines: 98
+  lines: 99
   files_count: 1
   root_influence: false
   children:
@@ -836,7 +837,7 @@ nodes:
   missing_index: false
 - path: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   node_type: document
-  lines: 330
+  lines: 332
   files_count: 1
   root_influence: true
   children: []
@@ -976,9 +977,19 @@ nodes:
   - docs/portal/INDEX.md
   index_target: docs/source/ingress_perimeter_protection_v0_2.md
   missing_index: false
+- path: docs/source/monolith_budget_guard_v0_2.md
+  node_type: document
+  lines: 89
+  files_count: 1
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  index_target: docs/source/monolith_budget_guard_v0_2.md
+  missing_index: false
 - path: docs/source/protective_safeguards_catalog_v0_2.md
   node_type: document
-  lines: 179
+  lines: 181
   files_count: 1
   root_influence: true
   children: []
@@ -1083,7 +1094,7 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_control_matrix_v0_2.md
   node_type: document
-  lines: 941
+  lines: 948
   files_count: 1
   root_influence: true
   children: []

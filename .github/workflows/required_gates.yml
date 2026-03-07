@@ -26,6 +26,7 @@ jobs:
           set -euo pipefail
           bash scripts/ci/check_governance_stage01.sh
           bash scripts/ci/check_privacy_stage02.sh
+          bash scripts/ci/check_monolith_budget_guard.sh
           bash scripts/ci/check_stage05_wrapper.sh
           bash scripts/ci/check_stage06_wrapper.sh
           bash scripts/ci/check_master_checklist_binding.sh

@@ -1,0 +1,48 @@
+version: "1.0"
+status: "ACTIVE"
+last_updated: "2026-03-07"
+policy:
+  purpose: "Остановить рост плотности и монолитности в критичных entrypoint-файлах до decomposition remediation"
+  behavior_on_exceed: "fail_ci_and_require_decomposition_plan"
+  note: "current_lines хранится для диагностической наглядности; budget_lines является обязательным потолком"
+critical_files:
+  - path: core/src/main.rs
+    owner_contour: stage11_core_runtime
+    current_lines: 9853
+    budget_lines: 9853
+    max_responsibility_classes: 8
+    defect_ids: ["DEF-017", "DEF-032"]
+    stages: ["11", "37", "39"]
+    rationale: "Ключевой runtime entrypoint. Дальнейший рост запрещён до декомпозиции и переноса обязанностей в модули."
+  - path: apps/console-web/src/main.ts
+    owner_contour: stage28_console_shell
+    current_lines: 1877
+    budget_lines: 1877
+    max_responsibility_classes: 7
+    defect_ids: ["DEF-017", "DEF-032"]
+    stages: ["28", "40"]
+    rationale: "Главная точка роста UI shell. Дальнейший рост запрещён до вынесения surface-specific модулей."
+  - path: packages/local-stores/src/index.ts
+    owner_contour: stage35_local_stores
+    current_lines: 1029
+    budget_lines: 1029
+    max_responsibility_classes: 5
+    defect_ids: ["DEF-017", "DEF-032"]
+    stages: ["35"]
+    rationale: "Shared store layer должен стабилизироваться без дальнейшего уплотнения, иначе декомпозиция станет дороже."
+  - path: agent/src/main.rs
+    owner_contour: stage18_agent_runtime
+    current_lines: 821
+    budget_lines: 821
+    max_responsibility_classes: 4
+    defect_ids: ["DEF-017", "DEF-032"]
+    stages: ["17", "18", "37"]
+    rationale: "Agent basement должен расти через модули transport/receiver/spool, а не через уплотнение main.rs."
+  - path: browser/src/outbox.js
+    owner_contour: stage10_browser_level0
+    current_lines: 470
+    budget_lines: 470
+    max_responsibility_classes: 4
+    defect_ids: ["DEF-017", "DEF-032"]
+    stages: ["10"]
+    rationale: "Outbox отвечает за критичную browser-доставку и не должен превращаться в скрытый монолит."
