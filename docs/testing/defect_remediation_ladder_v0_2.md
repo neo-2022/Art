@@ -239,6 +239,7 @@
 15. structural decomposition of high-risk runtime entrypoints
 16. hostile integration/e2e depth hardening for console/browser/release/SaaS paths
 17. pinned external adversarial harness for REGART and partner-exposed integration proof
+18. connected system visibility с declared-vs-observed truth для всех внешних систем
 
 Почему этот уровень последний:
 - differentiators нельзя честно закрывать на слабом basement;
@@ -251,6 +252,7 @@
 - high-risk entrypoints больше не держат критическую архитектуру в одном файле;
 - console/browser/release corpus доказывает hostile runtime-цепочки, а не только наличие HTML/строк;
 - внешние integration contours доказываются через pinned hostile harness, а не через floating checkout;
+- подключённая внешняя система становится видимой оператору как отдельная сущность со статусом, типами данных и active gaps, а не скрытым конфигом;
 - проект перестаёт расходиться между замыслом и кодом.
 
 ## Запрещённые маршруты

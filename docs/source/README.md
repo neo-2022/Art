@@ -34,6 +34,9 @@
 10. `regart_adversarial_integration_harness_v0_2.md`
    - Тип: спецификация pinned external adversarial harness.
    - Назначение: обязательный внешний hostile-полигон для `Art <-> REGART` и partner-exposed integration proof.
+11. `connected_system_visibility_v0_2.md`
+   - Тип: спецификация Connected System View.
+   - Назначение: обязательный контур видимости подключённых внешних систем, их статуса, типов данных и declared-vs-observed покрытия.
 
 ## Корень дерева решений и автосинхронизация
 

@@ -6,3 +6,102 @@ dependencies:
     version_range: ">=1.0.0,<2.0.0"
 entrypoints:
   - rules/enrich.json
+service_inventory:
+  - system_id: regart-browser-level0
+    display_name: REGART Browser Level0
+    integration_kind: browser_level0
+    owner_component: browser/level0
+  - system_id: regart-ui-proxy
+    display_name: REGART UI Proxy
+    integration_kind: ui_proxy
+    owner_component: ui_proxy
+  - system_id: regart-langgraph-runtime
+    display_name: REGART LangGraph Runtime
+    integration_kind: langgraph_runtime
+    owner_component: langgraph/runtime
+receiver_examples:
+  - system_id: regart-browser-level0
+    receiver_kinds:
+      - file_tail
+      - stdout_stderr
+      - net_probe
+  - system_id: regart-ui-proxy
+    receiver_kinds:
+      - journald
+      - systemd_unit
+      - net_probe
+  - system_id: regart-langgraph-runtime
+    receiver_kinds:
+      - journald
+      - stdout_stderr
+      - proc_probe
+signal_coverage_claims:
+  declared_data_kinds:
+    - ui_runtime
+    - browser_error
+    - bridge_backlog_status
+    - proxy_upstream
+    - proxy_health
+    - http_status
+    - langgraph_run
+    - tool_event
+    - model_event
+    - graph_event
+    - systemd_state
+    - journald_log
+    - process_probe
+    - net_probe
+  observed_data_kinds:
+    - ui_graph_empty
+    - network_error
+    - upstream_error
+    - ui_proxy_unavailable
+    - tools_event
+    - models_event
+    - graph_event
+    - bridge_backlog_recovered
+telemetry_endpoints:
+  - /api/v1/ingest
+  - /api/v1/incidents
+  - /api/v1/stream
+regulatory_tags:
+  - partner_exposed
+  - browser_surface
+  - internal_service
+connected_system_projection:
+  freshness_threshold_ms: 300000
+  systems:
+    - system_id: regart-browser-level0
+      display_name: REGART Browser Level0
+      integration_kind: browser_level0
+      declared_data_kinds:
+        - ui_runtime
+        - browser_error
+        - bridge_backlog_status
+      connection_status:
+        connected: есть свежие browser/runtime сигналы и нет блокирующего gap
+        degraded: есть сигналы, но активен backlog или transport gap
+    - system_id: regart-ui-proxy
+      display_name: REGART UI Proxy
+      integration_kind: ui_proxy
+      declared_data_kinds:
+        - proxy_upstream
+        - proxy_health
+        - http_status
+        - systemd_state
+        - journald_log
+      connection_status:
+        connected: свежие proxy и systemd сигналы наблюдаются в Art
+        degraded: proxy виден, но есть upstream или delivery gap
+    - system_id: regart-langgraph-runtime
+      display_name: REGART LangGraph Runtime
+      integration_kind: langgraph_runtime
+      declared_data_kinds:
+        - langgraph_run
+        - tool_event
+        - model_event
+        - graph_event
+        - process_probe
+      connection_status:
+        connected: свежие runtime и graph/tool/model события наблюдаются
+        degraded: runtime частично виден, но coverage drift активен

@@ -76,6 +76,7 @@
 | `DEF-017` | `[ ]` | `E.2` | `DEF-016` | `10, 11, 17, 18, 28, 35, 37, 39` | Высокорисковые монолитные entrypoint-файлы затрудняют review, hardening и смену владельца |
 | `DEF-018` | `[ ]` | `E.3` | `DEF-017` | `10, 16, 22, 24, 28, 34, 36, 38` | Сила test-corpus неравномерна: console/browser и часть release-path ещё слабее hostile production стандарта |
 | `DEF-021` | `[ ]` | `E.4` | `DEF-018` | `05, 06, 20, 24, 38` | Нет pinned external adversarial harness для REGART-интеграции и partner-exposed hostile proof |
+| `DEF-022` | `[ ]` | `E.5` | `DEF-021` | `18, 19, 20, 28` | Подключённые внешние системы не materialize как наглядные сущности с declared-vs-observed coverage |
 
 ## Контрольные строки
 
@@ -576,6 +577,31 @@
   - pinned source manifest;
   - hostile bridge/replay/long-chain/actions evidence;
   - release/process gate, который блокирует закрытие stage без harness proof.
+
+### [ ] DEF-022 — Connected System View и declared-vs-observed truth
+- Уровень: `E.5`
+- Зависит от: `DEF-021`
+- Затронутые stage-листы:
+  - `CHECKLIST_18_ART_AGENT_RECEIVERS.md`
+  - `CHECKLIST_19_PACKS_FRAMEWORK.md`
+  - `CHECKLIST_20_PACK_REGART.md`
+  - `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md`
+- Audit basis:
+  - `docs/source/connected_system_visibility_v0_2.md`
+  - `formats/connected_system_visibility_v0_2.yaml`
+  - `docs/agent/receiver_source_coverage.md`
+  - `docs/packs/source_coverage.md`
+  - `packs/regart/manifest.yaml`
+- Что нужно сделать:
+  1. materialize Connected System View как обязательную сущность, которую видит оператор после подключения внешней системы;
+  2. заставить packs и receiver/source coverage показывать declared и observed coverage в одном контуре без двусмысленности;
+  3. ввести gap-события для invisible system и coverage drift;
+  4. пришить этот контур к Console foundation так, чтобы система не могла считаться `connected` без свежих observed signals и evidence.
+- Чем доказать закрытие:
+  - machine-readable visibility model и guard;
+  - manifest/source-coverage validation;
+  - stage18/19/20/28 gates, которые падают без connected-system contour;
+  - runtime/e2e evidence, что оператор реально видит system status, data kinds и active gaps.
 
 ## Правило применения
 1. Работа по remediation начинается с первой строки `[ ]` в порядке ведомости.

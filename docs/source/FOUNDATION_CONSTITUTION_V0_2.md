@@ -261,6 +261,41 @@
   - `docs/source/regart_adversarial_integration_harness_v0_2.md`
   - `docs/testing/defect_remediation_control_matrix_v0_2.md`
 
+## 14.8. Connected System Visibility Law (обязательный)
+- Art не имеет права считать внешнюю систему подключённой, если оператор не видит саму систему как отдельную сущность со статусом, покрытием и evidence.
+- Успешное подключение не доказывается по факту наличия pack, конфига или установленного bridge. Нужны одновременно:
+  - declared coverage;
+  - observed signals в окне свежести;
+  - понятная оператору карточка системы;
+  - активные gap-события этой системы;
+  - evidence, на котором основан статус.
+- Для каждой подключённой внешней системы обязателен `Connected System View`, в котором минимум видны:
+  - `system_id`;
+  - `display_name`;
+  - `integration_kind`;
+  - `connection_status`;
+  - `declared_data_kinds`;
+  - `observed_data_kinds`;
+  - `receiver_kinds`;
+  - `telemetry_endpoints`;
+  - `active_gap_events`;
+  - `evidence_refs`.
+- Pack и receiver контуры обязаны materialize declared-vs-observed truth:
+  - pack manifest обязан описывать `service_inventory` и `connected_system_projection`;
+  - receiver/source coverage обязан показывать, какие типы данных реально производятся и как они проецируются в Connected System View.
+- Console обязан показывать не только факт подключения, но и:
+  - какие типы данных реально приходят;
+  - какие только заявлены;
+  - какие gap-события делают систему `degraded` или `declared_only`.
+- Отсутствие Connected System View для partner-exposed, pack-based или agent-based интеграции считается release blocker.
+- Обязательные gap-события:
+  - `observability_gap.connected_system_not_visible`
+  - `observability_gap.connected_system_coverage_drift`
+- Источники детализации:
+  - `docs/source/connected_system_visibility_v0_2.md`
+  - `formats/connected_system_visibility_v0_2.yaml`
+  - `docs/governance/observability_gap_registry.md`
+
 ## 15. Product Narrative (Console)
 ### 15.1 Категория
 - Art Console является поверхностью Incident OS, а не набором независимых дашбордов.

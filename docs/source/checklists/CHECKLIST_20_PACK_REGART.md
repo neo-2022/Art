@@ -67,6 +67,11 @@ Pack REGART полностью покрывает события REGART (UI Prox
     - [ ] `systemd/journald`
     - [ ] `proc_probe/net_probe`
   - [ ] Для каждого покрытия указан механизм доставки в Art (`receiver`, `bridge`, `fixture`, `runtime harness`)
+  - [ ] manifest pack содержит `connected_system_projection` для:
+    - [ ] `regart-browser-level0`
+    - [ ] `regart-ui-proxy`
+    - [ ] `regart-langgraph-runtime`
+  - [ ] каждая проекция содержит `declared_data_kinds` и видимый оператору `display_name`
   - [ ] **Проверка (pass/fail):** `docs/packs/regart/README.md` и pack manifest содержат coverage matrix без пропусков указанных источников.
 
 - [ ] **4. Сделать:** Реализовать gap при несовместимости pack с Core: `observability_gap.pack_incompatible`.
@@ -98,6 +103,7 @@ Pack REGART полностью покрывает события REGART (UI Prox
 - [ ] docs/packs/regart/receivers_examples.md
 - [ ] docs/packs/regart/troubleshooting.md
 - [ ] docs/runbooks/pack_incompatible.md
+- [ ] docs/source/connected_system_visibility_v0_2.md
 
 ## Тестирование
 - [ ] unit/integration: fixtures → pipeline → incident (покрывает шаги 1–2)

@@ -39,6 +39,7 @@
 - baseline trust boundary hardening: [trust_boundary_hardening_v0_2.md](docs/source/trust_boundary_hardening_v0_2.md)
 - baseline browser surface hardening: [browser_surface_hardening_v0_2.md](docs/source/browser_surface_hardening_v0_2.md)
 - pinned external adversarial harness for REGART and partner-exposed proof: [regart_adversarial_integration_harness_v0_2.md](docs/source/regart_adversarial_integration_harness_v0_2.md)
+- baseline connected system visibility: [connected_system_visibility_v0_2.md](docs/source/connected_system_visibility_v0_2.md)
 - buyer due diligence triage: [buyer_due_diligence_signal_triage_v0_2.md](docs/testing/buyer_due_diligence_signal_triage_v0_2.md)
 
 ## Что такое Art
@@ -97,6 +98,7 @@ Art проектируется как `Incident OS`, где:
 - ingress/perimeter protection standard: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
 - trust boundary hardening standard: [trust_boundary_hardening_v0_2.md](docs/source/trust_boundary_hardening_v0_2.md)
 - browser surface hardening standard: [browser_surface_hardening_v0_2.md](docs/source/browser_surface_hardening_v0_2.md)
+- connected system visibility standard: [connected_system_visibility_v0_2.md](docs/source/connected_system_visibility_v0_2.md)
 - корневой индекс документации: [docs/README.md](docs/README.md)
 
 ## Контракты и API

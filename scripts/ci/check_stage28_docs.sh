@@ -8,6 +8,7 @@ required_files=(
   "docs/source/trust_boundary_hardening_v0_2.md"
   "docs/source/browser_surface_hardening_v0_2.md"
   "docs/source/regart_adversarial_integration_harness_v0_2.md"
+  "docs/source/connected_system_visibility_v0_2.md"
   "docs/source/ingress_perimeter_protection_v0_2.md"
   "docs/source/risk_register_v0_2.md"
   "docs/source/console_settings_architecture_v0_2.md"
@@ -146,6 +147,7 @@ grep -q "Settings Information Architecture Law" docs/source/FOUNDATION_CONSTITUT
 grep -q "Ingress Abuse And DDoS Defense Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "Trust Boundary And Canonical Actor Context Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "Browser Surface Hardening Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+grep -q "Connected System Visibility Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "stage38-ladder-gate" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "01..27 -> 28..38" docs/source/checklists/TRACEABILITY_V0_2.md
 
@@ -157,6 +159,7 @@ python3 -m unittest scripts.tests.test_documentation_tree -v
 bash scripts/ci/check_defect_remediation_control_matrix.sh
 bash scripts/ci/check_protective_contours.sh
 bash scripts/ci/check_regart_adversarial_harness.sh
+bash scripts/ci/check_connected_system_visibility.sh
 
 grep -q "CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 grep -q "CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md

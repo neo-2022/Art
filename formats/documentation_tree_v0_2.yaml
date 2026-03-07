@@ -1,19 +1,20 @@
 version: '1.1'
 status: ACTIVE
 root: README.md
-total_documents: 74
+total_documents: 75
 total_collection_nodes: 3
-total_markdown_links_scanned: 178
-total_tree_edges: 155
-total_file_links_in_tree: 155
-total_lines_in_tree: 10461
+total_markdown_links_scanned: 183
+total_tree_edges: 158
+total_file_links_in_tree: 158
+total_lines_in_tree: 10772
 total_lines_in_collections: 2243
-root_direct_children: 46
+root_direct_children: 47
 root_influence_documents:
 - docs/INTEGRATION.md
 - docs/README.md
 - docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
 - docs/ops/platform-support.md
+- docs/packs/source_coverage.md
 - docs/release/release_process.md
 - docs/source/Art_v1_spec_final.md
 - docs/source/FOUNDATION_CONSTITUTION_V0_2.md
@@ -23,6 +24,7 @@ root_influence_documents:
 - docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
 - docs/source/checklists/TRACEABILITY_V0_2.md
+- docs/source/connected_system_visibility_v0_2.md
 - docs/source/dna_core_determinism_performance_assurance.md
 - docs/source/regart_adversarial_integration_harness_v0_2.md
 - docs/source/risk_register_v0_2.md
@@ -47,7 +49,7 @@ nodes:
   missing_index: false
 - path: README.md
   node_type: document
-  lines: 181
+  lines: 183
   files_count: 1
   root_influence: false
   children:
@@ -61,6 +63,7 @@ nodes:
   - docs/source/trust_boundary_hardening_v0_2.md
   - docs/source/browser_surface_hardening_v0_2.md
   - docs/source/regart_adversarial_integration_harness_v0_2.md
+  - docs/source/connected_system_visibility_v0_2.md
   - docs/testing/buyer_due_diligence_signal_triage_v0_2.md
   - docs/source/Art_v1_spec_final.md
   - docs/source/FOUNDATION_CONSTITUTION_V0_2.md
@@ -164,7 +167,7 @@ nodes:
   missing_index: false
 - path: docs/README.md
   node_type: document
-  lines: 105
+  lines: 107
   files_count: 1
   root_influence: true
   children:
@@ -184,6 +187,7 @@ nodes:
   - docs/ARCHITECTURE.md
   - docs/INTEGRATION.md
   - docs/source/regart_adversarial_integration_harness_v0_2.md
+  - docs/source/connected_system_visibility_v0_2.md
   - docs/portal/PRODUCT_GUARANTEES.md
   - docs/portal/SECURITY_POSTURE.md
   - docs/ops/platform-support.md
@@ -288,7 +292,7 @@ nodes:
   missing_index: false
 - path: docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
   node_type: document
-  lines: 908
+  lines: 931
   files_count: 1
   root_influence: true
   children: []
@@ -389,7 +393,7 @@ nodes:
   missing_index: false
 - path: docs/governance/observability_gap_registry.md
   node_type: document
-  lines: 72
+  lines: 74
   files_count: 1
   root_influence: false
   children: []
@@ -564,7 +568,7 @@ nodes:
   missing_index: false
 - path: docs/portal/INDEX.md
   node_type: document
-  lines: 67
+  lines: 68
   files_count: 1
   root_influence: false
   children:
@@ -596,6 +600,7 @@ nodes:
   - docs/source/trust_boundary_hardening_v0_2.md
   - docs/source/browser_surface_hardening_v0_2.md
   - docs/source/regart_adversarial_integration_harness_v0_2.md
+  - docs/source/connected_system_visibility_v0_2.md
   - docs/portal/COMPATIBILITY_MATRIX_ART_REGART.md
   - docs/portal/DOC_AUTHORITY.md
   - docs/portal/DOC_STYLE_GUIDE.md
@@ -758,7 +763,7 @@ nodes:
   missing_index: false
 - path: docs/source/FOUNDATION_CONSTITUTION_V0_2.md
   node_type: document
-  lines: 756
+  lines: 791
   files_count: 1
   root_influence: true
   children: []
@@ -773,7 +778,7 @@ nodes:
   missing_index: false
 - path: docs/source/README.md
   node_type: document
-  lines: 80
+  lines: 83
   files_count: 1
   root_influence: true
   children: []
@@ -842,7 +847,7 @@ nodes:
   missing_index: false
 - path: docs/source/checklists/CHECKLIST_20_PACK_REGART.md
   node_type: document
-  lines: 134
+  lines: 140
   files_count: 1
   root_influence: false
   children: []
@@ -852,7 +857,7 @@ nodes:
   missing_index: false
 - path: docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
   node_type: document
-  lines: 181
+  lines: 199
   files_count: 1
   root_influence: false
   children: []
@@ -900,6 +905,18 @@ nodes:
   - README.md
   - docs/README.md
   index_target: docs/source/checklists/README.md
+  missing_index: false
+- path: docs/source/connected_system_visibility_v0_2.md
+  node_type: document
+  lines: 191
+  files_count: 1
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  index_target: docs/source/connected_system_visibility_v0_2.md
   missing_index: false
 - path: docs/source/dna_core_determinism_performance_assurance.md
   node_type: document
@@ -983,7 +1000,7 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_control_matrix_v0_2.md
   node_type: document
-  lines: 594
+  lines: 620
   files_count: 1
   root_influence: true
   children: []
@@ -994,7 +1011,7 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_ladder_v0_2.md
   node_type: document
-  lines: 287
+  lines: 289
   files_count: 1
   root_influence: true
   children: []

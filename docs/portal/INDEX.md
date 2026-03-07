@@ -50,6 +50,7 @@
 - Trust boundary hardening baseline: [trust_boundary_hardening_v0_2.md](../source/trust_boundary_hardening_v0_2.md)
 - Browser surface hardening baseline: [browser_surface_hardening_v0_2.md](../source/browser_surface_hardening_v0_2.md)
 - Pinned external adversarial harness baseline: [regart_adversarial_integration_harness_v0_2.md](../source/regart_adversarial_integration_harness_v0_2.md)
+- Connected system visibility baseline: [connected_system_visibility_v0_2.md](../source/connected_system_visibility_v0_2.md)
 - Матрица совместимости Art↔REGART: [COMPATIBILITY_MATRIX_ART_REGART.md](./COMPATIBILITY_MATRIX_ART_REGART.md)
 - Модель авторитета документов: [DOC_AUTHORITY.md](./DOC_AUTHORITY.md)
 - Стиль документации: [DOC_STYLE_GUIDE.md](./DOC_STYLE_GUIDE.md)

@@ -54,6 +54,7 @@ Machine-readable карта зависимостей:
 - обзор архитектуры: [ARCHITECTURE.md](ARCHITECTURE.md)
 - интеграция с REGART: [INTEGRATION.md](INTEGRATION.md)
 - pinned external hostile harness для REGART: [regart_adversarial_integration_harness_v0_2.md](source/regart_adversarial_integration_harness_v0_2.md)
+- connected system visibility baseline: [connected_system_visibility_v0_2.md](source/connected_system_visibility_v0_2.md)
 - product guarantees: [PRODUCT_GUARANTEES.md](portal/PRODUCT_GUARANTEES.md)
 - security posture: [SECURITY_POSTURE.md](portal/SECURITY_POSTURE.md)
 
@@ -73,6 +74,7 @@ Machine-readable карта зависимостей:
 - trust boundary hardening baseline: [trust_boundary_hardening_v0_2.md](source/trust_boundary_hardening_v0_2.md)
 - browser surface hardening baseline: [browser_surface_hardening_v0_2.md](source/browser_surface_hardening_v0_2.md)
 - pinned external adversarial harness baseline: [regart_adversarial_integration_harness_v0_2.md](source/regart_adversarial_integration_harness_v0_2.md)
+- connected system visibility baseline: [connected_system_visibility_v0_2.md](source/connected_system_visibility_v0_2.md)
 
 ### Governance и evidence
 - evidence policy: [evidence_policy.md](governance/evidence_policy.md)

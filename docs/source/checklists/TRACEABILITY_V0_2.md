@@ -74,6 +74,7 @@ Continuation stages `39..45` не считаются первым местом �
 | Trust boundary / canonical actor context | 15, 24, 33, 37 | actions, release, secure actions, production hardening | trusted-source actor context, spoofed-header negative tests, release blocker for untrusted boundary |
 | Browser surface hardening | 10, 16, 24, 28, 37, 40 | browser, panel0, release, console foundation, linux perimeter, showcase | CSP/frame/integrity baseline, browser hardening negative tests, showcase cannot weaken production browser surface |
 | Pinned external adversarial harness | 05, 06, 20, 24, 38 | REGART integration, pack runtime, release/process truth | pinned source manifest, hostile bridge/replay/long-chain/actions audit evidence, no floating checkout proof |
+| Connected system visibility / connected system view | 18, 19, 20, 28 | agent coverage, packs, REGART contour, console foundation | declared-vs-observed coverage model, pack manifest projection, operator-visible connection status, gap events for invisible/drifted systems |
 
 ## 2C. Сквозная интеграция deployment/transport контура агента
 

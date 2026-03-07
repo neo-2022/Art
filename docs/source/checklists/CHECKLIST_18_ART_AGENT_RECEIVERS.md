@@ -70,6 +70,15 @@ Core ingest/storage/pipeline — в других чек-листах.
     - [ ] `privacy_boundary`
   - [ ] **Проверка (pass/fail):** документ существует и содержит все обязательные классы и поля.
 
+- [ ] **2B. Сделать:** Зафиксировать Connected System View projection на стороне agent source coverage.
+  - [ ] `docs/agent/receiver_source_coverage.md` содержит для каждого класса источника:
+    - [ ] `produced_data_kinds`
+    - [ ] `connected_system_projection`
+  - [ ] `produced_data_kinds` перечисляет, какие типы данных этот receiver реально производит для внешней системы.
+  - [ ] `connected_system_projection` объясняет, как эти данные участвуют в Connected System View (`declared_only`, `connected`, `degraded`, coverage drift).
+  - [ ] source coverage matrix связана с `docs/source/connected_system_visibility_v0_2.md`.
+  - [ ] **Проверка (pass/fail):** документ существует, содержит оба поля для всех строк matrix, а CI gate ловит их отсутствие.
+
 - [ ] **2A. Сделать:** Зафиксировать deployment/transport topology Art Agent как обязательный закон этапа 18.
   - [ ] существует `docs/source/agent_deployment_transport_v0_2.md`
   - [ ] документ содержит обязательные модели установки:
@@ -250,6 +259,7 @@ Core ingest/storage/pipeline — в других чек-листах.
 - [ ] docs/agent/receivers_state.md
 - [ ] docs/agent/receivers_chaos.md
 - [ ] docs/source/agent_deployment_transport_v0_2.md
+- [ ] docs/source/connected_system_visibility_v0_2.md
 - [ ] docs/runbooks/receiver_paused_spool_full.md
 - [ ] docs/runbooks/receiver_permission_denied.md
 - [ ] docs/runbooks/receiver_read_failed.md

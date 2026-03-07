@@ -260,3 +260,14 @@ defects:
       - docs/source/checklists/CHECKLIST_20_PACK_REGART.md
       - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
       - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
+  - id: DEF-022
+    title: Connected systems are not materialized as visible declared-vs-observed runtime entities
+    ladder_level: E
+    execution_order: 22
+    execution_dependencies: ["DEF-021"]
+    affected_stages: ["18", "19", "20", "28"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_18_ART_AGENT_RECEIVERS.md
+      - docs/source/checklists/CHECKLIST_19_PACKS_FRAMEWORK.md
+      - docs/source/checklists/CHECKLIST_20_PACK_REGART.md
+      - docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md

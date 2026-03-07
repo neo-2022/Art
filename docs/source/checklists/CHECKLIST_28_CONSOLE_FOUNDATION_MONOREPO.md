@@ -110,6 +110,22 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] Требование: actor context (`human/agent/system`) отображается только из trusted context и не может spoof’иться через UI shell.
   - [ ] Проверка (pass/fail): foundation docs/tests подтверждают browser hardening baseline и trusted actor context negative path.
   - [ ] Артефакт результата: browser hardening foundation diff + negative-path test log.
+- [ ] 19. Сделать: заложить Connected System View как обязательный foundation contour для внешних систем.
+  - [ ] Требование: после успешного подключения внешней системы Console показывает отдельную сущность системы, а не только косвенные события.
+  - [ ] Требование: минимум видны:
+    - [ ] `display_name`
+    - [ ] `integration_kind`
+    - [ ] `connection_status`
+    - [ ] `declared_data_kinds`
+    - [ ] `observed_data_kinds`
+    - [ ] `receiver_kinds`
+    - [ ] `telemetry_endpoints`
+    - [ ] `active_gap_events`
+    - [ ] `evidence_refs`
+  - [ ] Требование: статус `connected` запрещён без свежих observed signals.
+  - [ ] Требование: drift между declared и observed coverage показывается явно, а не прячется за зелёным статусом.
+  - [ ] Проверка (pass/fail): foundation docs/tests подтверждают наличие Connected System View law и обязательных полей, а docs gate валится при отсутствии `docs/source/connected_system_visibility_v0_2.md`.
+  - [ ] Артефакт результата: foundation diff + connected-system gate log.
 
 ## Документация (RU)
 - [ ] docs/source/FOUNDATION_CONSTITUTION_V0_2.md
@@ -124,6 +140,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/source/agent_workspace_model_v0_2.md
 - [ ] docs/source/browser_surface_hardening_v0_2.md
 - [ ] docs/source/trust_boundary_hardening_v0_2.md
+- [ ] docs/source/connected_system_visibility_v0_2.md
 
 ## Тестирование
 - [ ] unit: пакеты `packages/*` покрыты тестами и запускаются в CI.
@@ -166,6 +183,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Settings framework (с поиском) и audio effects framework (replace/preview/clear) реализованы и покрыты тестами.
 - [ ] Полный двуязычный foundation UI подтверждён не только toggle, но и parity всех surface states.
 - [ ] Browser surface hardening и trusted actor context закреплены как foundation laws, а не как поздний optional hardening.
+- [ ] Connected System View заложен как обязательный foundation contour для всех внешних систем и pack-based integrations.
 - [ ] Модель взаимодействия человека с агентом заложена в Console foundation без “магического чата”.
 - [ ] Layer E / Agent Workspace заложен как ранний foundation contour, а не отложен до поздних этапов.
 - [ ] Карта меню настроек проекта зафиксирована как расширяемый контракт уровней и policy-lock.
