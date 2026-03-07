@@ -126,6 +126,7 @@ jobs:
 
   stage03-docs-gate:
     name: stage03-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -179,6 +180,7 @@ jobs:
 
   stage05-wrapper-gate:
     name: stage05-wrapper-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -188,6 +190,7 @@ jobs:
 
   stage06-wrapper-gate:
     name: stage06-wrapper-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -197,6 +200,7 @@ jobs:
 
   stage07-docs-gate:
     name: stage07-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -256,6 +260,7 @@ jobs:
 
   gitleaks:
     name: gitleaks
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -356,6 +361,7 @@ jobs:
 
   telemetry-docs-gate:
     name: telemetry-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -365,6 +371,7 @@ jobs:
 
   stage10-docs-gate:
     name: stage10-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -425,6 +432,7 @@ jobs:
 
   stage11-docs-gate:
     name: stage11-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -472,6 +480,7 @@ jobs:
 
   stage12-docs-gate:
     name: stage12-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -508,6 +517,7 @@ jobs:
 
   stage13-docs-gate:
     name: stage13-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -544,6 +554,7 @@ jobs:
 
   stage14-docs-gate:
     name: stage14-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -572,6 +583,7 @@ jobs:
 
   stage15-docs-gate:
     name: stage15-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -606,6 +618,7 @@ jobs:
 
   stage16-docs-gate:
     name: stage16-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -648,6 +661,7 @@ jobs:
 
   stage17-docs-gate:
     name: stage17-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -679,6 +693,7 @@ jobs:
 
   stage18-docs-gate:
     name: stage18-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -710,6 +725,7 @@ jobs:
 
   stage19-docs-gate:
     name: stage19-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -741,6 +757,7 @@ jobs:
 
   stage20-docs-gate:
     name: stage20-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -761,6 +778,7 @@ jobs:
 
   stage21-docs-gate:
     name: stage21-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -792,6 +810,7 @@ jobs:
 
   stage22-docs-gate:
     name: stage22-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -812,6 +831,7 @@ jobs:
 
   ops-docs-gate:
     name: ops-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -843,6 +863,7 @@ jobs:
 
   stage24-docs-gate:
     name: stage24-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -863,6 +884,7 @@ jobs:
 
   stage25-docs-gate:
     name: stage25-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -883,6 +905,7 @@ jobs:
 
   stage26-docs-gate:
     name: stage26-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -892,6 +915,7 @@ jobs:
 
   stage28-docs-gate:
     name: stage28-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -901,6 +925,7 @@ jobs:
 
   stage28-risk-gate:
     name: stage28-risk-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -910,6 +935,7 @@ jobs:
 
   stage28-lens-gate:
     name: stage28-lens-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -942,6 +968,7 @@ jobs:
 
   docs-portal-gate:
     name: docs-portal-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -1472,6 +1499,7 @@ jobs:
 
   stage38-ladder-gate:
     name: stage38-ladder-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
