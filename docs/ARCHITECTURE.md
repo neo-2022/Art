@@ -4,7 +4,9 @@
 - [Art_v1_spec_final.md](source/Art_v1_spec_final.md)
 - [FOUNDATION_CONSTITUTION_V0_2.md](source/FOUNDATION_CONSTITUTION_V0_2.md)
 - [CHECKLIST_00_MASTER_ART_REGART.md](source/checklists/CHECKLIST_00_MASTER_ART_REGART.md)
-- [REGART -  LangGraph  взаимодействие с Art описание.md](source/REGART%20-%20%20LangGraph%20%20взаимодействие%20с%20Art%20описание.md)
+- [REGART -  LangGraph  взаимодействие с Art описание.md](source/REGART -  LangGraph  взаимодействие с Art описание.md)
+- [defect_remediation_ladder_v0_2.md](testing/defect_remediation_ladder_v0_2.md)
+- `formats/root_decision_tree_dependencies.yaml`
 
 ## Общая картина
 
@@ -58,6 +60,7 @@ Art строится как единый продукт с тремя архит
 - degraded-path встроен в основную архитектуру
 - переход к следующему этапу запрещён без подтверждённого закрытия текущего
 - платформенные различия разрешены только в packaging/install/runtime profiles, но не в бизнес-логике
+- порядок remediation определяется корневым деревом решений и дефектовочной лестницей, а не “следующим номером этапа”
 
 ## Граница с REGART
 - Art и REGART остаются отдельными репозиториями

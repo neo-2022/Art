@@ -64,3 +64,5 @@ if errors:
 
 print('docs master traceability gate: OK')
 PY
+
+bash scripts/ci/check_root_decision_tree_sync.sh

@@ -5,6 +5,8 @@
 - [FOUNDATION_CONSTITUTION_V0_2.md](../source/FOUNDATION_CONSTITUTION_V0_2.md)
 - [CHECKLIST_00_MASTER_ART_REGART.md](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md)
 - [INTEGRATION.md](../INTEGRATION.md)
+- [PROJECT_HISTORY_AND_CONCEPTS.md](../foundation/PROJECT_HISTORY_AND_CONCEPTS.md)
+- `../../formats/root_decision_tree_dependencies.yaml`
 
 Этот портал является презентационным и навигационным слоем над каноном.  
 Его задача — быстро объяснить систему, не ослабляя реальные правила проекта.
@@ -17,6 +19,13 @@
 - История и корпус концепций: [PROJECT_HISTORY_AND_CONCEPTS.md](../foundation/PROJECT_HISTORY_AND_CONCEPTS.md)
 - Революционные гипотезы: [revolutionary_hypotheses.md](../foundation/revolutionary_hypotheses.md)
 - Radar технологий: [frontier_tech_radar.md](../foundation/frontier_tech_radar.md)
+
+### Корневое дерево решений
+- Корневой закон: [FOUNDATION_CONSTITUTION_V0_2.md](../source/FOUNDATION_CONSTITUTION_V0_2.md)
+- Исторический корпус: [PROJECT_HISTORY_AND_CONCEPTS.md](../foundation/PROJECT_HISTORY_AND_CONCEPTS.md)
+- Базовый предметный spec: [Art_v1_spec_final.md](../source/Art_v1_spec_final.md)
+- Корневой интеграционный spec: [REGART -  LangGraph  взаимодействие с Art описание.md](../source/REGART -  LangGraph  взаимодействие с Art описание.md)
+- Дефектовочная лестница: [defect_remediation_ladder_v0_2.md](../testing/defect_remediation_ladder_v0_2.md)
 
 ### Продукт
 - Архитектура: [ARCHITECTURE.md](../ARCHITECTURE.md)

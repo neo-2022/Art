@@ -24,6 +24,20 @@
 - radar перспективных технологий: [frontier_tech_radar.md](foundation/frontier_tech_radar.md)
 - lens audit report: [lens_audit_report.md](foundation/lens_audit_report.md)
 
+## Корень Дерева Решений
+- `docs/source/FOUNDATION_CONSTITUTION_V0_2.md`
+- `docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md`
+- `docs/source/Art_v1_spec_final.md`
+- `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
+
+Эти документы задают корневой смысл и законы проекта. Их изменение без синхронного обновления зависимого контура запрещено.
+
+Machine-readable карта зависимостей:
+- `../formats/root_decision_tree_dependencies.yaml`
+
+Автоматический контроль:
+- `scripts/ci/check_root_decision_tree_sync.sh`
+
 ## Основные разделы
 
 ### Продукт и архитектура

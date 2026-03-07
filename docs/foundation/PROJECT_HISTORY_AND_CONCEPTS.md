@@ -4,12 +4,31 @@
 - `docs/source/Art_v1_spec_final.md`
 - `docs/source/FOUNDATION_CONSTITUTION_V0_2.md`
 - `docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`
+- `docs/testing/defect_remediation_ladder_v0_2.md`
+- `formats/root_decision_tree_dependencies.yaml`
 - `docs/foundation/revolutionary_hypotheses.md`
 - `docs/foundation/frontier_tech_radar.md`
 - `docs/foundation/lens_audit_report.md`
 
 Последняя актуализация: 2026-03-06
 Статус: ACTIVE
+
+## 0. Роль в корне дерева решений
+
+Этот документ является вторым по приоритету корневым документом проекта.
+
+Он отвечает за:
+- исторический корпус замысла;
+- утверждённые differentiators;
+- смысловую непрерывность проекта между стадиями, аудитом и remediation.
+
+Он не задаёт process law и не подменяет конституцию. Если возникает конфликт между историческим корпусом и обязательным execution-law v0.2, приоритет имеет:
+1. `docs/source/FOUNDATION_CONSTITUTION_V0_2.md`
+2. `docs/testing/defect_remediation_ladder_v0_2.md`
+3. этот документ
+
+Любое изменение этого файла требует синхронного обновления зависимых документов по карте:
+- `formats/root_decision_tree_dependencies.yaml`
 
 ## 1. Зачем нужен этот документ
 

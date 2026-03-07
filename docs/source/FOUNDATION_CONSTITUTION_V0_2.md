@@ -171,6 +171,28 @@
   - `docs/testing/production_adversarial_validation_law.md`
   - `docs/testing/full_line_by_line_audit_program_v0_2.md`
 
+## 14.3. Root Decision Tree And Dependent Sync Law (обязательный)
+- Корень дерева решений проекта задаётся только следующими документами, в порядке приоритета:
+  1. `docs/source/FOUNDATION_CONSTITUTION_V0_2.md`
+  2. `docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md`
+  3. `docs/source/Art_v1_spec_final.md`
+  4. `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
+- Ствол дерева решений состоит из трёх обязательных несущих слоёв:
+  1. полный аудит;
+  2. дефектовочная ведомость;
+  3. `MASTER`
+- Крона дерева решений состоит из всех stage checklist и всех производных артефактов проекта: код, тесты, contracts, runbooks, ops/security/privacy/docs слои.
+- Эти документы определяют законы, смысл, базовую предметную модель и интеграционную рамку Art.
+- При конфликте источников приоритет имеет более высокий уровень корня; для v0.2 закон и порядок remediation определяются этой конституцией и `docs/testing/defect_remediation_ladder_v0_2.md`.
+- Изменение любого документа из корня запрещено без синхронного обновления зависимых документов в том же изменении.
+- Machine-readable карта зависимостей корня задаётся в `formats/root_decision_tree_dependencies.yaml`.
+- CI обязан блокировать merge, если root-документ изменён без обновления зависимых файлов согласно этой карте.
+- Автоматизация не имеет права подменять смысловую синхронизацию косметическим touch-изменением: зависимый документ должен быть реально приведён в актуальное состояние.
+- Источники детализации:
+  - `docs/testing/defect_remediation_ladder_v0_2.md`
+  - `formats/root_decision_tree_dependencies.yaml`
+  - `scripts/ci/check_root_decision_tree_sync.sh`
+
 ## 15. Product Narrative (Console)
 ### 15.1 Категория
 - Art Console является поверхностью Incident OS, а не набором независимых дашбордов.

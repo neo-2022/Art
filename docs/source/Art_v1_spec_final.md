@@ -1,5 +1,16 @@
 # Art v1 — Полная мастер-спецификация (финальная редакция)
 
+## Source of truth и роль в дереве решений v0.2
+- Этот документ остаётся корневым документом проекта третьего приоритета.
+- Он фиксирует базовую предметную модель v1: сигналы, ingest, incidents, storage, agent, rules, actions и развёртывание.
+- Для laws, remediation-order, differentiators, Truth Modes, Console Foundation и execution-дисциплины v0.2 приоритет имеют:
+  - `docs/source/FOUNDATION_CONSTITUTION_V0_2.md`
+  - `docs/testing/defect_remediation_ladder_v0_2.md`
+  - `docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`
+- Этот документ нельзя читать как единственный актуальный источник текущего v0.2 runtime contour без вышестоящих документов.
+- Любое изменение этого файла требует синхронного обновления зависимых документов по карте:
+  - `formats/root_decision_tree_dependencies.yaml`
+
 ## Статус документа
 Нормативная спецификация (RFC-стиль). В тексте используются только формулировки **MUST** и явные пометки **«вне v1»**. Двусмысленные слова («опционально», «как в другой версии», «см. ранее») не используются.
 

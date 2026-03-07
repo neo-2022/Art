@@ -10,6 +10,7 @@ A) Полный запрет опциональности:
 - Art: `docs/source/Art_v1_spec_final.md`
 - REGART ↔ Art: `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
 - Дефектовочная ведомость remediation: `docs/testing/defect_remediation_ladder_v0_2.md`
+- Корневая карта зависимостей: `formats/root_decision_tree_dependencies.yaml`
 - REGART UI/Debugger wrapper (в Art): `docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`
 - REGART Bridge wrapper (в Art): `docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`
 - REGART UI/Debugger source-of-truth (внешний репозиторий): `my_langgraph_agent/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`  
@@ -198,17 +199,33 @@ A) Полный запрет опциональности:
 ### A15) Дерево решений remediation
 После завершения полного построчного audit coverage дальнейшая работа строится только по такому дереву:
 - корневые документы проекта;
-- полный аудит;
-- дефектовочная ведомость;
-- `MASTER`;
-- stage checklist;
-- код / тесты / runtime / evidence.
+- ствол:
+  - полный аудит;
+  - дефектовочная ведомость;
+  - `MASTER`;
+- крона:
+  - stage checklist;
+  - код / тесты / runtime / evidence.
 
 Это означает:
 - `MASTER` не имеет права задавать remediation-order самостоятельно;
 - remediation-order берётся из `docs/testing/defect_remediation_ladder_v0_2.md`;
 - если номер следующего stage в таблице не совпадает с активным уровнем дефектовочной лестницы, приоритет имеет дефектовочная лестница;
 - повторное закрытие reopened stages запрещено, пока дефектовочная лестница не разрешает переход на этот уровень.
+
+### A16) Автоматическая синхронизация корневых документов
+Корневые документы проекта заданы в `formats/root_decision_tree_dependencies.yaml`.
+
+Обязательное правило:
+1. изменение любого корневого документа требует синхронного обновления зависимых файлов в том же изменении;
+2. зависимые файлы определяются machine-readable картой, а не “по памяти”;
+3. CI-gate `scripts/ci/check_root_decision_tree_sync.sh` блокирует merge при рассинхроне;
+4. cosmetic touch без реального обновления зависимого документа не считается допустимой синхронизацией.
+
+Этот закон нужен, чтобы:
+- `MASTER` не устаревал относительно канона;
+- дефектовочная ведомость не расходилась с корнем дерева;
+- архитектурные и интеграционные обзоры не жили отдельной жизнью.
 
 ---
 
