@@ -23,7 +23,7 @@
 | Ветка-источник истины | `main` |
 | Текущий baseline | `v0.2.0-rc.2` |
 | Статус релиза | production candidate, `NO-GO` до доказательства protective contours |
-| Активный corrective baseline | `DEF-001 -> stage11 (durable Core storage/recovery, live corruption/read_only contour, live kill -9 during ingest chaos и storage pressure / disk exhaustion contour уже materialized; локально открытыми остаются 11.3 concurrency proof и 11.4 VACUUM/systemd production-proof)` |
+| Активный corrective baseline | `DEF-001 -> stage11 (durable Core storage/recovery, live corruption/read_only contour, live kill -9 during ingest chaos, storage pressure / disk exhaustion contour и stage-level concurrency proof уже materialized; локально открытым остаётся 11.4 VACUUM/systemd production-proof)` |
 | Следующие structural defects в стволе | `DEF-017` high-risk monolith decomposition, `DEF-018` hostile e2e depth hardening, `DEF-019/020` trust boundary и browser surface hardening |
 | Execute-gated платформы | Ubuntu native, Docker runtime, Kubernetes runtime |
 | Расширенная Linux-матрица | validate-only до включения выделенных runner'ов |

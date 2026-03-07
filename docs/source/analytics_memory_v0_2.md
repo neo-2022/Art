@@ -33,6 +33,5 @@ curl -s "http://127.0.0.1:7070/api/v2/analytics/summary?window_minutes=120&top=5
 - hostile backup/restore доказательство на полном `Core state` уже есть;
 - live runtime-контур `corruption -> 503/retry_after_ms -> restore -> read_only fallback` уже доказан;
 - live-process chaos сценарий `kill -9` во время ingest уже доказан отдельным smoke;
-- открытыми в `stage11` остаются уже не `storage pressure / disk exhaustion`, а:
-  - concurrency proof для долгой многопоточной нагрузки;
-  - production-proof для `VACUUM/systemd`.
+- concurrency proof для долгой многопоточной нагрузки теперь тоже зафиксирован отдельным stage-level evidence на `8 writer / 4 reader / 10000 ops`;
+- открытым в `stage11` остаётся production-proof для `VACUUM/systemd`.

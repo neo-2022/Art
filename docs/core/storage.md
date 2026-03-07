@@ -13,6 +13,11 @@
   - `DNA-derived state` (`dna_clusters`) и `evidence_blocks` сохраняются и поднимаются обратно после рестарта;
   - `analytics` и `counters` теперь сохраняются в SQLite как primary recovery state, а `CORE_ANALYTICS_STATE_PATH` остаётся только legacy mirror/import path;
 - `WAL` и `busy_timeout` для SQLite basement включаются при старте;
+- concurrency proof `11.3` теперь materialize отдельным runtime-evidence:
+  - `8 writer` + `4 reader`;
+  - `10000` операций как фиксированный closure-критерий;
+  - отдельный JSON-лог фиксирует `writers/readers/ops_target/elapsed_seconds/accepted/committed/db_count`;
+  - отсутствие `database is locked` как фатальной ошибки теперь доказывается не только unit-assertions, но и stage-level evidence `stage11_step3_concurrency.log`;
 - backup-каталог теперь вычисляется не только по профилю, но и по конкретному пути к БД, чтобы разные экземпляры `Core` не делили один backup-root;
 - restart-proof для `v1/v2`, `incidents`, `audit chain`, `fingerprint/source indexes`, `dna/evidence` и аналитики зафиксирован в evidence `stage11_core_sqlite_restart.log`.
 - hostile backup/restore proof для полного состояния `art-core` после corruption теперь тоже зафиксирован в evidence `stage11_core_sqlite_hostile_recovery.log`.

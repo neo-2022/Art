@@ -426,7 +426,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Storage integration
         run: |
-          python3 scripts/tests/test_storage_stage11.py -k test_concurrency_writers_readers_10000_ops
+          python3 scripts/tests/storage_concurrency_runtime.py
           python3 scripts/tests/test_storage_stage11.py -k test_vacuum_safe_runs_when_ingest_inactive
           python3 -m unittest scripts.tests.test_stage11_systemd_vacuum
 

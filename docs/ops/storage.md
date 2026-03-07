@@ -5,9 +5,13 @@
 - этот документ фиксирует обязательный hostile-path для полного `stage11`;
 - живой `kill -9` сценарий вокруг настоящего `art-core` теперь подтверждён отдельным runtime smoke и evidence;
 - hostile storage-pressure runtime smoke теперь тоже подтверждён отдельным live contour и evidence;
+- concurrency baseline для storage теперь тоже подтверждён stage-level evidence:
+  - `8 writer`;
+  - `4 reader`;
+  - `10000 ops`;
+  - явный JSON-лог с длительностью и инвариантами;
 - фактический `disk full` hostile proof и archive/prune discipline уже materialized в live runtime smoke;
 - открытым corrective-блокером `stage11` остаются уже не storage pressure, а:
-  - concurrency proof (`11.3`);
   - production-proof для `VACUUM/systemd` (`11.4`).
 
 Сценарии:

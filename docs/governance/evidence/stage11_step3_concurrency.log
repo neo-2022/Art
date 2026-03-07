@@ -1,10 +1,8 @@
-# stage11 storage-integration
-2026-03-07T23:05:31+03:00
 {
   "writers": 8,
   "readers": 4,
   "ops_target": 10000,
-  "elapsed_seconds": 28.806,
+  "elapsed_seconds": 26.061,
   "accepted": 10000,
   "committed": 10000,
   "db_count": 10000,

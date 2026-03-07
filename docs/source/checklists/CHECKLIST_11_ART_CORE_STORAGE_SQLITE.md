@@ -55,13 +55,13 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [x] restore процедура включает integrity check после восстановления
   - [x] **Проверка (pass/fail):** существует `docs/ops/backup_restore_sqlite.md` и содержит все пункты выше явно (с конкретными значениями частоты/N/пути).
 
-- [ ] **3. Сделать:** Реализовать concurrency тест многопоточной записи/чтения SQLite.
-  - [ ] тест запускает ≥ 8 параллельных writer потоков
-  - [ ] тест запускает ≥ 4 параллельных reader потоков
-  - [ ] тест выполняется ≥ 60 секунд (или ≥ 10000 операций; выбрать один критерий и зафиксировать)
-  - [ ] тест проверяет отсутствие “database is locked” как фатальной ошибки (ошибки должны быть обработаны по политике ретраев)
-  - [ ] тест проверяет корректность данных (счётчики accepted/committed совпадают по инварианту)
-  - [ ] **Проверка (pass/fail):** integration тест зелёный в CI и его лог/вывод фиксирует параметры (writers/readers/длительность).
+- [x] **3. Сделать:** Реализовать concurrency тест многопоточной записи/чтения SQLite.
+  - [x] тест запускает ≥ 8 параллельных writer потоков
+  - [x] тест запускает ≥ 4 параллельных reader потоков
+  - [x] тест выполняется ≥ 60 секунд (или ≥ 10000 операций; выбрать один критерий и зафиксировать)
+  - [x] тест проверяет отсутствие “database is locked” как фатальной ошибки (ошибки должны быть обработаны по политике ретраев)
+  - [x] тест проверяет корректность данных (счётчики accepted/committed совпадают по инварианту)
+  - [x] **Проверка (pass/fail):** integration тест зелёный в CI и его лог/вывод фиксирует параметры (writers/readers/длительность).
 
 - [ ] **4. Сделать:** Реализовать VACUUM по расписанию: каждое воскресенье 03:30 (systemd timer).
   - [ ] существует systemd unit `art-vacuum.service`
@@ -131,14 +131,14 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/runbooks/storage_pressure_high.md
 
 ## Тестирование
-- [ ] integration: concurrency (шаг 3)
+- [x] integration: concurrency (шаг 3)
 - [x] chaos: kill -9 (шаг 5)
 - [x] chaos: disk full (шаг 5)
 - [x] chaos: WAL corruption (шаг 5)
 - [x] chaos: storage pressure / high-watermark / critical-watermark (шаг 6)
 
 ## CI gate
-- [ ] CI job `storage-integration` существует и запускает concurrency тест; job зелёный
+- [x] CI job `storage-integration` существует и запускает concurrency тест; job зелёный
 - [x] CI job `storage-chaos-smoke` существует и запускает минимум 1 smoke прогон chaos сценариев; job зелёный
 - [ ] CI job `stage11-docs-gate` существует и запускает `scripts/ci/check_storage_stage11_docs.sh`, который:
   - [ ] проверяет существование файлов из раздела “Документация (RU)”
@@ -153,7 +153,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 ## DoD
 - [ ] Recovery по corruption детерминирован и задокументирован; события `observability_gap.*` зарегистрированы и имеют runbook.
 - [ ] Backup/restore политика определена и выполнима.
-- [ ] Concurrency тест зелёный в CI.
+- [x] Concurrency тест зелёный в CI.
 - [ ] VACUUM timer/unit существуют и smoke проверены.
 - [x] Chaos сценарии воспроизводимы и имеют pass/fail критерии; минимум smoke прогоняется в CI.
 - [x] Защита от долгого заполнения storage материализована как отдельный hostile contour: предупреждение до `disk full`, controlled degradation, runbook и smoke доказательство.

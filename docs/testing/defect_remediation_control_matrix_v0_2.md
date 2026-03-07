@@ -106,6 +106,7 @@
   - `docs/governance/evidence/stage11_core_sqlite_hostile_recovery.log`
   - `docs/governance/evidence/stage11_core_backup_scope_isolation.log`
   - `docs/governance/evidence/stage11_step2_backup_policy.log`
+  - `docs/governance/evidence/stage11_step3_concurrency.log`
 - Что нужно сделать:
   1. довести durable persistence не только для `events/incidents/audit`, но и для derived/runtime state;
   2. материализовать recovery contour для fingerprint/source indexes, `dna/evidence` и аналитики;
@@ -126,7 +127,8 @@
   - live-process contour `kill -9 Core во время ingest` теперь материализован отдельным runtime smoke `scripts/tests/storage_kill9_runtime.sh` и evidence `stage11_kill9_runtime.log`;
   - ранний `storage pressure` contour теперь тоже materialized: `high/critical watermarks`, `reserve free space`, write-shed на `high`, жёсткий `503 + retry_after_ms` на `critical`, recovery после возврата свободного места и live evidence `stage11_storage_pressure_runtime.log`;
   - для `stage11` blocker `storage pressure / disk exhaustion` уже снят: фактический `disk full` hostile proof и archive/prune discipline доказаны live runtime smoke;
-  - сам `DEF-001` остаётся открыт, потому что следующие локальные blockers `stage11` теперь сместились на concurrency proof (`11.3`) и production-proof для `VACUUM/systemd` (`11.4`).
+  - stage-level concurrency proof `11.3` теперь тоже закрыт отдельным runtime-evidence: `8 writer / 4 reader / 10000 ops / 26.061s`, без fatal `database is locked`, с инвариантом `accepted=committed=db_count`, а `storage-integration` запускает этот contour напрямую;
+  - сам `DEF-001` остаётся открыт, потому что следующий локальный blocker `stage11` теперь уже один: production-proof для `VACUUM/systemd` (`11.4`).
 
 ### [ ] DEF-002 — Durable spool у `Agent`
 - Уровень: `A.2`
