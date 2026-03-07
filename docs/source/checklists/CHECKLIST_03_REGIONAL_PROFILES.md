@@ -81,10 +81,10 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [x] `action_ref` указывает на конкретный runbook в репозитории: `docs/runbooks/profile_violation.md`
   - [x] **Проверка (pass/fail):** `docs/compliance/profile_guards.md` содержит раздел `observability_gap.profile_violation` с перечисленными требованиями; `docs/runbooks/profile_violation.md` существует.
 
-- [ ] **8. Сделать:** Зафиксировать связку Stage 03 ↔ Stage 02 (privacy).
-  - [ ] retention/DSR различия по профилям в compliance-доках ссылаются на `docs/privacy/regional_profiles.md`
-  - [ ] при конфликте правил — генерируется `observability_gap.profile_violation`
-  - [ ] **Проверка (pass/fail):** в `docs/compliance/profiles.md` есть раздел `privacy linkage` со ссылками и правилом конфликта → `observability_gap.profile_violation`.
+- [x] **8. Сделать:** Зафиксировать связку Stage 03 ↔ Stage 02 (privacy).
+  - [x] retention/DSR различия по профилям в compliance-доках ссылаются на `docs/privacy/regional_profiles.md`
+  - [x] при конфликте правил — генерируется `observability_gap.profile_violation`
+  - [x] **Проверка (pass/fail):** в `docs/compliance/profiles.md` есть раздел `privacy linkage` со ссылками и правилом конфликта → `observability_gap.profile_violation`.
 
 - [ ] **9. Сделать:** Описать офлайн-обновление packs для `airgapped` как фиксированную процедуру.
   - [ ] доставка архива packs

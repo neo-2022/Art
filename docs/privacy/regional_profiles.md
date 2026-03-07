@@ -20,13 +20,14 @@
 ## Механизм выбора профиля
 
 Механизм выбора профиля:
-- config key: `effective_profile_id`
-- default profile: `global`
+- config key: `profile_id`
+- effective profile: `effective_profile_id`
+- silent default profile запрещён
 
 Жёсткое правило:
 - выбор профиля должен быть явным и auditable;
 - profile switch не должен происходить “по неявной эвристике”;
-- если профиль не определён, используется только `global`.
+- если профиль не определён или невалиден, запуск и apply-config блокируются, а не переключаются на `global`.
 
 ## Правило различий
 

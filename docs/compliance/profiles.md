@@ -165,5 +165,7 @@
 | airgapped | airgapped | validate | yes |
 
 ## privacy linkage
-- Различия retention/DSR синхронизируются с `docs/privacy/regional_profiles.md`.
-- Конфликт правил -> `observability_gap.profile_violation`.
+- Различия retention/DSR по профилям синхронизируются с `docs/privacy/regional_profiles.md`.
+- Для `eu`, `ru` и `airgapped` privacy baseline разрешено только ужесточение ограничений относительно `global`.
+- Конфликт между compliance profile и privacy profile запрещён и должен приводить к `observability_gap.profile_violation`.
+- До старта ingest эффективный профиль обязан пройти одновременно compliance guards и privacy guards.
