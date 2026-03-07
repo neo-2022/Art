@@ -96,3 +96,18 @@
 | `docs/schemas/index.md` | REVIEWED | WEAK | Индекс схем ограничен только v1 набором и не отражает v2 contract surface, что ломает целостность machine-readable картины проекта. | 08, 29, 30 |
 | `generated/ts/src/index.ts` | REVIEWED | WEAK | Generated TS слой покрывает только ingest primitives; он не представляет реальный breadth contract surface проекта. | 08, 29, 30 |
 | `generated/rust/src/lib.rs` | REVIEWED | WEAK | Generated Rust слой аналогично урезан до ingest primitives, что создаёт ложное ощущение полноты generated clients. | 08, 29, 30 |
+
+## Слой 4 — Runtime/code hot spots и известные слабые основания
+
+| Файл | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `tests/platform/vm/run_vm_smoke.sh` | REVIEWED | MISMATCH | `execute` path через `vagrant ssh` по-прежнему гоняет `vm smoke placeholder`; VM surface заявлен сильнее, чем реализован. | 37, 38 |
+| `docs/ops/operational_debt_register.md` | REVIEWED | MISMATCH | В реестре всё ещё живёт `Stage37 template debt placeholder`, а не реальный production debt corpus. | 37, 38 |
+| `packs/regart/payload/README.md` | REVIEWED | MISMATCH | REGART payload остаётся placeholder, хотя интеграционный контур уже заявлен как зрелый. | 19, 20 |
+| `packages/local-stores/src/index.ts` | REVIEWED | MISMATCH | Рядом с реальными spatial функциями сохраняется `spatialStoreStub()` со статусом `stubbed`; это консервирует неполную зрелость stage35 прямо в runtime surface. | 35, 38 |
+| `packages/local-stores/test/local-stores.test.mjs` | REVIEWED | MISMATCH | Тест закрепляет `stubbed` как допустимый результат, то есть защищает слабое основание вместо его устранения. | 35, 38 |
+| `packages/i18n/src/index.ts` | REVIEWED | MISMATCH | RU-слой неполон: `Command Center`, `Event River`, `Incident Room`, `Scenario View`, `Time Field`, `Audit Explorer`, `Action Studio`, а также `verified/failed/unavailable` остаются на английском, несмотря на обязательную двуязычность. | 16, 28, 30 |
+| `apps/console-web/src/main.ts` | REVIEWED | WEAK | В UI остаются локальные hardcoded строки и обходы словаря: `Проверить audit chain`, `Flow: Проверить audit chain`, `Route:`, fixed placeholders. Bilingual/i18n discipline ещё не доведена до полной чистоты. | 16, 28, 30, 40 |
+| `scripts/tests/stage32_audit_ux_anti_breakage_e2e.sh` | REVIEWED | MISMATCH | Тест может завершиться `PASS (fallback)` и подложить placeholder PNG, то есть anti-breakage success допускает отсутствие реального browser path. При реальном запуске gate зелёный, но это не отменяет ложный fallback-green path. | 32, 38 |
+| `scripts/tests/stage33_action_flow_anti_breakage_e2e.sh` | REVIEWED | MISMATCH | Аналогично stage32: placeholder fallback разрешает PASS без реального e2e исполнения. Дополнительно выявлена хрупкость test harness: при повторном запуске возможен `EADDRINUSE` на playwright socket. | 33, 38 |
+| `tests/platform/contract/generate_evidence_bundle.sh` | REVIEWED | MISMATCH | Evidence bundle всё ещё генерирует `status=placeholder` для большой части natural surfaces; это не production-grade evidence semantics. | 24, 37, 38 |
