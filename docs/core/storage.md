@@ -28,19 +28,14 @@
   - pressure housekeeping -> `observability_gap.storage_archive_prune_activated`;
   - после возврата свободного места `Core` возвращается в `normal` без ручной правки БД;
   - это подтверждено отдельным live runtime smoke и evidence `stage11_storage_pressure_runtime.log`.
-- При этом storage contour `stage11` всё ещё не доведён до полного production-состояния:
-  - live corruption/read-only contour уже материализован end-to-end:
-    - corruption на ingest даёт `HTTP 503 + retry_after_ms`;
-    - `observability_gap.storage_corrupted` попадает в snapshot/stream;
-    - при наличии валидного backup выполняется restore и следующий retry проходит;
-    - при отсутствии валидного backup Core уходит в `read_only` и фиксирует `observability_gap.storage_read_only`;
-  - backup cadence больше не привязан к каждой записи: живой `Core` держит фиксированное окно `15 минут`, а force-refresh допускается только на startup/profile-switch;
-  - backup/restore/systemd path уже доказан по hostile proof и smoke;
-  - live-process hostile contour `kill -9 Core во время живого ingest` теперь тоже материализован отдельным runtime smoke и evidence `stage11_kill9_runtime.log`;
-  - оставшиеся blocker'ы `stage11` теперь уже не относятся к `storage pressure`;
-  - открытыми остаются только:
-    - `11.3` concurrency proof как обязательный stage-level evidence contour;
-    - `11.4` production-proof для `VACUUM/systemd`.
+- Storage contour `stage11` теперь доведён до полного production-baseline:
+  - live corruption/read-only contour материализован end-to-end;
+  - backup cadence `15 минут` enforced в runtime;
+  - backup/restore/systemd path доказан hostile proof и отдельным runtime smoke;
+  - live-process hostile contour `kill -9 Core во время живого ingest` доказан отдельным runtime smoke и evidence `stage11_kill9_runtime.log`;
+  - concurrency proof `8 writer / 4 reader / 10000 ops` подтверждён отдельным stage-level evidence `stage11_step3_concurrency.log`;
+  - production-proof для `VACUUM/systemd` подтверждён отдельным runtime smoke/evidence `stage11_step4_vacuum_runtime.log`.
+- Downstream continuation durable storage/recovery остаётся уже не в `stage11`, а в `stage23` и `stage37`.
 
 ## Целевой storage-контур `stage11`
 

@@ -429,6 +429,7 @@ jobs:
           python3 scripts/tests/storage_concurrency_runtime.py
           python3 scripts/tests/test_storage_stage11.py -k test_vacuum_safe_runs_when_ingest_inactive
           python3 -m unittest scripts.tests.test_stage11_systemd_vacuum
+          bash scripts/tests/storage_vacuum_runtime.sh
 
   storage-chaos-smoke:
     name: storage-chaos-smoke
@@ -450,7 +451,6 @@ jobs:
 
   stage11-docs-gate:
     name: stage11-docs-gate
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

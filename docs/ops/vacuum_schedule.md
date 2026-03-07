@@ -16,3 +16,9 @@
   - `schedule`
   - `trace_id`
 - Unit обязан проходить `systemd-analyze verify` без ошибок.
+- Отдельный runtime smoke обязан подтверждать все три пути:
+  - success-path;
+  - safe skip при активном ingest;
+  - missing-db failure path со structured gap event.
+- Evidence этого proof:
+  - `docs/governance/evidence/stage11_step4_vacuum_runtime.log`

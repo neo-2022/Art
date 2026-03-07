@@ -63,17 +63,17 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [x] тест проверяет корректность данных (счётчики accepted/committed совпадают по инварианту)
   - [x] **Проверка (pass/fail):** integration тест зелёный в CI и его лог/вывод фиксирует параметры (writers/readers/длительность).
 
-- [ ] **4. Сделать:** Реализовать VACUUM по расписанию: каждое воскресенье 03:30 (systemd timer).
-  - [ ] существует systemd unit `art-vacuum.service`
-  - [ ] существует systemd timer `art-vacuum.timer`
-  - [ ] timer настроен на воскресенье 03:30 (локальное время системы)
-  - [ ] VACUUM выполняется в safe-режиме (не во время активного ingest; правило описано и реализовано)
-  - [ ] успешный VACUUM логируется (без PII)
-  - [ ] при ошибке VACUUM генерируется `observability_gap.storage_vacuum_failed` (snapshot/stream) с evidence_min
-  - [ ] `observability_gap.storage_vacuum_failed` зарегистрировано в реестре с:
-    - [ ] `incident_rule=create_incident_min_sev2`
-    - [ ] `action_ref=docs/ops/vacuum_schedule.md`
-  - [ ] **Проверка (pass/fail):** наличие unit/timer в репозитории + smoke запуск на тестовой БД подтверждает, что VACUUM выполняется.
+- [x] **4. Сделать:** Реализовать VACUUM по расписанию: каждое воскресенье 03:30 (systemd timer).
+  - [x] существует systemd unit `art-vacuum.service`
+  - [x] существует systemd timer `art-vacuum.timer`
+  - [x] timer настроен на воскресенье 03:30 (локальное время системы)
+  - [x] VACUUM выполняется в safe-режиме (не во время активного ingest; правило описано и реализовано)
+  - [x] успешный VACUUM логируется (без PII)
+  - [x] при ошибке VACUUM генерируется `observability_gap.storage_vacuum_failed` (snapshot/stream) с evidence_min
+  - [x] `observability_gap.storage_vacuum_failed` зарегистрировано в реестре с:
+    - [x] `incident_rule=create_incident_min_sev2`
+    - [x] `action_ref=docs/ops/vacuum_schedule.md`
+  - [x] **Проверка (pass/fail):** наличие unit/timer в репозитории + smoke запуск на тестовой БД подтверждает, что VACUUM выполняется.
 
 - [x] **5. Сделать:** Реализовать chaos тесты storage (обязательные сценарии) и сделать их воспроизводимыми.
   - [x] chaos: kill -9 Core во время ingest
@@ -122,42 +122,43 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - [x] `docs/ops/storage.md` и `docs/ops/storage_corruption_runbook.md` не противоречат новой модели.
 
 ## Документация (RU)
-- [ ] docs/core/storage.md
-- [ ] docs/ops/backup_restore_sqlite.md
-- [ ] docs/ops/storage_corruption_runbook.md
-- [ ] docs/ops/vacuum_schedule.md
-- [ ] docs/ops/storage.md
-- [ ] docs/source/storage_pressure_protection_v0_2.md
-- [ ] docs/runbooks/storage_pressure_high.md
+- [x] docs/core/storage.md
+- [x] docs/ops/backup_restore_sqlite.md
+- [x] docs/ops/storage_corruption_runbook.md
+- [x] docs/ops/vacuum_schedule.md
+- [x] docs/ops/storage.md
+- [x] docs/source/storage_pressure_protection_v0_2.md
+- [x] docs/runbooks/storage_pressure_high.md
 
 ## Тестирование
 - [x] integration: concurrency (шаг 3)
+- [x] integration: VACUUM/systemd runtime smoke (шаг 4)
 - [x] chaos: kill -9 (шаг 5)
 - [x] chaos: disk full (шаг 5)
 - [x] chaos: WAL corruption (шаг 5)
 - [x] chaos: storage pressure / high-watermark / critical-watermark (шаг 6)
 
 ## CI gate
-- [x] CI job `storage-integration` существует и запускает concurrency тест; job зелёный
+- [x] CI job `storage-integration` существует и запускает concurrency и VACUUM/systemd runtime smoke; job зелёный
 - [x] CI job `storage-chaos-smoke` существует и запускает минимум 1 smoke прогон chaos сценариев; job зелёный
-- [ ] CI job `stage11-docs-gate` существует и запускает `scripts/ci/check_storage_stage11_docs.sh`, который:
-  - [ ] проверяет существование файлов из раздела “Документация (RU)”
-  - [ ] проверяет минимальный контент (grep):
-  - [ ] `docs/ops/storage_corruption_runbook.md` содержит `HTTP 503` и `retry_after_ms` и `read_only`
-  - [ ] `docs/ops/vacuum_schedule.md` содержит `Sunday` или `воскресенье` и `03:30`
-  - [ ] `docs/ops/backup_restore_sqlite.md` содержит `integrity check`
-  - [ ] `docs/source/storage_pressure_protection_v0_2.md` содержит `high watermark` и `critical watermark` и `reserved free space`
-  - [ ] `docs/runbooks/storage_pressure_high.md` содержит `mitigations` и `verification`
-  - [ ] exit 1 при нарушении
+- [x] CI job `stage11-docs-gate` существует и запускает `scripts/ci/check_storage_stage11_docs.sh`, который:
+  - [x] проверяет существование файлов из раздела “Документация (RU)”
+  - [x] проверяет минимальный контент (grep):
+  - [x] `docs/ops/storage_corruption_runbook.md` содержит `HTTP 503` и `retry_after_ms` и `read_only`
+  - [x] `docs/ops/vacuum_schedule.md` содержит `Sunday` или `воскресенье` и `03:30`
+  - [x] `docs/ops/backup_restore_sqlite.md` содержит `integrity check`
+  - [x] `docs/source/storage_pressure_protection_v0_2.md` содержит `high watermark` и `critical watermark` и `reserved free space`
+  - [x] `docs/runbooks/storage_pressure_high.md` содержит `mitigations` и `verification`
+  - [x] exit 1 при нарушении
 
 ## DoD
-- [ ] Recovery по corruption детерминирован и задокументирован; события `observability_gap.*` зарегистрированы и имеют runbook.
-- [ ] Backup/restore политика определена и выполнима.
+- [x] Recovery по corruption детерминирован и задокументирован; события `observability_gap.*` зарегистрированы и имеют runbook.
+- [x] Backup/restore политика определена и выполнима.
 - [x] Concurrency тест зелёный в CI.
-- [ ] VACUUM timer/unit существуют и smoke проверены.
+- [x] VACUUM timer/unit существуют и smoke проверены.
 - [x] Chaos сценарии воспроизводимы и имеют pass/fail критерии; минимум smoke прогоняется в CI.
 - [x] Защита от долгого заполнения storage материализована как отдельный hostile contour: предупреждение до `disk full`, controlled degradation, runbook и smoke доказательство.
-- [ ] CI gate Stage 11 зелёный.
+- [x] CI gate Stage 11 зелёный.
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)
-- [ ] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

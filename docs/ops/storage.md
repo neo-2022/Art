@@ -11,8 +11,8 @@
   - `10000 ops`;
   - явный JSON-лог с длительностью и инвариантами;
 - фактический `disk full` hostile proof и archive/prune discipline уже materialized в live runtime smoke;
-- открытым corrective-блокером `stage11` остаются уже не storage pressure, а:
-  - production-proof для `VACUUM/systemd` (`11.4`).
+- storage-basement `stage11` теперь закрыт полностью, включая production-proof для `VACUUM/systemd`.
+- downstream continuation durable storage/recovery остаётся уже в `stage23` и `stage37`.
 
 Сценарии:
 - kill -9 во время ingest
