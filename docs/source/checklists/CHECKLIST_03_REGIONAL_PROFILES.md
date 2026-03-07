@@ -101,16 +101,16 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [x] запрет установки packs без валидной подписи
   - [x] **Проверка (pass/fail):** `docs/compliance/airgapped.md` содержит раздел `signature keys` со всеми пунктами выше.
 
-- [ ] **11. Сделать:** Добавить тестовую матрицу Stage 03 (обязательные интеграционные тесты) и обеспечить автоматизацию.
-  - [ ] профиль меняется только через процедуру stop→stop→apply→start→guard→start
-  - [ ] airgapped packs update отклоняется без подписи
-  - [ ] airgapped packs update отклоняется при несовместимости версий
-  - [ ] нарушение residency/egress/retention профиля даёт `observability_gap.profile_violation` и блокирует запуск/применение
-  - [ ] эти тесты автоматизированы
-  - [ ] эти тесты включены в CI workflow
-  - [ ] **Проверка (pass/fail):** существует `docs/compliance/test_matrix.md`, содержит тесты с входами/ожидаемым результатом, и явно указано:
-    - [ ] где лежат автотесты (пути)
-    - [ ] как они запускаются в CI (workflow/target/command)
+- [x] **11. Сделать:** Добавить тестовую матрицу Stage 03 (обязательные интеграционные тесты) и обеспечить автоматизацию.
+  - [x] профиль меняется только через процедуру stop→stop→apply→start→guard→start
+  - [x] airgapped packs update отклоняется без подписи
+  - [x] airgapped packs update отклоняется при несовместимости версий
+  - [x] нарушение residency/egress/retention профиля даёт `observability_gap.profile_violation` и блокирует запуск/применение
+  - [x] эти тесты автоматизированы
+  - [x] эти тесты включены в CI workflow
+  - [x] **Проверка (pass/fail):** существует `docs/compliance/test_matrix.md`, содержит тесты с входами/ожидаемым результатом, и явно указано:
+    - [x] где лежат автотесты (пути)
+    - [x] как они запускаются в CI (workflow/target/command)
 
 - [ ] **12. Сделать:** Добавить CI gate Stage 03 (наличие файлов + минимальная валидация содержимого).
   - [ ] существует `scripts/ci/check_regional_profiles_stage03.sh`
