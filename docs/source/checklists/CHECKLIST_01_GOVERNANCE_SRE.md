@@ -140,13 +140,15 @@ A) Полный запрет опциональности:
     - скриншот-пруф в репозитории (png в `docs/governance/evidence/branch_protection_main.png`)
     и включает пункты: required reviews, required status checks, запрет force-push.
 
-16. [ ] **Сделать:** Описать release процесс: версия, changelog, тегирование, rollback.  
+16. [x] **Сделать:** Описать release процесс: версия, changelog, тегирование, rollback.  
     **Проверка (pass/fail):** существует файл `docs/governance/release_process.md`, содержит:
     - правила versioning
     - формат changelog
     - шаги release
     - шаги rollback
     - требование smoke-check после release
+    - `GO/NO-GO`
+    - signed tag / `checksums.txt` / SBOM / provenance bundle
 
 17. [x] **Сделать:** Описать policy MCP режимов: enable флаг, режимы `read_only`, `limited_actions`, `full_admin`; запреты действий в `read_only`.
    - [x] причина → фикс → критерий готовности: в `limited_actions` нет явного перечня разрешённых action; добавить allowlist и проверить содержимое.  
