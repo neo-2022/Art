@@ -62,15 +62,23 @@ def main() -> int:
                 vuln_id = vuln.get("id", "")
                 severities = vuln.get("severity") or []
                 severe = False
+                medium_or_low = False
                 for sev in severities:
                     score = (sev.get("score") or "").upper()
                     if "CRITICAL" in score or "HIGH" in score:
                         severe = True
                         break
+                    if "MEDIUM" in score or "LOW" in score:
+                        medium_or_low = True
                 key = (vuln_id, pkg_name, source_path)
                 entry = accepts.get(key)
                 if severe and entry is None:
                     blocking.append(f"{vuln_id} {pkg_name} {source_path}: high/critical without accept")
+                    continue
+                if medium_or_low and entry is None:
+                    blocking.append(f"{vuln_id} {pkg_name} {source_path}: medium/low without accept")
+                    continue
+                if not severe and not medium_or_low and entry is None:
                     continue
                 if entry is None:
                     blocking.append(f"{vuln_id} {pkg_name} {source_path}: missing risk-accept entry")
