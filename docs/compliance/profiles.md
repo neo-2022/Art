@@ -118,12 +118,21 @@
 - Runtime apply: `POST /api/v1/profile/apply` (на нарушении guardrails профиль не применяется)
 
 ## profile switch procedure
+Это единственная допустимая процедура переключения профиля.
+Любое runtime-переключение вне этой последовательности запрещено.
+
 1. stop ingest
 2. stop core
 3. apply new config (`profile_id`)
 4. start core
 5. run profile guards
 6. start ingest
+
+Запрещено:
+- менять `profile_id` без остановки ingest;
+- применять новый профиль поверх работающего Core без перезапуска;
+- стартовать ingest до успешного прохождения profile guards;
+- делать silent rollback без регистрации причины в audit/evidence.
 
 ## migration/validation
 - Переходы требуют validate/migrate/purge/reindex по матрице
