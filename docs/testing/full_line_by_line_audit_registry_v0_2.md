@@ -309,3 +309,15 @@
 | `browser/test/panel0.e2e.test.js` | REVIEWED | WEAK | Проверяет текущую упрощённую семантику Panel0, но не ловит partial RU, не проверяет structured degraded payload, one-click-to-evidence beyond href builder, truth overlay и richer fallback honesty. | 16, 28, 37, 40 |
 | `browser/test/panel0_i18n_laws.test.js` | REVIEWED | MISMATCH | i18n law test слишком узок: он подтверждает только 2 строки и поэтому допускает массовую неполноту RU интерфейса. При жёстком проектном законе двуязычия такой green test является ложным основанием. | 16, 28, 38 |
 | `browser/test/smoke.test.js` | REVIEWED | MISMATCH | Smoke test на `sum(2,3)` не имеет отношения к реальному browser runtime и не должен существовать как доказательство живости пакета. Это классический false-green marker. | 10, 28, 38 |
+
+## Слой 13 — Console Web shell / bilingual UI / settings surface
+
+> Здесь аудит шёл уже не только по текущему коду, но и по историческому корпусу: `двуязычие`, `tooltips everywhere`, `one-click-to-evidence`, `Aero Ops`, `human-agent interaction`, `design controls`, `audio/settings`, truthful status rendering. Любая смешанная локаль или ложный green-build в этом слое считается фундаментальным нарушением философии проекта.
+
+| Файл | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `apps/console-web/package.json` | REVIEWED | WEAK | Скрипты честные, но тестовый контур по-прежнему главным образом SSR/string-based: нет обязательного browser runtime hostile suite, нет проверки bilingual static artifacts, нет e2e, который бы отлавливал mixed-locale leaks. | 16, 28, 30, 35, 40 |
+| `apps/console-web/scripts/generate-static.mjs` | REVIEWED | MISMATCH | Static generation всегда пишет только `renderConsoleShell("en")`; это прямо противоречит обязательному двуязычному контуру. Эксплуатационно доказано: после build `apps/console-web/dist/index.html` содержит только `lang=\"en\"`, EN subtitle и `One-click to evidence`. | 16, 28, 40 |
+| `apps/console-web/src/main.ts` | REVIEWED | MISMATCH | Главный shell содержит систематические mixed-locale и false-finished patterns: жёстко вшитые `One-click to evidence`, `RTP verdict`, `contested claim promotion blocked`, `Investigation Library`, `Flow:`, `Route:`, `status=`, `source=`; action IDs и policy IDs торчат пользователю как raw internal identifiers; static shell по умолчанию EN-only; часть локализации строится ручными `locale === \"ru\" ? ...` ветками вместо полного словаря. Это расходится и с i18n law, и с product-quality замыслом. | 16, 28, 30, 33, 35, 40, 41 |
+| `apps/console-web/test/console-web.test.mjs` | REVIEWED | MISMATCH | Test suite ложнозелёный: все 13 тестов проходят, несмотря на доказанные EN leaks в RU shell и EN-only static build. Это означает, что suite закрепляет слабое основание вместо его разрушения. Он проверяет присутствие отдельных строк, но не целостную bilingual purity, не hostile paths и не product-grade render truth. | 16, 28, 30, 35, 38, 40 |
+| `apps/console-web/tsconfig.json` | REVIEWED | OK | Конфигурация TypeScript простая, но честная; сама по себе не является источником найденных дефектов. | 28 |
