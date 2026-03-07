@@ -644,3 +644,21 @@
 | `grafana/art_core_overview.json` | REVIEWED | MISMATCH | Same issue: stub, not real dashboard definition. | 21, 37, 38 |
 | `grafana/art_ingest_pipeline.json` | REVIEWED | MISMATCH | Stub-level dashboard artifact; creates false sense of observability readiness. | 21, 37, 38 |
 | `core/embedded/panel0/favicon.ico` | REVIEWED | OK | Статический binary asset без логики и без признаков semantic drift. | 16, 28 |
+
+## Слой 25 — Operational docs: metrics, perf, REGART helper docs и RU profile docs
+
+> Здесь проверялось, не выдают ли операционные документы synthetic/stale измерения и укороченные RU/REGART правила за доказанный production contour.
+
+| Файл | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `docs/metrics/ingest.md` | REVIEWED | WEAK | Документ слишком тонкий для реального ingest contour: перечисляет только несколько счётчиков и не отражает hostile metrics для backlog, replay, transport gaps, profile violations и richer intake diagnostics. | 09, 12, 21, 38 |
+| `docs/metrics/stream.md` | REVIEWED | WEAK | Stream metrics описаны кратко, но contour уже слабее проектной философии: нет richer metrics for SSE recovery, subscriber cohorts, canary divergence and degraded/fallback tracking. | 14, 21, 34, 38 |
+| `docs/perf/report.md` | REVIEWED | MISMATCH | Perf report представляет собой короткую статическую табличку с `pass/fail: pass` без provenance, hostile scenarios и runtime evidence linkage. Для проекта с adversarial/perf laws это недостаточно и вводит в заблуждение о силе perf-proof. | 22, 34, 38 |
+| `docs/perf/stream_1000_subscribers.md` | REVIEWED | MISMATCH | Документ опирается на локальную dev-машину и happy-path results как на достаточный proof stream robustness, хотя полный аудит уже вскрыл synthetic perf/gate weaknesses и отсутствие полноценного hostile runtime основания. | 14, 22, 34, 38 |
+| `docs/perf/stream_10k_events.md` | REVIEWED | MISMATCH | Аналогично предыдущему: слишком уверенный PASS по локальному single-subscriber сценарию не соответствует текущему production-adversarial стандарту. | 14, 22, 34, 38 |
+| `docs/regart/art_bridge_runbook.md` | REVIEWED | MISMATCH | Runbook формулирует `Actions-only`, `HTTPS-only` и append-only audit как operational truth, хотя cross-repo/runtime Art↔REGART contour и trust boundary уже признаны не полностью доказанными, а часть bridge/source-coverage всё ещё placeholder/weak. | 05, 06, 20, 33, 38 |
+| `docs/regart/upstream_error_format.md` | REVIEWED | WEAK | Формат полезный, но слишком тонкий для зрелого upstream contract surface: он не задаёт schema/version discipline, evidence normalization depth и hostile provenance guarantees. | 05, 06, 20, 30, 38 |
+| `docs/ru/access_audit.md` | REVIEWED | WEAK | RU note полезна, но слишком коротка и закрепляет только один access path (`GET /api/v1/incidents/{id}`), не покрывая broader audit-access surface и hostile access patterns. | 02, 15, 26, 38 |
+| `docs/ru/airgapped_install.md` | REVIEWED | WEAK | Документ уже лучше раннего состояния, но всё ещё слишком краток для air-gapped hostile reality: не раскрывает offline trust roots, artifact chain, rollback and failure handling достаточно глубоко. | 03, 24, 26, 37, 38 |
+| `docs/ru/export.md` | REVIEWED | WEAK | Политика fail-closed зафиксирована правильно, но документ минималистичен и не покрывает весь export/control plane surface. | 03, 25, 26, 38 |
+| `docs/ru/profile_ru.md` | REVIEWED | WEAK | RU profile table полезна, но слишком узка относительно реальной data classification/minimization/redaction matrix и не отражает весь regulated profile contour. | 02, 03, 26, 38 |
