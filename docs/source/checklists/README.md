@@ -74,6 +74,8 @@
 - `CHECKLIST_44_INCIDENT_CAPSULE_AND_TWIN.md` — Reproducible Incident Capsule и Deterministic Incident Twin.
 - `CHECKLIST_45_FORENSIC_ENRICHMENT_AND_GRAPH.md` — eBPF evidence linking, graph-backed exploration, future-safe crypto extension path.
 - `TRACEABILITY_V0_2.md` — трассировка baseline 01..27 к новой программе 28..45.
+- `../testing/production_adversarial_validation_law.md` — закон hostile-environment проверки и production-логики тестирования.
+- `../testing/test_system_audit_v0_2.md` — аудит силы тестового корпуса и программа усиления слабых проверок.
 - `../risk_register_v0_2.md` — принятые риски v0.2, контрмеры, release blockers.
 
 ## Порядок прохождения

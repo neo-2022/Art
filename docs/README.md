@@ -57,6 +57,8 @@
 - index чек-листов: [source/checklists/README.md](source/checklists/README.md)
 - risk register: [risk_register_v0_2.md](source/risk_register_v0_2.md)
 - DNA assurance standard: [dna_core_determinism_performance_assurance.md](source/dna_core_determinism_performance_assurance.md)
+- закон hostile-environment проверки: [production_adversarial_validation_law.md](testing/production_adversarial_validation_law.md)
+- аудит силы тестового корпуса: [test_system_audit_v0_2.md](testing/test_system_audit_v0_2.md)
 
 ## Языковая политика
 - нормативный язык документации: русский
