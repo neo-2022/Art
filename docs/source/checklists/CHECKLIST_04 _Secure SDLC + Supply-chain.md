@@ -27,21 +27,21 @@ A) Полный запрет опциональности:
   - [x] запрещено использовать “latest” для инструментов сборки/линтеров/сканеров в CI
   - [x] **Проверка (pass/fail):** существует `docs/security/secure_sdlc_policy.md`, содержит все пункты выше явно, включая требование совпадения хэша артефактов при повторной релизной сборке из того же коммита.
 
-- [ ] **2. Сделать:** Описать branch policy + tag/release policy (enforce через branch protection) без двусмысленностей, включая точные required status checks.
-  - [ ] прямые коммиты в `main` запрещены
-  - [ ] изменения попадают в `main` только через PR
-  - [ ] required status checks в `main` включены
-  - [ ] required reviews включены (минимум 1)
-  - [ ] CODEOWNERS включён и влияет на required reviews
-  - [ ] force-push в `main` запрещён
-  - [ ] теги релизов защищены (запрет переписывания релизных тегов)
-  - [ ] required status checks для `main` заданы точным списком имён (без “и т.п.”):
-    - [ ] `sdlc-gate`
-    - [ ] `sast`
-    - [ ] `sca`
-    - [ ] `license`
-    - [ ] `secrets`
-  - [ ] **Проверка (pass/fail):** существует `docs/security/branch_tag_policy.md`, содержит все пункты выше явно, включая полный список required status checks с точными именами.
+- [x] **2. Сделать:** Описать branch policy + tag/release policy (enforce через branch protection) без двусмысленностей, включая точные required status checks.
+  - [x] прямые коммиты в `main` запрещены
+  - [x] изменения попадают в `main` только через PR
+  - [x] required status checks в `main` включены
+  - [x] required reviews включены (минимум 1)
+  - [x] CODEOWNERS включён и влияет на required reviews
+  - [x] force-push в `main` запрещён
+  - [x] теги релизов защищены (запрет переписывания релизных тегов)
+  - [x] required status checks для `main` заданы точным списком имён (без “и т.п.”):
+    - [x] `sdlc-gate`
+    - [x] `sast`
+    - [x] `sca`
+    - [x] `license`
+    - [x] `secrets`
+  - [x] **Проверка (pass/fail):** существует `docs/security/branch_tag_policy.md`, содержит все пункты выше явно, включая полный список required status checks с точными именами.
 
 - [ ] **3. Сделать:** Зафиксировать требование подписанных коммитов в `main` и правило проверки.
   - [ ] каждый коммит в `main` имеет “Verified” подпись в UI GitHub (единый критерий)
