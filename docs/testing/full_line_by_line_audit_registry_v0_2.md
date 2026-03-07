@@ -134,3 +134,46 @@
 | `packages/worker-runtime/README.md` | REVIEWED | MISMATCH | README отсутствует, несмотря на наличие пакета. Это ухудшает честность package surface и вводит в заблуждение о зрелости worker-layer. | 07, 28 |
 | `apps/console-web/scripts/generate-static.mjs` | REVIEWED | WEAK | Генератор статического shell строит только `en` вариант `index.html`; для строгой bilingual philosophy этого недостаточно. | 16, 28 |
 | `apps/console-web/test/console-web.test.mjs` | REVIEWED | WEAK | Тесты сильны в breadth UI laws, но принимают неполную RU локализацию и не ловят hardcoded bilingual leaks. | 16, 28, 30, 40 |
+
+## Слой 7 — Security / Privacy / Compliance policy basis
+
+| Файл | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `docs/security/allowlist.gitleaks.toml` | REVIEWED | OK | Allowlist теперь честно пустой и не содержит placeholder-семантики. | 04 |
+| `docs/security/branch_tag_policy.md` | REVIEWED | OK | Политика жёсткая и согласована с реальным branch protection evidence. | 04, 24 |
+| `docs/security/certified_dependency_allowlist.txt` | REVIEWED | WEAK | Есть машиночитаемый список, но он слишком “плоский”: нет owner/disposition/why, не выражена граница Linux certified path против всего dependency tree. | 04, 37 |
+| `docs/security/ci_pinning_policy.md` | REVIEWED | OK | Supply-chain pinning зафиксирован жёстко и проверяется отдельным gate. | 04 |
+| `docs/security/dependency_update_policy.md` | REVIEWED | OK | Dependabot и PR-only discipline материализованы корректно. | 04 |
+| `docs/security/fstec-certified-profile.md` | REVIEWED | WEAK | Certified profile описан честно, но пока остаётся build/profile guarantee без runtime/legal-grade доказательств; для зрелого certified contour этого мало. | 04, 26, 37 |
+| `docs/security/keys/README.md` | REVIEWED | OK | Правильно закрепляет отказ от placeholder public key и переводит baseline на keyless OIDC verify. | 04, 24 |
+| `docs/security/mcp_modes_runtime.md` | REVIEWED | WEAK | Документ слишком тонкий: `limited_actions` не раскрыт allowlist-моделью, нет tenant/profile/action-scope детализации. | 01, 33 |
+| `docs/security/osv_risk_accept.yaml` | REVIEWED | WEAK | Реестр точечный и честный, но сам факт active temporary risk-accept означает незакрытое security основание. | 04, 23 |
+| `docs/security/pii_secret_filter.md` | REVIEWED | WEAK | Слишком тонкий operational документ: нет rule ids, coverage matrix, versioning и failure-mode semantics. | 02, 15 |
+| `docs/security/provenance_signing.md` | REVIEWED | OK | Signing/provenance baseline сильный и согласован с release pipeline. | 04, 24 |
+| `docs/security/rbac.md` | REVIEWED | WEAK | RBAC-контур слишком грубый: нет tenant/profile-aware различий, нет agent/bridge/service action scope. | 15, 33, 36 |
+| `docs/security/release_hardening.md` | REVIEWED | WEAK | Политика полезная, но слишком обзорная; не выражает hostile release scenarios и не связывает rollback/compromise paths с конкретными control points. | 04, 24, 37 |
+| `docs/security/sast_policy.md` | REVIEWED | OK | SAST policy после hardening соответствует blocking-gate baseline. | 04 |
+| `docs/security/sbom_policy.md` | REVIEWED | OK | SBOM baseline строгий и согласован с signing bundle. | 04, 24 |
+| `docs/security/sca_policy.md` | REVIEWED | WEAK | Политика рабочая, но несёт дублированный раздел risk-accept и оставляет активный класс tolerated-risk как часть baseline. | 04 |
+| `docs/security/secrets_policy.md` | REVIEWED | OK | Secrets scanning policy жёсткая и теперь не содержит placeholder bypass path. | 04 |
+| `docs/security/secure_sdlc_policy.md` | REVIEWED | OK | Secure SDLC baseline сильный и после дебаггинга соответствует reproducible-build philosophy. | 04 |
+| `docs/privacy/access_control_policy.md` | REVIEWED | OK | Least-privilege для attachments выражен честно и не несёт public-by-default слабости. | 02 |
+| `docs/privacy/attachments_security.md` | REVIEWED | OK | Attachment baseline детален и соответствует privacy-by-design. | 02 |
+| `docs/privacy/data_classification.md` | REVIEWED | OK | Каноническая классификация сильная и пригодна как основание для redaction/minimization. | 02 |
+| `docs/privacy/data_minimization_policy.md` | REVIEWED | OK | No-body-by-default и allowlist discipline зафиксированы строго. | 02, 09, 18 |
+| `docs/privacy/dsr_process.md` | REVIEWED | WEAK | Процесс описан лучше прежнего, но не задаёт отдельный identity-proof/authorization contour субъекта запроса; это слабое основание для зрелого privacy workflow. | 02, 25 |
+| `docs/privacy/encryption_policy.md` | REVIEWED | WEAK | Encryption-at-rest описан только для `events`, `audit`, `attachments`; выпадают `incidents`, `spool/outbox`, local indexes и privacy-sensitive exports, что делает baseline неполным. | 02, 17, 18, 31, 37 |
+| `docs/privacy/pii_surface.md` | REVIEWED | MISMATCH | В карте есть логические ошибки основания: `context.user_agent` привязан к `redact.ip.v1`, а `payload.file.path` помечен как безусловно `store`, хотя path может нести PII. | 02, 18, 30 |
+| `docs/privacy/redaction_policy.md` | REVIEWED | MISMATCH | Политика требует `config/privacy/redaction_rules.yaml`, но такого файла нет; кроме того, rule mapping наследует ту же ошибку с `context.user_agent -> redact.ip.v1`. | 02, 18, 30 |
+| `docs/privacy/regional_profiles.md` | REVIEWED | MISMATCH | Privacy-профили неполны: отсутствует `airgapped`, а критерий актуальности требует `default profile`, который в документе не задан. | 02, 03, 26 |
+| `docs/privacy/retention_matrix.md` | REVIEWED | MISMATCH | Прямой конфликт с `docs/compliance/profiles.md`: `incidents` = `180 days` здесь и `90 days` в профилях; это фундаментальный policy drift. | 02, 03, 26 |
+| `docs/privacy/test_matrix.md` | REVIEWED | WEAK | Матрица полезна, но не дотягивает до adversarial philosophy: нет hostile сценариев, negative export abuse, storage leakage и profile-crossing tests. | 02, 38 |
+| `docs/compliance/airgapped.md` | REVIEWED | WEAK | Offline verify path честный, но документ слишком узок и не покрывает hostile media handling, custody chain и rollback/compromise path. | 03, 24, 26 |
+| `docs/compliance/audit_trail.md` | REVIEWED | WEAK | Экспортный контур указан, но документ слишком тонок: нет integrity semantics beyond checksum, нет failure-mode и custody/verification discipline. | 25 |
+| `docs/compliance/control_matrix.md` | REVIEWED | MISMATCH | Матрица опирается на `raw_archive/evidence/`, которого в репозитории нет; это ложное основание контроля. | 25, 27 |
+| `docs/compliance/data_destruction.md` | REVIEWED | MISMATCH | Документ фактически placeholder: фиксированное `pass/fail: pass` без критериев, evidence, hostile verification и среды исполнения. | 25, 37 |
+| `docs/compliance/data_residency.md` | REVIEWED | OK | Data residency policy достаточно строгая и правильно завязана на fail-closed behaviour. | 03, 26 |
+| `docs/compliance/evidence_list.md` | REVIEWED | MISMATCH | Основан на `raw_archive/`, которого нет; следовательно, compliance evidence storage описан декларативно, а не реально. | 25, 27 |
+| `docs/compliance/profile_guards.md` | REVIEWED | OK | Profile guardrails выражены достаточно жёстко и согласованы с fail-closed подходом. | 03, 26 |
+| `docs/compliance/profiles.md` | REVIEWED | MISMATCH | Профили сильны по структуре, но конфликтуют с privacy retention baseline (`incidents=90` против `180`) и поэтому сами создают policy drift. | 03, 26 |
+| `docs/compliance/test_matrix.md` | REVIEWED | WEAK | Хорошая stage03 matrix, но она не покрывает hostile/compliance-adversarial сценарии и не ловит policy drift вроде уже найденного retention mismatch. | 03, 38 |
