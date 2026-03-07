@@ -65,21 +65,21 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [x] правило блокировки при нарушении (startup fail или reject apply-config)
   - [x] **Проверка (pass/fail):** существует `docs/compliance/data_residency.md`, содержит все пункты выше.
 
-- [ ] **6. Сделать:** Описать guardrails проверки профиля при запуске и при применении новой конфигурации.
-  - [ ] проверка retention
-  - [ ] проверка export
-  - [ ] проверка egress
-  - [ ] проверка residency
-  - [ ] проверка updates/packs
-  - [ ] правило “fail closed” (блокировать запуск/применение)
-  - [ ] **Проверка (pass/fail):** существует `docs/compliance/profile_guards.md`, содержит список проверок и правило “fail closed”.
+- [x] **6. Сделать:** Описать guardrails проверки профиля при запуске и при применении новой конфигурации.
+  - [x] проверка retention
+  - [x] проверка export
+  - [x] проверка egress
+  - [x] проверка residency
+  - [x] проверка updates/packs
+  - [x] правило “fail closed” (блокировать запуск/применение)
+  - [x] **Проверка (pass/fail):** существует `docs/compliance/profile_guards.md`, содержит список проверок и правило “fail closed”.
 
-- [ ] **7. Сделать:** Описать событие `observability_gap.profile_violation` для любого несоответствия профиля.
-  - [ ] событие регистрируется в snapshot/stream
-  - [ ] evidence_min: что нарушено, профиль, параметр, текущие значения
-  - [ ] зарегистрировано в реестре `observability_gap.*` (Stage 01) с `incident_rule` и `action_ref`
-  - [ ] `action_ref` указывает на конкретный runbook в репозитории: `docs/runbooks/profile_violation.md`
-  - [ ] **Проверка (pass/fail):** `docs/compliance/profile_guards.md` содержит раздел `observability_gap.profile_violation` с перечисленными требованиями; `docs/runbooks/profile_violation.md` существует.
+- [x] **7. Сделать:** Описать событие `observability_gap.profile_violation` для любого несоответствия профиля.
+  - [x] событие регистрируется в snapshot/stream
+  - [x] evidence_min: что нарушено, профиль, параметр, текущие значения
+  - [x] зарегистрировано в реестре `observability_gap.*` (Stage 01) с `incident_rule` и `action_ref`
+  - [x] `action_ref` указывает на конкретный runbook в репозитории: `docs/runbooks/profile_violation.md`
+  - [x] **Проверка (pass/fail):** `docs/compliance/profile_guards.md` содержит раздел `observability_gap.profile_violation` с перечисленными требованиями; `docs/runbooks/profile_violation.md` существует.
 
 - [ ] **8. Сделать:** Зафиксировать связку Stage 03 ↔ Stage 02 (privacy).
   - [ ] retention/DSR различия по профилям в compliance-доках ссылаются на `docs/privacy/regional_profiles.md`
