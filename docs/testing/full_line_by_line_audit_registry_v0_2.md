@@ -63,15 +63,18 @@
 | `docs/contracts/v2/schemas/evidence_item.json` | REVIEWED | OK | Union/oneOf evidence model и truth metadata соответствуют evidence-first baseline. | 30, 31, 32 |
 | `docs/contracts/v2/schemas/gap_event.json` | REVIEWED | OK | Gap event имеет truth metadata; базовый hostile-runtime контур закреплён. | 18, 29, 37 |
 | `docs/contracts/v2/schemas/investigation_doc_v1.json` | REVIEWED | WEAK | Базовый InvestigationDoc есть, но нет capsule/twin-ready machine-readable envelope и формального replay portability contract. | 31, 44 |
-| `docs/contracts/v2/schemas/raw_event_v2.json` | IN_REVIEW | TBD | TBD | TBD |
+| `docs/contracts/v2/schemas/raw_event_v2.json` | REVIEWED | WEAK | Схема чрезмерно permissive: `additionalProperties: true`, обязателен только `severity`, нет жёстких correlation/source/privacy baseline полей. Для hostile-runtime ingestion это слишком слабое основание. | 09, 12, 18, 29 |
 | `docs/contracts/v2/schemas/snapshot_v2.json` | REVIEWED | WEAK | Snapshot содержит truth modes, gap/slo arrays, но `incidents` остаётся нетипизированным `object`, а capsule/twin/proof-carrying extensions отсутствуют. | 29, 31, 32, 42, 44 |
 | `docs/contracts/v2/schemas/slo_violation.json` | REVIEWED | OK | Есть truth metadata и evidence linkage; соответствует SLOViolation baseline. | 30, 34 |
-| `docs/contracts/v2/migrations_v2.md` | IN_REVIEW | TBD | TBD | TBD |
-| `docs/contracts/v2/dna_model/dna_core_clusterization.tla` | IN_REVIEW | TBD | TBD | TBD |
+| `docs/contracts/v2/migrations_v2.md` | REVIEWED | OK | Dual-write verification, lag normalization и rollback semantics описаны строго; migration path уже ближе к production-grade, чем большинство docs-only контуров. | 29, 24 |
+| `docs/contracts/v2/dna_model/dna_core_clusterization.tla` | REVIEWED | OK | Сам факт formal model и replay/determinism properties соответствует философии проекта; deeper content parity с Rust проверять уже в code-layer аудите. | 29 |
 | `docs/api/openapi.yaml` | REVIEWED | WEAK | v1 API слишком тонкий и partly permissive (`additionalProperties: true`), слабо отражает evidence-first и typed hostile-runtime philosophy. | 08, 14, 24 |
-| `docs/api/schema_compliance.md` | IN_REVIEW | TBD | TBD | TBD |
-| `docs/schemas/v1/raw_event.json` | IN_REVIEW | TBD | TBD | TBD |
+| `docs/api/schema_compliance.md` | REVIEWED | WEAK | Таблица соответствия слишком узкая: покрывает только базовый ingest/v1 и не отслеживает v2 truth-mode / evidence-lineage / dialog / DNA obligations. | 08, 29, 30 |
+| `docs/schemas/v1/raw_event.json` | REVIEWED | WEAK | Историческая схема v1 слишком слабая даже как legacy baseline: `additionalProperties: true`, минимум полей, нет ясного hostile-ingest discipline. | 08, 29 |
 | `formats/platform_support.yaml` | REVIEWED | OK | Machine-readable OS/platform matrix сильная, учитывает РФ и международные Linux-дистрибутивы, VM/container surfaces и evidence IDs. | 26, 37 |
 | `formats/ru_regulatory_scope.yaml` | REVIEWED | OK | РФ нормативный контур материализован корректно, включая certified-ready boundary и mandatory controls. | 25, 26, 37 |
+| `generated/ts/README.md` | REVIEWED | WEAK | README generated-клиента фактически пустой; не объясняет scope, статус полноты и ограничения auto-generated слоя. | 07, 08 |
+| `generated/rust/README.md` | REVIEWED | WEAK | Аналогично TS: слишком тонкое описание, риск ввести инженера в заблуждение о полноте generated client. | 07, 08 |
+| `docs/schemas/index.md` | REVIEWED | WEAK | Индекс схем ограничен только v1 набором и не отражает v2 contract surface, что ломает целостность machine-readable картины проекта. | 08, 29, 30 |
 | `generated/ts/src/index.ts` | REVIEWED | WEAK | Generated TS слой покрывает только ingest primitives; он не представляет реальный breadth contract surface проекта. | 08, 29, 30 |
 | `generated/rust/src/lib.rs` | REVIEWED | WEAK | Generated Rust слой аналогично урезан до ingest primitives, что создаёт ложное ощущение полноты generated clients. | 08, 29, 30 |
