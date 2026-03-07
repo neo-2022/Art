@@ -48,13 +48,13 @@ A) Полный запрет опциональности:
   - [x] merge в `main` блокируется, если коммит(ы) не “Verified”
   - [x] **Проверка (pass/fail):** `docs/security/branch_tag_policy.md` содержит требование “Verified commits only in main” и требование блокировки merge при нарушении.
 
-- [ ] **4. Сделать:** Зафиксировать политику pinning supply-chain в CI (GitHub Actions и внешние инструменты), включая запрет удалённых composite actions.
-  - [ ] GitHub Actions в workflow закреплены на commit SHA (запрещены `@vX`, `@main`, `@master`)
-  - [ ] удалённые composite actions запрещены
-  - [ ] разрешены только локальные composite actions из репозитория (`uses: ./.github/actions/...`)
-  - [ ] внешние CLI инструменты (semgrep/gitleaks/osv/syft/cosign и т.п.) закреплены по версии
-  - [ ] разрешённые источники загрузки инструментов перечислены (GitHub Releases/официальные registries)
-  - [ ] **Проверка (pass/fail):** существует `docs/security/ci_pinning_policy.md`, содержит все пункты выше явно.
+- [x] **4. Сделать:** Зафиксировать политику pinning supply-chain в CI (GitHub Actions и внешние инструменты), включая запрет удалённых composite actions.
+  - [x] GitHub Actions в workflow закреплены на commit SHA (запрещены `@vX`, `@main`, `@master`)
+  - [x] удалённые composite actions запрещены
+  - [x] разрешены только локальные composite actions из репозитория (`uses: ./.github/actions/...`)
+  - [x] внешние CLI инструменты (semgrep/gitleaks/osv/syft/cosign и т.п.) закреплены по версии
+  - [x] разрешённые источники загрузки инструментов перечислены (GitHub Releases/официальные registries)
+  - [x] **Проверка (pass/fail):** существует `docs/security/ci_pinning_policy.md`, содержит все пункты выше явно.
 
 - [ ] **5. Сделать:** Описать SAST policy и обязательные правила (PR gate + baseline).
   - [ ] выбран единый SAST инструмент: `semgrep`
