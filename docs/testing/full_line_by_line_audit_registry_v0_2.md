@@ -368,6 +368,46 @@
 | `packages/ui-laws/tsconfig.json` | REVIEWED | OK | Конфигурация сама по себе проблем не создаёт. | 28, 30 |
 | `packages/ui-laws/dist/index.d.ts` | REVIEWED | WEAK | Generated surface отражает только runtime assertion API и тем самым закрепляет runtime-only model law enforcement, не оставляя места для promised static/AST contract. | 28, 30, 41 |
 
+## Слой 17 — CI/Gate scripts как основание истинности этапов
+
+> Этот слой проверялся особенно жёстко, потому что по новой философии именно gate-механика решает, можно ли вообще доверять закрытому этапу. Если gate доказывает только наличие текста или разрешает fallback-green path, то это не просто слабый тест, а ложное основание для provenance и stage closure.
+
+| Файл | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `scripts/ci/check_checklist_status_integrity.sh` | REVIEWED | WEAK | Скрипт проверяет только базовую синтаксическую непротиворечивость `[x]/[ ]`, но не способен обнаружить семантически ложные закрытия, partial completion и false-green checklist state. | 00, 38 |
+| `scripts/ci/check_docs_master_traceability.sh` | REVIEWED | WEAK | Traceability gate подтверждает наличие mapping, но не проверяет materialization в runtime/test corpus и не ловит устаревшие или бумажные связи. | 00, 38, 39..45 |
+| `scripts/ci/check_coverage_ratchet_v0_2.sh` | REVIEWED | MISMATCH | Скрипт не измеряет реальное покрытие: он валидирует baseline JSON и наличие каталогов тестов, создавая видимость coverage ratchet без фактического покрытия. | 34, 38 |
+| `scripts/ci/check_stage28_audio_settings.sh` | REVIEWED | MISMATCH | Gate допускает fallback до не-browser проверки и при отсутствии полноценного UI path всё равно может завершиться зелёным. Для audio/settings surface это ложный green. | 28, 38, 40 |
+| `scripts/ci/check_stage05_wrapper.sh` | REVIEWED | WEAK | Wrapper разрешает `STRICT_EXTERNAL=0` и может пройти без полноценной проверки sibling REGART repo; это ослабляет истинность межрепозиторной интеграции. | 05, 38 |
+| `scripts/ci/check_stage06_wrapper.sh` | REVIEWED | WEAK | Аналогично stage05: внешний bridge-контур можно пропустить при мягком окружении, а gate останется зелёным. | 06, 38 |
+| `scripts/ci/check_stage35_flow_snapshot_replay.sh` | REVIEWED | MISMATCH | Gate использует не dedicated snapshot/replay suite, а общий `flow-inspectability` test, поэтому может пройти без доказательства snapshot/replay semantics. | 35, 38 |
+| `scripts/ci/check_stage35_spatial_readiness.sh` | REVIEWED | MISMATCH | Скрипт запускает общие local-stores tests и не разрушает известное слабое основание spatial layer: `stubbed` API, отсутствие persistence, тихий провал `spatialPick()` без индекса. | 35, 38 |
+| `scripts/ci/check_stage37_linux_hardening.sh` | REVIEWED | MISMATCH | Gate сильнее прежнего, но VM часть по-прежнему опирается на skeleton/plan path и не требует настоящего VM execute smoke, уже признанного placeholder-backed. | 37, 38 |
+| `scripts/ci/check_secure_sdlc_stage04.sh` | REVIEWED | WEAK | Скрипт сильно усилен и полезен, но по сути остаётся policy/grep-heavy gate; он не доказывает end-to-end release hardening, а только жёстко удерживает документарный и workflow baseline. | 04, 38 |
+| `scripts/ci/evaluate_osv_report.py` | REVIEWED | WEAK | Утилита честно фильтрует OSV findings через risk-accept policy, но не учитывает reachability, runtime exploitability и фактическую зависимость от affected code paths. | 04, 38 |
+| `scripts/ci/check_stage_ladder_enforcement.sh` | REVIEWED | WEAK | Лестница уже полезна, но охватывает только поздние stages и опирается на текстовый state, а не на реальные runtime prerequisites каждого уровня. | 00, 38 |
+
+## Слой 18 — Runtime test scripts как доказательства или их имитация
+
+> Этот слой аудировался с опорой на исторический корпус и новый закон hostile-production: тест не считается сильным, если он не отличает синтетический happy-path от реального враждебного runtime, не разрушает ложные основания и не ловит корневые причины. Здесь особенно важны двуязычие, durability, external-source coverage, replay truth и реальность pack/runtime surfaces.
+
+| Файл | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `scripts/tests/test_storage_stage11.py` | REVIEWED | MISMATCH | Тестирует только Python helper semantics (`scripts.storage_stage11`), но не проверяет реальный systemd vacuum path; из-за этого broken `art-vacuum.service/.timer` оставался зелёным вне поля зрения suite. | 11, 38 |
+| `scripts/tests/test_telemetry.py` | REVIEWED | MISMATCH | Suite полностью синтетический: сам реализует `normalize_otlp_attrs`, `map_severity`, `enforce_rate_limit` и не касается реального Core/OTLP ingress. Это не доказательство телеметрического runtime, а локальная модель ожиданий. | 09, 38 |
+| `scripts/tests/test_packs.py` | REVIEWED | MISMATCH | Зелёный suite принимает placeholder-friendly runtime: pack считается установленным при наличии manifest/signature/entrypoints, а payload semantics, real assets и external-source coverage не проверяются. | 19, 20, 38 |
+| `scripts/tests/packs_runtime.py` | REVIEWED | MISMATCH | Корневая причина слабости pack tests: runtime не валидирует payload schema, executable semantics, generated assets и обещанное покрытие внешних источников; это только manifest/dependency checker. | 19, 20, 38 |
+| `scripts/tests/test_upgrade_downgrade.py` | REVIEWED | MISMATCH | Тест объявляет upgrade/downgrade, но обе фазы запускают один и тот же `cargo run -p art-core`; реального перехода `N -> N+1/N-1`, миграции схемы и несовместимости данных здесь не происходит. | 24, 29, 38 |
+| `scripts/tests/test_export_audit_pack.py` | REVIEWED | OK | Сильный runtime test: поднимает живой Core, seed'ит ingest/actions, гоняет `scripts/export_audit_pack.sh`, проверяет JSON/CSV/meta/checksums и hostile invalid-window path. | 24, 25 |
+| `scripts/tests/panel0_mock_console_proxy.py` | REVIEWED | WEAK | Хороший controllable harness для Panel0, но модель угроз неполна: нет TLS/DNS/auth failures, partial response corruption, cache poisoning и richer upstream deception paths. | 16, 37, 38 |
+| `scripts/tests/agent_receivers_chaos_runtime.sh` | REVIEWED | WEAK | Тест полезен, но охватывает только `file_tail/journald/stdout_stderr` parse/redaction path и не соответствует уже утверждённой модели receivers (`systemd_unit`, `proc_probe`, `net_probe`, `otlp_logs`, relay-aware delivery). | 18, 23, 37, 38 |
+| `scripts/tests/console_linux_prod_readiness.sh` | REVIEWED | MISMATCH | Скрипт опирается на grep по built HTML и фактически подтверждает EN-default shell с наличием RU hooks, а не реальную двуязычную prod-readiness. Это противоречит текущему i18n закону проекта. | 16, 28, 37, 38 |
+| `scripts/tests/panel0_linux_prod_readiness.sh` | REVIEWED | WEAK | Browser scenario полезен, но fallback-green при отсутствии Playwright и неполная bilingual truth делают этот readiness path слабее заявленного hostile-production стандарта. | 16, 28, 37, 38 |
+| `scripts/tests/stage34_perf_regression_with_artifacts.sh` | REVIEWED | MISMATCH | Скрипт строит fake local store прямо внутри теста вместо использования проектной реализации, поэтому green result не доказывает perf/regression реального кода. Это один из самых прямых false-green patterns слоя. | 34, 35, 38 |
+| `scripts/tests/stage35_flow_perf_2d_with_artifacts.sh` | REVIEWED | WEAK | Perf path синтетический: измеряется JS/store simulation, а не реальный browser/canvas/GPU runtime Flow surface. Для stage35 этого недостаточно. | 35, 38 |
+| `scripts/tests/airgapped_pack_update_integration.sh` | REVIEWED | WEAK | Сценарий полезен как policy smoke, но остаётся shell-simulation of pack update и не доказывает настоящий air-gapped runtime/install/export cycle. | 03, 19, 20, 26, 37 |
+| `scripts/tests/ops_stage23_smoke.sh` | REVIEWED | OK | Один из сильных runtime scripts: поднимает живой Core, проверяет backup/restore, metrics, ingest continuity и SIGHUP/recovery path, ближе всего к hostile operations philosophy. | 23, 37 |
+
 ## Слой 17 — Core / Agent deep runtime basis
 
 > Этот слой уже не про общие впечатления от `core` и `agent`, а про нижний runtime-базис: transport, secure-by-default, durable state, delivery semantics и соответствие историческому корпусу (`Evidence-First`, `Agent рядом с источником`, `relay/NAT/WAN`, `Panel0 resilience`, `hostile production by default`).
