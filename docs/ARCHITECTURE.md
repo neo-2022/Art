@@ -75,6 +75,17 @@ Art строится как единый продукт с тремя архит
 - для internet-exposed и partner-exposed deployment-профилей обязателен front-door / edge / ingress shield;
 - hostile ingress scenarios должны материализоваться не только в release/docs, но и в runbooks, observability gaps и validate-path.
 
+## Trust boundary и browser surface
+- доверительный actor-context должен рождаться в trusted auth / edge / relay контуре, а не в клиентских заголовках;
+- `Core` не имеет права принимать `actor_role`, `mcp_mode`, `access_scope` и `client_ip` как security truth из недоверенного источника;
+- browser surface (Browser Level0, Panel0, Console, showcase) обязана иметь единый security baseline:
+  - CSP;
+  - frame restrictions;
+  - browser security headers;
+  - asset integrity/provenance;
+  - safe fallback при policy degradation.
+- Эти два protective contour считаются обязательной частью архитектуры hostile production среды, а не поздним hardening.
+
 ## Граница с REGART
 - Art и REGART остаются отдельными репозиториями
 - границы контрактов, событий и runtime-поведения жёстко определены

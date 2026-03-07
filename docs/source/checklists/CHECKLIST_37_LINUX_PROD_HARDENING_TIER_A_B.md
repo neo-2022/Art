@@ -130,6 +130,12 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] internet-exposed Linux rollout без shield baseline считается release blocker
   - [ ] **Проверка (pass/fail):** docs, registry, runbooks и Linux hostile-ingress validate log согласованы.
   - [ ] Артефакт результата: perimeter hardening report + hostile ingress validate log.
+- [ ] 25. Сделать: зафиксировать production blockers Linux-профиля по trust boundary и browser surface hardening.
+  - [ ] Linux production profile запрещён без trusted actor context proof для privileged paths.
+  - [ ] Linux internet-exposed browser/profile path запрещён без browser surface hardening baseline.
+  - [ ] `stage37-linux-hardening-gate` валится при отсутствии этих proof/doc/runbook связок.
+  - [ ] **Проверка (pass/fail):** Linux hardening gate подтверждает trust boundary/browser surface blockers как production baseline.
+  - [ ] Артефакт результата: stage37 protective contour gate log.
 
 ## Документация (RU)
 - [ ] docs/ops/panel0_linux_prod_readiness.md
@@ -156,6 +162,10 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/source/ingress_perimeter_protection_v0_2.md
 - [ ] docs/runbooks/ddos_suspected.md
 - [ ] docs/runbooks/ingress_shield_degraded.md
+- [ ] docs/source/trust_boundary_hardening_v0_2.md
+- [ ] docs/source/browser_surface_hardening_v0_2.md
+- [ ] docs/runbooks/trust_boundary_violation.md
+- [ ] docs/runbooks/browser_surface_policy_degraded.md
 
 ## Тестирование
 - [ ] e2e: Linux headless сценарии Panel0 + Console.
@@ -202,6 +212,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Linux policy boundary для будущих `eBPF`/`Wasm sandbox` возможностей зафиксирован до их финального внедрения.
 - [ ] Linux multi-site/WAN/segmented deployment boundary Art Agent зафиксирован и согласован с platform matrix.
 - [ ] Internet-exposed Linux production profile имеет perimeter shield baseline и hostile ingress validate-path.
+- [ ] Linux production perimeter и privileged paths блокируются без trust boundary и browser surface hardening proof.
 
 ## Метаданные
 - Ответственный: @neo-2022

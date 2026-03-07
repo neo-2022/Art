@@ -215,6 +215,35 @@
   - `docs/source/ingress_perimeter_protection_v0_2.md`
   - `docs/governance/observability_gap_registry.md`
 
+## 14.5. Trust Boundary And Canonical Actor Context Law (обязательный)
+- Система не имеет права доверять привилегированному actor-context, если он пришёл из недоверенного клиента, браузера, proxy-цепочки или partner ingress без доказанного trusted source.
+- Поля `actor_role`, `mcp_mode`, `access_scope`, `tenant_id`, `approval_actor` и `trusted_client_ip` считаются security-critical и не могут определяться прямыми входящими заголовками пользователя.
+- Заголовки вида `x-actor-role`, `x-mcp-mode`, `x-access-scope` и `x-forwarded-for` допускаются только после trusted edge / auth / relay validation.
+- При недоказанной trust boundary система обязана работать по fail-closed логике:
+  - не повышать привилегии;
+  - не принимать недоверенный actor context как audit truth;
+  - отклонять security-sensitive action path;
+  - генерировать `observability_gap.trust_boundary_violation`.
+- Любой internet-exposed или partner-exposed профиль без materialized trust-boundary baseline считается release blocker.
+- Источники детализации:
+  - `docs/source/trust_boundary_hardening_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
+## 14.6. Browser Surface Hardening Law (обязательный)
+- Browser Level0, Panel0, Console и showcase/demo слой обязаны иметь единый browser security baseline.
+- Showcase/demo режим не имеет права ослаблять browser hardening ради презентации, motion/audio или визуального эффекта.
+- Обязательный baseline включает:
+  - CSP;
+  - frame / embedding restrictions;
+  - browser security headers;
+  - asset integrity / provenance control;
+  - safe fallback presentation при деградации policy.
+- Отсутствие browser surface hardening baseline для internet-exposed профиля считается release blocker.
+- Любая деградация browser security policy фиксируется как `observability_gap.browser_surface_policy_degraded`.
+- Источники детализации:
+  - `docs/source/browser_surface_hardening_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
 ## 15. Product Narrative (Console)
 ### 15.1 Категория
 - Art Console является поверхностью Incident OS, а не набором независимых дашбордов.

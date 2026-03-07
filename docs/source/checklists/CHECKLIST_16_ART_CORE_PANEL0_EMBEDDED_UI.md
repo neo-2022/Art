@@ -18,6 +18,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - CHECKLIST 00 — MASTER
 - CHECKLIST 14 — Stream/Snapshot
 - CHECKLIST 15 — Actions/Audit/RBAC/PII
+- docs/source/browser_surface_hardening_v0_2.md
 
 ## Шаги (строго линейно)
 
@@ -61,6 +62,11 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] Обновлён `docs/ui/panel0.md`: fallback, hotkey, env, Core DOWN + Console DOWN
   - [ ] **Проверка (pass/fail):** `bash scripts/ci/check_panel0_stage16_docs.sh`.
 
+- [ ] **6. Сделать:** Материализовать browser surface hardening baseline для embedded Panel0.
+  - [ ] Panel0 не имеет права отключать CSP/frame/integrity baseline ради fallback/showcase режима.
+  - [ ] Любая деградация browser surface hardening в Panel0 фиксируется как `observability_gap.browser_surface_policy_degraded`.
+  - [ ] **Проверка (pass/fail):** docs/runtime gate подтверждает, что Panel0 docs и runtime contract не ослабляют browser hardening baseline.
+
 ## Документация (RU)
 - [ ] docs/ui/panel0.md
 - [ ] docs/ui/panel0_offline.md
@@ -68,6 +74,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/runbooks/console_boot_failed.md
 - [ ] docs/governance/observability_gap_registry.md
 - [ ] docs/ops/panel0_linux_prod_readiness.md
+- [ ] docs/source/browser_surface_hardening_v0_2.md
+- [ ] docs/runbooks/browser_surface_policy_degraded.md
 
 ## Тестирование
 - [ ] e2e: gap highlight (историческое покрытие panel0-e2e)
@@ -78,6 +86,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] e2e: observability_gap.console_boot_failed появляется в snapshot/stream
 - [ ] e2e: hotkey Ctrl+Shift+P открывает Panel0
 - [ ] e2e: Core DOWN + Console DOWN -> core-down placeholder
+- [ ] negative: Panel0 fallback path не ослабляет browser surface baseline.
 - [ ] linux prod-readiness: `bash scripts/tests/panel0_linux_prod_readiness.sh` (Console UP/HTTP error/timeout/hotkey/backlog/Core DOWN recovery)
 
 ## CI gate
@@ -94,6 +103,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Событие `observability_gap.console_boot_failed` проходит в snapshot/stream с обязательным evidence.
 - [ ] Горячая клавиша `Ctrl+Shift+P` открывает Panel0 и не создаёт искусственный `reason_type`.
 - [ ] CI Stage16 (docs + runtime) проходит.
+- [ ] Embedded Panel0 не ослабляет browser surface hardening baseline ради fallback/showcase пути.
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)
 - [ ] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

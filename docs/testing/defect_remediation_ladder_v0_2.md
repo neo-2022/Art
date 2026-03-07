@@ -194,21 +194,25 @@
 На этом уровне восстанавливается доверие к contracts/release/CI-process.
 
 Порядок исполнения:
-1. `04` Secure SDLC + supply-chain
-2. `07` Repo CI/docs
-3. `08` Contracts/OpenAPI/codegen
-4. `24` Release / upgrade / regression
-5. `12` Ingest / backpressure / hostile ingress boundary
-6. `36` SaaS abusive traffic isolation
-7. `37` Linux production perimeter hardening
-8. `45` Forensic hostile ingress attribution
-9. `38` Stage ladder enforcement
+1. `DEF-019` -> `15` Trust boundary / canonical actor context
+2. `DEF-020` -> `10, 16, 28, 40` Browser surface hardening и safe showcase boundary
+3. `DEF-014` -> `04` Secure SDLC + supply-chain
+4. `DEF-014` -> `07` Repo CI/docs
+5. `DEF-014` -> `08` Contracts/OpenAPI/codegen
+6. `DEF-014` -> `24` Release / upgrade / regression
+7. `DEF-015` -> `12` Ingest / backpressure / hostile ingress boundary
+8. `DEF-015` -> `36` SaaS abusive traffic isolation
+9. `DEF-019/020` + `DEF-015` -> `37` Linux production perimeter hardening
+10. `DEF-015` -> `45` Forensic hostile ingress attribution
+11. `DEF-014` -> `38` Stage ladder enforcement
 
 Почему это не первый уровень:
 - пока runtime basement врёт, security/release/CI могут быть зелёными на ложном основании;
 - после исправления нижних уровней можно честно ужесточать gates и release truth.
 
 Что считается успехом уровня:
+- trust boundary доказана negative-path тестами и trusted-source proof, а не только документами;
+- browser surface и showcase не могут тихо ослаблять security baseline;
 - gates доказывают behaviour, а не только structure;
 - release/provenance/CI не дают false-green;
 - internet-exposed профиль не имеет права существовать без edge/perimeter shield и hostile ingress evidence;

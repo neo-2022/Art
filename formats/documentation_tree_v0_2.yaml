@@ -1,14 +1,14 @@
 version: '1.1'
 status: ACTIVE
 root: README.md
-total_documents: 69
+total_documents: 73
 total_collection_nodes: 3
-total_markdown_links_scanned: 155
-total_tree_edges: 143
-total_file_links_in_tree: 143
-total_lines_in_tree: 9594
-total_lines_in_collections: 2235
-root_direct_children: 41
+total_markdown_links_scanned: 170
+total_tree_edges: 151
+total_file_links_in_tree: 151
+total_lines_in_tree: 10141
+total_lines_in_collections: 2241
+root_direct_children: 45
 root_influence_documents:
 - docs/INTEGRATION.md
 - docs/README.md
@@ -19,11 +19,13 @@ root_influence_documents:
 - docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 - docs/source/README.md
 - docs/source/REGART -  LangGraph  взаимодействие с Art описание.md
+- docs/source/browser_surface_hardening_v0_2.md
 - docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
 - docs/source/checklists/TRACEABILITY_V0_2.md
 - docs/source/dna_core_determinism_performance_assurance.md
 - docs/source/risk_register_v0_2.md
+- docs/source/trust_boundary_hardening_v0_2.md
 - docs/testing/defect_remediation_control_matrix_v0_2.md
 - docs/testing/defect_remediation_ladder_v0_2.md
 - formats/defect_remediation_control_matrix_v0_2.yaml
@@ -44,7 +46,7 @@ nodes:
   missing_index: false
 - path: README.md
   node_type: document
-  lines: 167
+  lines: 179
   files_count: 1
   root_influence: false
   children:
@@ -55,6 +57,8 @@ nodes:
   - docs/testing/defect_remediation_control_matrix_v0_2.md
   - docs/testing/defect_remediation_ladder_v0_2.md
   - docs/source/ingress_perimeter_protection_v0_2.md
+  - docs/source/trust_boundary_hardening_v0_2.md
+  - docs/source/browser_surface_hardening_v0_2.md
   - docs/testing/buyer_due_diligence_signal_triage_v0_2.md
   - docs/source/Art_v1_spec_final.md
   - docs/source/FOUNDATION_CONSTITUTION_V0_2.md
@@ -89,13 +93,15 @@ nodes:
   - SECURITY.md
   - docs/runbooks/ddos_suspected.md
   - docs/runbooks/ingress_shield_degraded.md
+  - docs/runbooks/trust_boundary_violation.md
+  - docs/runbooks/browser_surface_policy_degraded.md
   incoming:
   - docs/README.md
   index_target: README.md
   missing_index: false
 - path: RELEASE_CHECKLIST.md
   node_type: document
-  lines: 25
+  lines: 31
   files_count: 1
   root_influence: false
   children: []
@@ -115,7 +121,7 @@ nodes:
   missing_index: false
 - path: docs/ARCHITECTURE.md
   node_type: document
-  lines: 84
+  lines: 95
   files_count: 1
   root_influence: false
   children:
@@ -155,7 +161,7 @@ nodes:
   missing_index: false
 - path: docs/README.md
   node_type: document
-  lines: 101
+  lines: 103
   files_count: 1
   root_influence: true
   children:
@@ -186,6 +192,8 @@ nodes:
   - docs/release/versioning.md
   - docs/release/compat_matrix.md
   - docs/portal/DELIVERY_EVIDENCE.md
+  - docs/source/trust_boundary_hardening_v0_2.md
+  - docs/source/browser_surface_hardening_v0_2.md
   - docs/governance/evidence_policy.md
   - docs/governance/observability_gap_registry.md
   - docs/governance/evidence/evidence_ledger.yaml
@@ -276,7 +284,7 @@ nodes:
   missing_index: false
 - path: docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
   node_type: document
-  lines: 819
+  lines: 886
   files_count: 1
   root_influence: true
   children: []
@@ -377,7 +385,7 @@ nodes:
   missing_index: false
 - path: docs/governance/observability_gap_registry.md
   node_type: document
-  lines: 70
+  lines: 72
   files_count: 1
   root_influence: false
   children: []
@@ -387,7 +395,7 @@ nodes:
   missing_index: false
 - path: docs/governance/release_decisions
   node_type: collection
-  lines: 106
+  lines: 112
   files_count: 2
   root_influence: false
   children:
@@ -407,7 +415,7 @@ nodes:
   missing_index: false
 - path: docs/governance/release_decisions/latest_go_no_go.md
   node_type: document
-  lines: 83
+  lines: 89
   files_count: 1
   root_influence: false
   children: []
@@ -428,7 +436,7 @@ nodes:
   missing_index: false
 - path: docs/ops/go_no_go_template.md
   node_type: document
-  lines: 129
+  lines: 133
   files_count: 1
   root_influence: false
   children: []
@@ -552,7 +560,7 @@ nodes:
   missing_index: false
 - path: docs/portal/INDEX.md
   node_type: document
-  lines: 63
+  lines: 65
   files_count: 1
   root_influence: false
   children:
@@ -581,6 +589,8 @@ nodes:
   - docs/testing/buyer_due_diligence_signal_triage_v0_2.md
   - docs/portal/SECURITY_POSTURE.md
   - docs/source/ingress_perimeter_protection_v0_2.md
+  - docs/source/trust_boundary_hardening_v0_2.md
+  - docs/source/browser_surface_hardening_v0_2.md
   - docs/portal/COMPATIBILITY_MATRIX_ART_REGART.md
   - docs/portal/DOC_AUTHORITY.md
   - docs/portal/DOC_STYLE_GUIDE.md
@@ -606,7 +616,7 @@ nodes:
   missing_index: false
 - path: docs/portal/SECURITY_POSTURE.md
   node_type: document
-  lines: 54
+  lines: 67
   files_count: 1
   root_influence: false
   children: []
@@ -653,7 +663,7 @@ nodes:
   missing_index: false
 - path: docs/release/release_process.md
   node_type: document
-  lines: 33
+  lines: 44
   files_count: 1
   root_influence: true
   children: []
@@ -675,6 +685,16 @@ nodes:
   - docs/release/compat_matrix.md
   index_target: docs/release/versioning.md
   missing_index: false
+- path: docs/runbooks/browser_surface_policy_degraded.md
+  node_type: document
+  lines: 36
+  files_count: 1
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  index_target: docs/runbooks/browser_surface_policy_degraded.md
+  missing_index: false
 - path: docs/runbooks/ddos_suspected.md
   node_type: document
   lines: 40
@@ -694,6 +714,16 @@ nodes:
   incoming:
   - README.md
   index_target: docs/runbooks/ingress_shield_degraded.md
+  missing_index: false
+- path: docs/runbooks/trust_boundary_violation.md
+  node_type: document
+  lines: 36
+  files_count: 1
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  index_target: docs/runbooks/trust_boundary_violation.md
   missing_index: false
 - path: docs/security/fstec-certified-profile.md
   node_type: document
@@ -723,7 +753,7 @@ nodes:
   missing_index: false
 - path: docs/source/FOUNDATION_CONSTITUTION_V0_2.md
   node_type: document
-  lines: 710
+  lines: 739
   files_count: 1
   root_influence: true
   children: []
@@ -738,7 +768,7 @@ nodes:
   missing_index: false
 - path: docs/source/README.md
   node_type: document
-  lines: 71
+  lines: 77
   files_count: 1
   root_influence: true
   children: []
@@ -759,9 +789,21 @@ nodes:
   - docs/ARCHITECTURE.md
   index_target: docs/source/REGART -  LangGraph  взаимодействие с Art описание.md
   missing_index: false
+- path: docs/source/browser_surface_hardening_v0_2.md
+  node_type: document
+  lines: 104
+  files_count: 1
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  index_target: docs/source/browser_surface_hardening_v0_2.md
+  missing_index: false
 - path: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   node_type: document
-  lines: 308
+  lines: 310
   files_count: 1
   root_influence: true
   children: []
@@ -805,7 +847,7 @@ nodes:
   missing_index: false
 - path: docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
   node_type: document
-  lines: 172
+  lines: 181
   files_count: 1
   root_influence: false
   children: []
@@ -879,7 +921,7 @@ nodes:
   missing_index: false
 - path: docs/source/risk_register_v0_2.md
   node_type: document
-  lines: 43
+  lines: 45
   files_count: 1
   root_influence: true
   children: []
@@ -898,6 +940,18 @@ nodes:
   - docs/portal/INDEX.md
   index_target: docs/source/secure_actions_protocol_v2.md
   missing_index: false
+- path: docs/source/trust_boundary_hardening_v0_2.md
+  node_type: document
+  lines: 131
+  files_count: 1
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  index_target: docs/source/trust_boundary_hardening_v0_2.md
+  missing_index: false
 - path: docs/testing/buyer_due_diligence_signal_triage_v0_2.md
   node_type: document
   lines: 66
@@ -911,7 +965,7 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_control_matrix_v0_2.md
   node_type: document
-  lines: 513
+  lines: 565
   files_count: 1
   root_influence: true
   children: []
@@ -922,7 +976,7 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_ladder_v0_2.md
   node_type: document
-  lines: 281
+  lines: 285
   files_count: 1
   root_influence: true
   children: []

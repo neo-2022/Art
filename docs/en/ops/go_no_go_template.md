@@ -27,6 +27,7 @@ This template defines the single operational decision record before rollout. A r
 3. `GO` is forbidden if dual-write mismatch rate after the grace window is greater than `0`.
 4. `GO` is forbidden if no rollback plan with a verified return point exists.
 5. `GO` is forbidden if evidence artifacts are missing or not traceable to MASTER/checklists.
+6. `GO` is forbidden if `trust boundary`, `browser surface` baseline, or ingress/perimeter shield are not proven for the target rollout profile.
 
 ## Template
 
@@ -55,6 +56,9 @@ This template defines the single operational decision record before rollout. A r
 - [ ] Evidence ledger and delivery artifacts updated
 - [ ] Rollback plan verified
 - [ ] Alerting / observability gates enabled
+- [ ] `Trust boundary` proven for privileged or restricted paths
+- [ ] `Browser surface` baseline proven for browser-facing routes
+- [ ] `Ingress/perimeter` shield baseline proven for internet-exposed rollout
 
 ## 3. Critical pre-release metrics
 - Error budget:

@@ -47,6 +47,8 @@
 - Buyer due diligence triage: [buyer_due_diligence_signal_triage_v0_2.md](../testing/buyer_due_diligence_signal_triage_v0_2.md)
 - Security posture: [SECURITY_POSTURE.md](./SECURITY_POSTURE.md)
 - Ingress / perimeter protection baseline: [ingress_perimeter_protection_v0_2.md](../source/ingress_perimeter_protection_v0_2.md)
+- Trust boundary hardening baseline: [trust_boundary_hardening_v0_2.md](../source/trust_boundary_hardening_v0_2.md)
+- Browser surface hardening baseline: [browser_surface_hardening_v0_2.md](../source/browser_surface_hardening_v0_2.md)
 - Матрица совместимости Art↔REGART: [COMPATIBILITY_MATRIX_ART_REGART.md](./COMPATIBILITY_MATRIX_ART_REGART.md)
 - Модель авторитета документов: [DOC_AUTHORITY.md](./DOC_AUTHORITY.md)
 - Стиль документации: [DOC_STYLE_GUIDE.md](./DOC_STYLE_GUIDE.md)

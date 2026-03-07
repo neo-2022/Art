@@ -69,6 +69,8 @@ Machine-readable карта зависимостей:
 - versioning: [versioning.md](release/versioning.md)
 - compatibility matrix: [compat_matrix.md](release/compat_matrix.md)
 - лента delivery evidence: [DELIVERY_EVIDENCE.md](portal/DELIVERY_EVIDENCE.md)
+- trust boundary hardening baseline: [trust_boundary_hardening_v0_2.md](source/trust_boundary_hardening_v0_2.md)
+- browser surface hardening baseline: [browser_surface_hardening_v0_2.md](source/browser_surface_hardening_v0_2.md)
 
 ### Governance и evidence
 - evidence policy: [evidence_policy.md](governance/evidence_policy.md)

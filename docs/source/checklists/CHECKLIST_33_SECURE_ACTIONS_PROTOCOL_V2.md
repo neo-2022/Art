@@ -43,17 +43,24 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] Требование: статусы шага (`pending|denied|approved|executed|rolled_back`) отображаются единообразно и локализуются EN/RU.
   - [ ] Проверка (pass/fail): e2e anti-breakage подтверждает, что после включения policy/NRAC сохраняется сквозной UX без “тупиковых” экранов.
   - [ ] Артефакт результата: action-flow anti-breakage report + screenshots.
- - [ ] 8. Сделать: зафиксировать human-in-the-loop и agent-mediated actions как обязательный action law.
+- [ ] 8. Сделать: зафиксировать human-in-the-loop и agent-mediated actions как обязательный action law.
    - [ ] Требование: агент не может silently execute critical action; agent path ограничен `propose -> preflight -> human review -> execute/deny`.
    - [ ] Требование: любое agent-mediated action отображает `why`, `evidence`, `policy verdict`, `simulated outcome`, `approval actor`.
    - [ ] Проверка (pass/fail): e2e negative scenario подтверждает блокировку agent-initiated critical action без human approval.
    - [ ] Артефакт результата: HITL negative/positive logs.
+- [ ] 9. Сделать: привязать secure actions к trust boundary hostile negative path.
+  - [ ] Требование: Action execute не доверяет actor context из недоказанных заголовков/клиентских полей.
+  - [ ] Требование: spoofed actor/policy headers приводят к fail-closed deny и `observability_gap.trust_boundary_violation`.
+  - [ ] Проверка (pass/fail): negative integration/e2e сценарий подтверждает deny, audit trail и gap-событие при spoofed actor context.
+  - [ ] Артефакт результата: trust-boundary negative log.
 
 ## Документация (RU)
 - [ ] docs/source/secure_actions_protocol_v2.md
 - [ ] docs/runbooks/action_preflight_missing.md
 - [ ] docs/foundation/revolutionary_hypotheses.md
 - [ ] docs/source/console_agent_interaction_model_v0_2.md
+- [ ] docs/source/trust_boundary_hardening_v0_2.md
+- [ ] docs/runbooks/trust_boundary_violation.md
 
 ## Тестирование
 - [ ] Tier0 unit: policy/preflight validators.
@@ -64,6 +71,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Tier2 e2e: anti-breakage маршруты Action Studio из `Incident Room` и `Flow Mode`.
 - [ ] Tier2 i18n: EN/RU для статусов preflight/policy/NRAC/action-result.
 - [ ] Tier2 e2e: agent-mediated action blocked without human approval.
+- [ ] Tier2 e2e: spoofed actor context blocked by trust boundary.
 - [ ] chaos: forced policy denial matrix.
 - [ ] load: переносится в этап 34.
 - [ ] soak: переносится в этап 34.
@@ -79,6 +87,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] NRAC enforced для action-классов, отмеченных как critical.
 - [ ] Action Studio эволюционирует без интерфейсного разрыва между L1/L2 и подтверждён anti-breakage тестами.
 - [ ] Agent-mediated actions подчиняются human-in-the-loop law и не имеют silent execute path.
+- [ ] Secure actions подчиняются trusted actor context baseline и fail-closed trust boundary negative path.
 - [ ] observability-gap событие этапа 33 зарегистрировано и имеет runbook.
 
 ## Метаданные

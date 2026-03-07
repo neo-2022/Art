@@ -105,6 +105,11 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] Проверка (pass/fail): runtime e2e подтверждает цикл `save -> apply -> export -> import -> delete` с корректными status-сообщениями.
   - [ ] Проверка (pass/fail): policy-locked controls помечены и не изменяются через profile apply.
   - [ ] Артефакт результата: profile manager e2e log + UI screenshot.
+- [ ] 18. Сделать: закрепить browser surface hardening как обязательный foundation law для Console shell.
+  - [ ] Требование: foundation shell и static build не имеют права ослаблять CSP/frame/integrity baseline ради dev/showcase paths.
+  - [ ] Требование: actor context (`human/agent/system`) отображается только из trusted context и не может spoof’иться через UI shell.
+  - [ ] Проверка (pass/fail): foundation docs/tests подтверждают browser hardening baseline и trusted actor context negative path.
+  - [ ] Артефакт результата: browser hardening foundation diff + negative-path test log.
 
 ## Документация (RU)
 - [ ] docs/source/FOUNDATION_CONSTITUTION_V0_2.md
@@ -117,6 +122,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/source/console_settings_architecture_v0_2.md
 - [ ] docs/source/console_agent_interaction_model_v0_2.md
 - [ ] docs/source/agent_workspace_model_v0_2.md
+- [ ] docs/source/browser_surface_hardening_v0_2.md
+- [ ] docs/source/trust_boundary_hardening_v0_2.md
 
 ## Тестирование
 - [ ] unit: пакеты `packages/*` покрыты тестами и запускаются в CI.
@@ -130,6 +137,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] integration: audio replace/preview/clear работает по каждому baseline эффекту.
 - [ ] e2e: search + audio preview + custom replace status + clear cycle.
 - [ ] e2e: settings profile manager cycle (`save/apply/export/import/delete`) + policy-lock behavior.
+- [ ] negative: Console shell не допускает hardcoded/unsafe browser surface path и spoofed actor context.
 - [ ] chaos: отрицательный boundary case (прямой импорт запрещённого пути) падает в CI.
 - [ ] load: не применяется на этапе 28; переносится в этап 34.
 - [ ] soak: не применяется на этапе 28; переносится в этап 34.
@@ -157,6 +165,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Интерфейсная лестница L0->L3 задокументирована и проверяется как обязательный anti-breakage контракт.
 - [ ] Settings framework (с поиском) и audio effects framework (replace/preview/clear) реализованы и покрыты тестами.
 - [ ] Полный двуязычный foundation UI подтверждён не только toggle, но и parity всех surface states.
+- [ ] Browser surface hardening и trusted actor context закреплены как foundation laws, а не как поздний optional hardening.
 - [ ] Модель взаимодействия человека с агентом заложена в Console foundation без “магического чата”.
 - [ ] Layer E / Agent Workspace заложен как ранний foundation contour, а не отложен до поздних этапов.
 - [ ] Карта меню настроек проекта зафиксирована как расширяемый контракт уровней и policy-lock.

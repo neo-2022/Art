@@ -29,6 +29,14 @@ grep -q "Source of truth" docs/security/fstec-certified-profile.md
 grep -q "Source of truth" docs/en/security/fstec-certified-profile.md
 grep -q "^| observability_gap.dna_canary_divergence |" docs/governance/observability_gap_registry.md
 grep -q "^| observability_gap.evidence_privacy_violation |" docs/governance/observability_gap_registry.md
+grep -q "^| observability_gap.trust_boundary_violation |" docs/governance/observability_gap_registry.md
+grep -q "^| observability_gap.browser_surface_policy_degraded |" docs/governance/observability_gap_registry.md
+test -s docs/source/trust_boundary_hardening_v0_2.md
+test -s docs/source/browser_surface_hardening_v0_2.md
+test -s docs/runbooks/trust_boundary_violation.md
+test -s docs/runbooks/browser_surface_policy_degraded.md
+grep -q "trusted actor context" docs/source/trust_boundary_hardening_v0_2.md
+grep -q "CSP" docs/source/browser_surface_hardening_v0_2.md
 test -s artifacts/regart-parity/report.json
 grep -q "platform-vm-skeleton-gate" .github/workflows/platform_matrix_stage37.yml
 grep -q "platform-runtime-compatibility-gate" .github/workflows/platform_matrix_stage37.yml

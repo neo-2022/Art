@@ -17,6 +17,7 @@ CHECKLIST 02 — Privacy baseline (global)
 CHECKLIST 03 — Regional profiles  
 CHECKLIST 08 — Contracts + OpenAPI + codegen + schema registry  
 CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
+docs/source/browser_surface_hardening_v0_2.md
 
 ## Статус перепроверки
 - Закрытие этапа снято: заявленные тесты/CI или runtime-реализация не подтверждены полностью по факту кода и workflow.
@@ -131,6 +132,13 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
     - [ ] `lossy_mode_active` ссылается на `action_ref=docs/runbooks/lossy_mode_active.md`
   - [ ] **Проверка (pass/fail):** integration тесты для обеих политик зелёные и подтверждают события/метрики/инцидент (`browser/test/outbox.compression.test.js`).
 
+- [ ] **8. Сделать:** Материализовать browser surface hardening baseline для Level0 как обязательный security contour.
+  - [ ] Зафиксировать CSP baseline для browser surface и запрет небезопасных inline/script-eval путей.
+  - [ ] Зафиксировать `frame-ancestors`/embedding policy для Level0 и Panel0-перехода.
+  - [ ] Зафиксировать asset integrity baseline для browser bundle и service worker shell.
+  - [ ] Любая деградация browser hardening генерирует `observability_gap.browser_surface_policy_degraded` с `action_ref=docs/runbooks/browser_surface_policy_degraded.md`.
+  - [ ] **Проверка (pass/fail):** browser docs gate и negative-path сценарий подтверждают, что ослабление browser surface hardening ловится автоматически.
+
 ## Документация (RU)
 - [ ] docs/browser/level0_api.md
 - [ ] docs/browser/outbox_limits.md
@@ -138,12 +146,14 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
 - [ ] docs/browser/compression.md
 - [ ] docs/browser/dlq.md
 - [ ] docs/browser/chaos_e2e_matrix.md
+- [ ] docs/source/browser_surface_hardening_v0_2.md
 - [ ] docs/runbooks/cors_blocked.md
 - [ ] docs/runbooks/outbox_decompress_failed.md
 - [ ] docs/runbooks/outbox_event_expired.md
 - [ ] docs/runbooks/worker_unavailable.md
 - [ ] docs/runbooks/outbox_full.md
 - [ ] docs/runbooks/lossy_mode_active.md
+- [ ] docs/runbooks/browser_surface_policy_degraded.md
 
 ## Тестирование
 - [ ] unit: outbox (insert/read/ack), dedup (TTL/prune), gzip (compress/decompress), TTL→DLQ, DLQ purge, cleanup timer
@@ -153,6 +163,7 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
 - [ ] integration: Worker unavailable → fallback + `observability_gap.worker_unavailable`
 - [ ] integration: overflow политики outbox (never_drop_unacked / drop_oldest_when_full) + события/метрики/инцидент
 - [ ] chaos/e2e matrix: transient ingest retry + outbox flush retry (`browser/test/level0.chaos.e2e.test.js`)
+- [ ] negative: попытка ослабить browser surface hardening вызывает browser docs/security gate fail.
 
 ## CI gate
 - [ ] browser lint/test/build зелёные
@@ -167,6 +178,7 @@ CHECKLIST 09 — Telemetry alignment (OTel/OTLP)
     - [ ] `docs/browser/cors_gap.md` содержит `observability_gap.cors_blocked`
     - [ ] `docs/browser/outbox_limits.md` содержит `never_drop_unacked` и `drop_oldest_when_full`
     - [ ] `docs/browser/chaos_e2e_matrix.md` содержит `browser_level0_chaos_e2e.sh` и `Outbox flush retry`
+    - [ ] `docs/source/browser_surface_hardening_v0_2.md` содержит `CSP` и `frame-ancestors`
     - [ ] runbooks содержат `mitigations` и `verification`
   - [ ] завершает работу с exit 1 при нарушении любой проверки
 

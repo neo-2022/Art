@@ -27,6 +27,13 @@
 - agent/relay/bootstrap transport обязан прийти к защищённому baseline;
 - privileged operations должны иметь отдельный audited path.
 
+Что это означает practically:
+- клиент не может сам назначить себе `actor_role=admin`;
+- клиент не может включить `mcp_mode=full_admin`;
+- `access_scope` не может приходить из query/header как готовая истина;
+- `X-Forwarded-For` не считается истинным client IP без trusted proxy chain;
+- при сомнении система должна fail-closed, а не “довериться для удобства”.
+
 ### 3. Ingress / perimeter defense
 - app-level `429/503` не считается полноценной DDoS-защитой;
 - internet-exposed deployments обязаны иметь front-door / edge / ingress shield;
@@ -38,12 +45,18 @@
     - `observability_gap.ddos_suspected`
     - `observability_gap.ingress_shield_degraded`
 
-### 4. Privacy / evidence / audit
+### 4. Browser surface hardening
+- Browser Level0, Panel0, Console и showcase/demo слой обязаны иметь единый browser security baseline;
+- CSP, frame restrictions, browser security headers и asset provenance должны быть частью production baseline, а не “позднего hardening”;
+- showcase/demo не имеет права ослаблять боевой browser security contour;
+- при деградации browser policy должен возникать `observability_gap.browser_surface_policy_degraded`.
+
+### 5. Privacy / evidence / audit
 - evidence access должен быть policy-driven;
 - redaction и scope enforcement не имеют права ослабляться ради удобства;
 - audit trail должен фиксировать доступ, решение и доказательство.
 
-### 5. Runtime resilience
+### 6. Runtime resilience
 - storage corruption, ingest overload, relay failure, spool corruption и другие hostile runtime paths не считаются второстепенными;
 - production baseline должен уметь обнаруживать и переживать деградацию, а не только документировать happy-path.
 

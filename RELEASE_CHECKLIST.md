@@ -16,6 +16,9 @@
 - DR/backup requirements: `docs/ops/db_migration_runbook.md`, `docs/ops/deploy_systemd.md`, `docs/ops/deploy_k8s.md`
 - GO/NO-GO decision sheet: `docs/governance/release_decisions/latest_go_no_go.md`
 - Production scope statement: `Ubuntu native + Docker runtime + Kubernetes runtime are execute-gated for the current release scope; extended Linux matrix remains validate-only until ENABLE_NATURAL_MATRIX=true`
+- Trust boundary proof: `docs/source/trust_boundary_hardening_v0_2.md`
+- Browser surface baseline: `docs/source/browser_surface_hardening_v0_2.md`
+- Ingress/perimeter baseline: `docs/source/ingress_perimeter_protection_v0_2.md`
 
 ## Mandatory checks
 - [x] `release-regression` green
@@ -23,3 +26,6 @@
 - [x] `stage24-docs-gate` green
 - [x] `stage37-linux-hardening-gate` green
 - [x] `docs/governance/release_decisions/latest_go_no_go.md` exists and is filled
+- [ ] `trust boundary` proof attached for privileged or restricted rollout
+- [ ] `browser surface` baseline attached for browser-facing rollout
+- [ ] `ingress/perimeter` baseline attached for internet-exposed rollout

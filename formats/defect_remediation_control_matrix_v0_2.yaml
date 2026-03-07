@@ -151,8 +151,8 @@ defects:
   - id: DEF-014
     title: Contracts CI release and gate truth remain weaker than hostile standard
     ladder_level: D
-    execution_order: 14
-    execution_dependencies: ["DEF-013"]
+    execution_order: 16
+    execution_dependencies: ["DEF-020"]
     affected_stages: ["04", "07", "08", "24", "38"]
     target_checklists:
       - docs/source/checklists/CHECKLIST_04 _Secure SDLC + Supply-chain.md
@@ -163,7 +163,7 @@ defects:
   - id: DEF-015
     title: Internet-exposed ingress perimeter and anti-DDoS contour missing
     ladder_level: D
-    execution_order: 15
+    execution_order: 17
     execution_dependencies: ["DEF-014"]
     affected_stages: ["12", "24", "36", "37", "45"]
     target_checklists:
@@ -175,7 +175,7 @@ defects:
   - id: DEF-016
     title: Approved differentiators are still not materialized end to end
     ladder_level: E
-    execution_order: 16
+    execution_order: 18
     execution_dependencies: ["DEF-015"]
     affected_stages: ["29", "30", "31", "32", "33", "34", "35", "36", "39", "40", "41", "42", "43", "44", "45"]
     target_checklists:
@@ -197,7 +197,7 @@ defects:
   - id: DEF-017
     title: High-risk runtime entrypoints remain too monolithic
     ladder_level: E
-    execution_order: 17
+    execution_order: 19
     execution_dependencies: ["DEF-016"]
     affected_stages: ["10", "11", "17", "18", "28", "35", "37", "39"]
     target_checklists:
@@ -212,7 +212,7 @@ defects:
   - id: DEF-018
     title: Hostile integration and e2e test depth remains uneven
     ladder_level: E
-    execution_order: 18
+    execution_order: 20
     execution_dependencies: ["DEF-017"]
     affected_stages: ["10", "16", "22", "24", "28", "34", "36", "38"]
     target_checklists:
@@ -224,3 +224,27 @@ defects:
       - docs/source/checklists/CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md
       - docs/source/checklists/CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md
       - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
+  - id: DEF-019
+    title: Trust boundary and canonical actor context are not hardened
+    ladder_level: D
+    execution_order: 14
+    execution_dependencies: ["DEF-013"]
+    affected_stages: ["15", "24", "33", "37"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_15_ART_CORE_ACTIONS_AUDIT_RBAC_PII.md
+      - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
+      - docs/source/checklists/CHECKLIST_33_SECURE_ACTIONS_PROTOCOL_V2.md
+      - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
+  - id: DEF-020
+    title: Browser surface hardening is not materialized as mandatory security baseline
+    ladder_level: D
+    execution_order: 15
+    execution_dependencies: ["DEF-019"]
+    affected_stages: ["10", "16", "24", "28", "37", "40"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md
+      - docs/source/checklists/CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md
+      - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
+      - docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
+      - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
+      - docs/source/checklists/CHECKLIST_40_PRODUCT_SHOWCASE_VISUAL_LANGUAGE.md

@@ -16,6 +16,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - CHECKLIST 14 — Stream/Snapshot v1 (SSE)
 - CHECKLIST 02 — Privacy baseline (global) (redaction rules + privacy.redaction_applied)
 - CHECKLIST 01 — Governance/SRE (MCP режимы как политика; audit policy)
+- docs/source/trust_boundary_hardening_v0_2.md
 
 ## Шаги (строго линейно)
 
@@ -104,6 +105,12 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] Тест tamper detection: ручное изменение старой записи приводит к `audit_chain_broken`
   - [ ] **Проверка (pass/fail):** integration test “audit immutability” зелёный и подтверждает блокировку update/delete.
 
+- [ ] **7. Сделать:** Зафиксировать и реализовать trust boundary / canonical actor context как fail-closed baseline.
+  - [ ] `actor_id`, `actor_role`, `mcp_mode`, `access_scope`, `client_ip` и связанные audit/security поля принимаются только из trusted context, а не из произвольных client headers.
+  - [ ] Любой spoofed или недоказанный actor context приводит к deny и `observability_gap.trust_boundary_violation`.
+  - [ ] `security.access_denied` и audit path различают deny по RBAC/MCP и deny по trust boundary.
+  - [ ] **Проверка (pass/fail):** negative integration test с поддельными actor headers подтверждает fail-closed поведение и событие `observability_gap.trust_boundary_violation`.
+
 ## Документация (RU)
 - [ ] docs/core/actions.md
 - [ ] docs/core/audit.md
@@ -111,6 +118,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/security/pii_secret_filter.md
 - [ ] docs/security/mcp_modes_runtime.md
 - [ ] docs/runbooks/access_denied.md
+- [ ] docs/source/trust_boundary_hardening_v0_2.md
+- [ ] docs/runbooks/trust_boundary_violation.md
 
 ## Тестирование
 - [ ] integration: RBAC матрица endpoint→роль (шаг 1)
@@ -120,6 +129,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] security: secret injection → pre-write filter + `privacy.redaction_applied` (шаг 5)
 - [ ] integration: audit immutability (append-only) (шаг 6)
 - [ ] integration: audit hash-chain verify (`/api/v1/audit/verify`) + tamper detection (шаг 6)
+- [ ] integration: spoofed actor header / canonical actor context negative path (шаг 7)
 
 ## CI gate
 - [ ] CI job `actions-audit-tests` существует и запускается на PR в main; job зелёный
@@ -132,6 +142,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - [ ] `docs/core/audit.md` содержит `client_ip` и `user_agent` и `append-only`
     - [ ] `docs/security/pii_secret_filter.md` содержит `pre-write` и `redaction`
     - [ ] `docs/runbooks/access_denied.md` содержит `mitigations` и `verification`
+    - [ ] `docs/source/trust_boundary_hardening_v0_2.md` содержит `trusted` и `fail-closed`
   - [ ] exit 1 при нарушении любой проверки
 
 ## DoD
@@ -141,6 +152,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] `security.access_denied` генерируется и видим в snapshot/stream; есть runbook.
 - [ ] PII/secret filtering применяется ДО записи в audit; `privacy.redaction_applied` генерируется при фактическом редактировании.
 - [ ] Audit append-only + hash-chain immutability tests зелёные.
+- [ ] Trust boundary и canonical actor context доказаны hostile negative-path тестами.
 - [ ] CI gate Stage 15 зелёный.
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)

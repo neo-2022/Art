@@ -39,6 +39,11 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] action_ref: `docs/runbooks/showcase_mode_degraded.md`.
   - [ ] Проверка (pass/fail): registry запись + runbook файл.
   - [ ] Артефакт результата: registry/runbook diff.
+- [ ] 6. Сделать: закрепить safe showcase boundary относительно browser surface hardening и trust boundary.
+  - [ ] Showcase/demo слой не имеет права отключать CSP/frame/integrity baseline, trusted actor context labels или security warnings ради красоты презентации.
+  - [ ] Любая попытка ослабить production browser/security baseline в showcase считается release/design blocker.
+  - [ ] Проверка (pass/fail): showcase gate подтверждает, что demo assets/routes/styles не ослабляют browser hardening и trust boundary baseline.
+  - [ ] Артефакт результата: showcase safety boundary report.
 
 ## Документация (RU)
 - [ ] docs/portal/ART_VISUAL_LANGUAGE.md
@@ -46,6 +51,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/portal/INDEX.md
 - [ ] docs/portal/DELIVERY_EVIDENCE.md
 - [ ] docs/runbooks/showcase_mode_degraded.md
+- [ ] docs/source/browser_surface_hardening_v0_2.md
+- [ ] docs/source/trust_boundary_hardening_v0_2.md
 
 ## Тестирование
 - [ ] unit: token/theme/motion policy schema checks.
@@ -54,12 +61,14 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] perf: showcase mode respects downgrade policy on weak-gpu profile.
 - [ ] visual regression: key showcase surfaces stable.
 - [ ] chaos: broken asset path switches to safe fallback presentation.
+- [ ] negative: showcase path не ослабляет browser surface hardening и trusted actor context labels.
 
 ## CI gate
 - [ ] `stage40-showcase-visual-gate`
 
 ## DoD
 - [ ] Art имеет управляемый brand/showcase слой без конфликта с operational UI.
+- [ ] Showcase layer не может ослаблять production browser/security baseline ради демонстрации.
 - [ ] Клиентская демонстрация опирается на реальные evidence и артефакты.
 - [ ] observability-gap событие этапа 40 зарегистрировано и имеет runbook.
 

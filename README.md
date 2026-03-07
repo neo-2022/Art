@@ -22,9 +22,9 @@
 |---|---|
 | Ветка-источник истины | `main` |
 | Текущий baseline | `v0.2.0-rc.2` |
-| Статус релиза | production candidate |
+| Статус релиза | production candidate, `NO-GO` до доказательства protective contours |
 | Активный corrective baseline | `DEF-001 -> stage11 (durable Core storage/recovery; hostile backup/restore proof added)` |
-| Следующие structural defects в стволе | `DEF-017` high-risk monolith decomposition, `DEF-018` hostile e2e depth hardening |
+| Следующие structural defects в стволе | `DEF-017` high-risk monolith decomposition, `DEF-018` hostile e2e depth hardening, `DEF-019/020` trust boundary и browser surface hardening |
 | Execute-gated платформы | Ubuntu native, Docker runtime, Kubernetes runtime |
 | Расширенная Linux-матрица | validate-only до включения выделенных runner'ов |
 
@@ -36,6 +36,8 @@
 - активная дефектовочная контрольная строка: [defect_remediation_control_matrix_v0_2.md](docs/testing/defect_remediation_control_matrix_v0_2.md)
 - дефектовочная лестница: [defect_remediation_ladder_v0_2.md](docs/testing/defect_remediation_ladder_v0_2.md)
 - baseline ingress/perimeter защиты: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
+- baseline trust boundary hardening: [trust_boundary_hardening_v0_2.md](docs/source/trust_boundary_hardening_v0_2.md)
+- baseline browser surface hardening: [browser_surface_hardening_v0_2.md](docs/source/browser_surface_hardening_v0_2.md)
 - buyer due diligence triage: [buyer_due_diligence_signal_triage_v0_2.md](docs/testing/buyer_due_diligence_signal_triage_v0_2.md)
 
 ## Что такое Art
@@ -92,6 +94,8 @@ Art проектируется как `Incident OS`, где:
 - risk register: [risk_register_v0_2.md](docs/source/risk_register_v0_2.md)
 - DNA assurance standard: [dna_core_determinism_performance_assurance.md](docs/source/dna_core_determinism_performance_assurance.md)
 - ingress/perimeter protection standard: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
+- trust boundary hardening standard: [trust_boundary_hardening_v0_2.md](docs/source/trust_boundary_hardening_v0_2.md)
+- browser surface hardening standard: [browser_surface_hardening_v0_2.md](docs/source/browser_surface_hardening_v0_2.md)
 - корневой индекс документации: [docs/README.md](docs/README.md)
 
 ## Контракты и API
@@ -122,6 +126,10 @@ Art проектируется как `Incident OS`, где:
 - versioning: [versioning.md](docs/release/versioning.md)
 - compatibility matrix: [compat_matrix.md](docs/release/compat_matrix.md)
 - GO/NO-GO template: [go_no_go_template.md](docs/ops/go_no_go_template.md)
+- release blockers по защитным контурам:
+  - trust boundary hardening: [trust_boundary_hardening_v0_2.md](docs/source/trust_boundary_hardening_v0_2.md)
+  - browser surface hardening: [browser_surface_hardening_v0_2.md](docs/source/browser_surface_hardening_v0_2.md)
+  - ingress/perimeter protection: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
 
 ## Прогресс и доказательства
 
@@ -156,8 +164,12 @@ Art и REGART — отдельные кодовые базы с контракт
 
 Дополнительно:
 - ingress/perimeter baseline: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
+- trust boundary hardening baseline: [trust_boundary_hardening_v0_2.md](docs/source/trust_boundary_hardening_v0_2.md)
+- browser surface hardening baseline: [browser_surface_hardening_v0_2.md](docs/source/browser_surface_hardening_v0_2.md)
 - runtime runbook при подозрении на DDoS: [ddos_suspected.md](docs/runbooks/ddos_suspected.md)
 - runbook деградации ingress shield: [ingress_shield_degraded.md](docs/runbooks/ingress_shield_degraded.md)
+- runbook нарушения trust boundary: [trust_boundary_violation.md](docs/runbooks/trust_boundary_violation.md)
+- runbook деградации browser surface policy: [browser_surface_policy_degraded.md](docs/runbooks/browser_surface_policy_degraded.md)
 
 ## Лицензия
 

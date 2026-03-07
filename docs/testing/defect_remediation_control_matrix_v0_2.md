@@ -68,8 +68,10 @@
 | `DEF-011` | `[ ]` | `C.1` | `DEF-010` | `10, 16, 28, 37, 40` | Browser/Panel0 fallback и bilingual truth расходятся с заявлением |
 | `DEF-012` | `[ ]` | `C.2` | `DEF-011` | `28, 30, 31, 33, 40` | Console/i18n/agent interaction contour недоматериализован |
 | `DEF-013` | `[ ]` | `C.3` | `DEF-012` | `28, 34, 35, 41` | `local-stores`/`worker-runtime`/spatial basement всё ещё слаб |
-| `DEF-014` | `[ ]` | `D.1` | `DEF-013` | `04, 07, 08, 24, 38` | Contracts/CI/release/gates ещё дают false-green и weak proof |
-| `DEF-015` | `[ ]` | `D.2` | `DEF-014` | `12, 24, 36, 37, 45` | Нет полноценного ingress/perimeter anti-DDoS контура для hostile production среды |
+| `DEF-019` | `[ ]` | `D.1` | `DEF-013` | `15, 24, 33, 37` | Trust boundary и canonical actor context не материализованы как hostile production baseline |
+| `DEF-020` | `[ ]` | `D.2` | `DEF-019` | `10, 16, 24, 28, 37, 40` | Browser surface hardening не закреплён как обязательный security baseline для runtime и showcase |
+| `DEF-014` | `[ ]` | `D.3` | `DEF-020` | `04, 07, 08, 24, 38` | Contracts/CI/release/gates ещё дают false-green и weak proof |
+| `DEF-015` | `[ ]` | `D.4` | `DEF-014` | `12, 24, 36, 37, 45` | Нет полноценного ingress/perimeter anti-DDoS контура для hostile production среды |
 | `DEF-016` | `[ ]` | `E.1` | `DEF-015` | `29..45` | Утверждённые differentiators ещё не materialize в runtime/contracts/tests |
 | `DEF-017` | `[ ]` | `E.2` | `DEF-016` | `10, 11, 17, 18, 28, 35, 37, 39` | Высокорисковые монолитные entrypoint-файлы затрудняют review, hardening и смену владельца |
 | `DEF-018` | `[ ]` | `E.3` | `DEF-017` | `10, 16, 22, 24, 28, 34, 36, 38` | Сила test-corpus неравномерна: console/browser и часть release-path ещё слабее hostile production стандарта |
@@ -358,9 +360,59 @@
   - spatial readiness tests without stubs;
   - AST/static law enforcement proof.
 
-### [ ] DEF-014 — Contracts / CI / release / gates truth
+### [ ] DEF-019 — Trust boundary and canonical actor context hardening
 - Уровень: `D.1`
 - Зависит от: `DEF-013`
+- Затронутые stage-листы:
+  - `CHECKLIST_15_ART_CORE_ACTIONS_AUDIT_RBAC_PII.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_33_SECURE_ACTIONS_PROTOCOL_V2.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+- Audit basis:
+  - `core/src/main.rs`
+  - `docs/source/trust_boundary_hardening_v0_2.md`
+  - `docs/portal/SECURITY_POSTURE.md`
+  - `docs/governance/observability_gap_registry.md`
+- Что нужно сделать:
+  1. запретить использовать недоверенные входящие заголовки как источник `actor_role`, `mcp_mode`, `access_scope` и `trusted_client_ip`;
+  2. materialize trusted actor-context baseline для security-sensitive путей;
+  3. ввести fail-closed negative path для spoofed headers и недоказанной trust boundary;
+  4. сделать release/runtime profiles честно зависимыми от trust-boundary proof.
+- Чем доказать закрытие:
+  - spoofed-header negative tests;
+  - trusted source matrix;
+  - `observability_gap.trust_boundary_violation`;
+  - release blocker evidence для internet-exposed / partner-exposed профилей.
+
+### [ ] DEF-020 — Browser surface hardening baseline
+- Уровень: `D.2`
+- Зависит от: `DEF-019`
+- Затронутые stage-листы:
+  - `CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md`
+  - `CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+  - `CHECKLIST_40_PRODUCT_SHOWCASE_VISUAL_LANGUAGE.md`
+- Audit basis:
+  - `docs/source/browser_surface_hardening_v0_2.md`
+  - `browser/*`
+  - `apps/console-web/*`
+  - `docs/portal/SECURITY_POSTURE.md`
+- Что нужно сделать:
+  1. materialize CSP/frame/header/integrity baseline для browser surface;
+  2. запретить ослабление browser security ради showcase/demo;
+  3. сделать policy degradation наблюдаемой и testable;
+  4. связать release profiles с browser hardening proof.
+- Чем доказать закрытие:
+  - browser policy negative tests;
+  - release evidence для internet-exposed browser surface;
+  - `observability_gap.browser_surface_policy_degraded`;
+  - safe fallback presentation proof.
+
+### [ ] DEF-014 — Contracts / CI / release / gates truth
+- Уровень: `D.3`
+- Зависит от: `DEF-020`
 - Затронутые stage-листы:
   - `CHECKLIST_04 _Secure SDLC + Supply-chain.md`
   - `CHECKLIST_07_ART_REPO_CI_DOCS.md`
@@ -382,7 +434,7 @@
   - release evidence current and non-stale.
 
 ### [ ] DEF-015 — Ingress / perimeter anti-DDoS contour
-- Уровень: `D.2`
+- Уровень: `D.4`
 - Зависит от: `DEF-014`
 - Затронутые stage-листы:
   - `CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md`

@@ -5,6 +5,8 @@ required_files=(
   "docs/source/FOUNDATION_CONSTITUTION_V0_2.md"
   "docs/source/dna_core_determinism_performance_assurance.md"
   "docs/source/analytics_memory_v0_2.md"
+  "docs/source/trust_boundary_hardening_v0_2.md"
+  "docs/source/browser_surface_hardening_v0_2.md"
   "docs/source/ingress_perimeter_protection_v0_2.md"
   "docs/source/risk_register_v0_2.md"
   "docs/source/console_settings_architecture_v0_2.md"
@@ -94,6 +96,8 @@ required_files=(
   "docs/runbooks/console_linux_readiness_failed.md"
   "docs/runbooks/ddos_suspected.md"
   "docs/runbooks/ingress_shield_degraded.md"
+  "docs/runbooks/trust_boundary_violation.md"
+  "docs/runbooks/browser_surface_policy_degraded.md"
   "docs/runbooks/checklist_ladder_violation.md"
   "mkdocs.yml"
   "docs/portal/INDEX.md"
@@ -138,6 +142,8 @@ grep -q "Observability Gap Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "DNA Engine Safety Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "Settings Information Architecture Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "Ingress Abuse And DDoS Defense Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+grep -q "Trust Boundary And Canonical Actor Context Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+grep -q "Browser Surface Hardening Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "stage38-ladder-gate" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "01..27 -> 28..38" docs/source/checklists/TRACEABILITY_V0_2.md
 
@@ -147,6 +153,7 @@ bash scripts/ci/check_root_decision_tree_sync.sh
 bash scripts/ci/check_documentation_tree_sync.sh
 python3 -m unittest scripts.tests.test_documentation_tree -v
 bash scripts/ci/check_defect_remediation_control_matrix.sh
+bash scripts/ci/check_protective_contours.sh
 
 grep -q "CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 grep -q "CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md

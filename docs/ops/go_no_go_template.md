@@ -26,6 +26,7 @@
 3. Решение `GO` запрещено, если dual-write mismatch rate после grace window больше `0`.
 4. Решение `GO` запрещено, если отсутствует rollback plan с проверяемой точкой возврата.
 5. Решение `GO` запрещено, если evidence artifacts не приложены или не трассируются к MASTER/checklists.
+6. Решение `GO` запрещено, если не доказаны `trust boundary`, `browser surface` baseline или ingress/perimeter shield для целевого профиля.
 
 ## Шаблон
 
@@ -54,6 +55,9 @@
 - [ ] Evidence ledger и delivery artifacts обновлены
 - [ ] Rollback plan проверен
 - [ ] Alerting / observability gates включены
+- [ ] `Trust boundary` доказана для privileged/restricted paths
+- [ ] `Browser surface` baseline доказан для browser-facing routes
+- [ ] `Ingress/perimeter` shield baseline доказан для internet-exposed rollout
 
 ## 3. Критические метрики перед релизом
 - Error budget:

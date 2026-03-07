@@ -8,6 +8,8 @@ required_files=(
   "docs/security/pii_secret_filter.md"
   "docs/security/mcp_modes_runtime.md"
   "docs/runbooks/access_denied.md"
+  "docs/source/trust_boundary_hardening_v0_2.md"
+  "docs/runbooks/trust_boundary_violation.md"
 )
 
 for f in "${required_files[@]}"; do
@@ -31,6 +33,12 @@ grep -q "/api/v1/audit/verify" docs/core/audit.md
 
 grep -q "pre-write" docs/security/pii_secret_filter.md
 grep -q "redaction" docs/security/pii_secret_filter.md
+grep -q "trusted" docs/source/trust_boundary_hardening_v0_2.md
+grep -q "fail-closed" docs/source/trust_boundary_hardening_v0_2.md
+grep -q "observability_gap.trust_boundary_violation" docs/governance/observability_gap_registry.md
 
 grep -q "mitigations" docs/runbooks/access_denied.md
 grep -q "verification" docs/runbooks/access_denied.md
+grep -q "mitigations" docs/runbooks/trust_boundary_violation.md
+grep -q "verification" docs/runbooks/trust_boundary_violation.md
+echo "stage15 actions docs gate: OK"

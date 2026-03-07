@@ -68,3 +68,4 @@ PY
 bash scripts/ci/check_root_decision_tree_sync.sh
 bash scripts/ci/check_documentation_tree_sync.sh
 bash scripts/ci/check_defect_remediation_control_matrix.sh
+bash scripts/ci/check_protective_contours.sh

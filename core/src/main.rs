@@ -5482,6 +5482,7 @@ mod tests {
         assert!(bootstrap.contains("const EVENT_KIND = \"observability_gap.console_boot_failed\";"));
         assert!(bootstrap.contains("const CONSOLE_BASE_PATH = \"/console\";"));
         assert!(bootstrap.contains("const PANEL0_BUILD_ID = \"build-42\";"));
+        assert!(bootstrap.contains("void flushBacklog();"));
         assert!(!bootstrap.contains("__CONSOLE_BASE_PATH_JSON__"));
         assert!(!bootstrap.contains("__PANEL0_BUILD_ID_JSON__"));
         assert!(!bootstrap.contains("__BOOT_TIMEOUT_MS__"));
@@ -5550,6 +5551,7 @@ mod tests {
         assert!(html.contains("const BOOT_TIMEOUT_MS = 5000;"));
         assert!(html.contains("const EVENT_KIND = \"observability_gap.console_boot_failed\";"));
         assert!(html.contains("Ctrl+Shift+P"));
+        assert!(html.contains("void flushBacklog();"));
         assert!(html.contains("globalThis.location.replace(\"/panel0/\")"));
         assert!(!html.contains("__CONSOLE_BASE_PATH_JSON__"));
     }

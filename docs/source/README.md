@@ -25,6 +25,12 @@
 7. `ingress_perimeter_protection_v0_2.md`
    - Тип: спецификация защитного ingress/perimeter контура.
    - Назначение: обязательный anti-DDoS / hostile-ingress baseline для internet-exposed и межсегментных deployment-профилей.
+8. `trust_boundary_hardening_v0_2.md`
+   - Тип: спецификация границы доверия.
+   - Назначение: запрет на использование недоверенного actor-context как security/audit истины.
+9. `browser_surface_hardening_v0_2.md`
+   - Тип: спецификация browser surface hardening.
+   - Назначение: обязательный CSP/header/frame/integrity baseline для Browser Level0, Panel0, Console и showcase-слоя.
 
 ## Корень дерева решений и автосинхронизация
 
