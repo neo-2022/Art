@@ -30,4 +30,5 @@ curl -s "http://127.0.0.1:7070/api/v2/analytics/summary?window_minutes=120&top=5
 
 ## Текущее corrective-ограничение
 - durable analytics recovery уже переведён в SQLite;
-- но hostile-доказательство для полного corruption/recovery contour ещё относится к открытому `stage11`.
+- hostile backup/restore доказательство на полном `Core state` уже есть;
+- но live runtime-контур `corruption -> 503/retry_after_ms -> restore -> read_only fallback` всё ещё относится к открытому `stage11`.

@@ -14,9 +14,10 @@
   - `analytics` и `counters` теперь сохраняются в SQLite как primary recovery state, а `CORE_ANALYTICS_STATE_PATH` остаётся только legacy mirror/import path;
   - `WAL` и `busy_timeout` для SQLite basement включаются при старте;
   - restart-proof для `v1/v2`, `incidents`, `audit chain`, `fingerprint/source indexes`, `dna/evidence` и аналитики зафиксирован в evidence `stage11_core_sqlite_restart.log`.
+  - hostile backup/restore proof для полного состояния `art-core` после corruption теперь тоже зафиксирован в evidence `stage11_core_sqlite_hostile_recovery.log`.
 - При этом storage contour `stage11` всё ещё не доведён до полного production-состояния:
-  - для расширенного derived-state ещё не доказан hostile recovery contour после `WAL/corruption/read_only` на полном наборе таблиц;
-  - backup/restore/systemd path ещё не связан с этим расширенным durable basement единым end-to-end доказательством;
+  - реальный `art-core` ещё не материализует end-to-end автоматический corruption detector, который сам переводит ingest в `HTTP 503 + retry_after_ms`, пишет `observability_gap.storage_corrupted`, делает restore и уходит в `read_only` при неуспехе;
+  - backup/restore/systemd path уже доказан по hostile proof и smoke, но ещё не собран в единый self-healing runtime contour самого `Core`;
   - поэтому документ остаётся corrective-спецификацией и не утверждает, что весь runtime уже доведён до финальной цели.
 
 ## Целевой storage-контур `stage11`

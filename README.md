@@ -23,7 +23,7 @@
 | Ветка-источник истины | `main` |
 | Текущий baseline | `v0.2.0-rc.2` |
 | Статус релиза | production candidate |
-| Активный corrective baseline | `DEF-001 -> stage11 (durable Core storage/recovery)` |
+| Активный corrective baseline | `DEF-001 -> stage11 (durable Core storage/recovery; hostile backup/restore proof added)` |
 | Execute-gated платформы | Ubuntu native, Docker runtime, Kubernetes runtime |
 | Расширенная Linux-матрица | validate-only до включения выделенных runner'ов |
 

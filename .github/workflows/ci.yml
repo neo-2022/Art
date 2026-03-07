@@ -427,6 +427,7 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Storage chaos smoke
         run: |
+          cargo test --package art-core storage_backup_restore_recovers_full_runtime_state_after_corruption
           python3 scripts/tests/test_storage_stage11.py -k test_corruption_recovery_restore_success
           python3 scripts/tests/test_storage_stage11.py -k test_corruption_recovery_restore_fail_goes_read_only
           python3 scripts/tests/test_storage_stage11.py -k test_chaos_smoke_scenarios

@@ -84,6 +84,7 @@
   - `core/src/main.rs`
   - `docs/core/storage.md`
   - `docs/governance/evidence/stage11_core_sqlite_restart.log`
+  - `docs/governance/evidence/stage11_core_sqlite_hostile_recovery.log`
 - Что нужно сделать:
   1. довести durable persistence не только для `events/incidents/audit`, но и для derived/runtime state;
   2. материализовать recovery contour для fingerprint/source indexes, `dna/evidence` и аналитики;
@@ -96,7 +97,8 @@
 - Текущий прогресс:
   - partial remediation уже сделана коммитами `cf25815`, `444e587`;
   - следующим слоем durable basement расширен и на `fingerprint/source indexes`, `dna_clusters`, `evidence_blocks`, `analytics/counters`;
-  - дефект всё ещё открыт, потому что hostile recovery для расширенного состояния пока не доказан end-to-end.
+  - hostile backup/restore recovery для полного `Core state` теперь доказан отдельным evidence и runtime test;
+  - дефект всё ещё открыт, потому что live `art-core` пока не материализует автоматический corruption-handling contour (`503/retry_after_ms`, `storage_corrupted`, restore, `read_only`) end-to-end.
 
 ### [ ] DEF-002 — Durable spool у `Agent`
 - Уровень: `A.2`

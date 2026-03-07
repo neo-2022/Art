@@ -1,0 +1,41 @@
+# stage11 hostile recovery evidence
+
+$ cargo test -p art-core storage_backup_restore_recovers_full_runtime_state_after_corruption -- --nocapture
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src/main.rs (target/debug/deps/art_core-a7679bcddd987b4c)
+
+running 1 test
+test tests::storage_backup_restore_recovers_full_runtime_state_after_corruption ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 72 filtered out; finished in 0.12s
+
+
+$ cargo test -p art-core --quiet
+
+running 73 tests
+.i.......................iiii.........i..................................
+test result: ok. 67 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 30.87s
+
+
+$ python3 -m unittest scripts.tests.test_storage_stage11 -v
+test_chaos_smoke_scenarios (scripts.tests.test_storage_stage11.StorageStage11Tests.test_chaos_smoke_scenarios) ... ok
+test_concurrency_writers_readers_10000_ops (scripts.tests.test_storage_stage11.StorageStage11Tests.test_concurrency_writers_readers_10000_ops) ... ok
+test_corruption_recovery_restore_fail_goes_read_only (scripts.tests.test_storage_stage11.StorageStage11Tests.test_corruption_recovery_restore_fail_goes_read_only) ... ok
+test_corruption_recovery_restore_success (scripts.tests.test_storage_stage11.StorageStage11Tests.test_corruption_recovery_restore_success) ... ok
+test_vacuum_safe_runs_when_ingest_inactive (scripts.tests.test_storage_stage11.StorageStage11Tests.test_vacuum_safe_runs_when_ingest_inactive) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 21.691s
+
+OK
+
+$ python3 -m unittest scripts.tests.test_stage11_systemd_vacuum -v
+test_systemd_unit_and_timer_verify (scripts.tests.test_stage11_systemd_vacuum.Stage11SystemdVacuumTests.test_systemd_unit_and_timer_verify) ... ok
+test_vacuum_service_emits_gap_event_on_missing_db (scripts.tests.test_stage11_systemd_vacuum.Stage11SystemdVacuumTests.test_vacuum_service_emits_gap_event_on_missing_db) ... ok
+test_vacuum_service_skips_when_ingest_active (scripts.tests.test_stage11_systemd_vacuum.Stage11SystemdVacuumTests.test_vacuum_service_skips_when_ingest_active) ... ok
+test_vacuum_service_smoke_success (scripts.tests.test_stage11_systemd_vacuum.Stage11SystemdVacuumTests.test_vacuum_service_smoke_success) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.124s
+
+OK

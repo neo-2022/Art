@@ -4498,7 +4498,8 @@ mod tests {
     use http_body_util::BodyExt;
     use proptest::prelude::*;
     use std::collections::HashSet;
-    use std::io::Read;
+    use std::fs::{self, OpenOptions};
+    use std::io::{Read, Seek, SeekFrom, Write};
     use std::sync::atomic::{AtomicU64, Ordering};
     use tower::ServiceExt;
 
@@ -4533,6 +4534,66 @@ mod tests {
 
     fn test_state() -> Shared {
         test_state_with_db(next_test_db_path())
+    }
+
+    fn sqlite_path_literal(path: &std::path::Path) -> String {
+        path.to_string_lossy().replace('\'', "''")
+    }
+
+    fn sqlite_backup_vacuum_into(db_path: &std::path::Path, backup_path: &std::path::Path) {
+        if backup_path.exists() {
+            fs::remove_file(backup_path).expect("remove stale backup");
+        }
+        let conn = Connection::open(db_path).expect("open db for backup");
+        let backup_sql = format!("VACUUM INTO '{}';", sqlite_path_literal(backup_path));
+        conn.execute_batch(&backup_sql).expect("vacuum into backup");
+    }
+
+    fn sqlite_integrity_status(db_path: &std::path::Path) -> Result<String, String> {
+        let conn = Connection::open(db_path).map_err(|err| err.to_string())?;
+        conn.query_row("PRAGMA integrity_check;", [], |row| row.get::<_, String>(0))
+            .map_err(|err| err.to_string())
+    }
+
+    fn corrupt_sqlite_header(db_path: &std::path::Path) {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .open(db_path)
+            .expect("open sqlite db for corruption");
+        file.seek(SeekFrom::Start(0)).expect("seek sqlite header");
+        file.write_all(b"not-a-valid-sqlite-header")
+            .expect("write corrupted header");
+        file.flush().expect("flush corrupted header");
+
+        for suffix in ["-wal", "-shm"] {
+            let sidecar = db_path.with_file_name(format!(
+                "{}{}",
+                db_path.file_name().expect("db file name").to_string_lossy(),
+                suffix
+            ));
+            if sidecar.exists() {
+                fs::remove_file(sidecar).expect("remove sqlite sidecar");
+            }
+        }
+    }
+
+    fn restore_sqlite_backup_file(backup_path: &std::path::Path, db_path: &std::path::Path) {
+        for path in [
+            db_path.to_path_buf(),
+            db_path.with_file_name(format!(
+                "{}-wal",
+                db_path.file_name().expect("db file name").to_string_lossy()
+            )),
+            db_path.with_file_name(format!(
+                "{}-shm",
+                db_path.file_name().expect("db file name").to_string_lossy()
+            )),
+        ] {
+            if path.exists() {
+                fs::remove_file(&path).expect("remove previous sqlite artifact");
+            }
+        }
+        fs::copy(backup_path, db_path).expect("restore sqlite backup file");
     }
 
     async fn ingest_info_events(app: &Router, count: usize) {
@@ -4621,6 +4682,49 @@ mod tests {
             .expect("collect")
             .to_bytes();
         String::from_utf8(body.to_vec()).expect("metrics utf8")
+    }
+
+    fn metric_value(metrics: &str, metric_name: &str) -> Option<u64> {
+        metrics
+            .lines()
+            .find_map(|line| line.strip_prefix(metric_name))
+            .and_then(|tail| tail.trim().parse::<u64>().ok())
+    }
+
+    async fn incidents_json(app: &Router) -> Value {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/incidents")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        serde_json::from_slice(&body).expect("incidents json")
+    }
+
+    async fn audit_verify_json(app: &Router) -> Value {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit/verify")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        serde_json::from_slice(&body).expect("audit verify json")
     }
 
     #[tokio::test]
@@ -4986,6 +5090,202 @@ mod tests {
         let metrics = metrics_text(&app2).await;
         assert!(metrics.contains("ingest_accepted_total 1"));
         assert!(metrics.contains("ingest_dropped_total 0"));
+    }
+
+    #[tokio::test]
+    async fn storage_backup_restore_recovers_full_runtime_state_after_corruption() {
+        let db_path = next_test_db_path();
+        let backup_path = db_path.with_extension("backup.sqlite3");
+        let app1 = build_app(test_state_with_db(db_path.clone()));
+
+        let v1_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "events": [
+                        {
+                            "severity":"error",
+                            "kind":"storage.runtime",
+                            "msg":"stage11 full recovery",
+                            "source_id":"agent-stage11"
+                        }
+                    ]
+                })
+                .to_string(),
+            ))
+            .expect("request");
+        let v1_resp = app1.clone().oneshot(v1_req).await.expect("response");
+        assert_eq!(v1_resp.status(), StatusCode::OK);
+
+        let profile_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/profile/apply")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "profile_id": "ru",
+                    "retention_days": 30,
+                    "export_mode": "on",
+                    "egress_policy": "allow",
+                    "residency": "global",
+                    "updates_mode": "online",
+                })
+                .to_string(),
+            ))
+            .expect("request");
+        let profile_resp = app1.clone().oneshot(profile_req).await.expect("response");
+        assert_eq!(profile_resp.status(), StatusCode::BAD_REQUEST);
+
+        let action_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-stage11-backup-restore")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .body(Body::from(r#"{"action":"service.status","target":"core"}"#))
+            .expect("request");
+        let action_resp = app1.clone().oneshot(action_req).await.expect("response");
+        assert_eq!(action_resp.status(), StatusCode::OK);
+
+        let v2_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "events": [
+                        {
+                            "severity":"error",
+                            "kind":"db.timeout",
+                            "msg":"database timeout",
+                            "payload":{"service":"orders","region":"eu"},
+                            "evidence_blocks":[
+                                {
+                                    "evidence_id":"ev-stage11-full-1",
+                                    "source_type":"log",
+                                    "source_ref":"log://db/full-1",
+                                    "trust_score":0.95,
+                                    "freshness_ms":700,
+                                    "redaction_policy_id":"default",
+                                    "access_scope":"public"
+                                }
+                            ]
+                        }
+                    ]
+                })
+                .to_string(),
+            ))
+            .expect("request");
+        let v2_resp = app1.clone().oneshot(v2_req).await.expect("response");
+        assert_eq!(v2_resp.status(), StatusCode::OK);
+
+        let metrics_req = Request::builder()
+            .method("GET")
+            .uri("/metrics")
+            .header("x-core-metrics-force-unavailable", "1")
+            .body(Body::empty())
+            .expect("request");
+        let metrics_resp = app1.clone().oneshot(metrics_req).await.expect("response");
+        assert_eq!(metrics_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+
+        let incidents_before = incidents_json(&app1).await;
+        let audit_before = audit_verify_json(&app1).await;
+        let snapshot_v2_before = snapshot_v2_json(&app1).await;
+        let analytics_before = analytics_summary_json(&app1).await;
+        let metrics_before = metrics_text(&app1).await;
+        let dna_id = snapshot_v2_before["dna_clusters"][0]["dna_signature"]["dna_id"]
+            .as_str()
+            .expect("dna id")
+            .to_string();
+
+        sqlite_backup_vacuum_into(&db_path, &backup_path);
+        assert_eq!(
+            sqlite_integrity_status(&backup_path).expect("backup integrity"),
+            "ok"
+        );
+
+        corrupt_sqlite_header(&db_path);
+        let corrupted_integrity = sqlite_integrity_status(&db_path);
+        assert!(
+            corrupted_integrity
+                .as_ref()
+                .map(|value| value != "ok")
+                .unwrap_or(true),
+            "corrupted sqlite unexpectedly remained healthy: {:?}",
+            corrupted_integrity
+        );
+
+        restore_sqlite_backup_file(&backup_path, &db_path);
+        assert_eq!(
+            sqlite_integrity_status(&db_path).expect("restored integrity"),
+            "ok"
+        );
+
+        let state2 = test_state_with_db(db_path);
+        let app2 = build_app(state2.clone());
+        let incidents_after = incidents_json(&app2).await;
+        let audit_after = audit_verify_json(&app2).await;
+        let snapshot_after = snapshot_json(&app2).await;
+        let snapshot_v2_after = snapshot_v2_json(&app2).await;
+        let analytics_after = analytics_summary_json(&app2).await;
+        let metrics_after = metrics_text(&app2).await;
+
+        assert!(snapshot_after["events"]
+            .as_array()
+            .expect("v1 events")
+            .iter()
+            .any(|item| item["event"]["source_id"] == "agent-stage11"));
+        assert_eq!(
+            incidents_before["items"].as_array().map(|rows| rows.len()),
+            incidents_after["items"].as_array().map(|rows| rows.len())
+        );
+        assert!(incidents_after["items"]
+            .as_array()
+            .expect("incidents")
+            .iter()
+            .any(|item| item["kind"] == "profile_violation"));
+        assert_eq!(audit_before["status"], "verified");
+        assert_eq!(audit_after["status"], "verified");
+        assert_eq!(audit_before["count"], audit_after["count"]);
+        assert!(snapshot_v2_after["events"]
+            .as_array()
+            .expect("v2 events")
+            .iter()
+            .any(|item| item["raw_event"]["kind"] == "db.timeout"));
+        assert!(snapshot_v2_after["dna_clusters"]
+            .as_array()
+            .expect("dna clusters")
+            .iter()
+            .any(|item| item["dna_signature"]["dna_id"] == dna_id));
+        {
+            let s = state2.read().await;
+            assert!(s.evidence_blocks.contains_key("ev-stage11-full-1"));
+        }
+        let evidence_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/evidence/ev-stage11-full-1")
+            .body(Body::empty())
+            .expect("request");
+        let evidence_resp = app2.clone().oneshot(evidence_req).await.expect("response");
+        assert_eq!(evidence_resp.status(), StatusCode::OK);
+        assert_eq!(
+            analytics_before["totals"]["total_events"],
+            analytics_after["totals"]["total_events"]
+        );
+        assert_eq!(
+            analytics_before["totals"]["gap_events"],
+            analytics_after["totals"]["gap_events"]
+        );
+        assert_eq!(
+            metric_value(&metrics_before, "ingest_accepted_total"),
+            metric_value(&metrics_after, "ingest_accepted_total")
+        );
+        assert_eq!(
+            metric_value(&metrics_before, "ingest_dropped_total"),
+            metric_value(&metrics_after, "ingest_dropped_total")
+        );
     }
 
     fn otlp_payload_with_count(count: usize, severity_text: &str) -> Value {
