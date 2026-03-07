@@ -44,7 +44,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
    - идентификаторы правил `rule_id` и область действия (field paths)
    - требования: redaction применяется ДО записи в AuditEntry и ДО выдачи наружу (UI/API)
 
-5. [x] **Сделать:** Зафиксировать требование: redaction rules изменяются конфигом без перекомпиляции/релиза кода (смена правил = смена конфигурации).  
+5. [ ] **Сделать:** Зафиксировать требование: redaction rules изменяются конфигом без перекомпиляции/релиза кода (смена правил = смена конфигурации).  
    **Проверка (pass/fail):** `docs/privacy/redaction_policy.md` содержит раздел `configurable rules`, в котором указано:
    - где хранится конфиг rules
    - как версионируются rules
@@ -65,7 +65,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
    - обязательные поля evidence_min (ошибка/контекст/счётчики)
    - требование зарегистрировать событие в `docs/governance/observability_gap_registry.md` (Stage 01) с `incident_rule` и `action_ref`
 
-8. [x] **Сделать:** Зафиксировать retention matrix для: events, incidents, audit, attachments, raw archive (если существует).  
+8. [ ] **Сделать:** Зафиксировать retention matrix для: events, incidents, audit, attachments, raw archive (если существует).  
    **Проверка (pass/fail):** существует `docs/privacy/retention_matrix.md`, содержит таблицу:
    - тип данных
    - срок хранения (число + единица)
@@ -114,7 +114,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - integration: attachments MIME/magic/max-size + sanitize filename + запрет активного контента
     - integration: DSR export/delete path (проверка по артефактам)
 
-15. [x] **Сделать:** Добавить CI gate Stage 02: проверка наличия документов Stage 02 + минимальная валидация содержимого ключевых требований (через grep/простые проверки).  
+15. [ ] **Сделать:** Добавить CI gate Stage 02: проверка наличия документов Stage 02 + минимальная валидация содержимого ключевых требований (через grep/простые проверки).  
     **Проверка (pass/fail):** существует исполняемый скрипт `scripts/ci/check_privacy_stage02.sh` и он запускается в CI workflow; скрипт:
     - проверяет существование всех файлов из раздела “Документация (RU)”
     - проверяет минимальный контент:
@@ -158,4 +158,4 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)
-- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.
+- [ ] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

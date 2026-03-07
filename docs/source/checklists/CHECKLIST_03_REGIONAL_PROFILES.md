@@ -17,20 +17,20 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - CHECKLIST_02_PRIVACY_BASELINE_GLOBAL.md
 
 ## Статус перепроверки
-- Перепроверка завершена: пункты этапа подтверждены кодом, тестами и CI.
+- Этап переоткрыт после полного построчного аудита: обнаружен подтверждённый drift между `docs/compliance/profiles.md` и `docs/privacy/retention_matrix.md`, а также слабость CI gate, не ловящего этот конфликт.
 
 ## Шаги (строго линейно)
 
-- [x] **1. Сделать:** Определить состав профилей `global`, `eu`, `ru`, `airgapped` как набор детерминированных параметров с фиксированными значениями.
+- [ ] **1. Сделать:** Определить состав профилей `global`, `eu`, `ru`, `airgapped` как набор детерминированных параметров с фиксированными значениями.
   - [x] Каждый параметр профиля задаётся конкретным значением (число/строка/enum/список), например `retention_days = 30`
   - [x] Запрещены ссылки вида “как в global/как в другом профиле” и любые непрямые значения
   - [x] storage/data-residency constraints
-  - [x] retention overrides
+  - [ ] retention overrides
   - [x] export constraints
   - [x] network egress constraints
   - [x] updates/packs policy
   - [x] logging/telemetry constraints
-  - [x] **Проверка (pass/fail):** существует `docs/compliance/profiles.md`, содержит разделы `profile: global/eu/ru/airgapped`, и для каждого профиля перечислены параметры из списка выше в явном виде с конкретными значениями (без ссылок на другие профили).
+  - [ ] **Проверка (pass/fail):** существует `docs/compliance/profiles.md`, содержит разделы `profile: global/eu/ru/airgapped`, и для каждого профиля перечислены параметры из списка выше в явном виде с конкретными значениями (без ссылок на другие профили), а retention-параметры не конфликтуют с `docs/privacy/retention_matrix.md`.
 
 - [x] **2. Сделать:** Зафиксировать единый идентификатор профиля и способ выбора профиля при запуске.
   - [x] `profile_id` выбирается только через конфиг (имя ключа фиксировано)
@@ -81,10 +81,10 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [x] `action_ref` указывает на конкретный runbook в репозитории: `docs/runbooks/profile_violation.md`
   - [x] **Проверка (pass/fail):** `docs/compliance/profile_guards.md` содержит раздел `observability_gap.profile_violation` с перечисленными требованиями; `docs/runbooks/profile_violation.md` существует.
 
-- [x] **8. Сделать:** Зафиксировать связку Stage 03 ↔ Stage 02 (privacy).
+- [ ] **8. Сделать:** Зафиксировать связку Stage 03 ↔ Stage 02 (privacy).
   - [x] retention/DSR различия по профилям в compliance-доках ссылаются на `docs/privacy/regional_profiles.md`
-  - [x] при конфликте правил — генерируется `observability_gap.profile_violation`
-  - [x] **Проверка (pass/fail):** в `docs/compliance/profiles.md` есть раздел `privacy linkage` со ссылками и правилом конфликта → `observability_gap.profile_violation`.
+  - [ ] при конфликте правил — генерируется `observability_gap.profile_violation`
+  - [ ] **Проверка (pass/fail):** в `docs/compliance/profiles.md` есть раздел `privacy linkage` со ссылками и правилом конфликта → `observability_gap.profile_violation`, а `docs/privacy/retention_matrix.md` и `docs/compliance/profiles.md` реально согласованы по retention.
 
 - [x] **9. Сделать:** Описать офлайн-обновление packs для `airgapped` как фиксированную процедуру.
   - [x] доставка архива packs
@@ -112,7 +112,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - [x] где лежат автотесты (пути)
     - [x] как они запускаются в CI (workflow/target/command)
 
-- [x] **12. Сделать:** Добавить CI gate Stage 03 (наличие файлов + минимальная валидация содержимого).
+- [ ] **12. Сделать:** Добавить CI gate Stage 03 (наличие файлов + минимальная валидация содержимого).
   - [x] существует `scripts/ci/check_regional_profiles_stage03.sh`
   - [x] скрипт исполняемый
   - [x] скрипт запускается в CI workflow
@@ -122,7 +122,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [x] `docs/compliance/airgapped.md` содержит `offline packs update` и `signature keys`
   - [x] `docs/compliance/data_residency.md` содержит матрицу `profile_id → allowed`
   - [x] `docs/compliance/test_matrix.md` содержит строку `автоматизированы` и `CI`
-  - [x] **Проверка (pass/fail):** CI зелёный; при удалении любого обязательного раздела/файла скрипт падает (exit 1).
+  - [ ] **Проверка (pass/fail):** CI зелёный; при удалении любого обязательного раздела/файла скрипт падает (exit 1), и gate валится также при drift между `docs/compliance/profiles.md` и `docs/privacy/retention_matrix.md`.
 
 ## Документация (RU)
 - [x] docs/compliance/profiles.md
@@ -140,18 +140,18 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [x] integration (negative runtime): `/api/v1/profile/apply` отклоняет invalid `profile_id` и invalid guardrail values; в snapshot фиксируется `observability_gap.profile_violation` с evidence (`scripts/tests/profile_negative_runtime_integration.sh`)
 
 ## CI gate
-- [x] `scripts/ci/check_regional_profiles_stage03.sh` включён в CI для PR в main
+- [ ] `scripts/ci/check_regional_profiles_stage03.sh` включён в CI для PR в main
 - [x] автотесты Stage 03 включены в CI и зелёные
 - [x] CI job `stage03-profile-negative-integration` включён и запускает `scripts/tests/profile_negative_runtime_integration.sh`
 
 ## DoD
-- [x] Профили и параметры заданы однозначно (без ссылок “как в другом профиле”)
+- [ ] Профили и параметры заданы однозначно (без ссылок “как в другом профиле”)
 - [x] Выбор/смена профиля детерминированы и защищены guardrails
 - [x] `effective_profile_id` доступен для диагностики через API/метрику
 - [x] Матрица переходов определена и проверяется
-- [x] `observability_gap.profile_violation` определён и зарегистрирован; runbook `docs/runbooks/profile_violation.md` существует
+- [ ] `observability_gap.profile_violation` определён и зарегистрирован; runbook `docs/runbooks/profile_violation.md` существует
 - [x] Airgapped packs update (подпись/совместимость) определён
-- [x] CI gate Stage 03 проходит
+- [ ] CI gate Stage 03 проходит
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)
-- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.
+- [ ] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.
