@@ -15,16 +15,21 @@
 - verify выполняется по certificate identity и OIDC issuer, а не через локальный placeholder public key
 
 ## Что подписывается
-Подписываются все релизные артефакты фиксированного набора:
+Подписываются все релизные артефакты фиксированного набора. Минимальный обязательный перечень:
 - `agent/dist/*`
 - `ui/dist/*`
 - `sbom.spdx.json`
 - `checksums.txt`
 - `provenance.attestation.json`
 
+Дополнительно production baseline требует подписи бинарных release artifacts из `core/dist/*`. Отсутствие подписи `core/dist/*` считается supply-chain regression, даже если минимальный перечень выше формально выполнен.
+
 ## Обязательные release артефакты
 Каждый релиз обязан публиковать:
-- release artifacts
+- release artifacts из:
+  - `core/dist/*`
+  - `agent/dist/*`
+  - `ui/dist/*`
 - `sbom.spdx.json`
 - `checksums.txt`
 - `provenance.attestation.json`
@@ -40,7 +45,12 @@
   - `run_id`
   - `run_attempt`
   - `generated_at_utc`
-  - список `subjects` с `sha256`
+  - список `subjects` с `sha256` как минимум для:
+    - `core/dist/*`
+    - `agent/dist/*`
+    - `ui/dist/*`
+    - `sbom.spdx.json`
+    - `checksums.txt`
 - provenance обязан проверяться в release CI как отдельный шаг;
 - provenance без корректного соответствия текущему `sha/run` считается провалом релиза.
 

@@ -89,18 +89,18 @@ A) Полный запрет опциональности:
   - [x] SBOM прикладывается к релизным артефактам и публикуется как релизный asset
   - [x] **Проверка (pass/fail):** существует `docs/security/sbom_policy.md`, содержит все пункты выше явно.
 
-- [ ] **9. Сделать:** Описать provenance/signing policy (sigstore/cosign) для релизных артефактов и правило verify, включая точный перечень подписываемых артефактов.
-  - [ ] выбран инструмент подписи: `cosign` (sigstore)
-  - [ ] режим подписи: keyless через OIDC GitHub Actions
-  - [ ] подписываются все релизные артефакты из фиксированного перечня:
-    - [ ] `agent/dist/*`
-    - [ ] `ui/dist/*`
-    - [ ] `sbom.spdx.json`
-    - [ ] `checksums.txt`
-    - [ ] `provenance.attestation.json`
-  - [ ] verify выполняется в CI как обязательный gate для релизов
-  - [ ] подписи/attestation публикуются вместе с релизом
-  - [ ] **Проверка (pass/fail):** существует `docs/security/provenance_signing.md`, содержит все пункты выше явно, включая перечень артефактов.
+- [x] **9. Сделать:** Описать provenance/signing policy (sigstore/cosign) для релизных артефактов и правило verify, включая точный перечень подписываемых артефактов.
+  - [x] выбран инструмент подписи: `cosign` (sigstore)
+  - [x] режим подписи: keyless через OIDC GitHub Actions
+  - [x] подписываются все релизные артефакты из фиксированного перечня:
+    - [x] `agent/dist/*`
+    - [x] `ui/dist/*`
+    - [x] `sbom.spdx.json`
+    - [x] `checksums.txt`
+    - [x] `provenance.attestation.json`
+  - [x] verify выполняется в CI как обязательный gate для релизов
+  - [x] подписи/attestation публикуются вместе с релизом
+  - [x] **Проверка (pass/fail):** существует `docs/security/provenance_signing.md`, содержит все пункты выше явно, включая перечень артефактов.
 
 - [ ] **10. Сделать:** Зафиксировать policy для dependency updates (автообновления) и правило “безопасного обновления”.
   - [ ] включён механизм PR-обновлений зависимостей (Dependabot)
