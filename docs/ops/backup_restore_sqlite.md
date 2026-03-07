@@ -1,4 +1,9 @@
-# Backup/restore SQLite
+# Backup/restore SQLite (целевой контур)
+
+Текущий статус:
+- документ описывает целевой baseline backup/restore для корректирующего `stage11`;
+- helper и smoke-артефакты для SQLite уже есть;
+- полный перевод живого `art-core` на этот backup/restore contour ещё не завершён.
 
 - Частота backup: каждые 15 минут.
 - Храним минимум N=96 последних backup.

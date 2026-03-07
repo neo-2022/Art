@@ -254,8 +254,8 @@
 | `scripts/tests/console_audio_settings_e2e.sh` | REVIEWED | WEAK | E2E довольно сильный, но не доказывает полный RU parity, не проверяет hostile import/audio asset corruption path, не тестирует policy locks и custom audio against malformed payloads sufficiently. | 28, 35, 40 |
 | `docker/core.Dockerfile` | REVIEWED | WEAK | Runtime image теперь non-root и reproducible-friendly, но остаётся слишком аскетичным для зрелого prod contour: нет image metadata/labels, нет explicit healthcheck, не зафиксирована стратегия CA/certs/runtime trust roots. | 04, 37 |
 | `docker/agent.Dockerfile` | REVIEWED | WEAK | Та же проблема, что у Core image: skeleton strong as baseline, but not yet full hostile-production container contract. | 04, 18, 37 |
-| `systemd/art-vacuum.service` | REVIEWED | MISMATCH | Unit использует `User=%i`, но файл не шаблонный (`art-vacuum.service`, не `art-vacuum@.service`); при запуске через timer `%i` не будет материализован корректно. Это корневой runtime defect, не пойманный текущим stage11 coverage. | 11, 23, 37, 38 |
-| `systemd/art-vacuum.timer` | REVIEWED | MISMATCH | Timer ссылается на `Unit=art-vacuum.service`, то есть на неинстанцируемый unit, который одновременно использует `%i`; вместе с service это образует broken scheduled vacuum path. | 11, 23, 37, 38 |
+| `systemd/art-vacuum.service` | REVIEWED | OK | Unit приведён к рабочему виду: `systemd-analyze verify` проходит, safe skip при активном ingest подтверждён, error-path выдаёт structured `observability_gap.storage_vacuum_failed`. Корневой blocker stage11 теперь не здесь, а глубже — в том, что живой `art-core` всё ещё не использует durable SQLite-basement. | 11, 23, 37, 38 |
+| `systemd/art-vacuum.timer` | REVIEWED | OK | Timer теперь ссылается на валидный oneshot unit без `%i` mismatch; smoke/e2e proof подтверждён. Корневой blocker stage11 сместился ниже, в runtime storage basement `art-core`. | 11, 23, 37, 38 |
 
 ## Внешний buyer due diligence — локально подтверждённые сигналы
 
@@ -309,9 +309,10 @@
 
 | Файл | Статус | Класс | Риски/заметки | Checklist impact |
 |---|---|---|---|---|
-| `scripts/storage_stage11.py` | REVIEWED | MISMATCH | Stage11 runtime basis покрывает SQLite операции и chaos around DB file, но не материализует scheduled systemd path, не порождает `observability_gap.storage_vacuum_failed` и не верифицирует safe scheduled vacuum как интегрированный runtime contour. Верхний stage11 therefore стоит на слишком узком основании. | 11, 23, 37, 38 |
-| `scripts/tests/test_storage_stage11.py` | REVIEWED | MISMATCH | Тесты stage11 подтверждают только Python helper semantics; они не тестируют `systemd/art-vacuum.service`, `systemd/art-vacuum.timer` и не могли поймать broken `%i` path. Это корневая причина того, что сломанный unit дошёл до репозитория как будто рабочий. | 11, 38 |
-| `scripts/ci/check_storage_stage11_docs.sh` | REVIEWED | MISMATCH | Gate валидирует только наличие RU docs и grep-маркеры, никак не связывая их с реальным systemd runtime path; из-за этого broken vacuum unit остался невидим для CI. | 11, 38 |
+| `scripts/storage_stage11.py` | REVIEWED | WEAK | Helper теперь честно покрывает SQLite chaos/concurrency basis, а concurrency 10000 ops подтверждён несколькими путями запуска. Но файл всё ещё описывает helper-basement, а не живой `art-core` storage runtime, поэтому корневой blocker stage11 остаётся ниже — в `core/src/main.rs`. | 11, 23, 37, 38 |
+| `scripts/tests/test_storage_stage11.py` | REVIEWED | WEAK | Suite теперь сильнее за счёт исправленной concurrency-базы, но по смыслу остаётся helper-only. Реальный systemd vacuum path теперь покрывается отдельным `scripts/tests/test_stage11_systemd_vacuum.py`, а сам stage11 всё ещё блокируется отсутствием durable SQLite в `art-core`. | 11, 38 |
+| `scripts/tests/test_stage11_systemd_vacuum.py` | REVIEWED | OK | Новый реальный runtime smoke для `art-vacuum.service`/`art-vacuum.timer`: проверяет `systemd-analyze verify`, success path, safe skip при активном ingest и structured `observability_gap.storage_vacuum_failed` на missing DB. Это закрывает прежний слепой spot между docs/helper и реальным systemd path. | 11, 23, 37, 38 |
+| `scripts/ci/check_storage_stage11_docs.sh` | REVIEWED | WEAK | Gate уже усилен `systemd-analyze verify` и больше не пропускает broken unit/timer mismatch. Но он по-прежнему остаётся docs-oriented и не доказывает полный runtime basement `art-core`, поэтому stage11 не может закрываться только через него. | 11, 38 |
 | `tests/platform/contract/check_docker_runtime_contract.sh` | REVIEWED | MISMATCH | Contract слишком слаб для заявленного platform/runtime contour: он проверяет только `FROM scratch`, `COPY`, `ENTRYPOINT`, но не healthcheck, labels, trust roots, user/fs invariants и главное — никак не доказывает интегрированную topology `Agent -> Core`. Это корневая причина переоценки platform readiness. | 24, 37, 38 |
 | `agent/src/main.rs` | REVIEWED | MISMATCH | Нижний runtime-слой Agent не реализует заявленную модель stage18: доступны только `file_tail`, `journald`, `stdout_stderr`; отсутствуют `systemd_unit`, `proc_probe`, `net_probe`, `otlp_logs`; отсутствует outbound delivery path к Core/relay вообще. Следовательно, многие docs, smoke scripts и transport promises опережают реальный runtime. | 17, 18, 23, 37, 38 |
 | `docs/source/checklists/CHECKLIST_18_ART_AGENT_RECEIVERS.md` | REVIEWED | MISMATCH | Checklist stage18 уже требует широкий fixed receiver enum и transport topology, но нижний runtime не догоняет этот claim; значит этап в историческом смысле требует reopening не по документам, а по коду. | 18, 38 |
@@ -328,6 +329,9 @@
 | `artifacts/vm-smoke/*/plan.txt` | REVIEWED | MISMATCH | VM-артефакты представлены только plan-файлами; при наличии placeholder execute path они не могут использоваться как доказательство реального VM smoke readiness. | 37, 38 |
 | `artifacts/regart-parity/report.json` | REVIEWED | WEAK | Report полезен, но зависит от live-download внешнего репозитория без pinning по commit/tag; parity evidence therefore уязвим к drift и remote availability. | 05, 06, 20, 37 |
 | `docs/governance/evidence/evidence_ledger.yaml` | REVIEWED | MISMATCH | Ledger по-прежнему содержит `status: closed` для stages 28–38, хотя MASTER и полный аудит уже открыли часть этапов обратно или признали их слабое основание. Это прямой риск ложного provenance и false delivery narrative. | 00, 24, 35, 37, 38 |
+| `docs/governance/evidence/stage11_storage_integration.log` | REVIEWED | OK | Лог фиксирует exact `storage-integration` прогон после remediation: concurrency `10000 ops`, `vacuum_safe` и `test_stage11_systemd_vacuum` проходят как единый CI-контур. Это уже не словесное обещание, а воспроизводимый evidence stage11 partial fix. | 11, 23, 37, 38 |
+| `docs/governance/evidence/stage11_storage_chaos_smoke.log` | REVIEWED | OK | Лог подтверждает exact `storage-chaos-smoke` прогон после remediation: restore success, read_only fallback и chaos smoke проходят подряд в том же порядке, как их должен запускать CI. | 11, 23, 37, 38 |
+| `docs/governance/evidence/stage11_storage_docs_and_systemd.log` | REVIEWED | OK | Лог фиксирует `stage11 docs gate: OK` и `systemd-analyze verify` после исправления `art-vacuum` unit/timer. Это закрывает прежний class дефекта с broken systemd path как доказанный evidence-артефакт. | 11, 23, 37, 38 |
 | `docs/governance/release_decisions/latest_go_no_go.md` | REVIEWED | MISMATCH | GO/NO-GO sheet привязан к старому `v0.2.0-rc.2-production-candidate` baseline и implicitly assumes previously closed stages as green; после retro-audit это уже не может считаться текущим truth artifact. | 24, 37, 38 |
 | `docs/governance/evidence/stage32_step6_anti_breakage.png` | REVIEWED | WEAK | PNG реальный, но его доказательная сила ограничена потому, что upstream gate может получить green через fallback path; screenshot сам по себе не снимает корневую проблему stage32 gate semantics. | 32, 38 |
 | `docs/governance/evidence/stage33_step7_action_flow_anti_breakage.png` | REVIEWED | WEAK | Аналогично stage32: screenshot существует и не placeholder, но лежит на слабом gate-path, который допускает fallback-green semantics. | 33, 38 |
@@ -489,7 +493,7 @@
 | `docs/core/pipeline_overview.md` | REVIEWED | WEAK | Pipeline описан слишком укрупнённо и не отражает реально важные hostile-path элементы: storage durability, evidence/capsule evolution, truth-mode consequences, action intelligence hooks. | 13, 29, 30, 43, 44 |
 | `docs/core/rules.md` | REVIEWED | WEAK | Документ слишком тонкий для одного из ключевых слоёв системы: не задаёт ни DSL discipline, ни evidence bindings, ни hostile validation semantics. | 13, 29, 30, 42 |
 | `docs/core/source_stale.md` | REVIEWED | OK | Source stale описан честно и соответствует зафиксированному runtime поведению. | 12, 21 |
-| `docs/core/storage.md` | REVIEWED | MISMATCH | Документ описывает зрелый SQLite+backup+restore+read_only контур с corruption recovery и storage gap events, но живой Core runtime сейчас хранит основное состояние в памяти и не проводит такой real storage recovery path. Это серьёзный overclaim. | 11, 23, 37, 38 |
+| `docs/core/storage.md` | REVIEWED | WEAK | Документ теперь честно разделяет текущее состояние и целевой corrective contour `stage11`: systemd/helper proofs уже существуют, но живой `art-core` storage basement ещё не переведён на durable SQLite. Overclaim снят, но корневой runtime blocker остаётся. | 11, 23, 37, 38 |
 
 ## Слой 20 — Канон `docs/source/*` и ранние `CHECKLIST_01..16`
 
@@ -881,5 +885,6 @@
 
 - Покрытие tracked-файлов в реестре: `COMPLETE`
 - Непокрытых tracked-файлов после слоя 12: `0` (проверено через `git -c core.quotePath=false ls-files`)
+- После добавления corrective файлов `stage11` (`test_stage11_systemd_vacuum.py` и новые evidence logs) реестр синхронизирован повторно; незарегистрированного tracked-хвоста не оставлено.
 - Это завершает фазу полного postrочного покрытия корпуса.
 - Это не означает завершение remediation: карта reopening и root-cause backlog остаются обязательными до отдельного завершения corrective программы.

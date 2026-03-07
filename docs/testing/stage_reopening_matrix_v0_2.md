@@ -32,7 +32,7 @@
 | `06` | `OPEN` | Strict mode зависит от sibling checkout и local HTTP/dev path | `scripts/ci/check_stage06_wrapper.sh`, `http://127.0.0.1` corpus | оставить открытым |
 | `07` | `OPEN` | Docs/meta/process layer ещё не выдерживает hostile standard | audit registry root/docs/template layers | оставить открытым |
 | `08` | `OPEN` | Contracts/generation слой неоднороден | weak generated clients/docs generators, permissive schemas | оставить открытым |
-| `11` | `OPEN` | Storage/systemd vacuum path broken | `systemd/art-vacuum.service`, `systemd/art-vacuum.timer` | оставить открытым |
+| `11` | `OPEN` | Systemd vacuum path уже исправлен, но корневой blocker глубже: живой `art-core` всё ещё не использует durable SQLite-basement для основного состояния | `core/src/main.rs`, `docs/core/storage.md`, `scripts/storage_stage11.py` | оставить открытым |
 | `17` | `OPEN` | Agent spool runtime остаётся in-memory, restart destroys backlog | `agent/src/main.rs` | оставить открытым |
 | `18` | `OPEN` | Agent transport/receiver contour не материализован | `agent/src/main.rs`, receiver gaps, no outbound/relay/TLS | оставить открытым |
 | `19` | `OPEN` | Pack runtime позволяет placeholder payload | `scripts/tests/pack_install_runtime.sh`, `scripts/tests/packs_runtime.py` | оставить открытым |

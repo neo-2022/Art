@@ -1,4 +1,9 @@
-# Storage chaos
+# Storage chaos (целевой контур)
+
+Текущий статус:
+- chaos helper-сценарии для SQLite уже существуют и проходят;
+- этот документ фиксирует обязательный hostile-path для полного `stage11`;
+- пока живой `art-core` ещё не использует SQLite как полный durable basement, сценарии остаются corrective target для runtime.
 
 Сценарии:
 - kill -9 во время ingest

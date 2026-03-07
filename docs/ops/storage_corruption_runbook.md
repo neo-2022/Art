@@ -1,4 +1,9 @@
-# Runbook: storage_corruption
+# Runbook: storage_corruption (целевой контур)
+
+Текущий статус:
+- этот runbook задаёт целевое поведение корректирующего `stage11`;
+- helper recovery/chaos сценарии уже покрывают этот алгоритм;
+- полный runtime-path через живой `art-core` storage basement ещё находится в remediation.
 
 При corruption (строгий порядок):
 1. ingest -> `HTTP 503`
