@@ -97,10 +97,10 @@ A) Полный запрет опциональности:
     - список разрешённых типов изменений
     - критерии снятия заморозки
 
-11. [ ] **Сделать:** Описать blameless postmortem политику и шаблон постмортема (RU).  
+11. [x] **Сделать:** Описать blameless postmortem политику и шаблон постмортема (RU).  
     **Проверка (pass/fail):** существуют файлы:
     - `docs/governance/postmortem_policy.md` (сроки, обязательность, owner follow-ups)
-    - `docs/governance/postmortem_template.md` (шаблон с разделами impact/timeline/root cause/what went well/what went wrong/actions/evidence)
+    - `docs/governance/postmortem_template.md` (шаблон с разделами impact/blast radius/timeline/detection and containment/root cause/contributing factors/degraded mode and rollback/what went well/what went wrong/counterfactuals/actions/verification plan/evidence/owner follow-ups)
 
 12. [x] **Сделать:** Описать change management политику: только PR в main, обязательный review, запрет прямых коммитов в main, ссылки на чек-лист этапа, требования к описанию изменений.
    - [x] причина → фикс → критерий готовности: policy не фиксирует минимум 1 reviewer из CODEOWNERS; дополнить и проверить по документу.  
