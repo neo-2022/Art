@@ -256,3 +256,17 @@
 | `docker/agent.Dockerfile` | REVIEWED | WEAK | Та же проблема, что у Core image: skeleton strong as baseline, but not yet full hostile-production container contract. | 04, 18, 37 |
 | `systemd/art-vacuum.service` | REVIEWED | MISMATCH | Unit использует `User=%i`, но файл не шаблонный (`art-vacuum.service`, не `art-vacuum@.service`); при запуске через timer `%i` не будет материализован корректно. Это корневой runtime defect, не пойманный текущим stage11 coverage. | 11, 23, 37, 38 |
 | `systemd/art-vacuum.timer` | REVIEWED | MISMATCH | Timer ссылается на `Unit=art-vacuum.service`, то есть на неинстанцируемый unit, который одновременно использует `%i`; вместе с service это образует broken scheduled vacuum path. | 11, 23, 37, 38 |
+
+## Слой 10 — Нижние корневые причины найденных runtime-разрывов
+
+> Этот слой отражает не просто симптомы, а нижние причины несоответствий, обнаруженных в слоях 8–9. Аудит выполнен по закону спуска к корню: фиксируется именно то, что делает верхние green-path ложными.
+
+| Файл | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `scripts/storage_stage11.py` | REVIEWED | MISMATCH | Stage11 runtime basis покрывает SQLite операции и chaos around DB file, но не материализует scheduled systemd path, не порождает `observability_gap.storage_vacuum_failed` и не верифицирует safe scheduled vacuum как интегрированный runtime contour. Верхний stage11 therefore стоит на слишком узком основании. | 11, 23, 37, 38 |
+| `scripts/tests/test_storage_stage11.py` | REVIEWED | MISMATCH | Тесты stage11 подтверждают только Python helper semantics; они не тестируют `systemd/art-vacuum.service`, `systemd/art-vacuum.timer` и не могли поймать broken `%i` path. Это корневая причина того, что сломанный unit дошёл до репозитория как будто рабочий. | 11, 38 |
+| `scripts/ci/check_storage_stage11_docs.sh` | REVIEWED | MISMATCH | Gate валидирует только наличие RU docs и grep-маркеры, никак не связывая их с реальным systemd runtime path; из-за этого broken vacuum unit остался невидим для CI. | 11, 38 |
+| `tests/platform/contract/check_docker_runtime_contract.sh` | REVIEWED | MISMATCH | Contract слишком слаб для заявленного platform/runtime contour: он проверяет только `FROM scratch`, `COPY`, `ENTRYPOINT`, но не healthcheck, labels, trust roots, user/fs invariants и главное — никак не доказывает интегрированную topology `Agent -> Core`. Это корневая причина переоценки platform readiness. | 24, 37, 38 |
+| `agent/src/main.rs` | REVIEWED | MISMATCH | Нижний runtime-слой Agent не реализует заявленную модель stage18: доступны только `file_tail`, `journald`, `stdout_stderr`; отсутствуют `systemd_unit`, `proc_probe`, `net_probe`, `otlp_logs`; отсутствует outbound delivery path к Core/relay вообще. Следовательно, многие docs, smoke scripts и transport promises опережают реальный runtime. | 17, 18, 23, 37, 38 |
+| `docs/source/checklists/CHECKLIST_18_ART_AGENT_RECEIVERS.md` | REVIEWED | MISMATCH | Checklist stage18 уже требует широкий fixed receiver enum и transport topology, но нижний runtime не догоняет этот claim; значит этап в историческом смысле требует reopening не по документам, а по коду. | 18, 38 |
+| `tests/platform/contract/platform_smoke_lib.sh` | REVIEWED | MISMATCH | Helper-библиотека платформенных smoke’ов закрепляет раздельный happy-path для Core и Agent и тем самым архитектурно не может доказать заявленную доставку `Agent -> Core`. Это корневая причина слабости Docker/K8s smoke. | 17, 18, 37, 38 |
