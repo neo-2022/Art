@@ -32,13 +32,13 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [x] logging/telemetry constraints
   - [x] **Проверка (pass/fail):** существует `docs/compliance/profiles.md`, содержит разделы `profile: global/eu/ru/airgapped`, и для каждого профиля перечислены параметры из списка выше в явном виде с конкретными значениями (без ссылок на другие профили).
 
-- [ ] **2. Сделать:** Зафиксировать единый идентификатор профиля и способ выбора профиля при запуске.
-  - [ ] `profile_id` выбирается только через конфиг (имя ключа фиксировано)
-  - [ ] запрет автодетекта по окружению без конфигурации
-  - [ ] `effective_profile_id` вычисляется детерминированно
-  - [ ] `effective_profile_id` логируется (без секретов/PII)
-  - [ ] `effective_profile_id` доступен для диагностики через API или метрику (одно фиксированное решение)
-  - [ ] **Проверка (pass/fail):** `docs/compliance/profiles.md` содержит раздел `profile selection` с:
+- [x] **2. Сделать:** Зафиксировать единый идентификатор профиля и способ выбора профиля при запуске.
+  - [x] `profile_id` выбирается только через конфиг (имя ключа фиксировано)
+  - [x] запрет автодетекта по окружению без конфигурации
+  - [x] `effective_profile_id` вычисляется детерминированно
+  - [x] `effective_profile_id` логируется (без секретов/PII)
+  - [x] `effective_profile_id` доступен для диагностики через API или метрику (одно фиксированное решение)
+  - [x] **Проверка (pass/fail):** `docs/compliance/profiles.md` содержит раздел `profile selection` с:
     - именем конфиг-поля `profile_id`
     - правилом вычисления `effective_profile_id`
     - правилом логирования `effective_profile_id`

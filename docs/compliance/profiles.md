@@ -104,9 +104,17 @@
 - Конфиг-поле: `profile_id`
 - Файл конфига Core: `config/core.toml` (можно переопределить через `CORE_CONFIG_PATH`)
 - Автодетект профиля запрещён
-- `effective_profile_id` вычисляется детерминированно из `profile_id`
-- `effective_profile_id` логируется без PII
-- Диагностика: API поле `effective_profile_id`
+- Допустимые значения `profile_id`: `global|eu|ru|airgapped`
+- Любое другое значение `profile_id` блокирует startup и `POST /api/v1/profile/apply`
+- `effective_profile_id` вычисляется детерминированно по правилу:
+  1. прочитать `profile_id` из активного конфига Core;
+  2. проверить значение на принадлежность фиксированному enum `global|eu|ru|airgapped`;
+  3. при успешной валидации принять это значение как `effective_profile_id`;
+  4. при неуспешной валидации завершить запуск или отклонить apply-config без fallback.
+- Никаких fallback-правил, environment autodetect и silent default не допускается
+- `effective_profile_id` логируется без PII в startup/runtime log как `effective_profile_id=<value>`
+- Диагностика через API: `GET /api/v1/profile` возвращает поле `effective_profile_id`
+- Диагностика через метрику: `art_core_effective_profile_info{effective_profile_id=\"<value>\"} 1`
 - Runtime apply: `POST /api/v1/profile/apply` (на нарушении guardrails профиль не применяется)
 
 ## profile switch procedure
