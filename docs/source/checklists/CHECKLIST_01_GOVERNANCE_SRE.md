@@ -109,11 +109,16 @@ A) Полный запрет опциональности:
     - требования к PR (описание, ссылка на этап, evidence)
     - требования к review (минимум 1 reviewer из CODEOWNERS)
 
-13. [ ] **Сделать:** Внедрить enforce-артефакты репозитория: CODEOWNERS и PR template.  
+13. [x] **Сделать:** Внедрить enforce-артефакты репозитория: CODEOWNERS и PR template.  
     **Проверка (pass/fail):** существуют файлы:
     - `.github/CODEOWNERS`
     - `.github/pull_request_template.md`
-    и PR template содержит секцию `Evidence` с обязательным заполнением.
+    и PR template содержит:
+    - секцию `Evidence`
+    - секцию `Adversarial / negative проверка`
+    - секцию `Исключённые альтернативные причины`
+    - секцию `Rollback / degraded mode`
+    а `CODEOWNERS` покрывает критичные поверхности (`.github/workflows`, `core`, `agent`, `apps`, `packages`, `docs/source`, `docs/testing`, `formats`, `packs`) как multi-owner contour.
 
 14. [x] **Сделать:** Внедрить issue templates: incident и bug.  
     **Проверка (pass/fail):** существуют файлы:
