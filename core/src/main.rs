@@ -17,8 +17,8 @@ use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use rusqlite::{params, Connection};
-use serde::{Deserialize, Serialize};
+use rusqlite::{params, Connection, OptionalExtension};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use tokio::sync::RwLock;
@@ -47,6 +47,7 @@ const DNA_SCHEMA_VERSION: &str = "2.0.0";
 const DEFAULT_ANALYTICS_MAX_BUCKETS: usize = 1_440;
 const DEFAULT_ANALYTICS_STATE_PATH: &str = "/tmp/art_core_analytics_state.json";
 const DEFAULT_CORE_DB_PATH: &str = "data/art/core.sqlite3";
+const ANALYTICS_STATE_ROW_ID: i64 = 1;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct StoredEvent {
@@ -92,7 +93,7 @@ struct DnaClusterRecord {
     evidence_refs: Vec<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct DnaClusterState {
     signature: DnaSignature,
     event_count: u64,
@@ -113,7 +114,7 @@ struct Incident {
     span_id: Option<String>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 struct Counters {
     ingest_accepted_total: u64,
     ingest_invalid_total: u64,
@@ -203,17 +204,23 @@ impl CoreState {
         db_path: PathBuf,
     ) -> anyhow::Result<Self> {
         let storage = load_storage_state(&db_path, queue_depth_limit)?;
+        let fallback_max_buckets = analytics.max_buckets;
+        let mut analytics = storage.analytics.unwrap_or(analytics);
+        analytics.max_buckets = fallback_max_buckets;
+        while analytics.buckets.len() > analytics.max_buckets {
+            analytics.buckets.pop_front();
+        }
         Ok(Self {
             next_seq: storage.next_seq,
             events: storage.events,
             next_seq_v2: storage.next_seq_v2,
             events_v2: storage.events_v2,
-            dna_clusters: HashMap::new(),
-            evidence_blocks: HashMap::new(),
+            dna_clusters: storage.dna_clusters,
+            evidence_blocks: storage.evidence_blocks,
             incidents: storage.incidents,
-            fingerprint_index: HashMap::new(),
-            source_last_seen: HashMap::new(),
-            counters: Counters::default(),
+            fingerprint_index: storage.fingerprint_index,
+            source_last_seen: storage.source_last_seen,
+            counters: storage.counters.unwrap_or_default(),
             effective_profile_id,
             queue_depth_limit,
             max_batch_events,
@@ -237,7 +244,13 @@ struct StorageBootstrap {
     events: VecDeque<StoredEvent>,
     next_seq_v2: u64,
     events_v2: VecDeque<StoredEventV2>,
+    dna_clusters: HashMap<String, DnaClusterState>,
+    evidence_blocks: HashMap<String, EvidenceBlock>,
     incidents: Vec<Incident>,
+    fingerprint_index: HashMap<String, String>,
+    source_last_seen: HashMap<String, u64>,
+    analytics: Option<AnalyticsState>,
+    counters: Option<Counters>,
     audits: Vec<AuditEntry>,
     next_audit_id: u64,
     audit_chain_head: String,
@@ -278,10 +291,155 @@ fn open_storage_connection(db_path: &PathBuf) -> anyhow::Result<Connection> {
             timestamp INTEGER NOT NULL,
             audit_json TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS fingerprint_index_v1 (
+            fingerprint TEXT PRIMARY KEY,
+            canonical_json TEXT NOT NULL,
+            updated_ts_ms INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS source_last_seen_v1 (
+            source_id TEXT PRIMARY KEY,
+            last_seen_ts_ms INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS dna_clusters_v2 (
+            dna_id TEXT PRIMARY KEY,
+            cluster_json TEXT NOT NULL,
+            updated_ts_ms INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS evidence_blocks_v2 (
+            evidence_id TEXT PRIMARY KEY,
+            evidence_json TEXT NOT NULL,
+            updated_ts_ms INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS analytics_state_v1 (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            analytics_json TEXT NOT NULL,
+            counters_json TEXT NOT NULL,
+            updated_ts_ms INTEGER NOT NULL
+        );
         "#,
     )
     .context("failed to ensure sqlite storage schema")?;
     Ok(conn)
+}
+
+fn load_runtime_json<T: DeserializeOwned>(
+    conn: &Connection,
+    query: &str,
+    params: impl rusqlite::Params,
+    field_name: &str,
+) -> anyhow::Result<Option<T>> {
+    let raw = conn
+        .query_row(query, params, |row| row.get::<_, String>(0))
+        .optional()
+        .with_context(|| format!("failed to query runtime json field {}", field_name))?;
+    raw.map(|value| {
+        serde_json::from_str::<T>(&value)
+            .with_context(|| format!("failed to parse runtime json field {}", field_name))
+    })
+    .transpose()
+}
+
+fn persist_fingerprint_entry_with_conn(
+    conn: &Connection,
+    fingerprint: &str,
+    canonical_json: &str,
+    updated_ts_ms: u64,
+) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO fingerprint_index_v1(fingerprint, canonical_json, updated_ts_ms)
+         VALUES (?1, ?2, ?3)",
+        params![fingerprint, canonical_json, updated_ts_ms],
+    )
+    .context("failed to persist fingerprint_index_v1 row")?;
+    Ok(())
+}
+
+fn persist_source_last_seen_entry_with_conn(
+    conn: &Connection,
+    source_id: &str,
+    last_seen_ts_ms: u64,
+) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO source_last_seen_v1(source_id, last_seen_ts_ms)
+         VALUES (?1, ?2)",
+        params![source_id, last_seen_ts_ms],
+    )
+    .context("failed to persist source_last_seen_v1 row")?;
+    Ok(())
+}
+
+fn persist_dna_cluster_with_conn(
+    conn: &Connection,
+    cluster: &DnaClusterState,
+    updated_ts_ms: u64,
+) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO dna_clusters_v2(dna_id, cluster_json, updated_ts_ms)
+         VALUES (?1, ?2, ?3)",
+        params![
+            cluster.signature.dna_id,
+            serde_json::to_string(cluster)?,
+            updated_ts_ms
+        ],
+    )
+    .context("failed to persist dna_clusters_v2 row")?;
+    Ok(())
+}
+
+fn persist_evidence_block_with_conn(
+    conn: &Connection,
+    block: &EvidenceBlock,
+    updated_ts_ms: u64,
+) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO evidence_blocks_v2(evidence_id, evidence_json, updated_ts_ms)
+         VALUES (?1, ?2, ?3)",
+        params![
+            block.evidence_id,
+            serde_json::to_string(block)?,
+            updated_ts_ms
+        ],
+    )
+    .context("failed to persist evidence_blocks_v2 row")?;
+    Ok(())
+}
+
+fn persist_analytics_state_with_conn(
+    conn: &Connection,
+    analytics: &AnalyticsState,
+    counters: &Counters,
+    updated_ts_ms: u64,
+) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO analytics_state_v1(id, analytics_json, counters_json, updated_ts_ms)
+         VALUES (?1, ?2, ?3, ?4)",
+        params![
+            ANALYTICS_STATE_ROW_ID,
+            serde_json::to_string(analytics)?,
+            serde_json::to_string(counters)?,
+            updated_ts_ms
+        ],
+    )
+    .context("failed to persist analytics_state_v1 row")?;
+    Ok(())
+}
+
+fn begin_storage_transaction(conn: &Connection) -> anyhow::Result<()> {
+    conn.execute_batch("BEGIN IMMEDIATE TRANSACTION")
+        .context("failed to begin storage transaction")?;
+    Ok(())
+}
+
+fn commit_storage_transaction(conn: &Connection) -> anyhow::Result<()> {
+    conn.execute_batch("COMMIT")
+        .context("failed to commit storage transaction")?;
+    Ok(())
+}
+
+fn rollback_storage_transaction(conn: &Connection) {
+    if let Err(error) = conn.execute_batch("ROLLBACK") {
+        warn!("failed to rollback storage transaction: {}", error);
+    }
 }
 
 fn load_storage_state(
@@ -417,6 +575,88 @@ fn load_storage_state(
             |row| row.get::<_, u64>(0),
         )
         .context("failed to query next_audit_id for audits_v1")?;
+    let mut stmt_fingerprints = conn
+        .prepare(
+            "SELECT fingerprint, canonical_json FROM fingerprint_index_v1 ORDER BY fingerprint ASC",
+        )
+        .context("failed to prepare fingerprint bootstrap query")?;
+    let loaded_fingerprints = stmt_fingerprints
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })
+        .context("failed to iterate fingerprint bootstrap rows")?
+        .collect::<Result<HashMap<_, _>, _>>()
+        .context("failed to collect fingerprint bootstrap rows")?;
+
+    let mut stmt_sources = conn
+        .prepare(
+            "SELECT source_id, last_seen_ts_ms FROM source_last_seen_v1 ORDER BY source_id ASC",
+        )
+        .context("failed to prepare source_last_seen bootstrap query")?;
+    let loaded_sources = stmt_sources
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, u64>(1)?))
+        })
+        .context("failed to iterate source_last_seen bootstrap rows")?
+        .collect::<Result<HashMap<_, _>, _>>()
+        .context("failed to collect source_last_seen bootstrap rows")?;
+
+    let mut stmt_dna = conn
+        .prepare("SELECT cluster_json FROM dna_clusters_v2 ORDER BY dna_id ASC")
+        .context("failed to prepare dna_clusters bootstrap query")?;
+    let loaded_dna_clusters_vec = stmt_dna
+        .query_map([], |row| {
+            let cluster_json: String = row.get(0)?;
+            serde_json::from_str::<DnaClusterState>(&cluster_json).map_err(|err| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    cluster_json.len(),
+                    rusqlite::types::Type::Text,
+                    Box::new(err),
+                )
+            })
+        })
+        .context("failed to iterate dna_clusters bootstrap rows")?
+        .collect::<Result<Vec<_>, _>>()
+        .context("failed to collect dna_clusters bootstrap rows")?;
+    let loaded_dna_clusters = loaded_dna_clusters_vec
+        .into_iter()
+        .map(|cluster| (cluster.signature.dna_id.clone(), cluster))
+        .collect::<HashMap<_, _>>();
+
+    let mut stmt_evidence = conn
+        .prepare("SELECT evidence_json FROM evidence_blocks_v2 ORDER BY evidence_id ASC")
+        .context("failed to prepare evidence_blocks bootstrap query")?;
+    let loaded_evidence_vec = stmt_evidence
+        .query_map([], |row| {
+            let evidence_json: String = row.get(0)?;
+            serde_json::from_str::<EvidenceBlock>(&evidence_json).map_err(|err| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    evidence_json.len(),
+                    rusqlite::types::Type::Text,
+                    Box::new(err),
+                )
+            })
+        })
+        .context("failed to iterate evidence_blocks bootstrap rows")?
+        .collect::<Result<Vec<_>, _>>()
+        .context("failed to collect evidence_blocks bootstrap rows")?;
+    let loaded_evidence_blocks = loaded_evidence_vec
+        .into_iter()
+        .map(|block| (block.evidence_id.clone(), block))
+        .collect::<HashMap<_, _>>();
+
+    let loaded_analytics = load_runtime_json::<AnalyticsState>(
+        &conn,
+        "SELECT analytics_json FROM analytics_state_v1 WHERE id = ?1",
+        params![ANALYTICS_STATE_ROW_ID],
+        "analytics_state_v1.analytics_json",
+    )?;
+    let loaded_counters = load_runtime_json::<Counters>(
+        &conn,
+        "SELECT counters_json FROM analytics_state_v1 WHERE id = ?1",
+        params![ANALYTICS_STATE_ROW_ID],
+        "analytics_state_v1.counters_json",
+    )?;
     let audit_chain_head = loaded_audits
         .last()
         .map(|entry| entry.entry_hash.clone())
@@ -427,7 +667,13 @@ fn load_storage_state(
         events: VecDeque::from(loaded_v1),
         next_seq_v2,
         events_v2: VecDeque::from(loaded_v2),
+        dna_clusters: loaded_dna_clusters,
+        evidence_blocks: loaded_evidence_blocks,
         incidents: loaded_incidents,
+        fingerprint_index: loaded_fingerprints,
+        source_last_seen: loaded_sources,
+        analytics: loaded_analytics,
+        counters: loaded_counters,
         audits: loaded_audits,
         next_audit_id,
         audit_chain_head,
@@ -958,6 +1204,34 @@ fn persist_analytics_state(path: &PathBuf, state: &AnalyticsState) {
     }
 }
 
+fn persist_analytics_recovery_contour(
+    db_path: &PathBuf,
+    analytics_state_path: &PathBuf,
+    analytics: &AnalyticsState,
+    counters: &Counters,
+    updated_ts_ms: u64,
+) {
+    match open_storage_connection(db_path) {
+        Ok(conn) => {
+            if let Err(error) =
+                persist_analytics_state_with_conn(&conn, analytics, counters, updated_ts_ms)
+            {
+                warn!(
+                    "failed to persist analytics recovery contour into {}: {}",
+                    db_path.display(),
+                    error
+                );
+            }
+        }
+        Err(error) => warn!(
+            "failed to open storage for analytics recovery contour {}: {}",
+            db_path.display(),
+            error
+        ),
+    }
+    persist_analytics_state(analytics_state_path, analytics);
+}
+
 fn increment_count(map: &mut HashMap<String, u64>, key: &str) {
     let entry = map.entry(key.to_string()).or_insert(0);
     *entry = entry.saturating_add(1);
@@ -989,8 +1263,8 @@ fn analytics_bucket_for_minute_mut(
         .expect("bucket appended for minute")
 }
 
-fn record_analytics_event_locked(
-    s: &mut CoreState,
+fn record_analytics_event(
+    analytics: &mut AnalyticsState,
     ts_ms: u64,
     event: &Value,
     dna_id: Option<&str>,
@@ -1006,7 +1280,7 @@ fn record_analytics_event_locked(
         .unwrap_or("unknown");
     let is_gap = kind.starts_with("observability_gap.");
 
-    let bucket = analytics_bucket_for_minute_mut(&mut s.analytics, minute_ts_ms);
+    let bucket = analytics_bucket_for_minute_mut(analytics, minute_ts_ms);
     bucket.total_events = bucket.total_events.saturating_add(1);
     increment_count(&mut bucket.kind_counts, kind);
     increment_count(&mut bucket.severity_counts, severity);
@@ -1015,10 +1289,19 @@ fn record_analytics_event_locked(
     }
     if is_gap {
         bucket.gap_events = bucket.gap_events.saturating_add(1);
-        s.analytics.total_gap_events = s.analytics.total_gap_events.saturating_add(1);
+        analytics.total_gap_events = analytics.total_gap_events.saturating_add(1);
     }
-    s.analytics.total_events = s.analytics.total_events.saturating_add(1);
-    s.analytics.last_updated_ms = ts_ms;
+    analytics.total_events = analytics.total_events.saturating_add(1);
+    analytics.last_updated_ms = ts_ms;
+}
+
+fn record_analytics_event_locked(
+    s: &mut CoreState,
+    ts_ms: u64,
+    event: &Value,
+    dna_id: Option<&str>,
+) {
+    record_analytics_event(&mut s.analytics, ts_ms, event, dna_id);
 }
 
 fn build_app(state: Shared) -> Router {
@@ -1484,7 +1767,6 @@ async fn ingest(
                     .and_then(Value::as_str)
                     .unwrap_or("unknown")
                     .to_string();
-                s.source_last_seen.insert(source_id.clone(), now);
                 let stale_threshold_ms = 600_000u64;
                 let stale_sources: Vec<(String, u64)> = s
                     .source_last_seen
@@ -1544,8 +1826,6 @@ async fn ingest(
                             }),
                         );
                     }
-                } else {
-                    s.fingerprint_index.insert(fingerprint, canonical);
                 }
 
                 let seq = s.next_seq;
@@ -1554,7 +1834,54 @@ async fn ingest(
                     ts_ms: now,
                     event: processed_event.clone(),
                 };
-                if let Err(error) = persist_event_v1_with_conn(&storage_conn, &stored_event) {
+                let incident_policy = incident_policy_for_event(&processed_event);
+                let incident = build_incident(
+                    format!("incident-{}", seq + 1),
+                    incident_policy
+                        .map(|x| x.0.to_string())
+                        .unwrap_or_else(|| "event.ingested".to_string()),
+                    incident_policy.map(|x| x.1.to_string()).unwrap_or_else(|| {
+                        processed_event
+                            .get("severity")
+                            .and_then(Value::as_str)
+                            .unwrap_or("info")
+                            .to_uppercase()
+                    }),
+                    incident_policy.map(|x| x.2.to_string()),
+                    string_field(&processed_event, "run_id"),
+                    string_field(&processed_event, "trace_id"),
+                    string_field(&processed_event, "span_id"),
+                );
+                let mut next_analytics = s.analytics.clone();
+                record_analytics_event(&mut next_analytics, now, &processed_event, None);
+                let mut next_counters = s.counters.clone();
+                next_counters.ingest_accepted_total =
+                    next_counters.ingest_accepted_total.saturating_add(1);
+
+                let persist_result = (|| -> anyhow::Result<()> {
+                    begin_storage_transaction(&storage_conn)?;
+                    persist_event_v1_with_conn(&storage_conn, &stored_event)?;
+                    persist_incident_with_conn(&storage_conn, &incident)?;
+                    persist_source_last_seen_entry_with_conn(&storage_conn, &source_id, now)?;
+                    if !s.fingerprint_index.contains_key(&fingerprint) {
+                        persist_fingerprint_entry_with_conn(
+                            &storage_conn,
+                            &fingerprint,
+                            &canonical,
+                            now,
+                        )?;
+                    }
+                    persist_analytics_state_with_conn(
+                        &storage_conn,
+                        &next_analytics,
+                        &next_counters,
+                        now,
+                    )?;
+                    commit_storage_transaction(&storage_conn)?;
+                    Ok(())
+                })();
+                if let Err(error) = persist_result {
+                    rollback_storage_transaction(&storage_conn);
                     let queue_depth = s.events.len();
                     s.counters.ingest_dropped_total += 1;
                     push_gap_event_memory_only_locked(
@@ -1575,38 +1902,20 @@ async fn ingest(
                     };
                     return (StatusCode::SERVICE_UNAVAILABLE, Json(json!(err))).into_response();
                 }
+                if !s.fingerprint_index.contains_key(&fingerprint) {
+                    s.fingerprint_index.insert(fingerprint, canonical);
+                }
+                s.source_last_seen.insert(source_id, now);
+                s.analytics = next_analytics;
+                s.counters = next_counters;
                 s.next_seq += 1;
                 upto_seq = seq;
                 s.events.push_back(stored_event);
                 if s.events.len() > s.queue_depth_limit {
                     s.events.pop_front();
                 }
-
-                let incident_policy = incident_policy_for_event(&processed_event);
-                let incident_kind = incident_policy
-                    .map(|x| x.0.to_string())
-                    .unwrap_or_else(|| "event.ingested".to_string());
-                let incident_severity =
-                    incident_policy.map(|x| x.1.to_string()).unwrap_or_else(|| {
-                        processed_event
-                            .get("severity")
-                            .and_then(Value::as_str)
-                            .unwrap_or("info")
-                            .to_uppercase()
-                    });
-                let incident_action_ref = incident_policy.map(|x| x.2.to_string());
-                push_incident_locked(
-                    &mut s,
-                    incident_kind,
-                    incident_severity,
-                    incident_action_ref,
-                    string_field(&processed_event, "run_id"),
-                    string_field(&processed_event, "trace_id"),
-                    string_field(&processed_event, "span_id"),
-                );
-                record_analytics_event_locked(&mut s, now, &processed_event, None);
+                s.incidents.push(incident);
                 accepted += 1;
-                s.counters.ingest_accepted_total += 1;
             }
         }
     }
@@ -1630,7 +1939,13 @@ async fn ingest(
         invalid: invalid_details.len(),
         invalid_details,
     };
-    persist_analytics_state(&s.analytics_state_path, &s.analytics);
+    persist_analytics_recovery_contour(
+        &s.db_path,
+        &s.analytics_state_path,
+        &s.analytics,
+        &s.counters,
+        now,
+    );
     (StatusCode::OK, Json(response)).into_response()
 }
 
@@ -1709,11 +2024,40 @@ async fn ingest_v2(
             .iter()
             .map(|block| block.evidence_id.clone())
             .collect();
-        for block in evidence_blocks {
-            s.evidence_blocks.insert(block.evidence_id.clone(), block);
+        let mut next_cluster = s
+            .dna_clusters
+            .get(&dna_signature.dna_id)
+            .cloned()
+            .unwrap_or_else(|| DnaClusterState {
+                signature: dna_signature.clone(),
+                event_count: 0,
+                last_seen_ts_ms: now,
+                sample_event_seq: seq,
+                evidence_refs: Vec::new(),
+            });
+        next_cluster.event_count = next_cluster.event_count.saturating_add(1);
+        next_cluster.last_seen_ts_ms = now;
+        if next_cluster.sample_event_seq == 0 {
+            next_cluster.sample_event_seq = seq;
         }
-        upsert_dna_cluster_locked(&mut s, &dna_signature, seq, now, &evidence_refs);
-        record_analytics_event_locked(&mut s, now, &event, Some(&dna_signature.dna_id));
+        for evidence_id in &evidence_refs {
+            if !next_cluster
+                .evidence_refs
+                .iter()
+                .any(|existing| existing == evidence_id)
+            {
+                next_cluster.evidence_refs.push(evidence_id.clone());
+            }
+        }
+        let mut next_analytics = s.analytics.clone();
+        record_analytics_event(
+            &mut next_analytics,
+            now,
+            &event,
+            Some(&dna_signature.dna_id),
+        );
+        let mut next_counters = s.counters.clone();
+        next_counters.ingest_accepted_total = next_counters.ingest_accepted_total.saturating_add(1);
 
         let stored_event = StoredEventV2 {
             seq,
@@ -1722,7 +2066,19 @@ async fn ingest_v2(
             dna_signature,
             evidence_refs,
         };
-        if let Err(error) = persist_event_v2_with_conn(&storage_conn, &stored_event) {
+        let persist_result = (|| -> anyhow::Result<()> {
+            begin_storage_transaction(&storage_conn)?;
+            persist_event_v2_with_conn(&storage_conn, &stored_event)?;
+            for block in &evidence_blocks {
+                persist_evidence_block_with_conn(&storage_conn, block, now)?;
+            }
+            persist_dna_cluster_with_conn(&storage_conn, &next_cluster, now)?;
+            persist_analytics_state_with_conn(&storage_conn, &next_analytics, &next_counters, now)?;
+            commit_storage_transaction(&storage_conn)?;
+            Ok(())
+        })();
+        if let Err(error) = persist_result {
+            rollback_storage_transaction(&storage_conn);
             push_gap_event_memory_only_locked(
                 &mut s,
                 "observability_gap.ingest_unavailable",
@@ -1739,6 +2095,13 @@ async fn ingest_v2(
             };
             return (StatusCode::SERVICE_UNAVAILABLE, Json(json!(err))).into_response();
         }
+        for block in evidence_blocks {
+            s.evidence_blocks.insert(block.evidence_id.clone(), block);
+        }
+        s.dna_clusters
+            .insert(next_cluster.signature.dna_id.clone(), next_cluster);
+        s.analytics = next_analytics;
+        s.counters = next_counters;
         s.next_seq_v2 += 1;
         upto_seq = seq;
         s.events_v2.push_back(stored_event);
@@ -1746,18 +2109,19 @@ async fn ingest_v2(
             s.events_v2.pop_front();
         }
     }
-
-    s.counters.ingest_accepted_total = s
-        .counters
-        .ingest_accepted_total
-        .saturating_add(accepted as u64);
     let response = IngestResponse {
         ack: Ack { upto_seq },
         accepted,
         invalid: 0,
         invalid_details: Vec::new(),
     };
-    persist_analytics_state(&s.analytics_state_path, &s.analytics);
+    persist_analytics_recovery_contour(
+        &s.db_path,
+        &s.analytics_state_path,
+        &s.analytics,
+        &s.counters,
+        now,
+    );
     (StatusCode::OK, Json(response)).into_response()
 }
 
@@ -1881,39 +2245,6 @@ fn evidence_block_from_value(value: &Value, seq: u64, idx: usize, ts_ms: u64) ->
         freshness_ms,
         redaction_policy_id,
         access_scope,
-    }
-}
-
-fn upsert_dna_cluster_locked(
-    state: &mut CoreState,
-    signature: &DnaSignature,
-    seq: u64,
-    ts_ms: u64,
-    evidence_refs: &[String],
-) {
-    let entry = state
-        .dna_clusters
-        .entry(signature.dna_id.clone())
-        .or_insert_with(|| DnaClusterState {
-            signature: signature.clone(),
-            event_count: 0,
-            last_seen_ts_ms: ts_ms,
-            sample_event_seq: seq,
-            evidence_refs: Vec::new(),
-        });
-    entry.event_count = entry.event_count.saturating_add(1);
-    entry.last_seen_ts_ms = ts_ms;
-    if entry.sample_event_seq == 0 {
-        entry.sample_event_seq = seq;
-    }
-    for evidence_id in evidence_refs {
-        if !entry
-            .evidence_refs
-            .iter()
-            .any(|existing| existing == evidence_id)
-        {
-            entry.evidence_refs.push(evidence_id.clone());
-        }
     }
 }
 
@@ -2726,7 +3057,13 @@ fn push_gap_event_memory_only_locked(s: &mut CoreState, kind: &str, details: Val
             None,
         );
     }
-    persist_analytics_state(&s.analytics_state_path, &s.analytics);
+    persist_analytics_recovery_contour(
+        &s.db_path,
+        &s.analytics_state_path,
+        &s.analytics,
+        &s.counters,
+        ts_ms,
+    );
 }
 
 fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
@@ -2850,6 +3187,27 @@ fn incident_policy_for_gap(kind: &str) -> Option<(&'static str, &'static str, &'
     }
 }
 
+fn build_incident(
+    incident_id: String,
+    kind: String,
+    severity: String,
+    action_ref: Option<String>,
+    run_id: Option<String>,
+    trace_id: Option<String>,
+    span_id: Option<String>,
+) -> Incident {
+    Incident {
+        id: incident_id,
+        status: "open".to_string(),
+        kind,
+        severity,
+        action_ref,
+        run_id,
+        trace_id,
+        span_id,
+    }
+}
+
 fn push_incident_locked(
     s: &mut CoreState,
     kind: String,
@@ -2860,16 +3218,15 @@ fn push_incident_locked(
     span_id: Option<String>,
 ) {
     let incident_id = format!("incident-{}", s.next_seq);
-    let incident = Incident {
-        id: incident_id,
-        status: "open".to_string(),
+    let incident = build_incident(
+        incident_id,
         kind,
         severity,
         action_ref,
         run_id,
         trace_id,
         span_id,
-    };
+    );
     s.incidents.push(incident.clone());
     if let Err(error) = persist_incident(&s.db_path, &incident) {
         warn!("failed to persist incident {}: {}", incident.id, error);
@@ -4158,6 +4515,7 @@ mod tests {
     }
 
     fn test_state_with_db(db_path: PathBuf) -> Shared {
+        let analytics_state_path = db_path.with_extension("analytics.json");
         Arc::new(RwLock::new(
             CoreState::new(
                 "global".to_string(),
@@ -4166,7 +4524,7 @@ mod tests {
                 524_288,
                 vec!["service.restart".to_string(), "service.status".to_string()],
                 AnalyticsState::new(1_440),
-                PathBuf::from("/tmp/art_core_analytics_state_test.json"),
+                analytics_state_path,
                 db_path,
             )
             .expect("test core state"),
@@ -4229,6 +4587,40 @@ mod tests {
             .expect("collect")
             .to_bytes();
         serde_json::from_slice(&body).expect("snapshot json")
+    }
+
+    async fn analytics_summary_json(app: &Router) -> Value {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/analytics/summary?window_minutes=120&top=5")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        serde_json::from_slice(&body).expect("analytics json")
+    }
+
+    async fn metrics_text(app: &Router) -> String {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/metrics")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        String::from_utf8(body.to_vec()).expect("metrics utf8")
     }
 
     #[tokio::test]
@@ -4448,6 +4840,152 @@ mod tests {
         let verify_json: Value = serde_json::from_slice(&verify_body).expect("json");
         assert_eq!(verify_json["status"], "verified");
         assert_eq!(verify_json["count"], 4);
+    }
+
+    #[tokio::test]
+    async fn storage_reloads_fingerprint_source_indexes_and_metrics_after_restart() {
+        let db_path = next_test_db_path();
+        let state1 = test_state_with_db(db_path.clone());
+        let app1 = build_app(state1.clone());
+        let payload = json!({
+            "events": [
+                {
+                    "severity": "error",
+                    "kind": "db.timeout",
+                    "msg": "fingerprint-source-check",
+                    "source_id": "agent-alpha"
+                }
+            ]
+        });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let resp = app1.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let state2 = test_state_with_db(db_path);
+        let app2 = build_app(state2.clone());
+        let s = state2.read().await;
+        assert_eq!(
+            s.source_last_seen.get("agent-alpha").copied(),
+            Some(s.events.back().expect("stored event").ts_ms)
+        );
+        assert_eq!(s.fingerprint_index.len(), 1);
+        drop(s);
+
+        let metrics = metrics_text(&app2).await;
+        assert!(metrics.contains("ingest_accepted_total 1"));
+        assert!(metrics.contains("ingest_invalid_total 0"));
+        assert!(metrics.contains("ingest_dropped_total 0"));
+    }
+
+    #[tokio::test]
+    async fn storage_reloads_v2_dna_clusters_and_evidence_blocks_after_restart() {
+        let db_path = next_test_db_path();
+        let app1 = build_app(test_state_with_db(db_path.clone()));
+        let payload = json!({
+            "events": [
+                {
+                    "severity":"error",
+                    "kind":"db.timeout",
+                    "msg":"database timeout",
+                    "payload":{"service":"orders","region":"eu"},
+                    "evidence_blocks":[
+                        {
+                            "evidence_id":"ev-v2-restart-1",
+                            "source_type":"log",
+                            "source_ref":"log://db/1",
+                            "trust_score":0.9,
+                            "freshness_ms":1200,
+                            "redaction_policy_id":"default",
+                            "access_scope":"public"
+                        }
+                    ]
+                }
+            ]
+        });
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let ingest_resp = app1.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::OK);
+
+        let state2 = test_state_with_db(db_path.clone());
+        let app2 = build_app(state2.clone());
+        let snapshot = snapshot_v2_json(&app2).await;
+        let dna_id = snapshot["dna_clusters"][0]["dna_signature"]["dna_id"]
+            .as_str()
+            .expect("dna id")
+            .to_string();
+        {
+            let s = state2.read().await;
+            assert!(s.dna_clusters.contains_key(&dna_id));
+            assert!(s.evidence_blocks.contains_key("ev-v2-restart-1"));
+        }
+
+        let evidence_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/evidence/ev-v2-restart-1")
+            .body(Body::empty())
+            .expect("request");
+        let evidence_resp = app2.clone().oneshot(evidence_req).await.expect("response");
+        assert_eq!(evidence_resp.status(), StatusCode::OK);
+
+        let cluster_req = Request::builder()
+            .method("GET")
+            .uri(format!("/api/v2/dna/{dna_id}"))
+            .body(Body::empty())
+            .expect("request");
+        let cluster_resp = app2.oneshot(cluster_req).await.expect("response");
+        assert_eq!(cluster_resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn storage_reloads_analytics_summary_after_restart() {
+        let db_path = next_test_db_path();
+        let app1 = build_app(test_state_with_db(db_path.clone()));
+        let payload = json!({
+            "events": [
+                {"severity":"error","kind":"db.timeout","payload":{"service":"orders","region":"eu"}}
+            ]
+        });
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let ingest_resp = app1.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::OK);
+
+        let metrics_req = Request::builder()
+            .method("GET")
+            .uri("/metrics")
+            .header("x-core-metrics-force-unavailable", "1")
+            .body(Body::empty())
+            .expect("request");
+        let metrics_resp = app1.clone().oneshot(metrics_req).await.expect("response");
+        assert_eq!(metrics_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+
+        let app2 = build_app(test_state_with_db(db_path));
+        let analytics = analytics_summary_json(&app2).await;
+        assert!(analytics["totals"]["total_events"]
+            .as_u64()
+            .map(|value| value >= 2)
+            .unwrap_or(false));
+        assert!(analytics["totals"]["gap_events"]
+            .as_u64()
+            .map(|value| value >= 1)
+            .unwrap_or(false));
+        let metrics = metrics_text(&app2).await;
+        assert!(metrics.contains("ingest_accepted_total 1"));
+        assert!(metrics.contains("ingest_dropped_total 0"));
     }
 
     fn otlp_payload_with_count(count: usize, severity_text: &str) -> Value {

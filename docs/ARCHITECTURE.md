@@ -27,12 +27,13 @@ Art строится как единый продукт с тремя архит
 - snapshot и stream API
 - хост для встроенного `Panel0`
 - опорная точка release и certified profile
+- corrective baseline `stage11` уже перевёл в durable SQLite не только `events/incidents/audit`, но и `fingerprint/source indexes`, `dna/evidence` и analytics/counters; при этом hostile recovery contour для полного состояния ещё остаётся открытым
 
 ### art-agent
 - сбор сигналов на уровне ОС и сервисов
-- надёжная доставка через spool и outbox
-- backpressure-aware forwarding в Core
-- деградация фиксируется явно, а не маскируется
+- целевая модель — надёжная доставка через spool и outbox
+- фактический runtime-контур доставки и relay/TLS basement остаётся corrective-зоной следующих стадий и не считается закрытым
+- деградация должна фиксироваться явно, а не маскироваться
 
 ### browser / Level0
 - браузерный backlog и capture path

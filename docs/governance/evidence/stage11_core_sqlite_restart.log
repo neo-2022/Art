@@ -1,12 +1,29 @@
-   Compiling art-core v0.1.0 (/home/art/Art/core)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.17s
+# stage11 sqlite restart proof
+
+$ cargo test -p art-core storage_reloads -- --nocapture
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
      Running unittests src/main.rs (target/debug/deps/art_core-a7679bcddd987b4c)
 
-running 4 tests
+running 7 tests
+test tests::storage_reloads_fingerprint_source_indexes_and_metrics_after_restart ... ok
+test tests::storage_reloads_v2_dna_clusters_and_evidence_blocks_after_restart ... ok
 test tests::storage_reloads_v2_events_from_sqlite_after_restart ... ok
 test tests::storage_reloads_v1_events_from_sqlite_after_restart ... ok
 test tests::storage_reloads_incidents_from_sqlite_after_restart_and_status_update ... ok
 test tests::storage_reloads_audits_from_sqlite_after_restart_and_keeps_chain_valid ... ok
+test tests::storage_reloads_analytics_summary_after_restart ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 65 filtered out; finished in 0.12s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 65 filtered out; finished in 0.17s
 
+
+$ python3 -m unittest scripts.tests.test_storage_stage11 -v
+test_chaos_smoke_scenarios (scripts.tests.test_storage_stage11.StorageStage11Tests.test_chaos_smoke_scenarios) ... ok
+test_concurrency_writers_readers_10000_ops (scripts.tests.test_storage_stage11.StorageStage11Tests.test_concurrency_writers_readers_10000_ops) ... ok
+test_corruption_recovery_restore_fail_goes_read_only (scripts.tests.test_storage_stage11.StorageStage11Tests.test_corruption_recovery_restore_fail_goes_read_only) ... ok
+test_corruption_recovery_restore_success (scripts.tests.test_storage_stage11.StorageStage11Tests.test_corruption_recovery_restore_success) ... ok
+test_vacuum_safe_runs_when_ingest_inactive (scripts.tests.test_storage_stage11.StorageStage11Tests.test_vacuum_safe_runs_when_ingest_inactive) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 24.204s
+
+OK

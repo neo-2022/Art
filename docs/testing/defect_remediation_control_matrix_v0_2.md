@@ -86,14 +86,17 @@
   - `docs/governance/evidence/stage11_core_sqlite_restart.log`
 - Что нужно сделать:
   1. довести durable persistence не только для `events/incidents/audit`, но и для derived/runtime state;
-  2. материализовать recovery contour для fingerprint/source indexes и аналитики;
-  3. убрать расхождение между storage docs и реальным recovery path.
+  2. материализовать recovery contour для fingerprint/source indexes, `dna/evidence` и аналитики;
+  3. доказать hostile-path recovery (`WAL/corruption/read_only`) уже на расширенном полном состоянии;
+  4. убрать расхождение между storage docs и реальным recovery path.
 - Чем доказать закрытие:
   - restart-proof tests на полный `Core state`;
   - evidence logs по recovery после restart/corruption;
   - hostile-path проверки `WAL/corruption/recovery`.
 - Текущий прогресс:
-  - partial remediation уже сделана коммитами `cf25815`, `444e587`, но дефект ещё не закрыт.
+  - partial remediation уже сделана коммитами `cf25815`, `444e587`;
+  - следующим слоем durable basement расширен и на `fingerprint/source indexes`, `dna_clusters`, `evidence_blocks`, `analytics/counters`;
+  - дефект всё ещё открыт, потому что hostile recovery для расширенного состояния пока не доказан end-to-end.
 
 ### [ ] DEF-002 — Durable spool у `Agent`
 - Уровень: `A.2`
