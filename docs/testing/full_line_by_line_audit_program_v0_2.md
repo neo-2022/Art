@@ -1,0 +1,120 @@
+# Программа полного построчного аудита проекта v0.2
+
+## Source of truth
+- `docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`
+- `docs/testing/production_adversarial_validation_law.md`
+- `docs/testing/test_system_audit_v0_2.md`
+- `/home/art/my_langgraph_agent/AGENTS.md`
+
+## Назначение
+Этот документ фиксирует обязательную программу полного построчного аудита репозитория `Art`.
+
+Правило жёсткое:
+- слова пользователя трактуются как приказ;
+- приказ “проверить каждую строчку в каждом файле проекта” означает буквальный line-by-line аудит;
+- без завершения этого аудита дальнейшее закрытие этапов возможно только как временная локальная работа, но не как финальное основание для production readiness.
+
+## Объём корпуса
+На момент старта программы в рабочем корпусе учитывается `890` файлов.
+
+Из корпуса исключаются только технические каталоги, не являющиеся source-of-truth программы:
+- `.git/`
+- `node_modules/`
+- `target/`
+- `.playwright-cli/`
+- `__pycache__/`
+
+## Цели аудита
+Для каждого файла требуется определить:
+1. назначение;
+2. принадлежность к контуру (`code`, `docs`, `contracts`, `tests`, `ci`, `artifacts`, `packs`, `formats`, `ops`, `security`);
+3. соответствие философии проекта;
+4. соответствие `Production-Adversarial Validation Law`;
+5. наличие placeholders, stubs, weak-fallbacks, скрытых допущений;
+6. наличие runtime/operational доказательства;
+7. какие checklist-этапы затронуты;
+8. требуется ли reopening этапа в MASTER.
+
+## Классы оценки
+- `OK` — соответствует философии проекта и не создаёт слабого основания.
+- `WEAK` — формально допустим, но слаб по hostile/runtime/prod-критериям.
+- `PLACEHOLDER` — содержит заглушку, временное решение, stub или template debt.
+- `MISMATCH` — противоречит философии проекта, checklist claims или runtime expectations.
+- `REOPEN` — создаёт основание для повторного открытия этапа в MASTER.
+
+## Порядок прохождения
+
+### 1. Метаданные и входной слой
+- root files (`README`, `SECURITY`, `CHANGELOG`, `RELEASE_CHECKLIST`, `Makefile`, root manifests)
+- `.github/*`
+
+### 2. Канонические документы и master-governance
+- `docs/source/*`
+- `docs/source/checklists/*`
+- `docs/foundation/*`
+- `docs/testing/*`
+
+### 3. Контракты и machine-readable слой
+- `docs/contracts/*`
+- `docs/api/*`
+- `docs/schemas/*`
+- `formats/*`
+- `generated/*`
+
+### 4. Код и runtime
+- `core/*`
+- `agent/*`
+- `browser/*`
+- `apps/*`
+- `packages/*`
+
+### 5. Runbooks / ops / security / compliance
+- `docs/ops/*`
+- `docs/security/*`
+- `docs/privacy/*`
+- `docs/compliance/*`
+- `docs/governance/*`
+- `docs/runbooks/*`
+
+### 6. Tests / CI / platform / packs
+- `scripts/ci/*`
+- `scripts/tests/*`
+- `tests/*`
+- `packs/*`
+- `packaging/*`
+- `docker/*`
+- `systemd/*`
+
+### 7. Artifacts / evidence
+- `artifacts/*`
+- `docs/governance/evidence/*`
+
+## Обязательные вопросы к каждой строке
+Для каждого файла и его содержимого проверяется:
+- это production-grade реализация или только декларация;
+- есть ли hidden assumption;
+- есть ли silent fallback;
+- есть ли путь hostile misuse;
+- есть ли локализационный разрыв;
+- есть ли противоречие `Evidence-First`, `Truth Modes`, `Policy-as-UI`, `No magic`;
+- доказан ли эксплуатационный эффект;
+- может ли более сильный инженер справедливо сказать “это недоделано”.
+
+## Обязательный выход программы
+Результатом полного аудита должны стать:
+1. файл-реестр всех проверенных файлов;
+2. список несоответствий;
+3. карта reopening по этапам MASTER;
+4. remediation-order, который идёт раньше дальнейшего “формального” продвижения по листам.
+
+## Неприемлемый результат
+Программа не считается выполненной, если:
+- проверены только “рискованные” файлы;
+- проверены только изменённые файлы;
+- не пройден весь корпус построчно;
+- нет карты reopening;
+- вывод сводится к “в целом нормально”.
+
+## Статус
+- Статус программы: `IN_PROGRESS`
+- Продвижение считается только по фактически просмотренным и классифицированным файлам.
