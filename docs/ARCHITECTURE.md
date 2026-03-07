@@ -27,7 +27,7 @@ Art строится как единый продукт с тремя архит
 - snapshot и stream API
 - хост для встроенного `Panel0`
 - опорная точка release и certified profile
-- corrective baseline `stage11` уже перевёл в durable SQLite не только `events/incidents/audit`, но и `fingerprint/source indexes`, `dna/evidence` и analytics/counters; hostile backup/restore proof для полного состояния уже получен, backup-root разведен по `db_path`, но live corruption/read_only contour самого `Core` ещё остаётся открытым
+- corrective baseline `stage11` уже перевёл в durable SQLite не только `events/incidents/audit`, но и `fingerprint/source indexes`, `dna/evidence` и analytics/counters; hostile backup/restore proof для полного состояния уже получен, backup-root разведен по `db_path`, а live corruption/read_only contour самого `Core` уже материализован end-to-end; текущий remaining blocker в этом basement — live `kill -9 during ingest` chaos как полноценный runtime-proof
 
 ### art-agent
 - сбор сигналов на уровне ОС и сервисов

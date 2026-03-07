@@ -23,29 +23,29 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Шаги (строго линейно)
 
-- [ ] **1. Сделать:** Зафиксировать алгоритм WAL corruption recovery (детерминированный).
-  - [ ] При детекте corruption:
-    - [ ] ingest отвечает HTTP 503
-    - [ ] ответ содержит `retry_after_ms` (число >= 0)
-  - [ ] Генерируется событие `observability_gap.storage_corrupted` и оно попадает в snapshot/stream
-  - [ ] `observability_gap.storage_corrupted` содержит evidence_min:
-    - [ ] db_path
-    - [ ] corruption_type (строка)
-    - [ ] sqlite_error (строка)
-    - [ ] last_ok_backup_id (строка или `none`)
-    - [ ] trace_id
-  - [ ] Авто-восстановление:
-    - [ ] выполняется restore из последнего валидного backup
-    - [ ] после restore выполняется integrity check (фиксированная команда/процедура)
-    - [ ] при успехе ingest возвращается в нормальный режим
-  - [ ] При неуспехе авто-восстановления:
-    - [ ] Core переводится в режим `read_only`
-    - [ ] ingest продолжает отвечать 503 с `retry_after_ms`
-    - [ ] генерируется событие `observability_gap.storage_read_only` (snapshot/stream)
-  - [ ] `observability_gap.storage_corrupted` и `observability_gap.storage_read_only` зарегистрированы в `docs/governance/observability_gap_registry.md` с:
-    - [ ] `incident_rule=create_incident_min_sev1`
-    - [ ] `action_ref=docs/ops/storage_corruption_runbook.md`
-  - [ ] **Проверка (pass/fail):** существует `docs/ops/storage_corruption_runbook.md`, и он описывает шаги выше в указанном порядке (включая 503+retry_after_ms, события, restore, integrity check, read_only fallback).
+- [x] **1. Сделать:** Зафиксировать алгоритм WAL corruption recovery (детерминированный).
+  - [x] При детекте corruption:
+    - [x] ingest отвечает HTTP 503
+    - [x] ответ содержит `retry_after_ms` (число >= 0)
+  - [x] Генерируется событие `observability_gap.storage_corrupted` и оно попадает в snapshot/stream
+  - [x] `observability_gap.storage_corrupted` содержит evidence_min:
+    - [x] db_path
+    - [x] corruption_type (строка)
+    - [x] sqlite_error (строка)
+    - [x] last_ok_backup_id (строка или `none`)
+    - [x] trace_id
+  - [x] Авто-восстановление:
+    - [x] выполняется restore из последнего валидного backup
+    - [x] после restore выполняется integrity check (фиксированная команда/процедура)
+    - [x] при успехе ingest возвращается в нормальный режим
+  - [x] При неуспехе авто-восстановления:
+    - [x] Core переводится в режим `read_only`
+    - [x] ingest продолжает отвечать 503 с `retry_after_ms`
+    - [x] генерируется событие `observability_gap.storage_read_only` (snapshot/stream)
+  - [x] `observability_gap.storage_corrupted` и `observability_gap.storage_read_only` зарегистрированы в `docs/governance/observability_gap_registry.md` с:
+    - [x] `incident_rule=create_incident_min_sev1`
+    - [x] `action_ref=docs/ops/storage_corruption_runbook.md`
+  - [x] **Проверка (pass/fail):** существует `docs/ops/storage_corruption_runbook.md`, и он описывает шаги выше в указанном порядке (включая 503+retry_after_ms, события, restore, integrity check, read_only fallback).
 
 - [ ] **2. Сделать:** Зафиксировать backup/restore политику SQLite (частота + формат + хранение).
   - [ ] backup создаётся по расписанию (частота задана числом + единицей)

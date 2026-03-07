@@ -1,9 +1,9 @@
-# Runbook: storage_corruption (целевой контур)
+# Runbook: storage_corruption
 
 Текущий статус:
-- этот runbook задаёт целевое поведение корректирующего `stage11`;
-- helper recovery/chaos сценарии уже покрывают этот алгоритм;
-- полный runtime-path через живой `art-core` storage basement ещё находится в remediation.
+- алгоритм ниже уже реализован в живом `art-core`;
+- helper recovery/chaos сценарии и live runtime tests подтверждают этот порядок;
+- оставшийся открытый контур `stage11` относится не к corruption/read_only логике, а к отдельному live-process chaos сценарию `kill -9` во время ingest.
 
 При corruption (строгий порядок):
 1. ingest -> `HTTP 503`

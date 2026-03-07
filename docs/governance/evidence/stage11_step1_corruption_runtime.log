@@ -1,0 +1,52 @@
+# stage11 step1 corruption runtime proof
+2026-03-07T20:14:00+03:00
+
+$ cargo test -p art-core live_ingest_corruption_auto_restores_and_next_retry_succeeds -- --nocapture
+running 1 test
+test tests::live_ingest_corruption_auto_restores_and_next_retry_succeeds ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 75 filtered out
+
+$ cargo test -p art-core live_ingest_corruption_without_backup_forces_read_only_and_blocks_writes -- --nocapture
+running 1 test
+test tests::live_ingest_corruption_without_backup_forces_read_only_and_blocks_writes ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 75 filtered out
+
+$ cargo test -p art-core storage_backup_restore_recovers_full_runtime_state_after_corruption -- --nocapture
+running 1 test
+test tests::storage_backup_restore_recovers_full_runtime_state_after_corruption ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 75 filtered out
+
+$ cargo test -p art-core --quiet
+test result: ok. 70 passed; 0 failed; 6 ignored
+
+$ python3 -m unittest scripts.tests.test_storage_stage11 -v
+Ran 5 tests in 30.769s
+OK
+
+$ python3 -m unittest scripts.tests.test_stage11_systemd_vacuum -v
+Ran 4 tests in 0.203s
+OK
+
+$ bash scripts/ci/check_storage_stage11_docs.sh
+stage11 docs gate: OK
+
+$ bash scripts/ci/check_documentation_tree_sync.sh
+documentation tree sync check: OK
+
+$ bash scripts/ci/check_stage28_docs.sh
+stage28 docs gate: OK
+
+$ bash scripts/ci/check_docs_master_traceability.sh
+docs master traceability gate: OK
+
+$ bash scripts/ci/check_checklist_status_integrity.sh
+checklist status integrity gate: OK
+
+$ bash scripts/ci/check_master_checklist_binding.sh
+master checklist binding gate: OK
+
+$ bash scripts/ci/check_stage_ladder_enforcement.sh
+stage ladder enforcement: OK

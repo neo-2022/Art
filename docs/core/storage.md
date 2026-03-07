@@ -17,9 +17,13 @@
   - restart-proof для `v1/v2`, `incidents`, `audit chain`, `fingerprint/source indexes`, `dna/evidence` и аналитики зафиксирован в evidence `stage11_core_sqlite_restart.log`.
   - hostile backup/restore proof для полного состояния `art-core` после corruption теперь тоже зафиксирован в evidence `stage11_core_sqlite_hostile_recovery.log`.
 - При этом storage contour `stage11` всё ещё не доведён до полного production-состояния:
-  - реальный `art-core` ещё не материализует end-to-end автоматический corruption detector, который сам переводит ingest в `HTTP 503 + retry_after_ms`, пишет `observability_gap.storage_corrupted`, делает restore и уходит в `read_only` при неуспехе;
-  - backup/restore/systemd path уже доказан по hostile proof и smoke, но ещё не собран в единый self-healing runtime contour самого `Core`;
-  - поэтому документ остаётся corrective-спецификацией и не утверждает, что весь runtime уже доведён до финальной цели.
+  - live corruption/read-only contour уже материализован end-to-end:
+    - corruption на ingest даёт `HTTP 503 + retry_after_ms`;
+    - `observability_gap.storage_corrupted` попадает в snapshot/stream;
+    - при наличии валидного backup выполняется restore и следующий retry проходит;
+    - при отсутствии валидного backup Core уходит в `read_only` и фиксирует `observability_gap.storage_read_only`;
+  - backup/restore/systemd path уже доказан по hostile proof и smoke;
+  - оставшийся blocker `stage11` уже уже не в corruption/read_only contour, а в том, что сценарий `kill -9 Core во время живого ingest` всё ещё подтверждён только helper/smoke-путём, а не полноценным live-process chaos вокруг настоящего `art-core`.
 
 ## Целевой storage-контур `stage11`
 

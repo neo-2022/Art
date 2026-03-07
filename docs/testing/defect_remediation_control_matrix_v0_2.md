@@ -107,7 +107,8 @@
   - следующим слоем durable basement расширен и на `fingerprint/source indexes`, `dna_clusters`, `evidence_blocks`, `analytics/counters`;
   - hostile backup/restore recovery для полного `Core state` теперь доказан отдельным evidence и runtime test;
   - коллизия backup-root между экземплярами `Core` с одинаковым профилем устранена: backup-каталог теперь детерминированно зависит и от `db_path`, а не только от `effective_profile_id`;
-  - дефект всё ещё открыт, потому что live `art-core` пока не материализует автоматический corruption-handling contour (`503/retry_after_ms`, `storage_corrupted`, restore, `read_only`) end-to-end.
+  - live `art-core` уже материализует автоматический corruption-handling contour (`503/retry_after_ms`, `storage_corrupted`, restore, `read_only`) end-to-end;
+  - дефект всё ещё открыт, потому что `kill -9 Core во время ingest` пока подтверждён только helper/smoke-путём и не доказан как полноценный live-process chaos contour вокруг настоящего runtime.
 
 ### [ ] DEF-002 — Durable spool у `Agent`
 - Уровень: `A.2`
