@@ -112,46 +112,46 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - [x] где лежат автотесты (пути)
     - [x] как они запускаются в CI (workflow/target/command)
 
-- [ ] **12. Сделать:** Добавить CI gate Stage 03 (наличие файлов + минимальная валидация содержимого).
-  - [ ] существует `scripts/ci/check_regional_profiles_stage03.sh`
-  - [ ] скрипт исполняемый
-  - [ ] скрипт запускается в CI workflow
-  - [ ] проверяет наличие всех файлов из раздела “Документация (RU)”
-  - [ ] `docs/compliance/profiles.md` содержит `profile selection`, `profile switch procedure`, `migration/validation`, `transition matrix`, `profile_id`
-  - [ ] `docs/compliance/profile_guards.md` содержит `fail closed` и `observability_gap.profile_violation`
-  - [ ] `docs/compliance/airgapped.md` содержит `offline packs update` и `signature keys`
-  - [ ] `docs/compliance/data_residency.md` содержит матрицу `profile_id → allowed`
-  - [ ] `docs/compliance/test_matrix.md` содержит строку `автоматизированы` и `CI`
-  - [ ] **Проверка (pass/fail):** CI зелёный; при удалении любого обязательного раздела/файла скрипт падает (exit 1).
+- [x] **12. Сделать:** Добавить CI gate Stage 03 (наличие файлов + минимальная валидация содержимого).
+  - [x] существует `scripts/ci/check_regional_profiles_stage03.sh`
+  - [x] скрипт исполняемый
+  - [x] скрипт запускается в CI workflow
+  - [x] проверяет наличие всех файлов из раздела “Документация (RU)”
+  - [x] `docs/compliance/profiles.md` содержит `profile selection`, `profile switch procedure`, `migration/validation`, `transition matrix`, `profile_id`
+  - [x] `docs/compliance/profile_guards.md` содержит `fail closed` и `observability_gap.profile_violation`
+  - [x] `docs/compliance/airgapped.md` содержит `offline packs update` и `signature keys`
+  - [x] `docs/compliance/data_residency.md` содержит матрицу `profile_id → allowed`
+  - [x] `docs/compliance/test_matrix.md` содержит строку `автоматизированы` и `CI`
+  - [x] **Проверка (pass/fail):** CI зелёный; при удалении любого обязательного раздела/файла скрипт падает (exit 1).
 
 ## Документация (RU)
-- [ ] docs/compliance/profiles.md
-- [ ] docs/compliance/data_residency.md
-- [ ] docs/compliance/profile_guards.md
-- [ ] docs/compliance/airgapped.md
-- [ ] docs/compliance/test_matrix.md
-- [ ] docs/runbooks/profile_violation.md
-- [ ] scripts/ci/check_regional_profiles_stage03.sh
+- [x] docs/compliance/profiles.md
+- [x] docs/compliance/data_residency.md
+- [x] docs/compliance/profile_guards.md
+- [x] docs/compliance/airgapped.md
+- [x] docs/compliance/test_matrix.md
+- [x] docs/runbooks/profile_violation.md
+- [x] scripts/ci/check_regional_profiles_stage03.sh
 
 ## Тестирование
-- [ ] integration: смена профиля только по процедуре (шаг 3)
-- [ ] integration: guardrails блокируют запуск/применение при нарушении (шаги 6–7)
-- [ ] integration: airgapped update — отказ без подписи/несовместимость; успех при валидных условиях (шаги 9–10)
-- [ ] integration (negative runtime): `/api/v1/profile/apply` отклоняет invalid `profile_id` и invalid guardrail values; в snapshot фиксируется `observability_gap.profile_violation` с evidence (`scripts/tests/profile_negative_runtime_integration.sh`)
+- [x] integration: смена профиля только по процедуре (шаг 3)
+- [x] integration: guardrails блокируют запуск/применение при нарушении (шаги 6–7)
+- [x] integration: airgapped update — отказ без подписи/несовместимость; успех при валидных условиях (шаги 9–10)
+- [x] integration (negative runtime): `/api/v1/profile/apply` отклоняет invalid `profile_id` и invalid guardrail values; в snapshot фиксируется `observability_gap.profile_violation` с evidence (`scripts/tests/profile_negative_runtime_integration.sh`)
 
 ## CI gate
-- [ ] `scripts/ci/check_regional_profiles_stage03.sh` включён в CI для PR в main
-- [ ] автотесты Stage 03 включены в CI и зелёные
-- [ ] CI job `stage03-profile-negative-integration` включён и запускает `scripts/tests/profile_negative_runtime_integration.sh`
+- [x] `scripts/ci/check_regional_profiles_stage03.sh` включён в CI для PR в main
+- [x] автотесты Stage 03 включены в CI и зелёные
+- [x] CI job `stage03-profile-negative-integration` включён и запускает `scripts/tests/profile_negative_runtime_integration.sh`
 
 ## DoD
-- [ ] Профили и параметры заданы однозначно (без ссылок “как в другом профиле”)
-- [ ] Выбор/смена профиля детерминированы и защищены guardrails
-- [ ] `effective_profile_id` доступен для диагностики через API/метрику
-- [ ] Матрица переходов определена и проверяется
-- [ ] `observability_gap.profile_violation` определён и зарегистрирован; runbook `docs/runbooks/profile_violation.md` существует
-- [ ] Airgapped packs update (подпись/совместимость) определён
-- [ ] CI gate Stage 03 проходит
+- [x] Профили и параметры заданы однозначно (без ссылок “как в другом профиле”)
+- [x] Выбор/смена профиля детерминированы и защищены guardrails
+- [x] `effective_profile_id` доступен для диагностики через API/метрику
+- [x] Матрица переходов определена и проверяется
+- [x] `observability_gap.profile_violation` определён и зарегистрирован; runbook `docs/runbooks/profile_violation.md` существует
+- [x] Airgapped packs update (подпись/совместимость) определён
+- [x] CI gate Stage 03 проходит
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)
-- [ ] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.
+- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

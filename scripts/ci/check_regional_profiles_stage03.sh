@@ -3,6 +3,7 @@ set -euo pipefail
 for f in docs/compliance/profiles.md docs/compliance/data_residency.md docs/compliance/profile_guards.md docs/compliance/airgapped.md docs/compliance/test_matrix.md docs/runbooks/profile_violation.md; do
   test -s "$f"
 done
+test -x scripts/ci/check_regional_profiles_stage03.sh
 grep -q "profile selection" docs/compliance/profiles.md
 grep -q "profile switch procedure" docs/compliance/profiles.md
 grep -q "migration/validation" docs/compliance/profiles.md
@@ -16,4 +17,10 @@ grep -q "profile_id" docs/compliance/data_residency.md
 grep -q "allowed" docs/compliance/data_residency.md
 grep -q "автоматизированы" docs/compliance/test_matrix.md
 grep -q "CI" docs/compliance/test_matrix.md
+grep -q "stage03-docs-gate" .github/workflows/ci.yml
+grep -q "stage03-profile-tests" .github/workflows/ci.yml
+grep -q "stage03-profile-switch-integration" .github/workflows/ci.yml
+grep -q "stage03-airgapped-update-integration" .github/workflows/ci.yml
+grep -q "stage03-profile-negative-integration" .github/workflows/ci.yml
+grep -q "check_regional_profiles_stage03.sh" .github/workflows/ci.yml
 echo "stage03 docs gate: OK"
