@@ -108,6 +108,7 @@
   - `docs/governance/evidence/stage11_step2_backup_policy.log`
   - `docs/governance/evidence/stage11_step3_concurrency.log`
   - `docs/governance/evidence/stage11_step4_vacuum_runtime.log`
+  - `docs/governance/evidence/stage23_ops_runtime_smoke.log`
 - Что нужно сделать:
   1. довести durable persistence не только для `events/incidents/audit`, но и для derived/runtime state;
   2. материализовать recovery contour для fingerprint/source indexes, `dna/evidence` и аналитики;
@@ -131,6 +132,8 @@
   - stage-level concurrency proof `11.3` теперь тоже закрыт отдельным runtime-evidence: `8 writer / 4 reader / 10000 ops / 26.061s`, без fatal `database is locked`, с инвариантом `accepted=committed=db_count`, а `storage-integration` запускает этот contour напрямую;
   - production-proof для `VACUUM/systemd` (`11.4`) теперь тоже материализован: отдельный runtime smoke `scripts/tests/storage_vacuum_runtime.sh` проходит success/safe-skip/missing-db paths, а `stage11-docs-gate` запускается и на PR;
   - `stage11` как stage-level basement теперь закрыт честно;
+  - downstream в `stage23` больше не декоративный: `scripts/tests/ops_stage23_smoke.sh` делает backup/restore настоящего `CORE_DB_PATH`, поднимает живой `art-core`, подтверждает survive для `snapshot`, `v2 snapshot`, `incidents`, `audit verify` и `analytics`, а `docs/ops/backup_restore.md` и `docs/ops/dr_drill.md` синхронизированы с этим runtime-proof;
+  - в `stage23` честно закрыты только `WAL-aware backup`, `DR drill`, runtime smoke и PR CI path для этих доказанных контуров; TLS hot-reload без простоя и `observability_gap.tls_config_invalid` как startup backlog ещё остаются downstream-blockers;
   - сам `DEF-001` остаётся открыт только потому, что его downstream-материализация ещё должна быть доведена в `stage23` и `stage37`.
 
 ### [ ] DEF-002 — Durable spool у `Agent`

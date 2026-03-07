@@ -6,7 +6,7 @@ total_collection_nodes: 3
 total_markdown_links_scanned: 214
 total_tree_edges: 177
 total_file_links_in_tree: 177
-total_lines_in_tree: 12553
+total_lines_in_tree: 12581
 total_lines_in_collections: 2243
 root_direct_children: 53
 root_influence_documents:
@@ -137,7 +137,7 @@ nodes:
   missing_index: false
 - path: docs/ARCHITECTURE.md
   node_type: document
-  lines: 99
+  lines: 100
   files_count: 1
   root_influence: false
   children:
@@ -156,7 +156,7 @@ nodes:
   missing_index: false
 - path: docs/INTEGRATION.md
   node_type: document
-  lines: 67
+  lines: 69
   files_count: 1
   root_influence: true
   children:
@@ -179,7 +179,7 @@ nodes:
   missing_index: false
 - path: docs/README.md
   node_type: document
-  lines: 136
+  lines: 144
   files_count: 1
   root_influence: true
   children:
@@ -324,7 +324,7 @@ nodes:
   missing_index: false
 - path: docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
   node_type: document
-  lines: 579
+  lines: 584
   files_count: 1
   root_influence: false
   children:
@@ -587,7 +587,7 @@ nodes:
   missing_index: false
 - path: docs/portal/INDEX.md
   node_type: document
-  lines: 75
+  lines: 84
   files_count: 1
   root_influence: false
   children:
@@ -1094,7 +1094,7 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_control_matrix_v0_2.md
   node_type: document
-  lines: 953
+  lines: 956
   files_count: 1
   root_influence: true
   children: []

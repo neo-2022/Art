@@ -51,33 +51,33 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
   - [ ] При провале integrity check выполняется rollback на backup (фиксированный порядок)
   - [ ] **Проверка (pass/fail):** существует `docs/ops/db_migration_runbook.md`, содержит все шаги выше в указанном порядке и содержит точные команды.
 
-- [ ] **4. Сделать:** WAL-aware backup: фиксированный способ бэкапа SQLite.
-  - [ ] Единственный разрешённый способ backup: `sqlite3 .backup`
-  - [ ] Backup выполняется при остановленном Core
-  - [ ] После backup выполняется integrity check на backup-файле (фиксированная команда)
-  - [ ] Формат хранения backup:
-    - [ ] каталог `backups/`
-    - [ ] имя `core-YYYYMMDD-HHMM.sqlite3`
-  - [ ] **Проверка (pass/fail):** `docs/ops/backup_restore.md` содержит:
-    - [ ] команду `sqlite3 <db> ".backup '<file>'"`
-    - [ ] условие “Core остановлен”
-    - [ ] integrity check после backup
-    - [ ] формат путей/имен backup.
+- [x] **4. Сделать:** WAL-aware backup: фиксированный способ бэкапа SQLite.
+  - [x] Единственный разрешённый способ backup: `sqlite3 .backup`
+  - [x] Backup выполняется при остановленном Core
+  - [x] После backup выполняется integrity check на backup-файле (фиксированная команда)
+  - [x] Формат хранения backup:
+    - [x] каталог `backups/`
+    - [x] имя `core-YYYYMMDD-HHMM.sqlite3`
+  - [x] **Проверка (pass/fail):** `docs/ops/backup_restore.md` содержит:
+    - [x] команду `sqlite3 <db> ".backup '<file>'"`
+    - [x] условие “Core остановлен”
+    - [x] integrity check после backup
+    - [x] формат путей/имен backup.
 
-- [ ] **5. Сделать:** DR drill: восстановление из backup выполняется и фиксируется отчётом (воспроизводимо).
-  - [ ] DR drill проводится фиксированным сценарием:
-    - [ ] stop Core
-    - [ ] восстановление из backup (фиксированная команда/процедура)
-    - [ ] start Core
-    - [ ] integrity check pass
-    - [ ] smoke ingest→snapshot pass (фиксированные команды)
-  - [ ] **Проверка (pass/fail):** существует `docs/ops/dr_drill.md`, содержит:
-    - [ ] дату проведения
-    - [ ] использованный backup файл
-    - [ ] команды восстановления
-    - [ ] результаты integrity check
-    - [ ] результаты smoke ingest→snapshot
-    - [ ] явный вывод pass/fail.
+- [x] **5. Сделать:** DR drill: восстановление из backup выполняется и фиксируется отчётом (воспроизводимо).
+  - [x] DR drill проводится фиксированным сценарием:
+    - [x] stop Core
+    - [x] восстановление из backup (фиксированная команда/процедура)
+    - [x] start Core
+    - [x] integrity check pass
+    - [x] smoke ingest→snapshot pass (фиксированные команды)
+  - [x] **Проверка (pass/fail):** существует `docs/ops/dr_drill.md`, содержит:
+    - [x] дату проведения
+    - [x] использованный backup файл
+    - [x] команды восстановления
+    - [x] результаты integrity check
+    - [x] результаты smoke ingest→snapshot
+    - [x] явный вывод pass/fail.
 
 - [ ] **6. Сделать:** `observability_gap.tls_config_invalid` при невозможности загрузить TLS ключи/сертификаты.
   - [ ] Критерий ошибки фиксирован:
@@ -129,24 +129,24 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
 
 ## Тестирование
 - [ ] integration: TLS reload smoke (SSE держится, шаг 2)
-- [ ] integration: DR drill smoke (restore + integrity + ingest→snapshot, шаг 5)
+- [x] integration: DR drill smoke (restore + integrity + ingest→snapshot, шаг 5)
 - [ ] induced: tls_config_invalid (fail closed + startup backlog публикация, шаг 6)
-- [ ] runtime smoke: `scripts/tests/ops_stage23_smoke.sh` (backup/restore + ingest→snapshot + SIGHUP stream survival)
+- [x] runtime smoke: `scripts/tests/ops_stage23_smoke.sh` (backup/restore + ingest→snapshot + SIGHUP stream survival)
 
 ## CI gate
-- [ ] CI job `ops-smoke` существует и запускается на PR в main
-- [ ] CI job `ops-docs-gate` существует и запускается на PR в main
-- [ ] `ops-docs-gate` запускает `scripts/ci/check_ops_stage23_docs.sh`, который:
-  - [ ] проверяет существование файлов из раздела “Документация (RU)”
-  - [ ] проверяет минимальный контент (grep):
-    - [ ] `docs/ops/deploy_k8s.md` содержит `cert-manager` и `ClusterIssuer` и `art-tls`
-    - [ ] `docs/ops/tls_rotation.md` содержит `SIGHUP` и `stream` и `ops_stage23_smoke.sh`
-    - [ ] `docs/ops/db_migration_runbook.md` содержит `integrity` и `rollback`
-    - [ ] `docs/ops/backup_restore.md` содержит `sqlite3` и `.backup` и `integrity`
-    - [ ] `docs/ops/dr_drill.md` содержит `ingest` и `snapshot` и `pass/fail` и `ops_stage23_smoke.sh`
-    - [ ] `docs/runbooks/tls_config_invalid.md` содержит `mitigations` и `verification`
-    - [ ] `docs/governance/observability_gap_registry.md` содержит `tls_config_invalid`
-  - [ ] exit 1 при нарушении любой проверки
+- [x] CI job `ops-smoke` существует и запускается на PR в main
+- [x] CI job `ops-docs-gate` существует и запускается на PR в main
+- [x] `ops-docs-gate` запускает `scripts/ci/check_ops_stage23_docs.sh`, который:
+  - [x] проверяет существование файлов из раздела “Документация (RU)”
+  - [x] проверяет минимальный контент (grep):
+    - [x] `docs/ops/deploy_k8s.md` содержит `cert-manager` и `ClusterIssuer` и `art-tls`
+    - [x] `docs/ops/tls_rotation.md` содержит `SIGHUP` и `stream` и `ops_stage23_smoke.sh`
+    - [x] `docs/ops/db_migration_runbook.md` содержит `integrity` и `rollback`
+    - [x] `docs/ops/backup_restore.md` содержит `sqlite3` и `.backup` и `integrity`
+    - [x] `docs/ops/dr_drill.md` содержит `ingest` и `snapshot` и `pass/fail` и `ops_stage23_smoke.sh`
+    - [x] `docs/runbooks/tls_config_invalid.md` содержит `mitigations` и `verification`
+    - [x] `docs/governance/observability_gap_registry.md` содержит `tls_config_invalid`
+  - [x] exit 1 при нарушении любой проверки
 
 ## DoD
 - [ ] k8s deploy описан и использует cert-manager как единственный TLS механизм.

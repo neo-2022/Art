@@ -28,7 +28,16 @@
 - Базовый предметный spec: [Art_v1_spec_final.md](../source/Art_v1_spec_final.md)
 - Корневой интеграционный spec: [REGART -  LangGraph  взаимодействие с Art описание.md](../source/REGART -  LangGraph  взаимодействие с Art описание.md)
 - Дефектовочная лестница: [defect_remediation_ladder_v0_2.md](../testing/defect_remediation_ladder_v0_2.md)
-- Активный corrective-контур сейчас идёт по `DEF-001 -> stage11`, где storage pressure/disk exhaustion уже materialized, а локальные blockers сдвинуты на `11.3/11.4`.
+- Активный corrective-контур сейчас идёт по `DEF-001 -> stage23/37`.
+- `stage11` уже закрыт честно как нижний durable storage-basement.
+- В `stage23` уже materialized:
+  - `WAL-aware backup`;
+  - `DR drill`;
+  - runtime smoke восстановления реального `CORE_DB_PATH`;
+  - PR CI-path для ops proof.
+- Текущие blockers `stage23`:
+  - `SIGHUP` hot-reload TLS без простоя;
+  - `observability_gap.tls_config_invalid` как startup backlog.
 
 ### Продукт
 - Архитектура: [ARCHITECTURE.md](../ARCHITECTURE.md)

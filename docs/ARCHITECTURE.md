@@ -69,6 +69,7 @@ Art строится как единый продукт с тремя архит
 - архитектурные решения принимаются только по пути `корень -> ствол -> крона`
 - hardcoding запрещён как архитектурный anti-pattern и допускается только как явно оформленный test fixture вне production baseline
 - internet-exposed deployment без ingress/perimeter shield запрещён как архитектурный anti-pattern
+- если нижний corrective-basement уже доведён и закрыт честно, активный corrective baseline обязан явно смещаться в следующий downstream stage; архитектурный обзор не имеет права оставлять проект “мысленно” в уже закрытом нижнем слое
 - high-risk монолитные entrypoint-файлы считаются архитектурным долгом и должны разрезаться после стабилизации basement по defect-линии `DEF-017`
 - рост высокорисковых entrypoint-файлов запрещён уже сейчас: до завершения `DEF-017/DEF-032` действует machine-readable budget и CI guard, который не позволяет дальше наращивать плотность в этих файлах
 - string/render-only test corpus не считается достаточным архитектурным доказательством поведения; hostile integration/e2e hardening обязателен по defect-линии `DEF-018`

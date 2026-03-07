@@ -72,14 +72,22 @@ Machine-readable карта зависимостей:
 - guard self-observability baseline: [guard_self_observability_v0_2.md](source/guard_self_observability_v0_2.md)
 
 Текущее состояние corrective-baseline:
-- в `DEF-001 -> stage11` уже materialized:
+- `DEF-001 -> stage11` уже закрыт честно как нижний storage-basement:
   - durable SQLite basement;
   - corruption -> restore -> read_only contour;
   - live `kill -9 during ingest` chaos;
   - live `storage pressure / disk exhaustion` contour;
-- локальными незакрытыми пунктами `stage11` остаются:
-  - `11.3` concurrency proof как stage-level closure evidence;
-  - `11.4` production-proof `VACUUM/systemd`.
+  - concurrency runtime-proof;
+  - production-proof `VACUUM/systemd`.
+- активный downstream corrective-контур по `DEF-001` теперь находится в `stage23/37`:
+  - в `stage23` уже materialized:
+    - `WAL-aware backup`;
+    - `DR drill`;
+    - runtime smoke `ops_stage23_smoke.sh` на реальном `CORE_DB_PATH`;
+    - PR-gates для этого контура;
+  - незакрытые blockers `stage23`:
+    - `SIGHUP` hot-reload TLS без простоя как честный hostile-proof;
+    - `observability_gap.tls_config_invalid` как persisted startup backlog.
 
 ### Release и клиентская коммуникация
 - release process: [release_process.md](release/release_process.md)

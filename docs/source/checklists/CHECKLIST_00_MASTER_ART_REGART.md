@@ -304,7 +304,7 @@ A) Полный запрет опциональности:
 | [ ] 20 | CHECKLIST_20_PACK_REGART.md | Pack REGART | fixtures всех событий + correlation + receivers.toml examples | reopened 2026-03-06, audit: pack payload layout still placeholder-backed |
 | [ ] 21 | CHECKLIST_21_SELF_OBSERVABILITY_ART.md | Self-obs | required internal incidents + grafana/ + alert tests | 2026-03-05, neo-2022, self-obs-tests+stage21-docs-gate |
 | [ ] 22 | CHECKLIST_22_E2E_STRESS_CHAOS_SOAK_PERF.md | E2E/Chaos/Soak | 50% packet loss + memory profiling + power loss + nightly chaos | 2026-03-05, neo-2022, e2e-smoke+e2e-chaos+stage22-docs-gate |
-| [ ] 23 | CHECKLIST_23_OPS_DEPLOY_RUNBOOKS_DR.md | Ops/DR | cert-manager + systemd TLS reload SIGHUP + DB migration runbook + WAL backups | 2026-03-05, neo-2022, ops-smoke+ops-docs-gate |
+| [ ] 23 | CHECKLIST_23_OPS_DEPLOY_RUNBOOKS_DR.md | Ops/DR | cert-manager + systemd TLS reload SIGHUP + DB migration runbook + WAL backups | 2026-03-07, neo-2022, real backup/restore DR runtime proof on `CORE_DB_PATH` + ops-smoke/ops-docs-gate on PR; stage remains open for TLS hot-reload and `tls_config_invalid` backlog path |
 | [ ] 24 | CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md | Release | downgrade with data + cosign sign images + RELEASE_CHECKLIST + manual releases | 2026-03-05, neo-2022, release-regression+release-signing-verify+stage24-docs-gate |
 | [ ] 25 | CHECKLIST_25_COMPLIANCE_AUDIT_READY.md | Compliance | export scripts + immutable evidence + data destruction policy | 2026-03-05, neo-2022, compliance-export+stage25-docs-gate |
 | [ ] 26 | CHECKLIST_26_RU_PROFILE.md | RU profile | PDn fields list + PII access audit + block cross-border export | reopened 2026-03-06, audit: air-gapped signing path still depends on placeholder key material |

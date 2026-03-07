@@ -23,7 +23,7 @@
 | Ветка-источник истины | `main` |
 | Текущий baseline | `v0.2.0-rc.2` |
 | Статус релиза | production candidate, `NO-GO` до доказательства protective contours |
-| Активный corrective baseline | `DEF-001 -> stage23/37 (storage-basement stage11 уже закрыт: durable Core storage/recovery, live corruption/read_only contour, live kill -9 during ingest chaos, storage pressure / disk exhaustion contour, concurrency proof и VACUUM/systemd production-proof materialized)` |
+| Активный corrective baseline | `DEF-001 -> stage23/37 (stage11 уже закрыт как durable storage-basement; в stage23 уже materialized WAL-aware backup, DR drill, runtime smoke на реальном CORE_DB_PATH и PR ops-gates; открытыми остаются TLS hot-reload без простоя и tls_config_invalid startup backlog)` |
 | Следующие structural defects в стволе | `DEF-017` high-risk monolith decomposition, `DEF-018` hostile e2e depth hardening, `DEF-019/020` trust boundary и browser surface hardening |
 | Execute-gated платформы | Ubuntu native, Docker runtime, Kubernetes runtime |
 | Расширенная Linux-матрица | validate-only до включения выделенных runner'ов |
@@ -35,7 +35,7 @@
 - лента доказательств прогресса: [DELIVERY_EVIDENCE.md](docs/portal/DELIVERY_EVIDENCE.md)
 - активная дефектовочная контрольная строка: [defect_remediation_control_matrix_v0_2.md](docs/testing/defect_remediation_control_matrix_v0_2.md)
 - дефектовочная лестница: [defect_remediation_ladder_v0_2.md](docs/testing/defect_remediation_ladder_v0_2.md)
-- в активной defect-строке `DEF-001` storage pressure contour для `stage11` уже материализован; cross-stage continuation по этому защитному контуру остаётся в `12/24/37`
+- в активной defect-строке `DEF-001` storage pressure contour для `stage11` уже материализован и закрыт как нижний basement; cross-stage continuation по durable storage/recovery contour теперь честно остаётся в `23/37`
 - baseline ingress/perimeter защиты: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
 - baseline trust boundary hardening: [trust_boundary_hardening_v0_2.md](docs/source/trust_boundary_hardening_v0_2.md)
 - baseline browser surface hardening: [browser_surface_hardening_v0_2.md](docs/source/browser_surface_hardening_v0_2.md)

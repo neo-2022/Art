@@ -64,4 +64,6 @@ Art и REGART — это интегрированные системы, а не 
 - Порядок corrective-работ определяется:
   - [defect_remediation_control_matrix_v0_2.md](testing/defect_remediation_control_matrix_v0_2.md)
   - [defect_remediation_ladder_v0_2.md](testing/defect_remediation_ladder_v0_2.md)
-- Сейчас активный базовый runtime-corrective слой остаётся в `DEF-001 -> stage11`; интеграционные hostile suites `Art <-> REGART` не подменяют этот basement, а подключаются как усиление на своих stage-узлах.
+- Сейчас нижний runtime-basement `DEF-001 -> stage11` уже закрыт честно.
+- Активный downstream corrective слой для этого же дефекта переместился в `stage23/37`, где добивается production-ready DR / deploy / platform continuation.
+- Интеграционные hostile suites `Art <-> REGART` не подменяют этот basement и не доказывают его вместо него; они подключаются как усиление на своих stage-узлах после того, как нижний storage-basement уже материализован.

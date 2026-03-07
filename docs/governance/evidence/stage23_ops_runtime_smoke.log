@@ -1,0 +1,12 @@
+ops-stage23-runtime-smoke: state validation OK
+{
+  "backup_file": "/tmp/tmp.Uy5i8lEvBj/backups/core-20260307-233432.sqlite3",
+  "snapshot_before_events": 1,
+  "snapshot_after_events": 1,
+  "incidents_before": 1,
+  "incidents_after": 1,
+  "audit_verify_before": "verified",
+  "audit_verify_after": "verified",
+  "analytics_total_events_after": 2
+}
+ops-stage23-runtime-smoke: OK
