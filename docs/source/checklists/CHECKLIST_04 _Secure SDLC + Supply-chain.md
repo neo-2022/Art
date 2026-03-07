@@ -56,12 +56,12 @@ A) Полный запрет опциональности:
   - [x] разрешённые источники загрузки инструментов перечислены (GitHub Releases/официальные registries)
   - [x] **Проверка (pass/fail):** существует `docs/security/ci_pinning_policy.md`, содержит все пункты выше явно.
 
-- [ ] **5. Сделать:** Описать SAST policy и обязательные правила (PR gate + baseline).
-  - [ ] выбран единый SAST инструмент: `semgrep`
-  - [ ] правила semgrep закреплены по версии (ruleset pinned)
-  - [ ] SAST выполняется на каждом PR в `main`
-  - [ ] политика фейла: найденные issues уровня “error” блокируют merge
-  - [ ] **Проверка (pass/fail):** существует `docs/security/sast_policy.md`, содержит все пункты выше явно.
+- [x] **5. Сделать:** Описать SAST policy и обязательные правила (PR gate + baseline).
+  - [x] выбран единый SAST инструмент: `semgrep`
+  - [x] правила semgrep закреплены по версии (ruleset pinned)
+  - [x] SAST выполняется на каждом PR в `main`
+  - [x] политика фейла: найденные issues уровня “error” блокируют merge
+  - [x] **Проверка (pass/fail):** существует `docs/security/sast_policy.md`, содержит все пункты выше явно.
 
 - [ ] **6. Сделать:** Описать SCA + license checks policy (vuln + лицензии) и PR gate.
   - [ ] SCA выполняется на каждом PR в `main`
