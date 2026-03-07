@@ -6,9 +6,14 @@
   - helper-контур SQLite backup/restore/chaos;
   - рабочий `systemd`-контур для safe VACUUM;
   - smoke/e2e proof для `art-vacuum.service` и `art-vacuum.timer`.
-- При этом живой `art-core` runtime пока ещё не переведён полностью на устойчивое SQLite-основание:
-  - основное событийное состояние (`events`, `incidents`, `audits`) всё ещё живёт в памяти;
-  - поэтому этот документ задаёт целевое корректирующее состояние `stage11`, а не утверждает, что весь runtime уже приведён к нему.
+- Живой `art-core` runtime теперь уже частично переведён на устойчивое SQLite-основание:
+  - потоки событий `v1` и `v2` записываются в SQLite и поднимаются обратно после рестарта;
+  - `WAL` и `busy_timeout` для SQLite basement включаются при старте;
+  - restart-proof для `v1/v2` зафиксирован в evidence `stage11_core_sqlite_restart.log`.
+- При этом storage contour `stage11` всё ещё не доведён до полного production-состояния:
+  - `incidents`, `audits`, DNA-derived state и часть аналитики пока остаются в памяти;
+  - durable basement есть уже не для всего состояния `Core`, а только для событийных потоков;
+  - поэтому документ остаётся corrective-спецификацией и не утверждает, что весь runtime уже доведён до финальной цели.
 
 ## Целевой storage-контур `stage11`
 

@@ -1,0 +1,11 @@
+# stage11 core sqlite restart proof
+2026-03-07T14:57:21+03:00
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+     Running unittests src/main.rs (target/debug/deps/art_core-a7679bcddd987b4c)
+
+running 2 tests
+test tests::storage_reloads_v2_events_from_sqlite_after_restart ... ok
+test tests::storage_reloads_v1_events_from_sqlite_after_restart ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 65 filtered out; finished in 0.06s
+
