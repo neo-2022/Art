@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-for f in docs/core/storage.md docs/ops/backup_restore_sqlite.md docs/ops/storage_corruption_runbook.md docs/ops/vacuum_schedule.md docs/ops/storage.md; do
+for f in docs/core/storage.md docs/ops/backup_restore_sqlite.md docs/ops/storage_corruption_runbook.md docs/ops/vacuum_schedule.md docs/ops/storage.md docs/source/storage_pressure_protection_v0_2.md docs/runbooks/storage_pressure_high.md; do
   test -s "$f"
 done
 test -s systemd/art-vacuum.service
@@ -12,5 +12,10 @@ grep -Eq "Sunday|воскресенье" docs/ops/vacuum_schedule.md
 grep -q "03:30" docs/ops/vacuum_schedule.md
 grep -q "storage_vacuum_failed" docs/ops/vacuum_schedule.md
 grep -q "integrity check" docs/ops/backup_restore_sqlite.md
+grep -qi "high watermark" docs/source/storage_pressure_protection_v0_2.md
+grep -qi "critical watermark" docs/source/storage_pressure_protection_v0_2.md
+grep -qi "reserved free space" docs/source/storage_pressure_protection_v0_2.md
+grep -q "mitigations" docs/runbooks/storage_pressure_high.md
+grep -q "verification" docs/runbooks/storage_pressure_high.md
 systemd-analyze verify systemd/art-vacuum.service systemd/art-vacuum.timer >/dev/null
 echo "stage11 docs gate: OK"

@@ -172,11 +172,55 @@ defects:
       - docs/source/checklists/CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md
       - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
       - docs/source/checklists/CHECKLIST_45_FORENSIC_ENRICHMENT_AND_GRAPH.md
+  - id: DEF-023
+    title: Storage pressure and disk exhaustion protection is not materialized
+    ladder_level: D
+    execution_order: 18
+    execution_dependencies: ["DEF-015"]
+    affected_stages: ["11", "12", "24", "37"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_11_ART_CORE_STORAGE_SQLITE.md
+      - docs/source/checklists/CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md
+      - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
+      - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
+  - id: DEF-024
+    title: Startup configuration fail-closed validator is missing
+    ladder_level: D
+    execution_order: 19
+    execution_dependencies: ["DEF-023"]
+    affected_stages: ["12", "18", "24", "37"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md
+      - docs/source/checklists/CHECKLIST_18_ART_AGENT_RECEIVERS.md
+      - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
+      - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
+  - id: DEF-025
+    title: Queue integrity duplicate and anti-loop protection is missing
+    ladder_level: D
+    execution_order: 20
+    execution_dependencies: ["DEF-024"]
+    affected_stages: ["12", "17", "18", "24", "37"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md
+      - docs/source/checklists/CHECKLIST_17_ART_AGENT_SPOOL_OUTBOX.md
+      - docs/source/checklists/CHECKLIST_18_ART_AGENT_RECEIVERS.md
+      - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
+      - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
+  - id: DEF-026
+    title: Guard self-observability and self-test baseline is missing
+    ladder_level: D
+    execution_order: 21
+    execution_dependencies: ["DEF-025"]
+    affected_stages: ["24", "37", "38"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
+      - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
+      - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
   - id: DEF-016
     title: Approved differentiators are still not materialized end to end
     ladder_level: E
-    execution_order: 18
-    execution_dependencies: ["DEF-015"]
+    execution_order: 27
+    execution_dependencies: ["DEF-034"]
     affected_stages: ["29", "30", "31", "32", "33", "34", "35", "36", "39", "40", "41", "42", "43", "44", "45"]
     target_checklists:
       - docs/source/checklists/CHECKLIST_29_EVENT_DNA_CORE_V2.md
@@ -197,7 +241,7 @@ defects:
   - id: DEF-017
     title: High-risk runtime entrypoints remain too monolithic
     ladder_level: E
-    execution_order: 19
+    execution_order: 28
     execution_dependencies: ["DEF-016"]
     affected_stages: ["10", "11", "17", "18", "28", "35", "37", "39"]
     target_checklists:
@@ -212,7 +256,7 @@ defects:
   - id: DEF-018
     title: Hostile integration and e2e test depth remains uneven
     ladder_level: E
-    execution_order: 20
+    execution_order: 29
     execution_dependencies: ["DEF-017"]
     affected_stages: ["10", "16", "22", "24", "28", "34", "36", "38"]
     target_checklists:
@@ -251,7 +295,7 @@ defects:
   - id: DEF-021
     title: Pinned external adversarial harness for REGART integration is missing
     ladder_level: E
-    execution_order: 21
+    execution_order: 30
     execution_dependencies: ["DEF-018"]
     affected_stages: ["05", "06", "20", "24", "38"]
     target_checklists:
@@ -263,7 +307,7 @@ defects:
   - id: DEF-022
     title: Connected systems are not materialized as visible declared-vs-observed runtime entities
     ladder_level: E
-    execution_order: 22
+    execution_order: 31
     execution_dependencies: ["DEF-021"]
     affected_stages: ["18", "19", "20", "28"]
     target_checklists:
@@ -271,3 +315,102 @@ defects:
       - docs/source/checklists/CHECKLIST_19_PACKS_FRAMEWORK.md
       - docs/source/checklists/CHECKLIST_20_PACK_REGART.md
       - docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
+  - id: DEF-027
+    title: Semantic action execution safety guard is not materialized
+    ladder_level: D
+    execution_order: 22
+    execution_dependencies: ["DEF-019"]
+    affected_stages: ["15", "24", "33", "37", "43"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_15_ART_CORE_ACTIONS_AUDIT_RBAC_PII.md
+      - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
+      - docs/source/checklists/CHECKLIST_33_SECURE_ACTIONS_PROTOCOL_V2.md
+      - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
+      - docs/source/checklists/CHECKLIST_43_SAFE_ACTION_INTELLIGENCE.md
+  - id: DEF-028
+    title: Agent identity enrollment and relay trust are not materialized
+    ladder_level: D
+    execution_order: 23
+    execution_dependencies: ["DEF-003"]
+    affected_stages: ["18", "23", "37"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_18_ART_AGENT_RECEIVERS.md
+      - docs/source/checklists/CHECKLIST_23_OPS_DEPLOY_RUNBOOKS_DR.md
+      - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
+  - id: DEF-029
+    title: Release truth enforcement and stale-claim protection are not materialized
+    ladder_level: D
+    execution_order: 24
+    execution_dependencies: ["DEF-014"]
+    affected_stages: ["04", "07", "24", "38"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_04 _Secure SDLC + Supply-chain.md
+      - docs/source/checklists/CHECKLIST_07_ART_REPO_CI_DOCS.md
+      - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
+      - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
+  - id: DEF-030
+    title: Authenticity and legal-safe baseline are not enforced end to end
+    ladder_level: E
+    execution_order: 32
+    execution_dependencies: ["DEF-021"]
+    affected_stages: ["04", "07", "19", "20", "28", "37", "40"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_04 _Secure SDLC + Supply-chain.md
+      - docs/source/checklists/CHECKLIST_07_ART_REPO_CI_DOCS.md
+      - docs/source/checklists/CHECKLIST_19_PACKS_FRAMEWORK.md
+      - docs/source/checklists/CHECKLIST_20_PACK_REGART.md
+      - docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
+      - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
+      - docs/source/checklists/CHECKLIST_40_PRODUCT_SHOWCASE_VISUAL_LANGUAGE.md
+  - id: DEF-031
+    title: Regulatory claims drift control is missing
+    ladder_level: D
+    execution_order: 25
+    execution_dependencies: ["DEF-010"]
+    affected_stages: ["25", "26", "37", "38"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_25_COMPLIANCE_AUDIT_READY.md
+      - docs/source/checklists/CHECKLIST_26_RU_PROFILE.md
+      - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
+      - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
+  - id: DEF-032
+    title: Monolith budget guard is missing for high-risk runtime entrypoints
+    ladder_level: E
+    execution_order: 33
+    execution_dependencies: ["DEF-017"]
+    affected_stages: ["10", "11", "17", "18", "28", "35", "37", "39"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md
+      - docs/source/checklists/CHECKLIST_11_ART_CORE_STORAGE_SQLITE.md
+      - docs/source/checklists/CHECKLIST_17_ART_AGENT_SPOOL_OUTBOX.md
+      - docs/source/checklists/CHECKLIST_18_ART_AGENT_RECEIVERS.md
+      - docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
+      - docs/source/checklists/CHECKLIST_35_SPATIAL_STORE_3D_READINESS.md
+      - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
+      - docs/source/checklists/CHECKLIST_39_AI_ENGINEERING_GOVERNANCE.md
+  - id: DEF-033
+    title: Test strength guard is missing for hostile production proof
+    ladder_level: E
+    execution_order: 34
+    execution_dependencies: ["DEF-018"]
+    affected_stages: ["10", "16", "22", "24", "28", "34", "36", "38"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md
+      - docs/source/checklists/CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md
+      - docs/source/checklists/CHECKLIST_22_E2E_STRESS_CHAOS_SOAK_PERF.md
+      - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
+      - docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
+      - docs/source/checklists/CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md
+      - docs/source/checklists/CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md
+      - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
+  - id: DEF-034
+    title: Documentation drift control is missing as a first-class protective contour
+    ladder_level: D
+    execution_order: 26
+    execution_dependencies: ["DEF-029"]
+    affected_stages: ["07", "24", "28", "38"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_07_ART_REPO_CI_DOCS.md
+      - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
+      - docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
+      - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md

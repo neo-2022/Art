@@ -106,6 +106,16 @@ Core ingest/storage/pipeline — в других чек-листах.
     - [ ] при недоступности/переполнении/ошибке доставки порождаются `observability_gap.*`
   - [ ] **Проверка (pass/fail):** документ существует и содержит все обязательные модели, топологии и transport path.
 
+- [ ] **2C. Сделать:** Зафиксировать startup fail-closed для agent receivers и transport bootstrap.
+  - [ ] существует канонический документ `docs/source/startup_config_safety_validator_v0_2.md`
+  - [ ] agent отказывается стартовать в production/privileged profile при:
+    - [ ] отсутствующем или небезопасном transport config
+    - [ ] невалидном receiver config
+    - [ ] попытке использовать unsafe debug overrides
+  - [ ] отказ старта порождает `observability_gap.unsafe_startup_config_refused`
+  - [ ] событие привязано к `docs/runbooks/unsafe_startup_config_refused.md`
+  - [ ] **Проверка (pass/fail):** induced invalid config подтверждает отказ старта и явное диагностическое событие.
+
 - [ ] **3. Сделать:** Реализовать pre-write redaction в receivers ДО записи в spool/outbox.
   - [ ] redaction применяется к:
     - [ ] `message`
@@ -148,6 +158,16 @@ Core ingest/storage/pipeline — в других чек-листах.
   - [ ] **Проверка (pass/fail):** integration test:
     - [ ] форсит spool full в `never_drop_unacked` и проверяет pause + `observability_gap.receiver_paused_spool_full`
     - [ ] форсит spool full в `drop_oldest_when_full` и проверяет продолжение чтения + lossy события.
+
+- [ ] **5A. Сделать:** Реализовать queue integrity / duplicate / anti-loop protection на уровне receivers.
+  - [ ] существует канонический документ `docs/source/queue_integrity_protection_v0_2.md`
+  - [ ] receiver path различает:
+    - [ ] повторную доставку от одного и того же источника
+    - [ ] replay loop между receiver и downstream path
+    - [ ] pathological multiline/parse loop
+  - [ ] при нарушении генерируется `observability_gap.queue_integrity_violation`
+  - [ ] hostile runtime matrix `agent_receivers_chaos_runtime.sh` содержит duplicate/replay сценарий
+  - [ ] **Проверка (pass/fail):** hostile runtime сценарий подтверждает отдельное queue-integrity событие.
 
 - [ ] **6. Сделать:** Реализовать receiver `file_tail` (log rotation + offset persistence).
   - [ ] читает файл по абсолютному пути
@@ -252,6 +272,16 @@ Core ingest/storage/pipeline — в других чек-листах.
   - [ ] `docs/agent/receivers_state.md` описывает state файлы (offset/cursor) и их формат
   - [ ] **Проверка (pass/fail):** документы существуют и содержат указанные примеры и поля.
 
+- [ ] **13A. Сделать:** Реализовать self-observability для критических receiver guards.
+  - [ ] существует канонический документ `docs/source/guard_self_observability_v0_2.md`
+  - [ ] критические guards receiver layer имеют:
+    - [ ] startup self-test
+    - [ ] heartbeat/health signal
+    - [ ] failure event
+  - [ ] failure self-test порождает `observability_gap.guard_self_test_failed`
+  - [ ] событие привязано к `docs/runbooks/guard_self_test_failed.md`
+  - [ ] **Проверка (pass/fail):** induced fail в receiver guard подтверждает, что ошибка не остаётся скрытой.
+
 ## Документация (RU)
 - [ ] docs/agent/receivers.md
 - [ ] docs/agent/receivers_config.md
@@ -260,6 +290,9 @@ Core ingest/storage/pipeline — в других чек-листах.
 - [ ] docs/agent/receivers_chaos.md
 - [ ] docs/source/agent_deployment_transport_v0_2.md
 - [ ] docs/source/connected_system_visibility_v0_2.md
+- [ ] docs/source/startup_config_safety_validator_v0_2.md
+- [ ] docs/source/queue_integrity_protection_v0_2.md
+- [ ] docs/source/guard_self_observability_v0_2.md
 - [ ] docs/runbooks/receiver_paused_spool_full.md
 - [ ] docs/runbooks/receiver_permission_denied.md
 - [ ] docs/runbooks/receiver_read_failed.md
@@ -268,6 +301,9 @@ Core ingest/storage/pipeline — в других чек-листах.
 - [ ] docs/runbooks/receiver_probe_failed.md
 - [ ] docs/runbooks/receiver_target_unreachable.md
 - [ ] docs/runbooks/receiver_config_invalid.md
+- [ ] docs/runbooks/unsafe_startup_config_refused.md
+- [ ] docs/runbooks/queue_integrity_violation.md
+- [ ] docs/runbooks/guard_self_test_failed.md
 
 ## Тестирование
 - [ ] unit: parsing (plain/structured/multiline) + truncation + parse_failed
@@ -280,6 +316,9 @@ Core ingest/storage/pipeline — в других чек-листах.
 - [ ] integration: otlp_logs via Agent receiver (including correlation preservation)
 - [ ] integration: backpressure pause/continue по политикам spool (Stage 17)
 - [ ] chaos runtime matrix: `scripts/tests/agent_receivers_chaos_runtime.sh` (permission denied/spawn failed/probe failed/target unreachable/parse failed/multiline oversize/unsupported kind/redaction/config invalid)
+- [ ] induced: unsafe startup config refused (шаг 2C)
+- [ ] hostile: duplicate/replay queue integrity сценарий (шаг 5A)
+- [ ] induced: receiver guard self-test fail (шаг 13A)
 
 ## CI gate
 - [ ] CI job `agent-receivers-tests` существует и запускается на PR в main; job зелёный
@@ -301,10 +340,13 @@ Core ingest/storage/pipeline — в других чек-листах.
 - [ ] Контракт source_id/source_seq/trace_id/retry_count соблюдается и покрыт тестами.
 - [ ] Source coverage matrix агента фиксирует полный охват доступных сигналов проекта/окружения.
 - [ ] Deployment/transport topology агента фиксирует установку и доставку для single-site, WAN, segmented и air-gapped контуров.
+- [ ] Unsafe startup config не может тихо поднять receivers/transport в небезопасном режиме.
 - [ ] Parsing (plain/structured/multiline) детерминирован и покрыт unit tests.
 - [ ] Pre-write redaction работает и подтверждён security тестом.
 - [ ] Backpressure от spool/outbox реализован и покрыт integration tests.
+- [ ] Queue integrity / anti-loop protection на уровне receivers покрыта hostile runtime matrix.
 - [ ] Все `observability_gap.*` события receivers зарегистрированы и имеют runbook.
+- [ ] Критические receiver guards наблюдают сами себя и не могут тихо деградировать.
 - [ ] CI gate Stage 18 зелёный.
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)

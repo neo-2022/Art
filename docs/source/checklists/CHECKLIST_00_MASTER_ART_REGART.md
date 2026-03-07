@@ -14,6 +14,7 @@ A) Полный запрет опциональности:
 - Machine-readable дефектовочная контрольная ведомость: `formats/defect_remediation_control_matrix_v0_2.yaml`
 - Корневая карта зависимостей: `formats/root_decision_tree_dependencies.yaml`
 - Дерево документации и документный контроль дрейфа: `docs/portal/DOCUMENTATION_TREE.md`, `formats/documentation_tree_v0_2.yaml`
+- Исторический корпус и встроенный Threat Model Appendix: `docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md`
 - REGART UI/Debugger wrapper (в Art): `docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`
 - REGART Bridge wrapper (в Art): `docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`
 - REGART UI/Debugger source-of-truth (внешний репозиторий): `my_langgraph_agent/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`  
@@ -24,6 +25,21 @@ A) Полный запрет опциональности:
 - Ingress / perimeter protection baseline: `docs/source/ingress_perimeter_protection_v0_2.md`
 - Trust boundary / canonical actor context baseline: `docs/source/trust_boundary_hardening_v0_2.md`
 - Browser surface hardening baseline: `docs/source/browser_surface_hardening_v0_2.md`
+- Connected system visibility baseline: `docs/source/connected_system_visibility_v0_2.md`
+- Protective safeguards catalog baseline: `docs/source/protective_safeguards_catalog_v0_2.md`
+- Storage pressure protection baseline: `docs/source/storage_pressure_protection_v0_2.md`
+- Startup config fail-closed baseline: `docs/source/startup_config_safety_validator_v0_2.md`
+- Queue integrity / anti-loop baseline: `docs/source/queue_integrity_protection_v0_2.md`
+- Guard self-observability baseline: `docs/source/guard_self_observability_v0_2.md`
+- Action execution safety guard baseline: `docs/source/action_execution_safety_guard_v0_2.md`
+- Agent identity / enrollment trust baseline: `docs/source/agent_identity_enrollment_trust_v0_2.md`
+- Release truth enforcement baseline: `docs/source/release_truth_enforcement_v0_2.md`
+- Authenticity baseline: `docs/source/authenticity_baseline_v0_2.md`
+- Regulatory claims drift control baseline: `docs/source/regulatory_claims_drift_control_v0_2.md`
+- Monolith budget guard baseline: `docs/source/monolith_budget_guard_v0_2.md`
+- Test strength guard baseline: `docs/source/test_strength_guard_v0_2.md`
+- Documentation drift control baseline: `docs/source/documentation_drift_control_v0_2.md`
+- Machine-readable protective safeguards catalog: `formats/protective_safeguards_catalog_v0_2.yaml`
 - Pinned external adversarial harness baseline: `docs/source/regart_adversarial_integration_harness_v0_2.md`
 
 ⚠️ ПРАВИЛО: переход к следующему этапу возможен только после полного закрытия предыдущего.  
@@ -36,6 +52,7 @@ A) Полный запрет опциональности:
 ⚠️ ПРАВИЛО: после завершения audit coverage порядок remediation задаётся `docs/testing/defect_remediation_ladder_v0_2.md`, а не “следующим номером этапа”.
 ⚠️ ПРАВИЛО: если меняется документ из корня, ствола или обзорного контура, `DOCUMENTATION_TREE.md` и `formats/documentation_tree_v0_2.yaml` обязаны быть синхронизированы в том же изменении.
 ⚠️ ПРАВИЛО: partner-exposed и REGART integration proof считаются валидными только через pinned external adversarial harness; floating checkout и непомеченный внешний source запрещены.
+⚠️ ПРАВИЛО: Threat Model живёт внутри исторического корневого документа, а не в отдельном висящем security-файле; materialized/planned/missing статусы обязаны оставаться честными.
 
 ---
 
@@ -222,6 +239,7 @@ A) Полный запрет опциональности:
 - если номер следующего stage в таблице не совпадает с активным уровнем дефектовочной лестницы, приоритет имеет дефектовочная лестница;
 - если хотя бы одна строка дефекта в `docs/testing/defect_remediation_control_matrix_v0_2.md` ссылается на stage, этот stage запрещён к повторному закрытию, пока строка дефекта остаётся `[ ]`;
 - повторное закрытие reopened stages запрещено, пока дефектовочная лестница не разрешает переход на этот уровень.
+- protective safeguards catalog (`docs/source/protective_safeguards_catalog_v0_2.md`) является обязательным входом ствола: stage closure запрещено, если новый защитный контур не попал в каталог, risk register, observability gap registry и defect control matrix.
 
 ### A16) Автоматическая синхронизация корневых документов
 Корневые документы проекта заданы в `formats/root_decision_tree_dependencies.yaml`.

@@ -1,14 +1,14 @@
 version: '1.1'
 status: ACTIVE
 root: README.md
-total_documents: 75
+total_documents: 80
 total_collection_nodes: 3
-total_markdown_links_scanned: 183
-total_tree_edges: 158
-total_file_links_in_tree: 158
-total_lines_in_tree: 10776
+total_markdown_links_scanned: 209
+total_tree_edges: 173
+total_file_links_in_tree: 173
+total_lines_in_tree: 12343
 total_lines_in_collections: 2243
-root_direct_children: 47
+root_direct_children: 52
 root_influence_documents:
 - docs/INTEGRATION.md
 - docs/README.md
@@ -26,8 +26,13 @@ root_influence_documents:
 - docs/source/checklists/TRACEABILITY_V0_2.md
 - docs/source/connected_system_visibility_v0_2.md
 - docs/source/dna_core_determinism_performance_assurance.md
+- docs/source/guard_self_observability_v0_2.md
+- docs/source/protective_safeguards_catalog_v0_2.md
+- docs/source/queue_integrity_protection_v0_2.md
 - docs/source/regart_adversarial_integration_harness_v0_2.md
 - docs/source/risk_register_v0_2.md
+- docs/source/startup_config_safety_validator_v0_2.md
+- docs/source/storage_pressure_protection_v0_2.md
 - docs/source/trust_boundary_hardening_v0_2.md
 - docs/testing/defect_remediation_control_matrix_v0_2.md
 - docs/testing/defect_remediation_ladder_v0_2.md
@@ -49,7 +54,7 @@ nodes:
   missing_index: false
 - path: README.md
   node_type: document
-  lines: 183
+  lines: 196
   files_count: 1
   root_influence: false
   children:
@@ -62,6 +67,10 @@ nodes:
   - docs/source/ingress_perimeter_protection_v0_2.md
   - docs/source/trust_boundary_hardening_v0_2.md
   - docs/source/browser_surface_hardening_v0_2.md
+  - docs/source/storage_pressure_protection_v0_2.md
+  - docs/source/startup_config_safety_validator_v0_2.md
+  - docs/source/queue_integrity_protection_v0_2.md
+  - docs/source/guard_self_observability_v0_2.md
   - docs/source/regart_adversarial_integration_harness_v0_2.md
   - docs/source/connected_system_visibility_v0_2.md
   - docs/testing/buyer_due_diligence_signal_triage_v0_2.md
@@ -71,6 +80,7 @@ nodes:
   - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
   - docs/source/risk_register_v0_2.md
   - docs/source/dna_core_determinism_performance_assurance.md
+  - docs/source/protective_safeguards_catalog_v0_2.md
   - docs/README.md
   - docs/api/openapi.yaml
   - docs/contracts/v2/openapi.yaml
@@ -126,7 +136,7 @@ nodes:
   missing_index: false
 - path: docs/ARCHITECTURE.md
   node_type: document
-  lines: 96
+  lines: 97
   files_count: 1
   root_influence: false
   children:
@@ -167,7 +177,7 @@ nodes:
   missing_index: false
 - path: docs/README.md
   node_type: document
-  lines: 107
+  lines: 124
   files_count: 1
   root_influence: true
   children:
@@ -196,12 +206,17 @@ nodes:
   - docs/ops/platform-container-k8s-testing.md
   - docs/ops/go_no_go_template.md
   - docs/ops/github_actions_queue_remediation_plan.md
+  - docs/source/storage_pressure_protection_v0_2.md
+  - docs/source/startup_config_safety_validator_v0_2.md
+  - docs/source/queue_integrity_protection_v0_2.md
+  - docs/source/guard_self_observability_v0_2.md
   - docs/release/release_process.md
   - docs/release/versioning.md
   - docs/release/compat_matrix.md
   - docs/portal/DELIVERY_EVIDENCE.md
   - docs/source/trust_boundary_hardening_v0_2.md
   - docs/source/browser_surface_hardening_v0_2.md
+  - docs/source/protective_safeguards_catalog_v0_2.md
   - docs/governance/evidence_policy.md
   - docs/governance/observability_gap_registry.md
   - docs/governance/evidence/evidence_ledger.yaml
@@ -292,7 +307,7 @@ nodes:
   missing_index: false
 - path: docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
   node_type: document
-  lines: 931
+  lines: 1493
   files_count: 1
   root_influence: true
   children: []
@@ -305,7 +320,7 @@ nodes:
   missing_index: false
 - path: docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
   node_type: document
-  lines: 537
+  lines: 579
   files_count: 1
   root_influence: false
   children:
@@ -393,7 +408,7 @@ nodes:
   missing_index: false
 - path: docs/governance/observability_gap_registry.md
   node_type: document
-  lines: 74
+  lines: 86
   files_count: 1
   root_influence: false
   children: []
@@ -548,7 +563,7 @@ nodes:
   missing_index: false
 - path: docs/portal/DOC_STYLE_GUIDE.md
   node_type: document
-  lines: 22
+  lines: 41
   files_count: 1
   root_influence: false
   children: []
@@ -568,7 +583,7 @@ nodes:
   missing_index: false
 - path: docs/portal/INDEX.md
   node_type: document
-  lines: 68
+  lines: 74
   files_count: 1
   root_influence: false
   children:
@@ -596,9 +611,14 @@ nodes:
   - docs/portal/DELIVERY_EVIDENCE.md
   - docs/testing/buyer_due_diligence_signal_triage_v0_2.md
   - docs/portal/SECURITY_POSTURE.md
+  - docs/source/protective_safeguards_catalog_v0_2.md
   - docs/source/ingress_perimeter_protection_v0_2.md
   - docs/source/trust_boundary_hardening_v0_2.md
   - docs/source/browser_surface_hardening_v0_2.md
+  - docs/source/storage_pressure_protection_v0_2.md
+  - docs/source/startup_config_safety_validator_v0_2.md
+  - docs/source/queue_integrity_protection_v0_2.md
+  - docs/source/guard_self_observability_v0_2.md
   - docs/source/regart_adversarial_integration_harness_v0_2.md
   - docs/source/connected_system_visibility_v0_2.md
   - docs/portal/COMPATIBILITY_MATRIX_ART_REGART.md
@@ -626,7 +646,7 @@ nodes:
   missing_index: false
 - path: docs/portal/SECURITY_POSTURE.md
   node_type: document
-  lines: 67
+  lines: 107
   files_count: 1
   root_influence: false
   children: []
@@ -763,7 +783,7 @@ nodes:
   missing_index: false
 - path: docs/source/FOUNDATION_CONSTITUTION_V0_2.md
   node_type: document
-  lines: 791
+  lines: 903
   files_count: 1
   root_influence: true
   children: []
@@ -778,7 +798,7 @@ nodes:
   missing_index: false
 - path: docs/source/README.md
   node_type: document
-  lines: 83
+  lines: 105
   files_count: 1
   root_influence: true
   children: []
@@ -801,7 +821,7 @@ nodes:
   missing_index: false
 - path: docs/source/browser_surface_hardening_v0_2.md
   node_type: document
-  lines: 105
+  lines: 107
   files_count: 1
   root_influence: true
   children: []
@@ -813,7 +833,7 @@ nodes:
   missing_index: false
 - path: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   node_type: document
-  lines: 312
+  lines: 330
   files_count: 1
   root_influence: true
   children: []
@@ -887,7 +907,7 @@ nodes:
   missing_index: false
 - path: docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
   node_type: document
-  lines: 82
+  lines: 93
   files_count: 1
   root_influence: true
   children: []
@@ -908,7 +928,7 @@ nodes:
   missing_index: false
 - path: docs/source/connected_system_visibility_v0_2.md
   node_type: document
-  lines: 191
+  lines: 193
   files_count: 1
   root_influence: true
   children: []
@@ -929,6 +949,18 @@ nodes:
   - docs/README.md
   index_target: docs/source/dna_core_determinism_performance_assurance.md
   missing_index: false
+- path: docs/source/guard_self_observability_v0_2.md
+  node_type: document
+  lines: 36
+  files_count: 1
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  index_target: docs/source/guard_self_observability_v0_2.md
+  missing_index: false
 - path: docs/source/ingress_perimeter_protection_v0_2.md
   node_type: document
   lines: 149
@@ -941,9 +973,33 @@ nodes:
   - docs/portal/INDEX.md
   index_target: docs/source/ingress_perimeter_protection_v0_2.md
   missing_index: false
+- path: docs/source/protective_safeguards_catalog_v0_2.md
+  node_type: document
+  lines: 179
+  files_count: 1
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  index_target: docs/source/protective_safeguards_catalog_v0_2.md
+  missing_index: false
+- path: docs/source/queue_integrity_protection_v0_2.md
+  node_type: document
+  lines: 44
+  files_count: 1
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  index_target: docs/source/queue_integrity_protection_v0_2.md
+  missing_index: false
 - path: docs/source/regart_adversarial_integration_harness_v0_2.md
   node_type: document
-  lines: 172
+  lines: 174
   files_count: 1
   root_influence: true
   children: []
@@ -956,7 +1012,7 @@ nodes:
   missing_index: false
 - path: docs/source/risk_register_v0_2.md
   node_type: document
-  lines: 45
+  lines: 59
   files_count: 1
   root_influence: true
   children: []
@@ -975,9 +1031,33 @@ nodes:
   - docs/portal/INDEX.md
   index_target: docs/source/secure_actions_protocol_v2.md
   missing_index: false
+- path: docs/source/startup_config_safety_validator_v0_2.md
+  node_type: document
+  lines: 39
+  files_count: 1
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  index_target: docs/source/startup_config_safety_validator_v0_2.md
+  missing_index: false
+- path: docs/source/storage_pressure_protection_v0_2.md
+  node_type: document
+  lines: 53
+  files_count: 1
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  index_target: docs/source/storage_pressure_protection_v0_2.md
+  missing_index: false
 - path: docs/source/trust_boundary_hardening_v0_2.md
   node_type: document
-  lines: 132
+  lines: 134
   files_count: 1
   root_influence: true
   children: []
@@ -1000,7 +1080,7 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_control_matrix_v0_2.md
   node_type: document
-  lines: 624
+  lines: 928
   files_count: 1
   root_influence: true
   children: []
@@ -1011,7 +1091,7 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_ladder_v0_2.md
   node_type: document
-  lines: 289
+  lines: 304
   files_count: 1
   root_influence: true
   children: []

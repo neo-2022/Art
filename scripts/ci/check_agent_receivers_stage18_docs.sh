@@ -6,7 +6,13 @@ for f in \
   docs/agent/receivers_config.md \
   docs/agent/receivers_state.md \
   docs/agent/receivers_chaos.md \
+  docs/source/startup_config_safety_validator_v0_2.md \
+  docs/source/queue_integrity_protection_v0_2.md \
+  docs/source/guard_self_observability_v0_2.md \
   docs/source/connected_system_visibility_v0_2.md \
+  docs/runbooks/unsafe_startup_config_refused.md \
+  docs/runbooks/queue_integrity_violation.md \
+  docs/runbooks/guard_self_test_failed.md \
   docs/runbooks/receiver_paused_spool_full.md \
   docs/runbooks/receiver_permission_denied.md \
   docs/runbooks/receiver_read_failed.md \
@@ -25,6 +31,9 @@ grep -q "offset" docs/agent/receivers_state.md
 grep -q "cursor" docs/agent/receivers_state.md
 grep -q "agent_receivers_chaos_runtime.sh" docs/agent/receivers_chaos.md
 grep -q "receiver_process_spawn_failed" docs/agent/receivers_chaos.md
+grep -qi "unsafe startup config" docs/source/startup_config_safety_validator_v0_2.md
+grep -qi "duplicate flood" docs/source/queue_integrity_protection_v0_2.md
+grep -qi "self-test" docs/source/guard_self_observability_v0_2.md
 grep -q "produced_data_kinds" docs/agent/receiver_source_coverage.md
 grep -q "connected_system_projection" docs/agent/receiver_source_coverage.md
 grep -q "Connected System View" docs/source/connected_system_visibility_v0_2.md
@@ -36,7 +45,10 @@ for f in \
   docs/runbooks/receiver_permission_denied.md \
   docs/runbooks/receiver_read_failed.md \
   docs/runbooks/receiver_process_spawn_failed.md \
-  docs/runbooks/receiver_process_exited.md; do
+  docs/runbooks/receiver_process_exited.md \
+  docs/runbooks/unsafe_startup_config_refused.md \
+  docs/runbooks/queue_integrity_violation.md \
+  docs/runbooks/guard_self_test_failed.md; do
   grep -q "mitigations" "$f"
   grep -q "verification" "$f"
 done

@@ -44,6 +44,12 @@
 - [ ] 8. Сделать: enforce pinned external adversarial harness proof для stage 05/06/20/24.
   - [ ] Проверка (pass/fail): `scripts/ci/check_stage_ladder_enforcement.sh` или связанный gate возвращает FAIL, если для stage 05/06/20/24 отсутствует harness policy/evidence.
   - [ ] Артефакт результата: harness gate log + negative scenario.
+- [ ] 9. Сделать: enforce protective safeguards baseline и self-observability proof для ствола и кроны.
+  - [ ] `scripts/ci/check_stage_ladder_enforcement.sh` явно включает `scripts/ci/check_protective_safeguards_catalog.sh`
+  - [ ] stage closure невозможен, если protective catalog, risk register, runbooks и defect matrix расходятся
+  - [ ] отсутствие `guard self-test` proof считается process violation, а не просто недостающей документацией
+  - [ ] **Проверка (pass/fail):** negative scenario с удалением одной защитной связки валит stage38 gate.
+  - [ ] Артефакт результата: safeguards gate log + negative scenario.
 
 ## Документация (RU)
 - [ ] docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
@@ -53,6 +59,9 @@
 - [ ] docs/portal/DELIVERY_EVIDENCE.md
 - [ ] docs/runbooks/checklist_ladder_violation.md
 - [ ] docs/source/risk_register_v0_2.md
+- [ ] docs/source/protective_safeguards_catalog_v0_2.md
+- [ ] docs/source/guard_self_observability_v0_2.md
+- [ ] docs/runbooks/guard_self_test_failed.md
 
 ## Тестирование
 - [ ] unit: shell script validation for status parsing.
@@ -60,6 +69,7 @@
 - [ ] e2e: negative scenario (искусственно помеченный поздний этап `[x]` при незакрытом предыдущем) блокируется.
 - [ ] chaos: ручная попытка обойти ladder через прямое изменение одной строки.
 - [ ] integration: closed stage without evidence ledger entry блокируется.
+- [ ] integration: closed stage without protective safeguard proof блокируется.
 - [ ] load: не применяется на этапе 38.
 - [ ] soak: не применяется на этапе 38.
 
@@ -72,6 +82,7 @@
 - [ ] Невозможен merge закрытого этапа без evidence-записи и реальных артефактов.
 - [ ] observability-gap событие этапа 38 зарегистрировано и имеет runbook.
 - [ ] stage 05/06/20/24 не могут быть закрыты без pinned external adversarial harness evidence.
+- [ ] protective safeguards baseline и guard self-observability proof обязательны для process-safe закрытия этапов.
 
 ## Метаданные
 - Ответственный: @neo-2022

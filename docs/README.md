@@ -21,6 +21,7 @@
 - модель работы AI-команды: [AI_ENGINEERING_OPERATING_MODEL.md](foundation/AI_ENGINEERING_OPERATING_MODEL.md)
 - backlog продвинутой автоматизации: [ADVANCED_AUTOMATION_BACKLOG.md](foundation/ADVANCED_AUTOMATION_BACKLOG.md)
 - корпус концепций и истории проекта: [PROJECT_HISTORY_AND_CONCEPTS.md](foundation/PROJECT_HISTORY_AND_CONCEPTS.md)
+- threat model appendix как часть исторического канона: [PROJECT_HISTORY_AND_CONCEPTS.md](foundation/PROJECT_HISTORY_AND_CONCEPTS.md)
 - универсальный шаблон идеологии построения проекта: [UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md](foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md)
 - backlog революционных гипотез: [revolutionary_hypotheses.md](foundation/revolutionary_hypotheses.md)
 - radar перспективных технологий: [frontier_tech_radar.md](foundation/frontier_tech_radar.md)
@@ -65,6 +66,10 @@ Machine-readable карта зависимостей:
 - Docker и Kubernetes testing: [platform-container-k8s-testing.md](ops/platform-container-k8s-testing.md)
 - GO/NO-GO template: [go_no_go_template.md](ops/go_no_go_template.md)
 - remediation plan для очередей GitHub Actions: [github_actions_queue_remediation_plan.md](ops/github_actions_queue_remediation_plan.md)
+- storage pressure baseline: [storage_pressure_protection_v0_2.md](source/storage_pressure_protection_v0_2.md)
+- startup config fail-closed baseline: [startup_config_safety_validator_v0_2.md](source/startup_config_safety_validator_v0_2.md)
+- queue integrity baseline: [queue_integrity_protection_v0_2.md](source/queue_integrity_protection_v0_2.md)
+- guard self-observability baseline: [guard_self_observability_v0_2.md](source/guard_self_observability_v0_2.md)
 
 ### Release и клиентская коммуникация
 - release process: [release_process.md](release/release_process.md)
@@ -75,6 +80,8 @@ Machine-readable карта зависимостей:
 - browser surface hardening baseline: [browser_surface_hardening_v0_2.md](source/browser_surface_hardening_v0_2.md)
 - pinned external adversarial harness baseline: [regart_adversarial_integration_harness_v0_2.md](source/regart_adversarial_integration_harness_v0_2.md)
 - connected system visibility baseline: [connected_system_visibility_v0_2.md](source/connected_system_visibility_v0_2.md)
+- единый каталог предохранителей: [protective_safeguards_catalog_v0_2.md](source/protective_safeguards_catalog_v0_2.md)
+- обзор threat model для клиента и аудитора: [PROJECT_HISTORY_AND_CONCEPTS.md](foundation/PROJECT_HISTORY_AND_CONCEPTS.md)
 
 ### Governance и evidence
 - evidence policy: [evidence_policy.md](governance/evidence_policy.md)
@@ -95,6 +102,16 @@ Machine-readable карта зависимостей:
 - нормативный язык документации: русский
 - дополнительные языковые зеркала могут существовать только как вспомогательный слой
 - source-of-truth и release-critical документы ведутся на русском
+
+## Принцип понятности документации
+- Документация Art должна читаться не только автором решения, но и новым инженером, оператором, аудитором и не специалистом.
+- Почти все документы обязаны простым языком объяснять:
+  - что это за сущность или механизм;
+  - зачем он нужен;
+  - как он работает;
+  - какие ограничения и риски у него есть.
+- Сложные термины, англоязычные слова, сокращения и внутренние обозначения должны сопровождаться пояснением или переводом.
+- Документ считается недостаточным, если он требует угадывать контекст, знает ответы только "в голове автора" или не объясняет причин выбора.
 
 ## Модель авторитета
 

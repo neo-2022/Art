@@ -38,6 +38,10 @@
 - baseline ingress/perimeter защиты: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
 - baseline trust boundary hardening: [trust_boundary_hardening_v0_2.md](docs/source/trust_boundary_hardening_v0_2.md)
 - baseline browser surface hardening: [browser_surface_hardening_v0_2.md](docs/source/browser_surface_hardening_v0_2.md)
+- baseline storage pressure protection: [storage_pressure_protection_v0_2.md](docs/source/storage_pressure_protection_v0_2.md)
+- baseline startup config fail-closed: [startup_config_safety_validator_v0_2.md](docs/source/startup_config_safety_validator_v0_2.md)
+- baseline queue integrity protection: [queue_integrity_protection_v0_2.md](docs/source/queue_integrity_protection_v0_2.md)
+- baseline guard self-observability: [guard_self_observability_v0_2.md](docs/source/guard_self_observability_v0_2.md)
 - pinned external adversarial harness for REGART and partner-exposed proof: [regart_adversarial_integration_harness_v0_2.md](docs/source/regart_adversarial_integration_harness_v0_2.md)
 - baseline connected system visibility: [connected_system_visibility_v0_2.md](docs/source/connected_system_visibility_v0_2.md)
 - buyer due diligence triage: [buyer_due_diligence_signal_triage_v0_2.md](docs/testing/buyer_due_diligence_signal_triage_v0_2.md)
@@ -98,6 +102,11 @@ Art проектируется как `Incident OS`, где:
 - ingress/perimeter protection standard: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
 - trust boundary hardening standard: [trust_boundary_hardening_v0_2.md](docs/source/trust_boundary_hardening_v0_2.md)
 - browser surface hardening standard: [browser_surface_hardening_v0_2.md](docs/source/browser_surface_hardening_v0_2.md)
+- protective safeguards catalog: [protective_safeguards_catalog_v0_2.md](docs/source/protective_safeguards_catalog_v0_2.md)
+- storage pressure protection standard: [storage_pressure_protection_v0_2.md](docs/source/storage_pressure_protection_v0_2.md)
+- startup configuration fail-closed standard: [startup_config_safety_validator_v0_2.md](docs/source/startup_config_safety_validator_v0_2.md)
+- queue integrity protection standard: [queue_integrity_protection_v0_2.md](docs/source/queue_integrity_protection_v0_2.md)
+- guard self-observability standard: [guard_self_observability_v0_2.md](docs/source/guard_self_observability_v0_2.md)
 - connected system visibility standard: [connected_system_visibility_v0_2.md](docs/source/connected_system_visibility_v0_2.md)
 - корневой индекс документации: [docs/README.md](docs/README.md)
 
@@ -133,6 +142,10 @@ Art проектируется как `Incident OS`, где:
   - trust boundary hardening: [trust_boundary_hardening_v0_2.md](docs/source/trust_boundary_hardening_v0_2.md)
   - browser surface hardening: [browser_surface_hardening_v0_2.md](docs/source/browser_surface_hardening_v0_2.md)
   - ingress/perimeter protection: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
+  - storage pressure protection: [storage_pressure_protection_v0_2.md](docs/source/storage_pressure_protection_v0_2.md)
+  - startup config fail-closed: [startup_config_safety_validator_v0_2.md](docs/source/startup_config_safety_validator_v0_2.md)
+  - queue integrity protection: [queue_integrity_protection_v0_2.md](docs/source/queue_integrity_protection_v0_2.md)
+  - guard self-observability: [guard_self_observability_v0_2.md](docs/source/guard_self_observability_v0_2.md)
 
 ## Прогресс и доказательства
 

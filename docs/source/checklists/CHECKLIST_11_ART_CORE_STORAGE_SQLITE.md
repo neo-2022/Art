@@ -7,7 +7,7 @@ A) Полный запрет опциональности:
 Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
-Сделать storage однозначно устойчивым: алгоритм WAL corruption recovery, тесты конкурентного доступа, расписание VACUUM, обязательные chaos сценарии (kill -9, disk full, WAL corruption), и события `observability_gap.*` с runbook.
+Сделать storage однозначно устойчивым: алгоритм WAL corruption recovery, тесты конкурентного доступа, расписание VACUUM, обязательные chaos сценарии (kill -9, disk full, WAL corruption), защита от `storage pressure` и события `observability_gap.*` с runbook.
 
 ## Границы
 Только storage Core (SQLite): файлы БД, WAL, backup/restore, housekeeping (VACUUM), поведение при corruption/переполнении диска.
@@ -90,18 +90,51 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - [ ] отрабатывает алгоритм шага 1 (503+retry_after_ms + события + restore + integrity check)
   - [ ] **Проверка (pass/fail):** существует `docs/ops/storage.md` (или отдельный документ) с точными шагами воспроизведения каждого сценария и критериями pass/fail; минимум smoke chaos прогоняется в CI.
 
+- [ ] **6. Сделать:** Реализовать защиту от `storage pressure` и долгого заполнения диска до фактического `disk full`.
+  - [ ] существует канонический документ `docs/source/storage_pressure_protection_v0_2.md`
+  - [ ] определены и зафиксированы:
+    - [ ] `high_watermark_percent`
+    - [ ] `critical_watermark_percent`
+    - [ ] `reserved_free_space_mb`
+  - [ ] при достижении `high watermark`:
+    - [ ] Core генерирует `observability_gap.storage_pressure_high`
+    - [ ] событие попадает в snapshot/stream
+    - [ ] evidence_min содержит:
+      - [ ] `db_path`
+      - [ ] `used_bytes`
+      - [ ] `free_bytes`
+      - [ ] `watermark`
+      - [ ] `trace_id`
+  - [ ] при достижении `critical watermark`:
+    - [ ] Core включает controlled degradation до фактического `disk full`
+    - [ ] write-path отвечает `503 + retry_after_ms`
+    - [ ] система не наращивает БД бесконтрольно до полного отказа
+  - [ ] при фактическом `disk full`:
+    - [ ] сохраняется поведение шага 5 (`observability_gap.storage_disk_full`)
+    - [ ] `storage_pressure_high` предупреждает о приближении отказа заранее, а не подменяет `storage_disk_full`
+  - [ ] `observability_gap.storage_pressure_high` зарегистрировано в `docs/governance/observability_gap_registry.md` с:
+    - [ ] `incident_rule=create_incident_min_sev2`
+    - [ ] `action_ref=docs/runbooks/storage_pressure_high.md`
+  - [ ] **Проверка (pass/fail):**
+    - [ ] hostile storage-pressure smoke подтверждает `storage_pressure_high` до фактического `disk full`
+    - [ ] после возврата свободного места Core возвращается в обычный режим без ручной правки БД
+    - [ ] `docs/ops/storage.md` и `docs/ops/storage_corruption_runbook.md` не противоречат новой модели.
+
 ## Документация (RU)
 - [ ] docs/core/storage.md
 - [ ] docs/ops/backup_restore_sqlite.md
 - [ ] docs/ops/storage_corruption_runbook.md
 - [ ] docs/ops/vacuum_schedule.md
 - [ ] docs/ops/storage.md
+- [ ] docs/source/storage_pressure_protection_v0_2.md
+- [ ] docs/runbooks/storage_pressure_high.md
 
 ## Тестирование
 - [ ] integration: concurrency (шаг 3)
 - [ ] chaos: kill -9 (шаг 5)
 - [ ] chaos: disk full (шаг 5)
 - [ ] chaos: WAL corruption (шаг 5)
+- [ ] chaos: storage pressure / high-watermark / critical-watermark (шаг 6)
 
 ## CI gate
 - [ ] CI job `storage-integration` существует и запускает concurrency тест; job зелёный
@@ -109,9 +142,11 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] CI job `stage11-docs-gate` существует и запускает `scripts/ci/check_storage_stage11_docs.sh`, который:
   - [ ] проверяет существование файлов из раздела “Документация (RU)”
   - [ ] проверяет минимальный контент (grep):
-    - [ ] `docs/ops/storage_corruption_runbook.md` содержит `HTTP 503` и `retry_after_ms` и `read_only`
-    - [ ] `docs/ops/vacuum_schedule.md` содержит `Sunday` или `воскресенье` и `03:30`
-    - [ ] `docs/ops/backup_restore_sqlite.md` содержит `integrity check`
+  - [ ] `docs/ops/storage_corruption_runbook.md` содержит `HTTP 503` и `retry_after_ms` и `read_only`
+  - [ ] `docs/ops/vacuum_schedule.md` содержит `Sunday` или `воскресенье` и `03:30`
+  - [ ] `docs/ops/backup_restore_sqlite.md` содержит `integrity check`
+  - [ ] `docs/source/storage_pressure_protection_v0_2.md` содержит `high watermark` и `critical watermark` и `reserved free space`
+  - [ ] `docs/runbooks/storage_pressure_high.md` содержит `mitigations` и `verification`
   - [ ] exit 1 при нарушении
 
 ## DoD
@@ -120,6 +155,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Concurrency тест зелёный в CI.
 - [ ] VACUUM timer/unit существуют и smoke проверены.
 - [ ] Chaos сценарии воспроизводимы и имеют pass/fail критерии; минимум smoke прогоняется в CI.
+- [ ] Защита от долгого заполнения storage материализована как отдельный hostile contour: предупреждение до `disk full`, controlled degradation, runbook и smoke доказательство.
 - [ ] CI gate Stage 11 зелёный.
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)

@@ -105,6 +105,26 @@ Spool/outbox Agent (локальная очередь, persistence, retry/backof
     - [ ] отрабатывает recovery шага 3
   - [ ] **Проверка (pass/fail):** существует документ `docs/agent/spool_chaos.md` с точными шагами воспроизведения и критериями pass/fail для каждого сценария; минимум 1 chaos smoke прогоняется в CI.
 
+- [ ] **6. Сделать:** Реализовать queue integrity / anti-loop protection для agent spool/outbox.
+  - [ ] существует канонический документ `docs/source/queue_integrity_protection_v0_2.md`
+  - [ ] spool/outbox умеет различать:
+    - [ ] duplicate flood от одного источника
+    - [ ] replay loop между agent и Core/relay
+    - [ ] pathological retry storm
+  - [ ] при нарушении генерируется `observability_gap.queue_integrity_violation`
+  - [ ] событие содержит evidence_min:
+    - [ ] `source_id`
+    - [ ] `spool_path`
+    - [ ] `duplicate_count` или `loop_signature`
+    - [ ] `trace_id`
+  - [ ] событие зарегистрировано в `docs/governance/observability_gap_registry.md` с:
+    - [ ] `incident_rule=create_incident_min_sev1`
+    - [ ] `action_ref=docs/runbooks/queue_integrity_violation.md`
+  - [ ] при подтверждённом loop/flood agent включает controlled protection:
+    - [ ] quarantine или source pause
+    - [ ] backlog не растёт бесконечно незаметно
+  - [ ] **Проверка (pass/fail):** hostile test воспроизводит duplicate/replay storm и подтверждает отдельное событие, а не только переполнение spool.
+
 ## Документация (RU)
 - [ ] docs/agent/spool.md
 - [ ] docs/agent/spool_policies.md
@@ -114,6 +134,8 @@ Spool/outbox Agent (локальная очередь, persistence, retry/backof
 - [ ] docs/runbooks/spool_corrupted.md
 - [ ] docs/runbooks/spool_disk_full.md
 - [ ] docs/runbooks/lossy_mode_active.md
+- [ ] docs/source/queue_integrity_protection_v0_2.md
+- [ ] docs/runbooks/queue_integrity_violation.md
 
 ## Тестирование
 - [ ] integration: `never_drop_unacked` (шаг 1)
@@ -121,6 +143,7 @@ Spool/outbox Agent (локальная очередь, persistence, retry/backof
 - [ ] integration: corruption recovery (шаг 3)
 - [ ] integration: concurrency 10 writers (шаг 4)
 - [ ] chaos: kill -9 + network loss + disk full + corruption (шаг 5)
+- [ ] hostile: duplicate flood / replay loop / retry storm (шаг 6)
 
 ## CI gate
 - [ ] CI job `agent-spool-tests` существует и зелёный (шага 1–4)
@@ -140,6 +163,7 @@ Spool/outbox Agent (локальная очередь, persistence, retry/backof
 - [ ] Corruption recovery детерминирован и подтверждён тестом; `observability_gap.spool_corrupted` зарегистрирован и имеет runbook.
 - [ ] Concurrency test (10 потоков) зелёный.
 - [ ] Chaos сценарии воспроизводимы и smoke прогоняется в CI.
+- [ ] Queue integrity / anti-loop protection реализована, зарегистрирована и доказана hostile test.
 - [ ] CI gate Stage 17 зелёный.
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)

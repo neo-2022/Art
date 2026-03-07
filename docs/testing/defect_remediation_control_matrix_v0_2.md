@@ -72,11 +72,23 @@
 | `DEF-020` | `[ ]` | `D.2` | `DEF-019` | `10, 16, 24, 28, 37, 40` | Browser surface hardening не закреплён как обязательный security baseline для runtime и showcase |
 | `DEF-014` | `[ ]` | `D.3` | `DEF-020` | `04, 07, 08, 24, 38` | Contracts/CI/release/gates ещё дают false-green и weak proof |
 | `DEF-015` | `[ ]` | `D.4` | `DEF-014` | `12, 24, 36, 37, 45` | Нет полноценного ingress/perimeter anti-DDoS контура для hostile production среды |
-| `DEF-016` | `[ ]` | `E.1` | `DEF-015` | `29..45` | Утверждённые differentiators ещё не materialize в runtime/contracts/tests |
+| `DEF-023` | `[ ]` | `D.5` | `DEF-015` | `11, 12, 24, 37` | Нет полного runtime-контура защиты от storage pressure и disk exhaustion |
+| `DEF-024` | `[ ]` | `D.6` | `DEF-023` | `12, 18, 24, 37` | Нет fail-closed проверки опасной конфигурации при старте Core/Agent и edge-контуров |
+| `DEF-025` | `[ ]` | `D.7` | `DEF-024` | `12, 17, 18, 24, 37` | Нет полного anti-loop / duplicate / queue integrity baseline для event-потоков и backlog |
+| `DEF-026` | `[ ]` | `D.8` | `DEF-025` | `24, 37, 38` | Защитные guard-контуры не обязаны иметь self-test, heartbeat и failure visibility |
+| `DEF-027` | `[ ]` | `D.9` | `DEF-019` | `15, 24, 33, 37, 43` | Нет semantic safety barrier, который не даёт destructive action пройти по формально валидному пути |
+| `DEF-028` | `[ ]` | `D.10` | `DEF-003` | `18, 23, 37` | Нет materialized доверия к `agent identity`, enrollment и relay-chain |
+| `DEF-029` | `[ ]` | `D.11` | `DEF-014` | `04, 07, 24, 38` | Релизный контур ещё может давать stale или завышенные claims относительно реального состояния |
+| `DEF-031` | `[ ]` | `D.12` | `DEF-010` | `25, 26, 37, 38` | Нет отдельного protective-контура против regulatory/certified overclaim и drift |
+| `DEF-034` | `[ ]` | `D.13` | `DEF-029` | `07, 24, 28, 38` | Нет first-class контроля документационного drift между корнем, стволом и кроной |
+| `DEF-016` | `[ ]` | `E.1` | `DEF-034` | `29..45` | Утверждённые differentiators ещё не materialize в runtime/contracts/tests |
 | `DEF-017` | `[ ]` | `E.2` | `DEF-016` | `10, 11, 17, 18, 28, 35, 37, 39` | Высокорисковые монолитные entrypoint-файлы затрудняют review, hardening и смену владельца |
 | `DEF-018` | `[ ]` | `E.3` | `DEF-017` | `10, 16, 22, 24, 28, 34, 36, 38` | Сила test-corpus неравномерна: console/browser и часть release-path ещё слабее hostile production стандарта |
 | `DEF-021` | `[ ]` | `E.4` | `DEF-018` | `05, 06, 20, 24, 38` | Нет pinned external adversarial harness для REGART-интеграции и partner-exposed hostile proof |
 | `DEF-022` | `[ ]` | `E.5` | `DEF-021` | `18, 19, 20, 28` | Подключённые внешние системы не materialize как наглядные сущности с declared-vs-observed coverage |
+| `DEF-030` | `[ ]` | `E.6` | `DEF-021` | `04, 07, 19, 20, 28, 37, 40` | Нет end-to-end authenticity baseline, защищающего проект от спорных ассетов и источников |
+| `DEF-032` | `[ ]` | `E.7` | `DEF-017` | `10, 11, 17, 18, 28, 35, 37, 39` | Нет materialized budget-guard, который заставляет раскалывать опасные монолиты вовремя |
+| `DEF-033` | `[ ]` | `E.8` | `DEF-018` | `10, 16, 22, 24, 28, 34, 36, 38` | Нет отдельного guard-а, который блокирует closure на слабом hostile/integration proof |
 
 ## Контрольные строки
 
@@ -467,9 +479,220 @@
   - runbooks и registry entries;
   - runtime perimeter proof for internet-exposed profile.
 
+### [ ] DEF-023 — Storage pressure / disk exhaustion protection
+- Уровень: `D.5`
+- Зависит от: `DEF-015`
+- Затронутые stage-листы:
+  - `CHECKLIST_11_ART_CORE_STORAGE_SQLITE.md`
+  - `CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+- Audit basis:
+  - `docs/source/storage_pressure_protection_v0_2.md`
+  - `docs/core/storage.md`
+  - `docs/ops/storage.md`
+  - `docs/governance/observability_gap_registry.md`
+- Что нужно сделать:
+  1. materialize `high watermark`, `critical watermark` и `reserve free space` как живой runtime-контур до фактического `disk full`;
+  2. сделать `observability_gap.storage_pressure_high` и `observability_gap.storage_disk_full` разными стадиями деградации, а не одним поздним отказом;
+  3. ввести controlled degraded mode, pruning/archive policy и recovery discipline для длительного hostile потока;
+  4. запретить release claim про durable storage, пока нет hostile disk-exhaustion proof.
+- Чем доказать закрытие:
+  - hostile disk-pressure tests;
+  - runtime evidence по `storage_pressure_high` и `storage_disk_full`;
+  - release blocker evidence;
+  - recovery logs и proof сохранения reserve free space.
+
+### [ ] DEF-024 — Startup configuration fail-closed validator
+- Уровень: `D.6`
+- Зависит от: `DEF-023`
+- Затронутые stage-листы:
+  - `CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md`
+  - `CHECKLIST_18_ART_AGENT_RECEIVERS.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+- Audit basis:
+  - `docs/source/startup_config_safety_validator_v0_2.md`
+  - `docs/source/trust_boundary_hardening_v0_2.md`
+  - `docs/source/ingress_perimeter_protection_v0_2.md`
+- Что нужно сделать:
+  1. запретить старт в опасной конфигурации: `plain HTTP` во внешнем профиле, placeholder/empty secrets, dev/debug flags в prod, опасные лимиты batch/queue;
+  2. materialize `observability_gap.unsafe_startup_config_refused` как явный failure path, а не как запись только в docs;
+  3. сделать startup validator обязательным blocker для release/runtime profiles;
+  4. синхронизировать одну fail-closed логику для Core, Agent, systemd и container profiles.
+- Чем доказать закрытие:
+  - startup negative tests;
+  - runtime gap-event и refusal logs;
+  - release blocker evidence;
+  - Linux/systemd/container runtime proof.
+
+### [ ] DEF-025 — Queue integrity / duplicate / anti-loop protection
+- Уровень: `D.7`
+- Зависит от: `DEF-024`
+- Затронутые stage-листы:
+  - `CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md`
+  - `CHECKLIST_17_ART_AGENT_SPOOL_OUTBOX.md`
+  - `CHECKLIST_18_ART_AGENT_RECEIVERS.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+- Audit basis:
+  - `docs/source/queue_integrity_protection_v0_2.md`
+  - `agent/src/main.rs`
+  - `docs/agent/spool.md`
+  - `docs/agent/receiver_source_coverage.md`
+- Что нужно сделать:
+  1. materialize per-source duplicate flood detector и anti-loop detection;
+  2. ввести queue integrity state для ingest/backlog/replay и poisoned source isolation;
+  3. сделать duplicate / loop / poisoned replay не silent, а observable hostile path;
+  4. запретить закрытие spool/receivers/ingest без queue integrity hostile proof.
+- Чем доказать закрытие:
+  - duplicate flood tests;
+  - anti-loop hostile tests;
+  - `observability_gap.queue_integrity_violation`;
+  - replay/backlog integrity evidence.
+
+### [ ] DEF-026 — Guard self-observability / self-test
+- Уровень: `D.8`
+- Зависит от: `DEF-025`
+- Затронутые stage-листы:
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+  - `CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md`
+- Audit basis:
+  - `docs/source/guard_self_observability_v0_2.md`
+  - `scripts/ci/check_protective_contours.sh`
+  - `scripts/ci/check_protective_safeguards_catalog.sh`
+- Что нужно сделать:
+  1. каждый защитный контур обязан иметь self-test, heartbeat и observable failure path;
+  2. protective guards не могут считаться существующими, если их собственный отказ остаётся невидимым;
+  3. release/process/Linux blockers должны зависеть от protective self-test proof;
+  4. сломанный guard обязан materialize `observability_gap.guard_self_test_failed`.
+- Чем доказать закрытие:
+  - self-test logs;
+  - runtime/process evidence по `guard_self_test_failed`;
+  - release/Linux/process blocker evidence;
+  - negative proof, что broken guard не остаётся silent.
+
+### [ ] DEF-027 — Action execution safety guard
+- Уровень: `D.9`
+- Зависит от: `DEF-019`
+- Затронутые stage-листы:
+  - `CHECKLIST_15_ART_CORE_ACTIONS_AUDIT_RBAC_PII.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_33_SECURE_ACTIONS_PROTOCOL_V2.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+  - `CHECKLIST_43_SAFE_ACTION_INTELLIGENCE.md`
+- Audit basis:
+  - `docs/source/action_execution_safety_guard_v0_2.md`
+  - `docs/runbooks/action_safety_guard_blocked.md`
+  - `docs/governance/observability_gap_registry.md`
+- Что нужно сделать:
+  1. materialize semantic barrier между `request valid` и `execute allowed`;
+  2. сделать destructive path невозможным без preflight, bounded-regret или policy exception;
+  3. связать этот guard с secure actions, release и Linux production contour;
+  4. сделать блокировку действия наблюдаемой и объяснимой для оператора.
+- Чем доказать закрытие:
+  - negative tests на destructive/high-impact actions;
+  - `observability_gap.action_safety_guard_blocked`;
+  - runbook-backed action refusal evidence;
+  - secure-actions hostile proof.
+
+### [ ] DEF-028 — Agent identity / enrollment / relay trust
+- Уровень: `D.10`
+- Зависит от: `DEF-003`
+- Затронутые stage-листы:
+  - `CHECKLIST_18_ART_AGENT_RECEIVERS.md`
+  - `CHECKLIST_23_OPS_DEPLOY_RUNBOOKS_DR.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+- Audit basis:
+  - `docs/source/agent_identity_enrollment_trust_v0_2.md`
+  - `docs/runbooks/agent_identity_untrusted.md`
+  - `docs/source/agent_deployment_transport_v0_2.md`
+- Что нужно сделать:
+  1. ввести доверенную enrollment/attestation логику, а не только транспортную доставку;
+  2. materialize trusted / untrusted / revoked состояния агента и relay-chain;
+  3. привязать source truth к `agent_id/site_id/segment_id/relay_id`;
+  4. запретить trusted ingest для недоказанного агента.
+- Чем доказать закрытие:
+  - enrollment/revocation negative tests;
+  - `observability_gap.agent_identity_untrusted`;
+  - trusted relay-chain evidence;
+  - multi-site runtime proof.
+
+### [ ] DEF-029 — Release truth enforcement
+- Уровень: `D.11`
+- Зависит от: `DEF-014`
+- Затронутые stage-листы:
+  - `CHECKLIST_04 _Secure SDLC + Supply-chain.md`
+  - `CHECKLIST_07_ART_REPO_CI_DOCS.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md`
+- Audit basis:
+  - `docs/source/release_truth_enforcement_v0_2.md`
+  - `docs/runbooks/release_truth_mismatch.md`
+  - `RELEASE_CHECKLIST.md`
+  - `docs/governance/release_decisions/latest_go_no_go.md`
+- Что нужно сделать:
+  1. запретить stale release metadata и stale evidence;
+  2. сделать `README/CHANGELOG/RELEASE_CHECKLIST/GO-NO-GO` одним правдивым контуром;
+  3. привязать release claims к текущему `HEAD`, а не к старой ревизии;
+  4. сделать mismatch автоматическим blocker.
+- Чем доказать закрытие:
+  - stale-claim negative tests;
+  - `observability_gap.release_truth_mismatch`;
+  - release gate evidence;
+  - buyer-visible parity между docs и runtime truth.
+
+### [ ] DEF-031 — Regulatory claims drift control
+- Уровень: `D.12`
+- Зависит от: `DEF-010`
+- Затронутые stage-листы:
+  - `CHECKLIST_25_COMPLIANCE_AUDIT_READY.md`
+  - `CHECKLIST_26_RU_PROFILE.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+  - `CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md`
+- Audit basis:
+  - `docs/source/regulatory_claims_drift_control_v0_2.md`
+  - `docs/runbooks/regulatory_claim_drift.md`
+  - `formats/ru_regulatory_scope.yaml`
+- Что нужно сделать:
+  1. запретить overclaim по certified/regulatory/RU-profile поверхности;
+  2. связать customer-facing claims с machine-readable regulatory scope и evidence;
+  3. разделить `certified`, `certified-ready`, `platform-supported` и `architecturally prepared`;
+  4. сделать drift явным blocker для release и compliance contours.
+- Чем доказать закрытие:
+  - claim drift negative tests;
+  - `observability_gap.regulatory_claim_drift`;
+  - release/compliance evidence parity;
+  - updated customer-facing docs without overclaim.
+
+### [ ] DEF-034 — Documentation drift control
+- Уровень: `D.13`
+- Зависит от: `DEF-029`
+- Затронутые stage-листы:
+  - `CHECKLIST_07_ART_REPO_CI_DOCS.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md`
+  - `CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md`
+- Audit basis:
+  - `docs/source/documentation_drift_control_v0_2.md`
+  - `docs/portal/DOCUMENTATION_TREE.md`
+  - `formats/documentation_tree_v0_2.yaml`
+  - `scripts/ci/check_documentation_tree_sync.sh`
+- Что нужно сделать:
+  1. сделать documentation drift first-class blocker, а не вспомогательной удобной функцией;
+  2. привязать дерево документации к корню, стволу и affected crown nodes;
+  3. автоматически обнаруживать root-impact изменения и требовать синхронизации зависимых документов;
+  4. запретить закрытие docs/release/overview stages без drift-proof.
+- Чем доказать закрытие:
+  - documentation tree guard;
+  - `observability_gap.documentation_drift_detected`;
+  - root-impact negative tests;
+  - docs/release evidence parity.
+
 ### [ ] DEF-016 — Materialization of approved differentiators
 - Уровень: `E.1`
-- Зависит от: `DEF-015`
+- Зависит от: `DEF-034`
 - Затронутые stage-листы:
   - `CHECKLIST_29_EVENT_DNA_CORE_V2.md`
   - `CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md`
@@ -606,6 +829,87 @@
   - manifest/source-coverage validation;
   - stage18/19/20/28 gates, которые падают без connected-system contour;
   - runtime/e2e evidence, что оператор реально видит system status, data kinds и active gaps.
+
+### [ ] DEF-030 — Authenticity baseline
+- Уровень: `E.6`
+- Зависит от: `DEF-021`
+- Затронутые stage-листы:
+  - `CHECKLIST_04 _Secure SDLC + Supply-chain.md`
+  - `CHECKLIST_07_ART_REPO_CI_DOCS.md`
+  - `CHECKLIST_19_PACKS_FRAMEWORK.md`
+  - `CHECKLIST_20_PACK_REGART.md`
+  - `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+  - `CHECKLIST_40_PRODUCT_SHOWCASE_VISUAL_LANGUAGE.md`
+- Audit basis:
+  - `docs/source/authenticity_baseline_v0_2.md`
+  - `docs/runbooks/authenticity_policy_violation.md`
+  - `formats/authenticity_assets_allowlist.yaml`
+  - `scripts/ci/check_authenticity_assets.sh`
+- Что нужно сделать:
+  1. сделать authenticity/provenance policy обязательной для baseline assets, packs, showcase и generated media;
+  2. связать legal-safe baseline с CI, packs и release surface;
+  3. запретить попадание неучтённых assets в проектный baseline;
+  4. довести authenticity контур до buyer/audit-friendly состояния.
+- Чем доказать закрытие:
+  - authenticity gate evidence;
+  - `observability_gap.authenticity_policy_violation`;
+  - negative tests на unallowlisted assets;
+  - release/pack/showcase parity.
+
+### [ ] DEF-032 — Monolith budget guard
+- Уровень: `E.7`
+- Зависит от: `DEF-017`
+- Затронутые stage-листы:
+  - `CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md`
+  - `CHECKLIST_11_ART_CORE_STORAGE_SQLITE.md`
+  - `CHECKLIST_17_ART_AGENT_SPOOL_OUTBOX.md`
+  - `CHECKLIST_18_ART_AGENT_RECEIVERS.md`
+  - `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md`
+  - `CHECKLIST_35_SPATIAL_STORE_3D_READINESS.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+  - `CHECKLIST_39_AI_ENGINEERING_GOVERNANCE.md`
+- Audit basis:
+  - `docs/source/monolith_budget_guard_v0_2.md`
+  - `docs/runbooks/monolith_budget_exceeded.md`
+  - `docs/testing/buyer_due_diligence_signal_triage_v0_2.md`
+- Что нужно сделать:
+  1. перевести growth of critical files под budget guard, а не только под ручной review;
+  2. требовать decomposition plan до того, как монолит станет operational risk;
+  3. связать budget exceed с architecture review и stage-blocking;
+  4. сделать этот контур воспроизводимым для buyer due diligence.
+- Чем доказать закрытие:
+  - budget guard evidence;
+  - `observability_gap.monolith_budget_exceeded`;
+  - decomposition reports;
+  - CI check against file-size budget.
+
+### [ ] DEF-033 — Test strength guard
+- Уровень: `E.8`
+- Зависит от: `DEF-018`
+- Затронутые stage-листы:
+  - `CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md`
+  - `CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md`
+  - `CHECKLIST_22_E2E_STRESS_CHAOS_SOAK_PERF.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md`
+  - `CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md`
+  - `CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md`
+  - `CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md`
+- Audit basis:
+  - `docs/source/test_strength_guard_v0_2.md`
+  - `docs/runbooks/test_strength_guard_failed.md`
+  - `docs/testing/production_adversarial_validation_law.md`
+- Что нужно сделать:
+  1. сделать силу тестов first-class guard, а не выводом человека по месту;
+  2. запрещать closure на decorative/structural-only proof;
+  3. требовать contract/behavior/integration/operational/adversarial/regression families для критичных контуров;
+  4. связать этот guard с release and stage closure.
+- Чем доказать закрытие:
+  - test strength guard evidence;
+  - `observability_gap.test_strength_guard_failed`;
+  - hostile test family matrix;
+  - release blocker on weak proof.
 
 ## Правило применения
 1. Работа по remediation начинается с первой строки `[ ]` в порядке ведомости.

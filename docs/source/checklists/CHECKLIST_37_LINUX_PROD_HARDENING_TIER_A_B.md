@@ -136,6 +136,32 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] `stage37-linux-hardening-gate` валится при отсутствии этих proof/doc/runbook связок.
   - [ ] **Проверка (pass/fail):** Linux hardening gate подтверждает trust boundary/browser surface blockers как production baseline.
   - [ ] Артефакт результата: stage37 protective contour gate log.
+- [ ] 26. Сделать: зафиксировать Linux storage pressure / disk exhaustion protection как production baseline.
+  - [ ] Linux profile фиксирует high/critical watermark и reserve free space.
+  - [ ] hostile Linux storage validate-path подтверждает:
+    - [ ] `observability_gap.storage_pressure_high`
+    - [ ] controlled degraded mode до фактического `disk full`
+  - [ ] Linux production rollout без этого proof считается blocker.
+  - [ ] **Проверка (pass/fail):** stage37 hardening gate подтверждает storage pressure baseline и наличие runbook.
+  - [ ] Артефакт результата: storage pressure validate log.
+- [ ] 27. Сделать: зафиксировать startup fail-closed baseline для Linux production и multi-site deployment.
+  - [ ] Linux production profile запрещён без fail-closed startup validator.
+  - [ ] `unsafe_startup_config_refused` доказан на Linux runtime path.
+  - [ ] invalid/unsafe config не может молча поднять `Core`, `Agent`, Panel0/Console companion services.
+  - [ ] **Проверка (pass/fail):** induced Linux startup fail test PASS; gate валится при отсутствии proof.
+  - [ ] Артефакт результата: startup fail-closed Linux report.
+- [ ] 28. Сделать: зафиксировать queue integrity / anti-loop protection для Linux multi-agent, WAN и relay контуров.
+  - [ ] duplicate flood / replay loop в Linux deployment фиксируются как отдельный protective contour.
+  - [ ] Linux backlog/replay path не допускает бесконечного незаметного роста дублей.
+  - [ ] `observability_gap.queue_integrity_violation` доказан hostile validate-path.
+  - [ ] **Проверка (pass/fail):** stage37 hardening gate подтверждает queue integrity proof для Linux multi-site.
+  - [ ] Артефакт результата: Linux queue integrity hostile log.
+- [ ] 29. Сделать: зафиксировать guard self-observability как production blocker Linux профиля.
+  - [ ] критические Linux guards имеют startup self-test, heartbeat и failure event.
+  - [ ] отсутствие self-test proof блокирует production rollout.
+  - [ ] `observability_gap.guard_self_test_failed` доказан negative-path.
+  - [ ] **Проверка (pass/fail):** stage37 hardening gate подтверждает guard self-observability baseline.
+  - [ ] Артефакт результата: Linux guard self-test log.
 
 ## Документация (RU)
 - [ ] docs/ops/panel0_linux_prod_readiness.md
@@ -166,6 +192,14 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/source/browser_surface_hardening_v0_2.md
 - [ ] docs/runbooks/trust_boundary_violation.md
 - [ ] docs/runbooks/browser_surface_policy_degraded.md
+- [ ] docs/source/storage_pressure_protection_v0_2.md
+- [ ] docs/source/startup_config_safety_validator_v0_2.md
+- [ ] docs/source/queue_integrity_protection_v0_2.md
+- [ ] docs/source/guard_self_observability_v0_2.md
+- [ ] docs/runbooks/storage_pressure_high.md
+- [ ] docs/runbooks/unsafe_startup_config_refused.md
+- [ ] docs/runbooks/queue_integrity_violation.md
+- [ ] docs/runbooks/guard_self_test_failed.md
 
 ## Тестирование
 - [ ] e2e: Linux headless сценарии Panel0 + Console.
@@ -178,6 +212,10 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] soak: длительный backlog/recovery прогон.
 - [ ] regression: L0/L1/L2 interface anti-breakage под Linux canary.
 - [ ] regression: Linux headless agent interaction and locale/evidence labels anti-breakage.
+- [ ] hostile: Linux storage pressure / disk exhaustion validate path.
+- [ ] induced: Linux startup fail-closed invalid config path.
+- [ ] hostile: Linux queue integrity / duplicate / replay loop path.
+- [ ] induced: Linux guard self-test failure path.
 - [ ] vm: validate-mode smoke для Ubuntu и одного A-level distro в VM harness.
 - [ ] container: Docker smoke validate/execute сценарии.
 - [ ] container: Kubernetes smoke validate/execute сценарии (kind/k3d profile).
@@ -213,6 +251,10 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Linux multi-site/WAN/segmented deployment boundary Art Agent зафиксирован и согласован с platform matrix.
 - [ ] Internet-exposed Linux production profile имеет perimeter shield baseline и hostile ingress validate-path.
 - [ ] Linux production perimeter и privileged paths блокируются без trust boundary и browser surface hardening proof.
+- [ ] Linux production profile блокируется без storage pressure / disk exhaustion proof.
+- [ ] Linux production profile блокируется без startup fail-closed proof.
+- [ ] Linux multi-site/relay profile блокируется без queue integrity / anti-loop proof.
+- [ ] Linux production profile блокируется без guard self-observability proof.
 
 ## Метаданные
 - Ответственный: @neo-2022

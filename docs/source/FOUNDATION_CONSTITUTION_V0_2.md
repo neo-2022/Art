@@ -198,6 +198,36 @@
   - `formats/root_decision_tree_dependencies.yaml`
   - `scripts/ci/check_root_decision_tree_sync.sh`
 
+## 14.3A. Human-Readable Documentation Law (обязательный)
+- Документация проекта не имеет права писаться только для автора, узкого эксперта или носителя локального контекста.
+- Почти вся документация, кроме узкоспециализированных reference-схем и машинно-генерируемых артефактов, обязана читаться человеком без глубокого входного знания проекта.
+- Каждый важный документ обязан отвечать простым языком минимум на четыре вопроса:
+  - что это;
+  - зачем это нужно;
+  - как это работает;
+  - чем это ограничено или чем это опасно.
+- Сложные термины, англоязычные слова, сокращения, внутренние обозначения и специальные режимы обязаны:
+  - либо объясняться в тексте сразу;
+  - либо иметь русский перевод или пояснение в скобках;
+  - либо вести на glossary/reference-документ, где смысл раскрыт явно.
+- Документ считается дефектным по качеству, если:
+  - он требует "догадаться", что имел в виду автор;
+  - он объясняет только happy-path и не объясняет ограничения;
+  - он использует внутренний жаргон без расшифровки;
+  - он понятен только человеку, который уже знает код.
+- Документирование обязано быть достаточно подробным для сопровождения:
+  - чтобы новый инженер мог восстановить ход мысли;
+  - чтобы оператор понял, что именно сломалось и что делать;
+  - чтобы reviewer мог увидеть границы решения;
+  - чтобы buyer, аудитор или не specialist не потерялся в структуре.
+- Подробность не означает воду: запрещено раздувать текст без смысловой нагрузки. Разрешается и поощряется подробность, если она снижает риск неправильного понимания, эксплуатации или изменения системы.
+- Если документ затрагивает поведение системы, он обязан объяснять не только "что мы сделали", но и "почему именно так" и "что произойдёт, если это нарушить".
+- При изменении проекта человекочитаемость документации должна обновляться вместе с технической частью; запрещено считать документ "актуальным", если смысл решения изменился, а объяснение осталось старым.
+- Источники детализации:
+  - `docs/portal/DOC_STYLE_GUIDE.md`
+  - `docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md`
+  - `docs/README.md`
+
 ## 14.4. Ingress Abuse And DDoS Defense Law (обязательный)
 - App-level backpressure (`413/429/503 + retry_after_ms`) обязателен, но он не считается полноценной защитой от DDoS, abusive burst и connection exhaustion.
 - Любой internet-exposed или partner-exposed deployment обязан иметь front-door / edge / ingress shield слой до `art-core`.
@@ -295,6 +325,88 @@
   - `docs/source/connected_system_visibility_v0_2.md`
   - `formats/connected_system_visibility_v0_2.yaml`
   - `docs/governance/observability_gap_registry.md`
+
+## 14.9. Storage Pressure Protection Law (обязательный)
+- Art не имеет права ждать фактического `disk full`, чтобы начать защищать SQLite/WAL/storage path.
+- Для storage-контуров обязательны:
+  - `high watermark`;
+  - `critical watermark`;
+  - резерв свободного места (`reserve free space`);
+  - controlled degraded mode до `SQLITE_FULL`.
+- При достижении pressure-порогов система обязана:
+  - генерировать `observability_gap.storage_pressure_high`;
+  - снижать write pressure;
+  - включать controlled housekeeping/archive/prune policy;
+  - переводить ingest/write-heavy paths в `503 + retry_after_ms`, если pressure достигает критического уровня.
+- Отсутствие materialized storage-pressure contour считается production blocker для storage/release/Linux stages.
+- Источники детализации:
+  - `docs/source/storage_pressure_protection_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
+## 14.10. Startup Configuration Fail-Closed Law (обязательный)
+- Система не имеет права стартовать в заведомо небезопасной конфигурации и рассчитывать на то, что проблема “всплывёт позже”.
+- Если startup validator не может подтвердить безопасность конфигурации, компонент обязан:
+  - отказаться от старта или `ready` state;
+  - зафиксировать причину;
+  - поднять `observability_gap.unsafe_startup_config_refused`.
+- К unsafe-конфигурациям относятся минимум:
+  - internet-facing `plain HTTP`, если профиль требует TLS;
+  - пустой или некорректный storage/spool/backup path;
+  - опасно завышенные queue/batch/timeout лимиты;
+  - отключённый audit/trust-boundary/release blocker bypass в production-profile.
+- Отсутствие fail-closed startup validator считается production blocker для ingest/agent/release/Linux stages.
+- Источники детализации:
+  - `docs/source/startup_config_safety_validator_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
+## 14.11. Queue Integrity And Anti-Loop Law (обязательный)
+- Ни одна очередь, backlog, spool или replay path не имеет права бесконтрольно расти, дублироваться или зацикливаться.
+- Для queue-контуров обязательны:
+  - budget/quota;
+  - duplicate detector;
+  - monotonic seq guard;
+  - anti-loop detector;
+  - quarantine/dead-letter path для неисправимого потока.
+- Любое нарушение queue integrity обязано materialize как:
+  - `observability_gap.queue_integrity_violation`
+  - с evidence и runbook.
+- Запрещено считать duplicate flood, runaway backlog или replay loop “обычным шумом”.
+- Источники детализации:
+  - `docs/source/queue_integrity_protection_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
+## 14.12. Guard Self-Observability Law (обязательный)
+- Предохранитель, который не умеет сигнализировать о собственной деградации, не считается полноценной защитой.
+- Каждый критичный guard обязан иметь:
+  - self-test или self-check;
+  - heartbeat/health signal;
+  - gap/event при отказе;
+  - runbook восстановления.
+- Отказ guard-а обязан materialize как:
+  - `observability_gap.guard_self_test_failed`
+- Release/stage closure запрещены, если критичный guard сам неисправен и это не зафиксировано как blocker.
+- Источники детализации:
+  - `docs/source/guard_self_observability_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
+## 14.13. Expanded Protective Safeguards Register (обязательный)
+- Базовый набор предохранителей проекта не заканчивается ingress, storage, startup, queue и self-observability.
+- Следующие защитные контуры являются обязательной частью канона и не могут считаться "второстепенными улучшениями":
+  - `docs/source/action_execution_safety_guard_v0_2.md`
+  - `docs/source/agent_identity_enrollment_trust_v0_2.md`
+  - `docs/source/release_truth_enforcement_v0_2.md`
+  - `docs/source/authenticity_baseline_v0_2.md`
+  - `docs/source/regulatory_claims_drift_control_v0_2.md`
+  - `docs/source/monolith_budget_guard_v0_2.md`
+  - `docs/source/test_strength_guard_v0_2.md`
+  - `docs/source/documentation_drift_control_v0_2.md`
+- Смысл этого регистра:
+  - проект защищается не только от одной "атаки", а от классов деградации, которые делают систему опасной, дорогой в сопровождении или лживой по claims;
+  - каждый новый контур обязан быть связан с `observability_gap`, runbook, defect-строкой и stage-binding;
+  - предохранитель не считается существующим, если он не встроен в ствол и не проверяется CI/тестами.
+- Каталог всех таких контуров хранится в:
+  - `docs/source/protective_safeguards_catalog_v0_2.md`
+  - `formats/protective_safeguards_catalog_v0_2.yaml`
 
 ## 15. Product Narrative (Console)
 ### 15.1 Категория

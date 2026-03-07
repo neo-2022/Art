@@ -103,6 +103,44 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] hostile ingress smoke доказывает, что suspicious burst фиксируется как отдельный security/perimeter signal, а не только как обычный overload
   - [ ] **Проверка (pass/fail):** docs+registry+runbooks существуют, hostile ingress smoke лог подтверждает появление хотя бы одного из двух событий.
 
+- [ ] **9. Сделать:** Реализовать startup fail-closed для небезопасной конфигурации ingest/runtime.
+  - [ ] существует канонический документ `docs/source/startup_config_safety_validator_v0_2.md`
+  - [ ] production/privileged startup запрещён при:
+    - [ ] `TLS off` во внешнем контуре
+    - [ ] debug/dev flags в production profile
+    - [ ] пустых/невалидных security secrets
+    - [ ] unsafe override ingest limits без явного audit trail
+  - [ ] при отказе старта генерируется `observability_gap.unsafe_startup_config_refused`
+  - [ ] событие зарегистрировано в `docs/governance/observability_gap_registry.md` с:
+    - [ ] `incident_rule=create_incident_min_sev1`
+    - [ ] `action_ref=docs/runbooks/unsafe_startup_config_refused.md`
+  - [ ] **Проверка (pass/fail):** induced startup test подтверждает отказ старта, появление события и отсутствие молчаливого запуска.
+
+- [ ] **10. Сделать:** Реализовать queue integrity / duplicate flood / anti-loop protection для ingest.
+  - [ ] существует канонический документ `docs/source/queue_integrity_protection_v0_2.md`
+  - [ ] определены и реализованы:
+    - [ ] duplicate flood detector
+    - [ ] replay loop detector
+    - [ ] per-source ingest quota
+    - [ ] quarantine path или controlled refusal для подозрительного источника
+  - [ ] при нарушении целостности очереди генерируется `observability_gap.queue_integrity_violation`
+  - [ ] событие зарегистрировано в `docs/governance/observability_gap_registry.md` с:
+    - [ ] `incident_rule=create_incident_min_sev1`
+    - [ ] `action_ref=docs/runbooks/queue_integrity_violation.md`
+  - [ ] **Проверка (pass/fail):** hostile test воспроизводит duplicate/replay flood и подтверждает отдельное событие, а не только обычный overload.
+
+- [ ] **11. Сделать:** Реализовать self-observability критических ingest guards.
+  - [ ] существует канонический документ `docs/source/guard_self_observability_v0_2.md`
+  - [ ] критические guards ingest имеют:
+    - [ ] startup self-test
+    - [ ] health/heartbeat
+    - [ ] явный failure event
+  - [ ] failure self-test порождает `observability_gap.guard_self_test_failed`
+  - [ ] событие зарегистрировано в `docs/governance/observability_gap_registry.md` с:
+    - [ ] `incident_rule=create_incident_min_sev1`
+    - [ ] `action_ref=docs/runbooks/guard_self_test_failed.md`
+  - [ ] **Проверка (pass/fail):** induced self-test fail подтверждает, что guard не может тихо умереть и остаться незамеченным.
+
 ## Документация (RU)
 - [ ] docs/core/ingest_protocol.md
 - [ ] docs/api/errors.md
@@ -113,6 +151,12 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/runbooks/ingest_unavailable.md
 - [ ] docs/runbooks/ddos_suspected.md
 - [ ] docs/runbooks/ingress_shield_degraded.md
+- [ ] docs/source/startup_config_safety_validator_v0_2.md
+- [ ] docs/source/queue_integrity_protection_v0_2.md
+- [ ] docs/source/guard_self_observability_v0_2.md
+- [ ] docs/runbooks/unsafe_startup_config_refused.md
+- [ ] docs/runbooks/queue_integrity_violation.md
+- [ ] docs/runbooks/guard_self_test_failed.md
 
 ## Тестирование
 - [ ] integration: invalid_details + partial accept + ack.upto_seq (шаг 2)
@@ -121,6 +165,9 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] integration: storage error → ingest_dropped_total (шаг 5)
 - [ ] chaos: kill -9 + disk full + recovery (шаг 7)
 - [ ] hostile ingress smoke: suspicious burst / degraded shield path (шаг 8)
+- [ ] induced: unsafe startup config refused (шаг 9)
+- [ ] hostile: duplicate/replay/anti-loop ingest path (шаг 10)
+- [ ] induced: guard self-test fail (шаг 11)
 
 ## CI gate
 - [ ] CI job `ingest-integration` существует и зелёный (шага 2/4/5/6)
@@ -133,6 +180,9 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - [ ] `docs/core/ingest_protocol.md` содержит `ack.upto_seq` и `seq`
     - [ ] `docs/api/errors.md` содержит `invalid_details` и `retry_after_ms`
     - [ ] `docs/metrics/ingest.md` содержит `ingest_dropped_total`
+    - [ ] `docs/source/startup_config_safety_validator_v0_2.md` содержит `unsafe startup config`
+    - [ ] `docs/source/queue_integrity_protection_v0_2.md` содержит `duplicate flood` и `replay loop`
+    - [ ] `docs/source/guard_self_observability_v0_2.md` содержит `self-test` и `heartbeat`
   - [ ] exit 1 при нарушении любой проверки
 
 ## DoD
@@ -140,6 +190,9 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Метрики ingest присутствуют и проверены тестами.
 - [ ] `observability_gap.ingest_overloaded` и `observability_gap.ingest_unavailable` определены, зарегистрированы и имеют runbook.
 - [ ] Ingest stage не путает app-level backpressure с perimeter/DDoS defense; `ddos_suspected` и `ingress_shield_degraded` определены, зарегистрированы и имеют runbook.
+- [ ] Unsafe startup config не может тихо запустить ingest в небезопасном режиме; `unsafe_startup_config_refused` определён, зарегистрирован и имеет runbook.
+- [ ] Duplicate flood / replay loop не деградируют в обычный overload; `queue_integrity_violation` определён, зарегистрирован и покрыт hostile test.
+- [ ] Критические guards ingest наблюдают сами себя; `guard_self_test_failed` определён, зарегистрирован и покрыт induced fail test.
 - [ ] Chaos сценарии воспроизводимы и smoke прогоняются в CI.
 - [ ] CI gate Stage 12 зелёный.
 

@@ -201,10 +201,16 @@
 5. `DEF-014` -> `08` Contracts/OpenAPI/codegen
 6. `DEF-014` -> `24` Release / upgrade / regression
 7. `DEF-015` -> `12` Ingest / backpressure / hostile ingress boundary
-8. `DEF-015` -> `36` SaaS abusive traffic isolation
-9. `DEF-019/020` + `DEF-015` -> `37` Linux production perimeter hardening
-10. `DEF-015` -> `45` Forensic hostile ingress attribution
-11. `DEF-014` -> `38` Stage ladder enforcement
+8. `DEF-023` -> `11, 12` Storage pressure / disk exhaustion / reserve-space defense
+9. `DEF-024` -> `12, 18` Startup configuration fail-closed validator
+10. `DEF-025` -> `12, 17, 18` Queue integrity / duplicate / anti-loop protection
+11. `DEF-027` -> `15, 33, 43` Action execution safety guard and bounded-regret barrier
+12. `DEF-028` -> `18, 23` Agent identity / enrollment / relay trust
+13. `DEF-015` -> `36` SaaS abusive traffic isolation
+14. `DEF-019/020` + `DEF-015` + `DEF-023..028` -> `37` Linux production perimeter and protective hardening
+15. `DEF-026` + `DEF-029` + `DEF-034` -> `24, 38` Guard self-observability, release truth and documentation drift enforcement
+16. `DEF-015` -> `45` Forensic hostile ingress attribution
+17. `DEF-014` -> `38` Stage ladder enforcement
 
 Почему это не первый уровень:
 - пока runtime basement врёт, security/release/CI могут быть зелёными на ложном основании;
@@ -213,6 +219,10 @@
 Что считается успехом уровня:
 - trust boundary доказана negative-path тестами и trusted-source proof, а не только документами;
 - browser surface и showcase не могут тихо ослаблять security baseline;
+- storage pressure не может quietly дойти до `disk full` без ранних high/critical-watermark реакций;
+- startup в опасной конфигурации блокируется fail-closed, а не “запускается и потом ломается”;
+- event/backlog queues имеют hostile protection от дублей, циклов и poisoned replay;
+- защитные guard-контуры сами имеют self-test и observable failure path;
 - gates доказывают behaviour, а не только structure;
 - release/provenance/CI не дают false-green;
 - internet-exposed профиль не имеет права существовать без edge/perimeter shield и hostile ingress evidence;
@@ -240,6 +250,11 @@
 16. hostile integration/e2e depth hardening for console/browser/release/SaaS paths
 17. pinned external adversarial harness for REGART and partner-exposed integration proof
 18. connected system visibility с declared-vs-observed truth для всех внешних систем
+19. authenticity baseline и legal-safe provenance surface для assets, showcase и packs
+20. regulatory claims drift control для RU/certified/regulated surfaces
+21. monolith budget guard для high-risk runtime entrypoints
+22. test strength guard для hostile production-proof, а не decorative tests
+23. documentation drift control для корня, ствола, кроны и навигационного дерева
 
 Почему этот уровень последний:
 - differentiators нельзя честно закрывать на слабом basement;

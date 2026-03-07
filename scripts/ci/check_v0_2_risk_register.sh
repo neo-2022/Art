@@ -5,7 +5,7 @@ RISK_DOC="docs/source/risk_register_v0_2.md"
 
 test -s "$RISK_DOC"
 
-for risk_id in R1 R2 R3 R5 R8 R9 R10; do
+for risk_id in R1 R2 R3 R5 R8 R9 R10 R17 R18 R19 R20; do
   grep -q "| ${risk_id} |" "$RISK_DOC"
 done
 
@@ -16,7 +16,11 @@ for blocker in \
   "trace unavailable for critical incident" \
   "p95 local-store latency > budget" \
   "unauthorized evidence access > 0" \
-  "picking p95 > threshold"
+  "picking p95 > threshold" \
+  "storage pressure reaches critical state without controlled degradation" \
+  "production component reaches ready state with unsafe config" \
+  "duplicate flood or replay loop remains undetected and unbounded" \
+  "critical guard fails self-test but release/stage closure still proceeds"
   do
   grep -q "$blocker" "$RISK_DOC"
 done
@@ -38,7 +42,11 @@ for event in \
   observability_gap.dna_traceability_gap \
   observability_gap.local_store_latency_exceeded \
   observability_gap.evidence_privacy_violation \
-  observability_gap.spatial_index_degraded
+  observability_gap.spatial_index_degraded \
+  observability_gap.storage_pressure_high \
+  observability_gap.unsafe_startup_config_refused \
+  observability_gap.queue_integrity_violation \
+  observability_gap.guard_self_test_failed
   do
   grep -q "^| ${event} |" docs/governance/observability_gap_registry.md
 done
