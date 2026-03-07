@@ -4,6 +4,7 @@
 - `docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`
 - `docs/testing/production_adversarial_validation_law.md`
 - `docs/testing/test_system_audit_v0_2.md`
+- `docs/testing/defect_remediation_ladder_v0_2.md`
 - `/home/art/my_langgraph_agent/AGENTS.md`
 
 ## Назначение
@@ -115,7 +116,8 @@
 1. файл-реестр всех проверенных файлов;
 2. список несоответствий;
 3. карта reopening по этапам MASTER;
-4. remediation-order, который идёт раньше дальнейшего “формального” продвижения по листам.
+4. remediation-order, который идёт раньше дальнейшего “формального” продвижения по листам;
+5. дефектовочная ведомость, которая превращает audit findings в лестничный порядок исполнения.
 
 ## Закон передачи в remediation
 После завершения полного покрытия tracked-корпуса и до окончания remediation действует жёсткое правило:

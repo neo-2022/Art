@@ -9,6 +9,7 @@ A) Полный запрет опциональности:
 Источники требований:
 - Art: `docs/source/Art_v1_spec_final.md`
 - REGART ↔ Art: `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
+- Дефектовочная ведомость remediation: `docs/testing/defect_remediation_ladder_v0_2.md`
 - REGART UI/Debugger wrapper (в Art): `docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`
 - REGART Bridge wrapper (в Art): `docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`
 - REGART UI/Debugger source-of-truth (внешний репозиторий): `my_langgraph_agent/CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md`  
@@ -24,6 +25,7 @@ A) Полный запрет опциональности:
 ⚠️ ПРАВИЛО: полный запрет опциональности — запрещены формулировки “опционально/где применимо/если нужно/решение зафиксировано/либо A либо B”.
 ⚠️ ПРАВИЛО: запрещено создавать и хранить копии чек-листов (`*.bak`, `*_copy*`, `*_old*` и аналоги). Разрешён только один актуальный файл каждого чек-листа.
 ⚠️ ПРАВИЛО: всегда держать в контексте файл `/home/art/my_langgraph_agent/AGENTS.md`; для Codex он считается системным промтом проекта.
+⚠️ ПРАВИЛО: после завершения audit coverage порядок remediation задаётся `docs/testing/defect_remediation_ladder_v0_2.md`, а не “следующим номером этапа”.
 
 ---
 
@@ -193,9 +195,26 @@ A) Полный запрет опциональности:
 - `formats/authenticity_assets_allowlist.yaml`
 - `scripts/ci/check_authenticity_assets.sh`
 
+### A15) Дерево решений remediation
+После завершения полного построчного audit coverage дальнейшая работа строится только по такому дереву:
+- корневые документы проекта;
+- полный аудит;
+- дефектовочная ведомость;
+- `MASTER`;
+- stage checklist;
+- код / тесты / runtime / evidence.
+
+Это означает:
+- `MASTER` не имеет права задавать remediation-order самостоятельно;
+- remediation-order берётся из `docs/testing/defect_remediation_ladder_v0_2.md`;
+- если номер следующего stage в таблице не совпадает с активным уровнем дефектовочной лестницы, приоритет имеет дефектовочная лестница;
+- повторное закрытие reopened stages запрещено, пока дефектовочная лестница не разрешает переход на этот уровень.
+
 ---
 
 ## B) MASTER: этапы проекта (строго по порядку)
+
+> После завершения audit coverage порядок corrective execution определяется документом `docs/testing/defect_remediation_ladder_v0_2.md`.
 
 > “Выполнено”: `YYYY-MM-DD, подпись/ник, commit/PR`
 

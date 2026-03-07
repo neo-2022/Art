@@ -3,10 +3,17 @@
 ## Source of truth
 - `docs/testing/full_line_by_line_audit_program_v0_2.md`
 - `docs/testing/full_line_by_line_audit_registry_v0_2.md`
+- `docs/testing/defect_remediation_ladder_v0_2.md`
 - `docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`
 
 ## Цель
 Зафиксировать, какие стадии и почему должны быть переоткрыты после полного построчного аудита.
+
+Эта матрица не определяет remediation-order сама по себе.
+Её роль:
+- объяснить reopening/open-состояние stage;
+- передать основания в `docs/testing/defect_remediation_ladder_v0_2.md`;
+- не дать `MASTER` потерять связь между аудитом и corrective execution.
 
 Правило:
 - стадия переоткрывается только при наличии подтверждённого корневого дефекта;
