@@ -579,3 +579,68 @@
 | `docs/rag/context_packs.md` | REVIEWED | WEAK | Packs описаны полезно, но curated contour слишком укрупнён и не учитывает, что часть включённых источников уже признана `WEAK/MISMATCH`. Для RAG этого недостаточно. | 07, 28, 39 |
 | `docs/rag/security_policy.md` | REVIEWED | WEAK | Базовые правила разумны, но документ слишком тонкий для hostile knowledge environment: нет stale-source quarantine, no drift detection and no confidence degradation rules. | 02, 07, 28, 39 |
 | `docs/rag/sources.yaml` | REVIEWED | WEAK | RU `sources.yaml` уже осторожнее EN-файла и не объявляет EN нормативным явно, но curated source list по-прежнему не охватывает continuation stages 39..45 и важные foundation docs из исторического корпуса. Значит встроенный агент может недополучить approved concepts. | 07, 28, 39, 40, 41, 42, 43, 44, 45 |
+
+## Слой 24 — Generated/tooling, packaging skeletons, platform fixtures, pack fixtures и dashboards
+
+> Этот слой проверялся как машинное основание проекта: если здесь skeleton или fixture-only реальность выдаётся за proof, то любой верхний stage становится непрочным независимо от качества документов.
+
+| Файл | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `generated/rust/Cargo.lock` | REVIEWED | OK | Lockfile generated Rust client формально корректен и честно фиксирует пустой dependency graph skeletal generated-пакета. | 08 |
+| `generated/rust/Cargo.toml` | REVIEWED | WEAK | Manifest generated Rust client минимален до предела: пакет существует, но не выражает почти никакой реальной client surface beyond ingest skeleton. Это не ложь, но слабое codegen-основание для заявленного contract layer. | 08, 29, 30 |
+| `generated/ts/tsconfig.json` | REVIEWED | WEAK | TS generated layer компилируется, но сам tsconfig только валидирует тонкий skeleton и не доказывает ширину или publish-readiness generated client surface. | 08, 29, 30 |
+| `packages/evidence-linking/tsconfig.json` | REVIEWED | OK | Стандартный build-scaffold без ложных runtime-обещаний. Слабость пакета лежит не здесь, а в самом коде и его концептуальной узости. | 30, 31 |
+| `packages/i18n/tsconfig.json` | REVIEWED | OK | Tsconfig корректный; реальные bilingual defects находятся в словаре, runtime shell и tests, а не в этом файле. | 16, 28, 30 |
+| `packages/ui-laws/CHANGELOG.md` | REVIEWED | WEAK | Changelog дисциплинирует `law_version`, но уже не отражает gap между runtime-only laws и отсутствием AST/static enforcement, который теперь обязателен историческим корпусом и continuation stages. | 30, 41 |
+| `packages/worker-runtime/tsconfig.json` | REVIEWED | OK | Конфигурация сборки нейтрально-корректна; проблема пакета — echo-stub runtime, а не TypeScript config. | 28, 35 |
+| `pnpm-workspace.yaml` | REVIEWED | WEAK | Workspace включает только `apps/*` и `packages/*`, оставляя `browser/` отдельным npm-островом. Это усиливает toolchain split и уже связано с выявленным build/i18n drift browser слоя. | 07, 10, 28, 38 |
+| `tsconfig.base.json` | REVIEWED | WEAK | Базовый TS config аккуратен, но слишком общий для hostile-grade mono-repo: нет stricter flags, нет различения build/runtime tiers, а browser вообще живёт вне этого контура. | 07, 28, 30, 35, 38 |
+| `packaging/deb/art-agent/DEBIAN/control` | REVIEWED | MISMATCH | Debian control file остаётся чистым skeleton (`0.1.0`, `ops@art.local`, skeleton description). Для stage37/package-layout claims это уже недостаточно и operationally не соответствует зрелому packaging contour. | 19, 24, 37, 38 |
+| `packaging/deb/art-core/DEBIAN/control` | REVIEWED | MISMATCH | Аналогично agent: файл существует, но остаётся skeleton, не production-grade package metadata. | 11, 24, 37, 38 |
+| `packaging/rpm/art-agent/art-agent.spec` | REVIEWED | MISMATCH | RPM spec для agent предельно skeletal и не доказывает install/runtime/service semantics, хотя platform/package contour заявлен значительно сильнее. | 19, 24, 37, 38 |
+| `packaging/rpm/art-core/art-core.spec` | REVIEWED | MISMATCH | RPM spec для core аналогично skeletal; это не соответствует зрелому multi-distro native package claim. | 11, 24, 37, 38 |
+| `tests/platform/contract/check_package_layout_contract.sh` | REVIEWED | MISMATCH | Скрипт проверяет только существование control/spec файлов и `[Unit]` в `art-vacuum.service`, но не ловит уже доказанный broken `%i`/timer mismatch. Это ложнозелёный gate для packaging/systemd основания. | 11, 23, 37, 38 |
+| `tests/platform/contract/ubuntu_regart_smoke.sh` | REVIEWED | MISMATCH | “Ubuntu REGART smoke” сводится к запуску `scripts/tests/pack_regart_runtime_api.sh` на локальном Core без реального агента, bridge topology или sibling repo runtime. Название и смысл сильнее фактического proof. | 05, 06, 20, 37, 38 |
+| `tests/platform/install/almalinux.sh` | REVIEWED | MISMATCH | Скрипт объявляет execute mode, но в нём нет реальной установки, старта unit’ов и smoke-потока — только печать плана. Это skeleton, не runnable natural install path. | 23, 37, 38 |
+| `tests/platform/install/alt_linux.sh` | REVIEWED | MISMATCH | Execute path placeholder-backed: реальной установки и runtime-proof нет. | 23, 26, 37, 38 |
+| `tests/platform/install/arch_linux.sh` | REVIEWED | MISMATCH | Execute mode не выполняет install/runtime sequence, только сообщает о включении. | 23, 37, 38 |
+| `tests/platform/install/astra_linux_se.sh` | REVIEWED | MISMATCH | Для critical certified distro script остаётся планом, а не runnable nat-test. Это особенно опасный overclaim. | 23, 26, 37, 38 |
+| `tests/platform/install/calculate_linux.sh` | REVIEWED | MISMATCH | Skeleton-only natural install path. | 23, 37, 38 |
+| `tests/platform/install/debian.sh` | REVIEWED | MISMATCH | Execute mode не materializes install/runtime proof. | 23, 37, 38 |
+| `tests/platform/install/fedora.sh` | REVIEWED | MISMATCH | Same class: only plan print, no hostile runtime evidence. | 23, 37, 38 |
+| `tests/platform/install/mcc_linux.sh` | REVIEWED | MISMATCH | Skeleton-only path, no actual execution semantics. | 23, 37, 38 |
+| `tests/platform/install/opensuse_leap.sh` | REVIEWED | MISMATCH | Execute mode placeholder-backed. | 23, 37, 38 |
+| `tests/platform/install/osnova_linux.sh` | REVIEWED | MISMATCH | No real install/systemd/smoke semantics despite executable interface. | 23, 26, 37, 38 |
+| `tests/platform/install/redos.sh` | REVIEWED | MISMATCH | Certified/native runtime path declared, but not implemented. | 23, 26, 37, 38 |
+| `tests/platform/install/rocky_linux.sh` | REVIEWED | MISMATCH | Skeleton-only natural install path. | 23, 37, 38 |
+| `tests/platform/install/rosa_linux.sh` | REVIEWED | MISMATCH | Execute path still not real. | 23, 26, 37, 38 |
+| `tests/platform/install/ubuntu.sh` | REVIEWED | MISMATCH | Even Ubuntu native install script is only a plan printer; this weakens platform proof despite Ubuntu being current primary runtime scope. | 23, 37, 38 |
+| `tests/platform/k8s/profiles/k3d-default.env` | REVIEWED | WEAK | K8s profile слишком минимален: cluster name/namespace/version есть, но нет ingress/TLS/persistence/RBAC knobs, которые уже заявлены как mandatory scenarios. | 23, 37, 38 |
+| `tests/platform/k8s/profiles/kind-default.env` | REVIEWED | WEAK | Аналогично `k3d`: профиль минимален и не покрывает всю заявленную production-k8s матрицу поведения. | 23, 37, 38 |
+| `tests/platform/vm/profiles/almalinux.env` | REVIEWED | WEAK | Профиль задаёт только image hint и ресурсы; этого мало для hostile-grade VM proof. | 23, 37, 38 |
+| `tests/platform/vm/profiles/alt_linux.env` | REVIEWED | WEAK | `VM_IMAGE_HINT=\"custom/alt_linux\"` фиксирует BYOI placeholder, а не проверяемый reproducible image source. | 23, 26, 37, 38 |
+| `tests/platform/vm/profiles/arch_linux.env` | REVIEWED | WEAK | Custom image hint without provenance/evidence. | 23, 37, 38 |
+| `tests/platform/vm/profiles/astra_linux_se.env` | REVIEWED | WEAK | Для critical certified profile используется `custom/astra_linux_se`, что подтверждает незавершённость real VM evidence path. | 23, 26, 37, 38 |
+| `tests/platform/vm/profiles/calculate_linux.env` | REVIEWED | WEAK | Custom image hint keeps VM path non-reproducible. | 23, 37, 38 |
+| `tests/platform/vm/profiles/debian.env` | REVIEWED | WEAK | Профиль корректен как hint, но сам по себе не доказывает runnable VM contour beyond resource defaults. | 23, 37, 38 |
+| `tests/platform/vm/profiles/fedora.env` | REVIEWED | WEAK | Аналогично: usable hint, but too thin for runtime proof. | 23, 37, 38 |
+| `tests/platform/vm/profiles/mcc_linux.env` | REVIEWED | WEAK | Custom image hint, no provenance. | 23, 37, 38 |
+| `tests/platform/vm/profiles/opensuse_leap.env` | REVIEWED | WEAK | Valid-looking image hint, but still only a thin profile over a placeholder execute harness. | 23, 37, 38 |
+| `tests/platform/vm/profiles/osnova_linux.env` | REVIEWED | WEAK | Custom image hint keeps OSnova VM readiness non-evidence-backed. | 23, 26, 37, 38 |
+| `tests/platform/vm/profiles/redos.env` | REVIEWED | WEAK | Custom image hint for RED OS confirms certified VM path still not reproducibly grounded. | 23, 26, 37, 38 |
+| `tests/platform/vm/profiles/rocky_linux.env` | REVIEWED | WEAK | Thin profile only; runnable proof still depends on missing real execute harness. | 23, 37, 38 |
+| `tests/platform/vm/profiles/rosa_linux.env` | REVIEWED | WEAK | Custom image hint without provenance/evidence. | 23, 26, 37, 38 |
+| `tests/platform/vm/profiles/ubuntu.env` | REVIEWED | WEAK | Ubuntu VM profile is structurally fine, но реальный VM execute path всё равно остаётся placeholder-backed. | 23, 37, 38 |
+| `packs/regart/fixtures/graph_event.json` | REVIEWED | WEAK | Fixture synthetically проверяет только correlation tuple и `kind`; не тянет широкий external-source semantics. | 20, 30, 38 |
+| `packs/regart/fixtures/models_event.json` | REVIEWED | WEAK | Слишком тонкий synthetic fixture, не доказывает реальный model-event richness. | 20, 30, 38 |
+| `packs/regart/fixtures/network_error.json` | REVIEWED | WEAK | Fixture one-line and too narrow for hostile network failure taxonomy. | 05, 20, 38 |
+| `packs/regart/fixtures/tools_event.json` | REVIEWED | WEAK | Synthetic fixture only, without richer payload semantics. | 20, 30, 38 |
+| `packs/regart/fixtures/ui.graph.empty.json` | REVIEWED | WEAK | Captures one happy correlation shape, not the broader UI graph failure surface. | 05, 20, 38 |
+| `packs/regart/fixtures/ui_proxy_unavailable.json` | REVIEWED | WEAK | Useful minimal gap fixture, but too small to support the broader bridge/source-coverage claims already made by the project. | 05, 06, 20, 38 |
+| `packs/regart/fixtures/upstream_error.json` | REVIEWED | WEAK | One-line fixture is insufficient for typed upstream error contract richness. | 05, 06, 20, 38 |
+| `packs/regart/rules/enrich.json` | REVIEWED | WEAK | Enrich rules preserve only correlation and null-fill. Для pack, который уже позиционируется как bridge to rich REGART signals, этого слишком мало. | 20, 30, 38 |
+| `packs/regart/signatures/manifest.sha256` | REVIEWED | WEAK | Raw SHA256 file without stronger provenance/signature context is better than nothing, but не соответствует уже заявленному более зрелому signing posture packs. | 19, 20, 24, 38 |
+| `grafana/art_agent_overview.json` | REVIEWED | MISMATCH | “Dashboard” — это один JSON-объект с названием и тремя строковыми панелями, а не real Grafana model. Для self-observability claims это placeholder-grade artifact. | 21, 37, 38 |
+| `grafana/art_core_overview.json` | REVIEWED | MISMATCH | Same issue: stub, not real dashboard definition. | 21, 37, 38 |
+| `grafana/art_ingest_pipeline.json` | REVIEWED | MISMATCH | Stub-level dashboard artifact; creates false sense of observability readiness. | 21, 37, 38 |
+| `core/embedded/panel0/favicon.ico` | REVIEWED | OK | Статический binary asset без логики и без признаков semantic drift. | 16, 28 |
