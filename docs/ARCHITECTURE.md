@@ -3,6 +3,7 @@
 ## Source of truth
 - [Art_v1_spec_final.md](source/Art_v1_spec_final.md)
 - [FOUNDATION_CONSTITUTION_V0_2.md](source/FOUNDATION_CONSTITUTION_V0_2.md)
+- [UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md](foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md)
 - [CHECKLIST_00_MASTER_ART_REGART.md](source/checklists/CHECKLIST_00_MASTER_ART_REGART.md)
 - [REGART -  LangGraph  взаимодействие с Art описание.md](source/REGART -  LangGraph  взаимодействие с Art описание.md)
 - [defect_remediation_ladder_v0_2.md](testing/defect_remediation_ladder_v0_2.md)
@@ -61,6 +62,8 @@ Art строится как единый продукт с тремя архит
 - переход к следующему этапу запрещён без подтверждённого закрытия текущего
 - платформенные различия разрешены только в packaging/install/runtime profiles, но не в бизнес-логике
 - порядок remediation определяется корневым деревом решений и дефектовочной лестницей, а не “следующим номером этапа”
+- архитектурные решения принимаются только по пути `корень -> ствол -> крона`
+- hardcoding запрещён как архитектурный anti-pattern и допускается только как явно оформленный test fixture вне production baseline
 
 ## Граница с REGART
 - Art и REGART остаются отдельными репозиториями
