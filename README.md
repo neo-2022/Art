@@ -23,7 +23,7 @@
 | Ветка-источник истины | `main` |
 | Текущий baseline | `v0.2.0-rc.2` |
 | Статус релиза | production candidate, `NO-GO` до доказательства protective contours |
-| Активный corrective baseline | `DEF-001 -> stage23/37 (stage11 уже закрыт как durable storage-basement; в stage23 уже materialized WAL-aware backup, DR drill, runtime smoke на реальном CORE_DB_PATH и PR ops-gates; открытыми остаются TLS hot-reload без простоя и tls_config_invalid startup backlog)` |
+| Активный corrective baseline | `DEF-001 -> stage23/37 (stage11 уже закрыт как durable storage-basement; в stage23 уже materialized WAL-aware backup, DR drill, runtime smoke на реальном CORE_DB_PATH, PR ops-gates и fail-closed contour для tls_config_invalid с persisted startup backlog; открытым остаётся только TLS hot-reload без простоя)` |
 | Следующие structural defects в стволе | `DEF-017` high-risk monolith decomposition, `DEF-018` hostile e2e depth hardening, `DEF-019/020` trust boundary и browser surface hardening |
 | Execute-gated платформы | Ubuntu native, Docker runtime, Kubernetes runtime |
 | Расширенная Linux-матрица | validate-only до включения выделенных runner'ов |

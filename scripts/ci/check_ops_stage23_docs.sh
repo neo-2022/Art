@@ -12,6 +12,7 @@ grep -q "SIGHUP" docs/ops/tls_rotation.md
 grep -q "stream" docs/ops/tls_rotation.md
 grep -q "ops_stage23_smoke.sh" docs/ops/tls_rotation.md
 grep -q "hot-reload" docs/ops/tls_rotation.md
+grep -q "startup backlog" docs/ops/tls_rotation.md
 grep -q "integrity" docs/ops/db_migration_runbook.md
 grep -q "rollback" docs/ops/db_migration_runbook.md
 grep -q "sqlite3" docs/ops/backup_restore.md
@@ -29,5 +30,9 @@ grep -q "audit" docs/ops/dr_drill.md
 grep -q "analytics" docs/ops/dr_drill.md
 grep -q "mitigations" docs/runbooks/tls_config_invalid.md
 grep -q "verification" docs/runbooks/tls_config_invalid.md
+grep -q "startup backlog" docs/runbooks/tls_config_invalid.md
 grep -q "tls_config_invalid" docs/governance/observability_gap_registry.md
+grep -q "cert_path" docs/governance/observability_gap_registry.md
+grep -q "key_path" docs/governance/observability_gap_registry.md
+grep -q "create_incident_min_sev1" docs/governance/observability_gap_registry.md
 echo "stage23 docs gate: OK"

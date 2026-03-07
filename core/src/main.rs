@@ -28,6 +28,13 @@ use tokio::time::Duration;
 use tower_http::compression::CompressionLayer;
 use tracing::{info, warn};
 
+mod bootstrap_runtime;
+
+use bootstrap_runtime::{
+    install_runtime_signal_handlers, load_tls_config_from_env, load_tls_server_config,
+    replay_startup_backlog, startup_backlog_path,
+};
+
 const OTLP_ENDPOINT: &str = "/otlp/v1/logs";
 const OTLP_MAX_EVENTS_PER_SEC: f64 = 200.0;
 const OTLP_BURST: f64 = 400.0;
@@ -292,16 +299,16 @@ impl CoreState {
             refresh_storage_backup(&effective_profile_id, &db_path)
                 .map(|backup_id| (Some(backup_id), now_ms()))
                 .or_else(|error| -> anyhow::Result<(Option<String>, u64)> {
-                warn!(
-                    "failed to create initial sqlite backup for {}: {}",
-                    db_path.display(),
-                    error
-                );
-                Ok((
-                    latest_storage_backup_id(&backup_dir),
-                    latest_storage_backup_created_ts_ms(&backup_dir).unwrap_or(0),
-                ))
-            })?;
+                    warn!(
+                        "failed to create initial sqlite backup for {}: {}",
+                        db_path.display(),
+                        error
+                    );
+                    Ok((
+                        latest_storage_backup_id(&backup_dir),
+                        latest_storage_backup_created_ts_ms(&backup_dir).unwrap_or(0),
+                    ))
+                })?;
         Ok(Self {
             next_seq: storage.next_seq,
             events: storage.events,
@@ -771,10 +778,7 @@ fn prune_storage_backups_to_limit(
     }
     let mut removed_files = 0usize;
     let mut reclaimed_bytes = 0u64;
-    for backup_id in ids
-        .into_iter()
-        .take(total.saturating_sub(retention_limit))
-    {
+    for backup_id in ids.into_iter().take(total.saturating_sub(retention_limit)) {
         for suffix in [".sqlite3", ".sqlite3-wal", ".metadata.json"] {
             let path = backup_dir.join(format!("{}{}", backup_id, suffix));
             if path.exists() {
@@ -926,8 +930,7 @@ fn refresh_storage_backup_state_force(s: &mut CoreState) {
 
 fn refresh_storage_backup_state_if_due(s: &mut CoreState) {
     let now = now_ms();
-    if s
-        .last_backup_refresh_ms
+    if s.last_backup_refresh_ms
         .checked_add(DEFAULT_STORAGE_BACKUP_INTERVAL_MS)
         .map(|deadline| deadline > now)
         .unwrap_or(false)
@@ -1031,8 +1034,8 @@ fn handle_storage_corruption_locked(
         Ok(storage) => {
             replace_runtime_state_from_storage(s, storage);
             s.storage_read_only = false;
-            s.last_backup_refresh_ms = latest_storage_backup_created_ts_ms(&s.storage_backup_dir)
-                .unwrap_or_else(now_ms);
+            s.last_backup_refresh_ms =
+                latest_storage_backup_created_ts_ms(&s.storage_backup_dir).unwrap_or_else(now_ms);
             push_gap_event_memory_only_locked(
                 s,
                 "observability_gap.storage_corrupted",
@@ -1957,6 +1960,7 @@ async fn main() -> anyhow::Result<()> {
     };
     validate_storage_pressure_config(storage_pressure_config)?;
     let analytics = load_analytics_state(&analytics_state_path, analytics_max_buckets);
+    let startup_backlog = startup_backlog_path(&db_path);
 
     let state = Arc::new(RwLock::new(CoreState::new(
         effective_profile_id,
@@ -1969,6 +1973,19 @@ async fn main() -> anyhow::Result<()> {
         db_path,
         storage_pressure_config,
     )?));
+    {
+        let mut s = state.write().await;
+        let replayed = replay_startup_backlog(&startup_backlog, |kind, details| {
+            push_gap_event_locked(&mut s, kind, details);
+        });
+        if replayed > 0 {
+            info!(
+                "replayed {} startup backlog event(s) from {}",
+                replayed,
+                startup_backlog.display()
+            );
+        }
+    }
 
     install_runtime_signal_handlers();
 
@@ -1987,15 +2004,7 @@ async fn main() -> anyhow::Result<()> {
             cert_path.display(),
             key_path.display()
         );
-        let tls = axum_server::tls_rustls::RustlsConfig::from_pem_file(&cert_path, &key_path)
-            .await
-            .with_context(|| {
-                format!(
-                    "failed to load TLS cert/key (cert={}, key={})",
-                    cert_path.display(),
-                    key_path.display()
-                )
-            })?;
+        let tls = load_tls_server_config(&cert_path, &key_path, &startup_backlog).await?;
         axum_server::bind_rustls(addr, tls)
             .serve(app.into_make_service())
             .await
@@ -2010,36 +2019,6 @@ async fn main() -> anyhow::Result<()> {
             .context("core server failed")?;
     }
     Ok(())
-}
-
-fn load_tls_config_from_env() -> Option<(PathBuf, PathBuf)> {
-    let cert = env::var("CORE_TLS_CERT_PATH")
-        .ok()
-        .map(|v| v.trim().to_string());
-    let key = env::var("CORE_TLS_KEY_PATH")
-        .ok()
-        .map(|v| v.trim().to_string());
-    match (cert, key) {
-        (Some(cert_path), Some(key_path)) if !cert_path.is_empty() && !key_path.is_empty() => {
-            Some((PathBuf::from(cert_path), PathBuf::from(key_path)))
-        }
-        _ => None,
-    }
-}
-
-fn install_runtime_signal_handlers() {
-    #[cfg(unix)]
-    {
-        use tokio::signal::unix::{signal, SignalKind};
-
-        if let Ok(mut hup) = signal(SignalKind::hangup()) {
-            tokio::spawn(async move {
-                while hup.recv().await.is_some() {
-                    info!("received SIGHUP: runtime reload hook executed");
-                }
-            });
-        }
-    }
 }
 
 fn load_analytics_state(path: &PathBuf, max_buckets: usize) -> AnalyticsState {
@@ -4042,12 +4021,7 @@ fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
                 .and_then(|value| value.get("trace_id"))
                 .and_then(Value::as_str)
                 .unwrap_or("storage-gap");
-            let _ = handle_storage_runtime_error_locked(
-                s,
-                trace_id,
-                "storage_write_failed",
-                error,
-            );
+            let _ = handle_storage_runtime_error_locked(s, trace_id, "storage_write_failed", error);
         } else {
             refresh_storage_backup_state_if_due(s);
         }
@@ -4869,8 +4843,12 @@ fn append_audit_entry(state: &mut CoreState, mut entry: AuditEntry) {
     }
     if let Err(error) = persist_audit_entry(&state.db_path, &entry) {
         warn!("failed to persist audit entry {}: {}", entry.id, error);
-        let _ =
-            handle_storage_runtime_error_locked(state, &entry.trace_id, "storage_write_failed", error);
+        let _ = handle_storage_runtime_error_locked(
+            state,
+            &entry.trace_id,
+            "storage_write_failed",
+            error,
+        );
     } else {
         refresh_storage_backup_state_if_due(state);
     }
@@ -4889,8 +4867,12 @@ fn append_audit_entry_and_get(state: &mut CoreState, mut entry: AuditEntry) -> A
     }
     if let Err(error) = persist_audit_entry(&state.db_path, &entry) {
         warn!("failed to persist audit entry {}: {}", entry.id, error);
-        let _ =
-            handle_storage_runtime_error_locked(state, &entry.trace_id, "storage_write_failed", error);
+        let _ = handle_storage_runtime_error_locked(
+            state,
+            &entry.trace_id,
+            "storage_write_failed",
+            error,
+        );
     } else {
         refresh_storage_backup_state_if_due(state);
     }
@@ -5051,8 +5033,12 @@ async fn incident_ack(
         if let Err(error) = persist_incident(&s.db_path, &incident) {
             warn!("failed to persist incident ack {}: {}", incident.id, error);
             s.incidents[index].status = previous_status;
-            let outcome =
-                handle_storage_runtime_error_locked(&mut s, &trace_id, "storage_write_failed", error);
+            let outcome = handle_storage_runtime_error_locked(
+                &mut s,
+                &trace_id,
+                "storage_write_failed",
+                error,
+            );
             return storage_fault_response(&outcome.error, outcome.retry_after_ms);
         } else {
             refresh_storage_backup_state_if_due(&mut s);
@@ -5122,8 +5108,12 @@ async fn incident_resolve(
                 incident.id, error
             );
             s.incidents[index].status = previous_status;
-            let outcome =
-                handle_storage_runtime_error_locked(&mut s, &trace_id, "storage_write_failed", error);
+            let outcome = handle_storage_runtime_error_locked(
+                &mut s,
+                &trace_id,
+                "storage_write_failed",
+                error,
+            );
             return storage_fault_response(&outcome.error, outcome.retry_after_ms);
         } else {
             refresh_storage_backup_state_if_due(&mut s);
@@ -5755,7 +5745,8 @@ mod tests {
         while written < target_bytes {
             let remaining = target_bytes.saturating_sub(written);
             let chunk_len = remaining.min(chunk.len() as u64) as usize;
-            file.write_all(&chunk[..chunk_len]).expect("write filler chunk");
+            file.write_all(&chunk[..chunk_len])
+                .expect("write filler chunk");
             written = written.saturating_add(chunk_len as u64);
         }
         file.sync_all().expect("sync filler file");
@@ -5839,10 +5830,7 @@ mod tests {
             .await
             .expect("collect")
             .to_bytes();
-        (
-            status,
-            serde_json::from_slice(&body).expect("health json"),
-        )
+        (status, serde_json::from_slice(&body).expect("health json"))
     }
 
     async fn snapshot_v2_json(app: &Router) -> Value {
@@ -6911,7 +6899,10 @@ mod tests {
             .filter_map(Result::ok)
             .filter(|entry| entry.file_name().to_string_lossy().ends_with(".sqlite3"))
             .count();
-        assert!(before >= 6, "expected multiple sqlite backups, got {before}");
+        assert!(
+            before >= 6,
+            "expected multiple sqlite backups, got {before}"
+        );
 
         apply_storage_pressure_housekeeping_locked(
             &mut state,

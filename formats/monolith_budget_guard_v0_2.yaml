@@ -8,8 +8,8 @@ policy:
 critical_files:
   - path: core/src/main.rs
     owner_contour: stage11_core_runtime
-    current_lines: 9853
-    budget_lines: 9853
+    current_lines: 9844
+    budget_lines: 9844
     max_responsibility_classes: 8
     defect_ids: ["DEF-017", "DEF-032"]
     stages: ["11", "37", "39"]

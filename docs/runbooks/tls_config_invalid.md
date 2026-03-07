@@ -17,6 +17,8 @@
 - проверить cert/key пару
 - проверить права на файлы
 - выполнить rollback последнего cert
+- если Core не стартовал, проверить persisted startup backlog рядом с `CORE_DB_PATH`
+  и убедиться, что при следующем успешном старте событие опубликовано в snapshot/stream
 
 ## rollback
 - Если инцидент вызван последним релизом, конфигом или ручным изменением, откатить последнее подтверждённое изменение до stable baseline.
@@ -26,6 +28,7 @@
 - health=ok
 - stream доступен
 - gap событие закрыто
+- startup backlog очищен после успешной публикации `observability_gap.tls_config_invalid`
 
 ## escalation
 - Эскалировать on-call и Incident Commander, если mitigation не восстановила сервис в рамках SLA severity.

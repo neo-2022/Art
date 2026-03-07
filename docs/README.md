@@ -84,10 +84,10 @@ Machine-readable карта зависимостей:
     - `WAL-aware backup`;
     - `DR drill`;
     - runtime smoke `ops_stage23_smoke.sh` на реальном `CORE_DB_PATH`;
+    - fail-closed `tls_config_invalid` с persisted startup backlog и публикацией backlog-события после следующего успешного старта;
     - PR-gates для этого контура;
   - незакрытые blockers `stage23`:
-    - `SIGHUP` hot-reload TLS без простоя как честный hostile-proof;
-    - `observability_gap.tls_config_invalid` как persisted startup backlog.
+    - `SIGHUP` hot-reload TLS без простоя как честный hostile-proof.
 
 ### Release и клиентская коммуникация
 - release process: [release_process.md](release/release_process.md)

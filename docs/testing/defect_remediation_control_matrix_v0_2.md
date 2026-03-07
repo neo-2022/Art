@@ -133,7 +133,7 @@
   - production-proof для `VACUUM/systemd` (`11.4`) теперь тоже материализован: отдельный runtime smoke `scripts/tests/storage_vacuum_runtime.sh` проходит success/safe-skip/missing-db paths, а `stage11-docs-gate` запускается и на PR;
   - `stage11` как stage-level basement теперь закрыт честно;
   - downstream в `stage23` больше не декоративный: `scripts/tests/ops_stage23_smoke.sh` делает backup/restore настоящего `CORE_DB_PATH`, поднимает живой `art-core`, подтверждает survive для `snapshot`, `v2 snapshot`, `incidents`, `audit verify` и `analytics`, а `docs/ops/backup_restore.md` и `docs/ops/dr_drill.md` синхронизированы с этим runtime-proof;
-  - в `stage23` честно закрыты только `WAL-aware backup`, `DR drill`, runtime smoke и PR CI path для этих доказанных контуров; TLS hot-reload без простоя и `observability_gap.tls_config_invalid` как startup backlog ещё остаются downstream-blockers;
+  - в `stage23` уже честно закрыты `WAL-aware backup`, `DR drill`, runtime smoke, PR CI path и `observability_gap.tls_config_invalid` как persisted startup backlog через induced hostile proof; единственный оставшийся downstream-blocker теперь только TLS hot-reload без простоя;
   - сам `DEF-001` остаётся открыт только потому, что его downstream-материализация ещё должна быть доведена в `stage23` и `stage37`.
 
 ### [ ] DEF-002 — Durable spool у `Agent`

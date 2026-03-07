@@ -65,5 +65,5 @@ Art и REGART — это интегрированные системы, а не 
   - [defect_remediation_control_matrix_v0_2.md](testing/defect_remediation_control_matrix_v0_2.md)
   - [defect_remediation_ladder_v0_2.md](testing/defect_remediation_ladder_v0_2.md)
 - Сейчас нижний runtime-basement `DEF-001 -> stage11` уже закрыт честно.
-- Активный downstream corrective слой для этого же дефекта переместился в `stage23/37`, где добивается production-ready DR / deploy / platform continuation.
+- Активный downstream corrective слой для этого же дефекта переместился в `stage23/37`, где добивается production-ready DR / deploy / platform continuation; в `stage23` уже materialized fail-closed contour для `tls_config_invalid` с persisted startup backlog, а незакрытым blocker'ом остаётся только TLS hot-reload без простоя.
 - Интеграционные hostile suites `Art <-> REGART` не подменяют этот basement и не доказывают его вместо него; они подключаются как усиление на своих stage-узлах после того, как нижний storage-basement уже материализован.

@@ -79,27 +79,27 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
     - [x] результаты smoke ingest→snapshot
     - [x] явный вывод pass/fail.
 
-- [ ] **6. Сделать:** `observability_gap.tls_config_invalid` при невозможности загрузить TLS ключи/сертификаты.
-  - [ ] Критерий ошибки фиксирован:
-    - [ ] отсутствует cert файл или key файл
-    - [ ] cert/key не парсятся
-    - [ ] cert и key не соответствуют друг другу
-  - [ ] Поведение фиксировано: Core не стартует (fail closed)
-  - [ ] Процедура доставки события фиксирована:
-    - [ ] при ошибке TLS событие фиксируется в локальном bootstrap-логе/буфере (persisted startup backlog)
-    - [ ] при следующем успешном старте Core публикует сохранённое событие `observability_gap.tls_config_invalid` в snapshot/stream как “startup backlog”
-  - [ ] Событие содержит evidence_min:
-    - [ ] cert_path
-    - [ ] key_path
-    - [ ] error (строка)
-    - [ ] trace_id
-  - [ ] Событие зарегистрировано в `docs/governance/observability_gap_registry.md` с:
-    - [ ] `incident_rule=create_incident_min_sev1`
-    - [ ] `action_ref=docs/runbooks/tls_config_invalid.md`
-  - [ ] **Проверка (pass/fail):** induced test:
-    - [ ] ломает cert/key (например, пустой key файл)
-    - [ ] подтверждает отказ старта Core
-    - [ ] после исправления TLS и перезапуска Core ожидает и подтверждает появление `observability_gap.tls_config_invalid` в `/api/v1/snapshot` (startup backlog опубликован)
+- [x] **6. Сделать:** `observability_gap.tls_config_invalid` при невозможности загрузить TLS ключи/сертификаты.
+  - [x] Критерий ошибки фиксирован:
+    - [x] отсутствует cert файл или key файл
+    - [x] cert/key не парсятся
+    - [x] cert и key не соответствуют друг другу
+  - [x] Поведение фиксировано: Core не стартует (fail closed)
+  - [x] Процедура доставки события фиксирована:
+    - [x] при ошибке TLS событие фиксируется в локальном bootstrap-логе/буфере (persisted startup backlog)
+    - [x] при следующем успешном старте Core публикует сохранённое событие `observability_gap.tls_config_invalid` в snapshot/stream как “startup backlog”
+  - [x] Событие содержит evidence_min:
+    - [x] cert_path
+    - [x] key_path
+    - [x] error (строка)
+    - [x] trace_id
+  - [x] Событие зарегистрировано в `docs/governance/observability_gap_registry.md` с:
+    - [x] `incident_rule=create_incident_min_sev1`
+    - [x] `action_ref=docs/runbooks/tls_config_invalid.md`
+  - [x] **Проверка (pass/fail):** induced test:
+    - [x] ломает cert/key (например, пустой key файл)
+    - [x] подтверждает отказ старта Core
+    - [x] после исправления TLS и перезапуска Core ожидает и подтверждает появление `observability_gap.tls_config_invalid` в `/api/v1/snapshot` (startup backlog опубликован)
 
 - [ ] **7. Сделать:** Зафиксировать multi-site deployment и transport runbook для Art Agent.
   - [ ] существует `docs/ops/agent_multisite_deploy.md`
@@ -130,7 +130,7 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
 ## Тестирование
 - [ ] integration: TLS reload smoke (SSE держится, шаг 2)
 - [x] integration: DR drill smoke (restore + integrity + ingest→snapshot, шаг 5)
-- [ ] induced: tls_config_invalid (fail closed + startup backlog публикация, шаг 6)
+- [x] induced: tls_config_invalid (fail closed + startup backlog публикация, шаг 6)
 - [x] runtime smoke: `scripts/tests/ops_stage23_smoke.sh` (backup/restore + ingest→snapshot + SIGHUP stream survival)
 
 ## CI gate
@@ -154,7 +154,7 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
 - [ ] DB migration runbook описан и содержит integrity check + rollback.
 - [ ] WAL-aware backup зафиксирован как `sqlite3 .backup` при остановленном Core.
 - [ ] DR drill выполнен и зафиксирован отчётом с pass/fail.
-- [ ] `observability_gap.tls_config_invalid` реализован, зарегистрирован и покрыт induced test (включая публикацию startup backlog в snapshot/stream).
+- [x] `observability_gap.tls_config_invalid` реализован, зарегистрирован и покрыт induced test (включая публикацию startup backlog в snapshot/stream).
 - [ ] Multi-site deployment/transport runbook Art Agent зафиксирован для single-site, WAN, segmented и air-gapped контуров.
 - [ ] CI gate Stage 23 зелёный.
 

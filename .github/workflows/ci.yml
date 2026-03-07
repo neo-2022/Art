@@ -845,7 +845,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 23 ops smoke
-        run: bash scripts/tests/ops_stage23_smoke.sh
+        run: |
+          bash scripts/tests/ops_stage23_smoke.sh
+          bash scripts/tests/tls_config_invalid_runtime.sh
 
   ops-docs-gate:
     name: ops-docs-gate

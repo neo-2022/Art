@@ -10,6 +10,9 @@
 - `SIGHUP` выполняет runtime-hook;
 - smoke уже доказывает, что активный stream не рвётся после `SIGHUP`;
 - но **hot-reload самого TLS-контекста по `SIGHUP` ещё не materialized**.
+- при невалидном TLS bootstrap `Core` стартует по принципу fail closed и пишет
+  `observability_gap.tls_config_invalid` в persisted startup backlog, который публикуется в
+  snapshot/stream на следующем успешном старте.
 
 Поэтому честный безопасный путь ротации сегодня такой:
 1. Обновить `cert/key`.
@@ -35,6 +38,9 @@ bash scripts/tests/ops_stage23_smoke.sh
 - live DR restore сценарий на реальном `art-core`;
 - что после `SIGHUP` runtime-hook Core живой;
 - что удерживаемое `/api/v1/stream` соединение не рвётся.
+- отдельный induced runtime smoke `scripts/tests/tls_config_invalid_runtime.sh`
+  доказывает fail-closed старт, persisted startup backlog и публикацию
+  `observability_gap.tls_config_invalid` на следующем успешном старте.
 
 ## Что ещё не закрыто
 Полный `stage23 step 2` будет считаться закрытым только тогда, когда `SIGHUP` сможет:
