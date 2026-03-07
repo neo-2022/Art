@@ -135,17 +135,34 @@
 - делать silent rollback без регистрации причины в audit/evidence.
 
 ## migration/validation
-- Переходы требуют validate/migrate/purge/reindex по матрице
+- Каждый переход `from -> to` оценивается только по матрице ниже.
+- Для допустимого перехода обязателен фиксированный набор действий: `validate`, `migrate`, `purge`, `reindex` в указанной комбинации.
+- Критерий "готово" для каждого допустимого перехода:
+  - новый `effective_profile_id` зафиксирован;
+  - profile guards прошли без ошибок;
+  - не возникло `observability_gap.profile_violation`;
+  - ingest перезапущен только после успешной проверки.
+- Для недопустимого перехода apply-config запрещён, Core/ingest остаются на предыдущем валидном профиле.
 
 ## transition matrix
 | from | to | actions | allowed |
 |---|---|---|---|
+| global | global | validate | yes |
 | global | eu | validate + reindex | yes |
 | global | ru | validate + reindex | yes |
-| global | airgapped | migrate + validate + purge remote | yes |
+| global | airgapped | migrate + validate + purge remote + reindex | yes |
+| eu | global | validate + reindex | yes |
+| eu | eu | validate | yes |
 | eu | ru | validate residency + reindex | yes |
-| ru | eu | export compliance check | no |
-| airgapped | global | manual export review | no |
+| eu | airgapped | migrate + validate + purge remote + reindex | yes |
+| ru | global | export compliance check + validate | no |
+| ru | eu | export compliance check + validate | no |
+| ru | ru | validate | yes |
+| ru | airgapped | migrate + validate + purge remote + reindex | yes |
+| airgapped | global | manual export review + validate | no |
+| airgapped | eu | manual export review + validate | no |
+| airgapped | ru | manual export review + validate | no |
+| airgapped | airgapped | validate | yes |
 
 ## privacy linkage
 - Различия retention/DSR синхронизируются с `docs/privacy/regional_profiles.md`.
