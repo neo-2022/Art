@@ -59,11 +59,11 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [x] для каждого недопустимого перехода: явный запрет и причина
   - [x] **Проверка (pass/fail):** `docs/compliance/profiles.md` содержит раздел `migration/validation` и таблицу `transition matrix` со всеми профилями и правилами для каждого `from → to`.
 
-- [ ] **5. Сделать:** Зафиксировать правила data residency отдельно от описания профилей.
-  - [ ] перечислены типы данных: events/incidents/audit/attachments
-  - [ ] матрица `profile_id → allowed residency`
-  - [ ] правило блокировки при нарушении (startup fail или reject apply-config)
-  - [ ] **Проверка (pass/fail):** существует `docs/compliance/data_residency.md`, содержит все пункты выше.
+- [x] **5. Сделать:** Зафиксировать правила data residency отдельно от описания профилей.
+  - [x] перечислены типы данных: events/incidents/audit/attachments
+  - [x] матрица `profile_id → allowed residency`
+  - [x] правило блокировки при нарушении (startup fail или reject apply-config)
+  - [x] **Проверка (pass/fail):** существует `docs/compliance/data_residency.md`, содержит все пункты выше.
 
 - [ ] **6. Сделать:** Описать guardrails проверки профиля при запуске и при применении новой конфигурации.
   - [ ] проверка retention
