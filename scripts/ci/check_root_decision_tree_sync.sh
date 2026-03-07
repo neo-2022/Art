@@ -82,6 +82,17 @@ try:
 except subprocess.CalledProcessError:
     pass
 
+try:
+    status_lines = git('status', '--porcelain').splitlines()
+    for line in status_lines:
+        if len(line) < 4:
+            continue
+        path = line[3:].strip()
+        if path:
+            changed.add(path)
+except subprocess.CalledProcessError:
+    pass
+
 if not changed:
     changed = set(filter(None, git('ls-files').splitlines()))
 

@@ -1,0 +1,414 @@
+# Дефектовочная контрольная ведомость remediation v0.2
+
+## Source of truth
+- `docs/testing/full_line_by_line_audit_program_v0_2.md`
+- `docs/testing/full_line_by_line_audit_registry_v0_2.md`
+- `docs/testing/stage_reopening_matrix_v0_2.md`
+- `docs/testing/defect_remediation_ladder_v0_2.md`
+- `docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`
+- `formats/defect_remediation_control_matrix_v0_2.yaml`
+
+## Назначение
+Этот документ превращает результаты полного аудита в поштучный управляемый контур исполнения.
+
+Если `full_line_by_line_audit_registry_v0_2.md` отвечает на вопрос:
+- что сломано;
+- где сломано;
+- почему stage должен быть reopened,
+
+то эта контрольная ведомость отвечает на вопрос:
+- какой конкретный дефект сейчас в работе;
+- какие стадии и какие checklist-листы он блокирует;
+- что именно нужно сделать;
+- какими тестами и артефактами доказать закрытие;
+- когда defect можно перевести в `[x]`.
+
+## Жёсткое правило управления
+После завершения полного аудита remediation запрещено вести только по stage-номерам или только по дефектовочной лестнице.
+
+Обязательная цепочка управления теперь такая:
+
+`Корень -> Аудит -> Stage reopening matrix -> Дефектовочная контрольная ведомость -> Дефектовочная лестница -> MASTER -> Stage checklist`
+
+Это означает:
+- ни один найденный дефект не имеет права потеряться между аудитом и исполнением;
+- ни одна стадия не имеет права быть повторно закрыта, пока не закрыты все её активные defect-строки в этой ведомости;
+- если одна строка дефекта влияет на несколько stage-листов, контроль ведётся через одну строку дефекта, а не разрозненно по разным документам.
+
+## Правила статусов
+- `[ ]` — дефект не устранён полностью.
+- `[x]` — дефект устранён полностью, эффект доказан разносторонним дебаггингом, все связанные stage-листы можно двигать дальше.
+
+Запрещено:
+- переводить строку дефекта в `[x]` по одному зелёному тесту;
+- закрывать строку дефекта только на основании документации;
+- закрывать stage в `MASTER`, если на него ссылается хотя бы одна строка `[ ]`.
+
+## Сводная таблица
+
+| ID | Статус | Уровень лестницы | Зависит от | Блокирует stages | Смысл дефекта |
+|---|---|---|---|---|---|
+| `DEF-001` | `[ ]` | `A.1` | — | `11, 23, 37` | Неполный durable storage/recovery basement `Core` |
+| `DEF-002` | `[ ]` | `A.2` | `DEF-001` | `17, 23, 37` | `Agent spool` остаётся in-memory и не переживает restart |
+| `DEF-003` | `[ ]` | `A.3` | `DEF-002` | `18, 23, 37` | Нет реального transport/relay/TLS/bootstrap в `Agent` |
+| `DEF-004` | `[ ]` | `A.4` | `DEF-003` | `19, 37` | Pack runtime принимает placeholder payload как валидный baseline |
+| `DEF-005` | `[ ]` | `A.5` | `DEF-004` | `05, 06, 20, 37` | REGART runtime/integration contour отстаёт от утверждённой модели |
+| `DEF-006` | `[ ]` | `A.6` | `DEF-005` | `24, 37, 38` | Platform/VM/container/K8s truth слабее заявленной readiness |
+| `DEF-007` | `[ ]` | `B.1` | `DEF-006` | `01, 04, 07, 24, 38` | Governance/release/security corpus слабее hostile standard |
+| `DEF-008` | `[ ]` | `B.2` | `DEF-007` | `02, 18, 25, 26, 30` | Privacy baseline сам себе противоречит |
+| `DEF-009` | `[ ]` | `B.3` | `DEF-008` | `03, 25, 26, 37` | Regional/compliance profiles не удерживают consistency |
+| `DEF-010` | `[ ]` | `B.4` | `DEF-009` | `25, 26, 37, 38` | Compliance/audit-ready evidence contour декларативнее runtime truth |
+| `DEF-011` | `[ ]` | `C.1` | `DEF-010` | `10, 16, 28, 37, 40` | Browser/Panel0 fallback и bilingual truth расходятся с заявлением |
+| `DEF-012` | `[ ]` | `C.2` | `DEF-011` | `28, 30, 31, 33, 40` | Console/i18n/agent interaction contour недоматериализован |
+| `DEF-013` | `[ ]` | `C.3` | `DEF-012` | `28, 34, 35, 41` | `local-stores`/`worker-runtime`/spatial basement всё ещё слаб |
+| `DEF-014` | `[ ]` | `D.1` | `DEF-013` | `04, 07, 08, 24, 38` | Contracts/CI/release/gates ещё дают false-green и weak proof |
+| `DEF-015` | `[ ]` | `E.1` | `DEF-014` | `29..45` | Утверждённые differentiators ещё не materialize в runtime/contracts/tests |
+
+## Контрольные строки
+
+### [ ] DEF-001 — Durable storage и recovery basement `Core`
+- Уровень: `A.1`
+- Зависит от: —
+- Затронутые stage-листы:
+  - `CHECKLIST_11_ART_CORE_STORAGE_SQLITE.md`
+  - `CHECKLIST_23_OPS_DEPLOY_RUNBOOKS_DR.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+- Audit basis:
+  - `core/src/main.rs`
+  - `docs/core/storage.md`
+  - `docs/governance/evidence/stage11_core_sqlite_restart.log`
+- Что нужно сделать:
+  1. довести durable persistence не только для `events/incidents/audit`, но и для derived/runtime state;
+  2. материализовать recovery contour для fingerprint/source indexes и аналитики;
+  3. убрать расхождение между storage docs и реальным recovery path.
+- Чем доказать закрытие:
+  - restart-proof tests на полный `Core state`;
+  - evidence logs по recovery после restart/corruption;
+  - hostile-path проверки `WAL/corruption/recovery`.
+- Текущий прогресс:
+  - partial remediation уже сделана коммитами `cf25815`, `444e587`, но дефект ещё не закрыт.
+
+### [ ] DEF-002 — Durable spool у `Agent`
+- Уровень: `A.2`
+- Зависит от: `DEF-001`
+- Затронутые stage-листы:
+  - `CHECKLIST_17_ART_AGENT_SPOOL_OUTBOX.md`
+  - `CHECKLIST_23_OPS_DEPLOY_RUNBOOKS_DR.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+- Audit basis:
+  - `agent/src/main.rs`
+  - `docs/testing/full_line_by_line_audit_registry_v0_2.md`
+  - `docs/runbooks/*spool*.md`
+- Что нужно сделать:
+  1. заменить in-memory spool на durable spool/outbox;
+  2. обеспечить restart-safe backlog recovery;
+  3. синхронизировать runtime, runbooks и chaos corpus.
+- Чем доказать закрытие:
+  - restart chaos;
+  - disk-full/corruption tests;
+  - evidence backlog replay без silent loss.
+
+### [ ] DEF-003 — Outbound transport / relay / TLS / bootstrap у `Agent`
+- Уровень: `A.3`
+- Зависит от: `DEF-002`
+- Затронутые stage-листы:
+  - `CHECKLIST_18_ART_AGENT_RECEIVERS.md`
+  - `CHECKLIST_23_OPS_DEPLOY_RUNBOOKS_DR.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+- Audit basis:
+  - `agent/src/main.rs`
+  - `docs/source/agent_deployment_transport_v0_2.md`
+  - `docs/ops/agent_multisite_deploy.md`
+- Что нужно сделать:
+  1. materialize outbound delivery to `Core/relay`;
+  2. ввести bootstrap/enrolment path и transport auth;
+  3. добавить TLS/mTLS/segment-aware routing;
+  4. расширить receiver contour до утверждённого набора.
+- Чем доказать закрытие:
+  - runtime smoke `Agent -> Core` и `Agent -> Relay -> Core`;
+  - negative-path tests NAT/WAN/segment loss;
+  - evidence backlog replay after reconnect.
+
+### [ ] DEF-004 — Pack framework не должен принимать placeholder payload
+- Уровень: `A.4`
+- Зависит от: `DEF-003`
+- Затронутые stage-листы:
+  - `CHECKLIST_19_PACKS_FRAMEWORK.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+- Audit basis:
+  - `scripts/tests/pack_install_runtime.sh`
+  - `scripts/tests/packs_runtime.py`
+  - `packs/*`
+- Что нужно сделать:
+  1. валидировать payload semantics, а не только наличие каталога;
+  2. добавить authenticity/runtime checks для pack contents;
+  3. исключить placeholder payload из install-success path.
+- Чем доказать закрытие:
+  - negative install tests;
+  - authenticity gate;
+  - runtime pack activation proof.
+
+### [ ] DEF-005 — REGART runtime/integration contour
+- Уровень: `A.5`
+- Зависит от: `DEF-004`
+- Затронутые stage-листы:
+  - `CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`
+  - `CHECKLIST_06_REGART_ART_BRIDGE.md`
+  - `CHECKLIST_20_PACK_REGART.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+- Audit basis:
+  - `packs/regart/manifest.yaml`
+  - `packs/regart/examples/receivers.toml`
+  - `scripts/ci/check_stage06_wrapper.sh`
+  - `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
+- Что нужно сделать:
+  1. выровнять pack/runtime bridge с approved external-source coverage;
+  2. убрать зависимость truth-path от sibling checkout/local HTTP dev contour;
+  3. связать REGART parity с runtime proof, а не только с wrapper/docs.
+- Чем доказать закрытие:
+  - cross-repo parity на pinned source;
+  - runtime Art↔REGART smoke with evidence;
+  - negative-path bridge tests.
+
+### [ ] DEF-006 — Platform/VM/runtime truth
+- Уровень: `A.6`
+- Зависит от: `DEF-005`
+- Затронутые stage-листы:
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+  - `CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md`
+- Audit basis:
+  - `tests/platform/vm/run_vm_smoke.sh`
+  - `docs/ops/platform-vm-testing.md`
+  - `tests/platform/container/*`
+  - `tests/platform/k8s/*`
+- Что нужно сделать:
+  1. убрать placeholder execute path у VM;
+  2. довести integrated `Agent -> Core` proof для Docker/K8s;
+  3. выровнять platform docs и real runtime evidence.
+- Чем доказать закрытие:
+  - real VM execute evidence;
+  - integrated container/K8s runtime proof;
+  - updated delivery evidence and stage37 gate.
+
+### [ ] DEF-007 — Governance/release/security corpus слабее hostile standard
+- Уровень: `B.1`
+- Зависит от: `DEF-006`
+- Затронутые stage-листы:
+  - `CHECKLIST_01_GOVERNANCE_SRE.md`
+  - `CHECKLIST_04 _Secure SDLC + Supply-chain.md`
+  - `CHECKLIST_07_ART_REPO_CI_DOCS.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md`
+- Audit basis:
+  - `.github/CODEOWNERS`
+  - `.github/pull_request_template.md`
+  - `SECURITY.md`
+  - `docs/governance/release_process.md`
+- Что нужно сделать:
+  1. довести governance/release/security docs до hostile-production standard;
+  2. materialize stronger review/adversarial evidence rules;
+  3. исключить stale release/go-no-go and thin policy surfaces.
+- Чем доказать закрытие:
+  - updated policies;
+  - hostile governance/release tests;
+  - buyer-grade release evidence.
+
+### [ ] DEF-008 — Privacy baseline self-consistency
+- Уровень: `B.2`
+- Зависит от: `DEF-007`
+- Затронутые stage-листы:
+  - `CHECKLIST_02_PRIVACY_BASELINE_GLOBAL.md`
+  - `CHECKLIST_18_ART_AGENT_RECEIVERS.md`
+  - `CHECKLIST_25_COMPLIANCE_AUDIT_READY.md`
+  - `CHECKLIST_26_RU_PROFILE.md`
+  - `CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md`
+- Audit basis:
+  - `docs/privacy/redaction_policy.md`
+  - `docs/privacy/pii_surface.md`
+  - `docs/privacy/retention_matrix.md`
+- Что нужно сделать:
+  1. завести отсутствующий `config/privacy/redaction_rules.yaml` или убрать ложную зависимость;
+  2. устранить логические ошибки `PII surface`/redaction mapping;
+  3. синхронизировать privacy runtime expectations с actual transport/storage.
+- Чем доказать закрытие:
+  - privacy gate;
+  - negative tests на redaction/profile/export;
+  - machine-readable rule validation.
+
+### [ ] DEF-009 — Regional/compliance profiles consistency
+- Уровень: `B.3`
+- Зависит от: `DEF-008`
+- Затронутые stage-листы:
+  - `CHECKLIST_03_REGIONAL_PROFILES.md`
+  - `CHECKLIST_25_COMPLIANCE_AUDIT_READY.md`
+  - `CHECKLIST_26_RU_PROFILE.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+- Audit basis:
+  - `docs/compliance/profiles.md`
+  - `docs/privacy/retention_matrix.md`
+  - `docs/privacy/regional_profiles.md`
+- Что нужно сделать:
+  1. устранить retention/profile drift;
+  2. выровнять airgapped/default profile semantics;
+  3. добиться machine-readable and docs parity.
+- Чем доказать закрытие:
+  - stage03 gate + cross-doc drift tests;
+  - RU/compliance integration tests.
+
+### [ ] DEF-010 — Compliance/audit-ready evidence contour
+- Уровень: `B.4`
+- Зависит от: `DEF-009`
+- Затронутые stage-листы:
+  - `CHECKLIST_25_COMPLIANCE_AUDIT_READY.md`
+  - `CHECKLIST_26_RU_PROFILE.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+  - `CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md`
+- Audit basis:
+  - `docs/compliance/control_matrix.md`
+  - `docs/compliance/evidence_list.md`
+  - `docs/ops/operational_debt_register.md`
+- Что нужно сделать:
+  1. убрать несуществующие evidence paths и placeholder debt;
+  2. сделать audit-ready corpus реальным, а не декларативным;
+  3. выровнять compliance evidence с release/runtime reality.
+- Чем доказать закрытие:
+  - real evidence paths;
+  - compliance export/destroy tests;
+  - updated debt register without template placeholders.
+
+### [ ] DEF-011 — Browser/Panel0/fallback/bilingual truth
+- Уровень: `C.1`
+- Зависит от: `DEF-010`
+- Затронутые stage-листы:
+  - `CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md`
+  - `CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md`
+  - `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+  - `CHECKLIST_40_PRODUCT_SHOWCASE_VISUAL_LANGUAGE.md`
+- Audit basis:
+  - `browser/scripts/build.mjs`
+  - `browser/src/outbox.js`
+  - `browser/src/panel0.js`
+  - `docs/ui/panel0.md`
+- Что нужно сделать:
+  1. убрать false-green browser build/smoke;
+  2. materialize durable browser outbox/fallback truth;
+  3. довести RU/bilingual parity для Panel0/runtime shell.
+- Чем доказать закрытие:
+  - real browser build + e2e;
+  - offline/fallback negative-path proof;
+  - bilingual screenshots/evidence without EN leaks.
+
+### [ ] DEF-012 — Console/i18n/agent interaction contour
+- Уровень: `C.2`
+- Зависит от: `DEF-011`
+- Затронутые stage-листы:
+  - `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md`
+  - `CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md`
+  - `CHECKLIST_31_INVESTIGATIONS_AS_CODE.md`
+  - `CHECKLIST_33_SECURE_ACTIONS_PROTOCOL_V2.md`
+  - `CHECKLIST_40_PRODUCT_SHOWCASE_VISUAL_LANGUAGE.md`
+- Audit basis:
+  - `apps/console-web/src/main.ts`
+  - `apps/console-web/scripts/generate-static.mjs`
+  - `packages/i18n/src/index.ts`
+- Что нужно сделать:
+  1. убрать hardcoded/mixed-locale strings;
+  2. довести двуязычие и static build parity;
+  3. materialize missing agent-interaction/source-of-truth docs and runtime hooks.
+- Чем доказать закрытие:
+  - full RU/EN shell checks;
+  - static build parity;
+  - console e2e around agent interaction states.
+
+### [ ] DEF-013 — `local-stores` / `worker-runtime` / spatial basement
+- Уровень: `C.3`
+- Зависит от: `DEF-012`
+- Затронутые stage-листы:
+  - `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md`
+  - `CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md`
+  - `CHECKLIST_35_SPATIAL_STORE_3D_READINESS.md`
+  - `CHECKLIST_41_AST_UI_LAWS_AUTOMATION.md`
+- Audit basis:
+  - `packages/local-stores/src/index.ts`
+  - `packages/worker-runtime/src/index.ts`
+  - `packages/ui-laws/src/index.ts`
+- Что нужно сделать:
+  1. убрать `stubbed` spatial/runtime path;
+  2. ввести настоящую durable local persistence там, где обещана;
+  3. довести UI laws beyond runtime-only enforcement.
+- Чем доказать закрытие:
+  - persistence tests;
+  - spatial readiness tests without stubs;
+  - AST/static law enforcement proof.
+
+### [ ] DEF-014 — Contracts / CI / release / gates truth
+- Уровень: `D.1`
+- Зависит от: `DEF-013`
+- Затронутые stage-листы:
+  - `CHECKLIST_04 _Secure SDLC + Supply-chain.md`
+  - `CHECKLIST_07_ART_REPO_CI_DOCS.md`
+  - `CHECKLIST_08_ART_CONTRACTS_OPENAPI_CODEGEN.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md`
+- Audit basis:
+  - `docs/contracts/*`
+  - `scripts/ci/check_*`
+  - `generated/*`
+  - release docs/evidence corpus
+- Что нужно сделать:
+  1. убрать false-green structural gates;
+  2. сделать contracts/generated surface stricter and complete;
+  3. довести release/provenance/go-no-go to current HEAD truth.
+- Чем доказать закрытие:
+  - behavioural CI gates;
+  - contract/codegen parity checks;
+  - release evidence current and non-stale.
+
+### [ ] DEF-015 — Materialization of approved differentiators
+- Уровень: `E.1`
+- Зависит от: `DEF-014`
+- Затронутые stage-листы:
+  - `CHECKLIST_29_EVENT_DNA_CORE_V2.md`
+  - `CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md`
+  - `CHECKLIST_31_INVESTIGATIONS_AS_CODE.md`
+  - `CHECKLIST_32_AUDIT_MERKLE_VERIFY_UI.md`
+  - `CHECKLIST_33_SECURE_ACTIONS_PROTOCOL_V2.md`
+  - `CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md`
+  - `CHECKLIST_35_SPATIAL_STORE_3D_READINESS.md`
+  - `CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md`
+  - `CHECKLIST_39_AI_ENGINEERING_GOVERNANCE.md`
+  - `CHECKLIST_40_PRODUCT_SHOWCASE_VISUAL_LANGUAGE.md`
+  - `CHECKLIST_41_AST_UI_LAWS_AUTOMATION.md`
+  - `CHECKLIST_42_EVIDENCE_INTELLIGENCE_AND_DRIFT.md`
+  - `CHECKLIST_43_SAFE_ACTION_INTELLIGENCE.md`
+  - `CHECKLIST_44_INCIDENT_CAPSULE_AND_TWIN.md`
+  - `CHECKLIST_45_FORENSIC_ENRICHMENT_AND_GRAPH.md`
+- Audit basis:
+  - historical corpus + frontier documents + weak machine-readable/runtime materialization
+- Что нужно сделать:
+  1. materialize approved differentiators in contracts/runtime/tests;
+  2. перестать хранить их только в foundation/docs;
+  3. довести product uniqueness до executable form.
+- Чем доказать закрытие:
+  - runtime features;
+  - contract surfaces;
+  - negative-path and regression evidence;
+  - continuity with historical corpus.
+
+## Правило применения
+1. Работа по remediation начинается с первой строки `[ ]` в порядке ведомости.
+2. Пока строка не закрыта, все её `Блокирует stages` считаются запрещёнными к повторному закрытию.
+3. Если строка раскрывает более глубокую причину, создаётся новая строка ниже по уровню, а не обходной фикc наверху.
+4. После закрытия строки обновляются:
+   - `full_line_by_line_audit_registry_v0_2.md`
+   - `stage_reopening_matrix_v0_2.md`
+   - `defect_remediation_ladder_v0_2.md`
+   - `CHECKLIST_00_MASTER_ART_REGART.md`
+5. Только после этого разрешён переход к следующей строке.
+
+## Статус
+- Статус документа: `ACTIVE`
+- Режим: `MANDATORY_FOR_REMEDIATION`
+- Текущая активная строка: `DEF-001`

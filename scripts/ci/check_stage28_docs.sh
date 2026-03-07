@@ -132,6 +132,7 @@ grep -q "01..27 -> 28..38" docs/source/checklists/TRACEABILITY_V0_2.md
 bash scripts/ci/check_stage28_lens.sh
 bash scripts/ci/check_docs_portal_quality.sh
 bash scripts/ci/check_root_decision_tree_sync.sh
+bash scripts/ci/check_defect_remediation_control_matrix.sh
 
 grep -q "CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 grep -q "CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md

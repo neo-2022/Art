@@ -66,3 +66,4 @@ print('docs master traceability gate: OK')
 PY
 
 bash scripts/ci/check_root_decision_tree_sync.sh
+bash scripts/ci/check_defect_remediation_control_matrix.sh

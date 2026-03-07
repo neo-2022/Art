@@ -9,6 +9,8 @@
 - `docs/testing/full_line_by_line_audit_program_v0_2.md`
 - `docs/testing/full_line_by_line_audit_registry_v0_2.md`
 - `docs/testing/stage_reopening_matrix_v0_2.md`
+- `docs/testing/defect_remediation_control_matrix_v0_2.md`
+- `formats/defect_remediation_control_matrix_v0_2.yaml`
 - `docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`
 
 ## Назначение
@@ -52,12 +54,19 @@
 - `docs/testing/stage_reopening_matrix_v0_2.md`
 
 ### Уровень 2 — Ствол, часть 2: Дефектовочная ведомость
-Этот документ — первая несущая часть ствола дерева. Он переводит аудит в линейную corrective-программу.
+Дефектовочная ведомость теперь состоит из двух обязательных частей:
+- `docs/testing/defect_remediation_control_matrix_v0_2.md` — поштучный defect-to-stage контроль исполнения;
+- `docs/testing/defect_remediation_ladder_v0_2.md` — лестничный порядок corrective execution.
 
 Он отвечает на вопрос:
 - в каком порядке реально чинить проект;
 - какие стадии блокируют другие;
 - где корневой дефект, а где симптом.
+
+Контрольная матрица отвечает на дополнительный обязательный вопрос:
+- какой именно дефект сейчас в работе;
+- какие stage-checklists он блокирует;
+- что нужно сделать, чем доказать и когда разрешено поставить `[x]`.
 
 ### Уровень 3 — Ствол, часть 3: MASTER
 `MASTER` является второй несущей частью ствола, завершает ствол дерева и служит последней управляющей точкой перед кроной.

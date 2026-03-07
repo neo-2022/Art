@@ -6,6 +6,7 @@
 - [UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md](foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md)
 - [CHECKLIST_00_MASTER_ART_REGART.md](source/checklists/CHECKLIST_00_MASTER_ART_REGART.md)
 - [REGART -  LangGraph  взаимодействие с Art описание.md](source/REGART -  LangGraph  взаимодействие с Art описание.md)
+- [defect_remediation_control_matrix_v0_2.md](testing/defect_remediation_control_matrix_v0_2.md)
 - [defect_remediation_ladder_v0_2.md](testing/defect_remediation_ladder_v0_2.md)
 - `formats/root_decision_tree_dependencies.yaml`
 
@@ -61,7 +62,7 @@ Art строится как единый продукт с тремя архит
 - degraded-path встроен в основную архитектуру
 - переход к следующему этапу запрещён без подтверждённого закрытия текущего
 - платформенные различия разрешены только в packaging/install/runtime profiles, но не в бизнес-логике
-- порядок remediation определяется корневым деревом решений и дефектовочной лестницей, а не “следующим номером этапа”
+- порядок remediation определяется корневым деревом решений, дефектовочной контрольной ведомостью и дефектовочной лестницей, а не “следующим номером этапа”
 - архитектурные решения принимаются только по пути `корень -> ствол -> крона`
 - hardcoding запрещён как архитектурный anti-pattern и допускается только как явно оформленный test fixture вне production baseline
 

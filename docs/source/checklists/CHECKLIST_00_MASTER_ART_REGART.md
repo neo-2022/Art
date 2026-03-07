@@ -10,6 +10,8 @@ A) Полный запрет опциональности:
 - Art: `docs/source/Art_v1_spec_final.md`
 - REGART ↔ Art: `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
 - Дефектовочная ведомость remediation: `docs/testing/defect_remediation_ladder_v0_2.md`
+- Дефектовочная контрольная ведомость remediation: `docs/testing/defect_remediation_control_matrix_v0_2.md`
+- Machine-readable дефектовочная контрольная ведомость: `formats/defect_remediation_control_matrix_v0_2.yaml`
 - Корневая карта зависимостей: `formats/root_decision_tree_dependencies.yaml`
 - REGART UI/Debugger wrapper (в Art): `docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`
 - REGART Bridge wrapper (в Art): `docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`
@@ -211,6 +213,7 @@ A) Полный запрет опциональности:
 - `MASTER` завершает ствол и является последней управляющей точкой перед кроной;
 - remediation-order для `MASTER` задаётся предыдущим слоем ствола, то есть `docs/testing/defect_remediation_ladder_v0_2.md`;
 - если номер следующего stage в таблице не совпадает с активным уровнем дефектовочной лестницы, приоритет имеет дефектовочная лестница;
+- если хотя бы одна строка дефекта в `docs/testing/defect_remediation_control_matrix_v0_2.md` ссылается на stage, этот stage запрещён к повторному закрытию, пока строка дефекта остаётся `[ ]`;
 - повторное закрытие reopened stages запрещено, пока дефектовочная лестница не разрешает переход на этот уровень.
 
 ### A16) Автоматическая синхронизация корневых документов

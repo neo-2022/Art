@@ -38,8 +38,15 @@
 | `19` | `OPEN` | Pack runtime позволяет placeholder payload | `scripts/tests/pack_install_runtime.sh`, `scripts/tests/packs_runtime.py` | оставить открытым |
 | `20` | `OPEN` | REGART pack contour отстаёт от approved external-source coverage | `packs/regart/manifest.yaml`, `packs/regart/examples/receivers.toml` | оставить открытым |
 | `24` | `OPEN` | Release/provenance corpus тоньше buyer-grade due diligence | `RELEASE_CHECKLIST.md`, `CHANGELOG.md`, `docs/governance/release_process.md`, `check_release_signing_pipeline.sh` | оставить открытым |
+| `25` | `OPEN` | Compliance/audit-ready contour опирается на несуществующие evidence-path и декларативные runbooks | `docs/compliance/control_matrix.md`, `docs/compliance/evidence_list.md`, `docs/compliance/data_destruction.md` | оставить открытым |
+| `26` | `OPEN` | RU profile и certified-ready contour зависят от неполного privacy/compliance/runtime основания | `docs/privacy/regional_profiles.md`, `docs/compliance/profiles.md`, `formats/ru_regulatory_scope.yaml` | оставить открытым |
 | `28` | `OPEN` | Console foundation overclaim’ит bilingual/agent/source-of-truth completeness | missing `console_agent_interaction_model_v0_2.md`, screenshot with EN-only UI | оставить открытым |
-| `29..45` | `OPEN` | Continuation/runtime stages опираются на ещё не устранённые корневые дефекты и/или missing source files/runbooks | audit registry layers 3–10 + missing file check | оставить открытыми до устранения оснований |
+| `29..34` | `OPEN` | Runtime differentiators и higher-stage claims опираются на ещё не устранённые корневые basement defects | audit registry layers 3–10 + weak contracts/runtime truth | оставить открытыми до устранения оснований |
+| `35` | `OPEN` | Spatial/local-stores/worker-runtime contour остаётся слабым, partially stubbed и не доказывает durable local truth | `packages/local-stores/src/index.ts`, `packages/worker-runtime/src/index.ts`, stage35 runtime/gates corpus | оставить открытым |
+| `36` | `OPEN` | SaaS readiness опирается на target-state evidence сильнее текущего tenant/privacy/runtime основания | `docs/source/saas_readiness_v0_2.md`, `scripts/tests/stage36_*`, audit registry layer 9 | оставить открытым |
+| `37` | `OPEN` | Linux/platform/runtime truth всё ещё слабее readiness claims несмотря на частичный hardening | `tests/platform/vm/run_vm_smoke.sh`, `docs/ops/platform-vm-testing.md`, `scripts/ci/check_stage37_linux_hardening.sh` | оставить открытым |
+| `38` | `OPEN` | Process ladder всё ещё зависит от weak/false-green gates и therefore не может считаться окончательно честным | `scripts/ci/check_stage_ladder_enforcement.sh`, `scripts/ci/check_storage_stage11_docs.sh`, stage37/platform gates | оставить открытым |
+| `39..45` | `OPEN` | Continuation stages запрещены к честному закрытию, пока нижние runtime/contract/process основания ещё opened | defect ladder + audit registry layers 3–10 | оставить открытыми до устранения оснований |
 
 ## Примечание
 Переоткрытие `01..03` меняет первый активный этап в `MASTER` обратно на `01`. Это намеренное действие: ранние основания должны быть восстановлены до дальнейшего линейного продвижения.
