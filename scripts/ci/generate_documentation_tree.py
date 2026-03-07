@@ -23,10 +23,14 @@ RE_LINK = re.compile(r'\[[^\]]+\]\(([^)]+)\)')
 @dataclass
 class Node:
     path: str
+    node_type: str
     lines: int
     root_influence: bool
     children: List[str] = field(default_factory=list)
     incoming: List[str] = field(default_factory=list)
+    files_count: int = 0
+    index_target: str | None = None
+    missing_index: bool = False
 
 
 def read_rules(root_dir: Path) -> dict:
@@ -44,45 +48,126 @@ def read_root_tree_dependencies(root_dir: Path) -> set[str]:
     return root_paths | common
 
 
-def normalize_link(base_file: Path, link: str, root_dir: Path, allowed_exts: Set[str], excluded: Set[str]) -> Tuple[str | None, str | None]:
-    if not link or link.startswith('#'):
-        return None, None
-    if '://' in link:
-        return None, None
+def file_line_count(path: Path) -> int:
+    with path.open('r', encoding='utf-8') as handle:
+        return sum(1 for _ in handle)
+
+
+def rel_to_root(path: Path, root_dir: Path) -> str | None:
+    try:
+        return path.resolve().relative_to(root_dir.resolve()).as_posix()
+    except ValueError:
+        return None
+
+
+def resolve_link_target(base_file: Path, link: str, root_dir: Path, allowed_exts: Set[str], excluded: Set[str]) -> Tuple[str, str | None]:
+    if not link or link.startswith('#') or '://' in link:
+        return 'ignored', None
     clean = link.split('#', 1)[0].split('?', 1)[0].strip()
     if not clean:
-        return None, None
+        return 'ignored', None
     target = (base_file.parent / clean).resolve()
-    try:
-        rel = target.relative_to(root_dir.resolve())
-    except ValueError:
-        return None, None
-    rel_str = rel.as_posix()
-    if target.is_dir():
-        return None, rel_str
+    rel_str = rel_to_root(target, root_dir)
+    if rel_str is None:
+        return 'ignored', None
     if rel_str in excluded:
-        return None, None
+        return 'excluded', rel_str
+    if target.exists() and target.is_dir():
+        return 'dir', rel_str
     if target.suffix.lower() not in allowed_exts:
-        return None, None
+        return 'ignored', None
     if not target.exists():
-        return None, rel_str
-    return rel_str, None
+        return 'missing', rel_str
+    return 'file', rel_str
 
 
-def file_line_count(path: Path) -> int:
-    return sum(1 for _ in path.open('r', encoding='utf-8'))
+def ensure_document_node(nodes: Dict[str, Node], rel_path: str, root_dir: Path, root_influence: Set[str]) -> Node:
+    existing = nodes.get(rel_path)
+    if existing:
+        return existing
+    path = root_dir / rel_path
+    node = Node(
+        path=rel_path,
+        node_type='document',
+        lines=file_line_count(path),
+        root_influence=rel_path in root_influence,
+        files_count=1,
+        index_target=rel_path,
+    )
+    nodes[rel_path] = node
+    return node
+
+
+def collection_index_target(dir_path: Path, dir_rel: str, root_dir: Path, allowed_exts: Set[str], excluded: Set[str], index_names: List[str]) -> str | None:
+    for name in index_names:
+        candidate = dir_path / name
+        if not candidate.exists() or not candidate.is_file():
+            continue
+        candidate_rel = rel_to_root(candidate, root_dir)
+        if candidate_rel is None or candidate_rel in excluded:
+            continue
+        if candidate.suffix.lower() not in allowed_exts:
+            continue
+        return candidate_rel
+    return None
+
+
+def collection_stats(dir_path: Path, root_dir: Path, allowed_exts: Set[str], excluded: Set[str]) -> Tuple[int, int]:
+    files_count = 0
+    lines = 0
+    for candidate in sorted(dir_path.rglob('*')):
+        if not candidate.is_file():
+            continue
+        rel = rel_to_root(candidate, root_dir)
+        if rel is None or rel in excluded:
+            continue
+        if candidate.suffix.lower() not in allowed_exts:
+            continue
+        files_count += 1
+        lines += file_line_count(candidate)
+    return files_count, lines
+
+
+def ensure_collection_node(
+    nodes: Dict[str, Node],
+    dir_rel: str,
+    root_dir: Path,
+    root_influence: Set[str],
+    allowed_exts: Set[str],
+    excluded: Set[str],
+    index_names: List[str],
+) -> Node:
+    existing = nodes.get(dir_rel)
+    if existing:
+        return existing
+    dir_path = root_dir / dir_rel
+    files_count, lines = collection_stats(dir_path, root_dir, allowed_exts, excluded)
+    index_target = collection_index_target(dir_path, dir_rel, root_dir, allowed_exts, excluded, index_names)
+    root_flag = dir_rel in root_influence or (index_target in root_influence if index_target else False)
+    node = Node(
+        path=dir_rel,
+        node_type='collection',
+        lines=lines,
+        root_influence=root_flag,
+        files_count=files_count,
+        index_target=index_target,
+        missing_index=index_target is None,
+        children=[index_target] if index_target else [],
+    )
+    nodes[dir_rel] = node
+    return node
 
 
 def build_tree(root_dir: Path, rules: dict) -> Tuple[dict, str]:
     root_file = rules['root']
     allowed_exts = set(rules.get('allowed_extensions', []))
     excluded = set(rules.get('excluded_from_graph', []))
+    index_names = rules.get('collection_index_candidates', ['README.md', 'index.md'])
     root_influence = (set(rules.get('root_influence', [])) | read_root_tree_dependencies(root_dir)) - excluded
 
     queue = deque([root_file])
     seen: Set[str] = set()
     nodes: Dict[str, Node] = {}
-    omitted_directory_links: Dict[str, List[str]] = {}
     missing_targets: Dict[str, List[str]] = {}
     total_links = 0
 
@@ -92,8 +177,9 @@ def build_tree(root_dir: Path, rules: dict) -> Tuple[dict, str]:
             continue
         seen.add(rel_path)
         path = root_dir / rel_path
-        lines = file_line_count(path)
-        node = nodes.setdefault(rel_path, Node(rel_path, lines, rel_path in root_influence))
+        if not path.exists() or not path.is_file():
+            continue
+        node = ensure_document_node(nodes, rel_path, root_dir, root_influence)
 
         if path.suffix.lower() != '.md':
             continue
@@ -101,48 +187,69 @@ def build_tree(root_dir: Path, rules: dict) -> Tuple[dict, str]:
         text = path.read_text(encoding='utf-8')
         for raw_link in RE_LINK.findall(text):
             total_links += 1
-            normalized, directory_rel = normalize_link(path, raw_link, root_dir, allowed_exts, excluded)
-            if directory_rel:
-                omitted_directory_links.setdefault(rel_path, []).append(directory_rel)
+            kind, target_rel = resolve_link_target(path, raw_link, root_dir, allowed_exts, excluded)
+            if kind in {'ignored', 'excluded'} or not target_rel:
                 continue
-            if not normalized:
+            if kind == 'missing':
+                missing_targets.setdefault(rel_path, []).append(target_rel)
                 continue
-            target = root_dir / normalized
-            if not target.exists():
-                missing_targets.setdefault(rel_path, []).append(normalized)
+            if kind == 'dir':
+                child = ensure_collection_node(nodes, target_rel, root_dir, root_influence, allowed_exts, excluded, index_names)
+                if target_rel not in node.children:
+                    node.children.append(target_rel)
+                if rel_path not in child.incoming:
+                    child.incoming.append(rel_path)
+                if child.index_target:
+                    queue.append(child.index_target)
                 continue
-            child = nodes.setdefault(normalized, Node(normalized, file_line_count(target), normalized in root_influence))
-            if normalized not in node.children:
-                node.children.append(normalized)
-            if rel_path not in child.incoming:
-                child.incoming.append(rel_path)
-            queue.append(normalized)
+            if kind == 'file':
+                target = root_dir / target_rel
+                if not target.exists():
+                    missing_targets.setdefault(rel_path, []).append(target_rel)
+                    continue
+                child = ensure_document_node(nodes, target_rel, root_dir, root_influence)
+                if target_rel not in node.children:
+                    node.children.append(target_rel)
+                if rel_path not in child.incoming:
+                    child.incoming.append(rel_path)
+                queue.append(target_rel)
 
     root_children = nodes[root_file].children if root_file in nodes else []
-    total_file_links_in_tree = sum(len(node.children) for node in nodes.values())
-    total_lines_in_tree = sum(node.lines for node in nodes.values())
+    total_edges_in_tree = sum(len(node.children) for node in nodes.values())
+    document_nodes = [node for node in nodes.values() if node.node_type == 'document']
+    collection_nodes = [node for node in nodes.values() if node.node_type == 'collection']
+    total_lines_in_tree = sum(node.lines for node in document_nodes)
+    total_collection_lines = sum(node.lines for node in collection_nodes)
+    collections_without_index = sorted(node.path for node in collection_nodes if node.missing_index)
     tree = {
-        'version': '1.0',
+        'version': '1.1',
         'status': 'ACTIVE',
         'root': root_file,
-        'total_documents': len(nodes),
+        'total_documents': len(document_nodes),
+        'total_collection_nodes': len(collection_nodes),
         'total_markdown_links_scanned': total_links,
-        'total_file_links_in_tree': total_file_links_in_tree,
+        'total_tree_edges': total_edges_in_tree,
+        'total_file_links_in_tree': total_edges_in_tree,
         'total_lines_in_tree': total_lines_in_tree,
+        'total_lines_in_collections': total_collection_lines,
         'root_direct_children': len(root_children),
         'root_influence_documents': sorted(root_influence),
         'excluded_from_graph': sorted(excluded),
+        'collections_without_index': collections_without_index,
         'nodes': [
             {
                 'path': n.path,
+                'node_type': n.node_type,
                 'lines': n.lines,
+                'files_count': n.files_count,
                 'root_influence': n.root_influence,
                 'children': n.children,
                 'incoming': n.incoming,
+                'index_target': n.index_target,
+                'missing_index': n.missing_index,
             }
             for n in sorted(nodes.values(), key=lambda item: item.path)
         ],
-        'omitted_directory_links': omitted_directory_links,
         'missing_targets': missing_targets,
     }
 
@@ -151,7 +258,12 @@ def build_tree(root_dir: Path, rules: dict) -> Tuple[dict, str]:
     for idx, path in enumerate(sorted(nodes.keys()), start=1):
         ids[path] = f'N{idx}'
     for path, node in sorted(nodes.items()):
-        label = f"{path}\\n{node.lines} строк"
+        if node.node_type == 'collection':
+            label = f"{path}/\\nкаталог: {node.files_count} файлов\\n{node.lines} строк"
+            if node.missing_index:
+                label += '\\nINDEX-MISSING'
+        else:
+            label = f"{path}\\n{node.lines} строк"
         if node.root_influence:
             label += '\\nROOT-INFLUENCE'
         mermaid_lines.append(f"    {ids[path]}[\"{label}\"]")
@@ -163,18 +275,26 @@ def build_tree(root_dir: Path, rules: dict) -> Tuple[dict, str]:
     return tree, mermaid
 
 
-
-
 def rel_link(output_rel: str, target_rel: str) -> str:
     start = Path(output_rel).parent.as_posix()
     return os.path.relpath(target_rel, start=start).replace('\\', '/')
+
+
+def render_node_line(node: dict, output_rel: str, prefix: str) -> str:
+    marker = ' `ROOT-INFLUENCE`' if node['root_influence'] else ''
+    if node['node_type'] == 'collection':
+        label = f"`каталог`, файлов `{node['files_count']}`, строк `{node['lines']}`"
+        if node.get('missing_index'):
+            return f"{prefix}- `{node['path']}/` — {label}{marker} `INDEX-MISSING`"
+        return f"{prefix}- [`{node['path']}/`]({rel_link(output_rel, node['index_target'])}) — {label}{marker}"
+    return f"{prefix}- [`{node['path']}`]({rel_link(output_rel, node['path'])}) — `{node['lines']}` строк{marker}"
+
 
 def build_tree_lines(root: str, nodes_by_path: Dict[str, dict], output_rel: str, prefix: str = '', visited: Set[str] | None = None) -> List[str]:
     if visited is None:
         visited = set()
     node = nodes_by_path[root]
-    marker = ' `ROOT-INFLUENCE`' if node['root_influence'] else ''
-    line = f"{prefix}- [`{root}`]({rel_link(output_rel, root)}) — `{node['lines']}` строк{marker}"
+    line = render_node_line(node, output_rel, prefix)
     lines = [line]
     if root in visited:
         lines[-1] += ' `REUSED-LINK`'
@@ -185,24 +305,40 @@ def build_tree_lines(root: str, nodes_by_path: Dict[str, dict], output_rel: str,
     return lines
 
 
-def render_markdown(tree: dict, mermaid: str, output_rel: str, lang: str = "ru") -> str:
+def render_markdown(tree: dict, mermaid: str, output_rel: str, lang: str = 'ru') -> str:
     nodes_by_path = {node['path']: node for node in tree['nodes']}
     root = tree['root']
     root_node = nodes_by_path[root]
     tree_lines = build_tree_lines(root, nodes_by_path, output_rel)
-    omitted = tree.get('omitted_directory_links', {})
     missing = tree.get('missing_targets', {})
     excluded = tree.get('excluded_from_graph', [])
     root_influence_lines = []
     for path in tree['root_influence_documents']:
         node = nodes_by_path.get(path)
         if node:
-            root_influence_lines.append(f"- [`{path}`]({rel_link(output_rel, path)}) — `{node['lines']}` строк")
+            if node['node_type'] == 'collection':
+                if node.get('missing_index'):
+                    root_influence_lines.append(f"- `{path}/` — `каталог`, файлов `{node['files_count']}`, строк `{node['lines']}`, `INDEX-MISSING`")
+                else:
+                    root_influence_lines.append(f"- [`{path}/`]({rel_link(output_rel, node['index_target'])}) — `каталог`, файлов `{node['files_count']}`, строк `{node['lines']}`")
+            else:
+                root_influence_lines.append(f"- [`{path}`]({rel_link(output_rel, path)}) — `{node['lines']}` строк")
         else:
             root_influence_lines.append(f"- `{path}` — `НЕ ПОПАЛ В ДЕРЕВО`")
 
-    omitted_lines = ['- нет'] if not omitted else [f"- `{src}` -> `{target}`" for src, targets in sorted(omitted.items()) for target in targets]
     missing_lines = ['- нет'] if not missing else [f"- `{src}` -> `{target}`" for src, targets in sorted(missing.items()) for target in targets]
+    collection_lines = ['- нет']
+    if tree.get('total_collection_nodes'):
+        collection_lines = []
+        for node in tree['nodes']:
+            if node['node_type'] != 'collection':
+                continue
+            if node.get('missing_index'):
+                collection_lines.append(f"- `{node['path']}/` — файлов `{node['files_count']}`, строк `{node['lines']}`, `INDEX-MISSING`")
+            else:
+                collection_lines.append(f"- [`{node['path']}/`]({rel_link(output_rel, node['index_target'])}) — файлов `{node['files_count']}`, строк `{node['lines']}`")
+
+    missing_index_lines = ['- нет'] if not tree.get('collections_without_index') else [f"- `{path}/`" for path in tree['collections_without_index']]
 
     return f"""# Графическое дерево документации Art
 
@@ -221,6 +357,7 @@ def render_markdown(tree: dict, mermaid: str, output_rel: str, lang: str = "ru")
 - как документация реально связана от корневого `README.md`;
 - сколько документов входит в дерево;
 - сколько строк в каждом документе;
+- какие каталоговые узлы входят в дерево как самостоятельные сущности;
 - какие документы прямо влияют на корневой `README.md`;
 - где возможен drift, который требует обновить корневой `README.md`.
 
@@ -228,17 +365,21 @@ def render_markdown(tree: dict, mermaid: str, output_rel: str, lang: str = "ru")
 - быстрый вход в документацию без потери контекста;
 - защиту от неучтённых изменений в ключевых документах;
 - наглядную карту зависимостей;
-- контроль того, что изменения смыслообразующих документов не проходят мимо корневого `README.md`.
+- контроль того, что изменения смыслообразующих документов не проходят мимо корневого `README.md`;
+- отдельный контроль каталоговых узлов, которые раньше могли выпадать из дерева.
 
 ## Сводка
 - Корень дерева: [`{rel_link(output_rel, root)}`]({rel_link(output_rel, root)})
 - Строк в корневом `README.md`: `{root_node['lines']}`
 - Уникальных документов в дереве: `{tree['total_documents']}`
-- Общих строк во всём дереве: `{tree['total_lines_in_tree']}`
-- Всех файловых связей в дереве: `{tree['total_file_links_in_tree']}`
+- Каталоговых узлов в дереве: `{tree['total_collection_nodes']}`
+- Общих строк по документным узлам: `{tree['total_lines_in_tree']}`
+- Суммарных строк внутри каталоговых узлов: `{tree['total_lines_in_collections']}`
+- Всех связей в дереве: `{tree['total_tree_edges']}`
 - Просканированных markdown-ссылок: `{tree['total_markdown_links_scanned']}`
 - Прямых дочерних ссылок у корня: `{tree['root_direct_children']}`
 - Документов с признаком `ROOT-INFLUENCE`: `{len(tree['root_influence_documents'])}`
+- Каталоговых узлов без индексного документа: `{len(tree['collections_without_index'])}`
 
 ## Граф
 ```mermaid
@@ -253,10 +394,18 @@ def render_markdown(tree: dict, mermaid: str, output_rel: str, lang: str = "ru")
 
 {"\n".join(root_influence_lines)}
 
-## Пропущенные directory-ссылки
-Это ссылки в markdown на каталоги, а не на отдельные файлы. Они не включаются в дерево как отдельные вершины.
+## Каталоговые узлы
+Это специальные узлы дерева для ссылок на каталоги. Они считаются автоматически и показывают:
+- сколько файлов внутри;
+- сколько строк внутри;
+- есть ли индексный документ, на который можно безопасно сослаться.
 
-{"\n".join(omitted_lines)}
+{"\n".join(collection_lines)}
+
+## Каталоговые узлы без индексного документа
+Если здесь появляется запись, дерево считается дефектным: каталог есть в ссылках, но не имеет реального индексного документа.
+
+{"\n".join(missing_index_lines)}
 
 ## Missing targets
 Если здесь появится запись, значит в документации есть ссылка на файл, который не найден.
@@ -314,27 +463,30 @@ def format_dependency_targets(path: str, new_nodes: Dict[str, dict]) -> str:
 def report_tree_drift(current_tree: dict, new_tree: dict) -> None:
     current_nodes = node_map(current_tree)
     new_nodes = node_map(new_tree)
-    current_total_lines = current_tree.get('total_lines_in_tree', sum(node.get('lines', 0) for node in current_nodes.values()))
-    new_total_lines = new_tree.get('total_lines_in_tree', sum(node.get('lines', 0) for node in new_nodes.values()))
+    current_total_lines = current_tree.get('total_lines_in_tree', sum(node.get('lines', 0) for node in current_nodes.values() if node.get('node_type') == 'document'))
+    new_total_lines = new_tree.get('total_lines_in_tree', sum(node.get('lines', 0) for node in new_nodes.values() if node.get('node_type') == 'document'))
+    current_collection_lines = current_tree.get('total_lines_in_collections', sum(node.get('lines', 0) for node in current_nodes.values() if node.get('node_type') == 'collection'))
+    new_collection_lines = new_tree.get('total_lines_in_collections', sum(node.get('lines', 0) for node in new_nodes.values() if node.get('node_type') == 'collection'))
     print(f' - total_lines_in_tree: {current_total_lines} -> {new_total_lines}')
+    print(f' - total_lines_in_collections: {current_collection_lines} -> {new_collection_lines}')
 
     changed_paths = []
     for path in sorted(set(current_nodes) | set(new_nodes)):
         old_lines = current_nodes.get(path, {}).get('lines')
         new_lines = new_nodes.get(path, {}).get('lines')
         if old_lines != new_lines:
-            changed_paths.append((path, old_lines, new_lines))
+            changed_paths.append((path, old_lines, new_lines, new_nodes.get(path, {}).get('node_type', current_nodes.get(path, {}).get('node_type', 'unknown'))))
 
     if not changed_paths:
         print(' - line counts changed indirectly (структура дерева или root-influence набор)')
         return
 
-    print(' - changed document line counts:')
-    for path, old_lines, new_lines in changed_paths[:25]:
+    print(' - changed node line counts:')
+    for path, old_lines, new_lines, node_type in changed_paths[:25]:
         deps = format_dependency_targets(path, new_nodes)
-        print(f'   * {path}: {old_lines} -> {new_lines}; зависит от/влияет через: {deps}')
+        print(f'   * {path} [{node_type}]: {old_lines} -> {new_lines}; зависит от/влияет через: {deps}')
     if len(changed_paths) > 25:
-        print(f'   ... ещё {len(changed_paths) - 25} файлов')
+        print(f'   ... ещё {len(changed_paths) - 25} узлов')
 
 
 def main() -> int:
@@ -362,6 +514,21 @@ def main() -> int:
             print('documentation tree sync check: FAIL')
             print(' - generated documentation tree is out of date')
             report_tree_drift(current_tree, tree)
+            return 1
+
+        if tree.get('collections_without_index'):
+            print('documentation tree sync check: FAIL')
+            print(' - collection nodes without index document:')
+            for path in tree['collections_without_index']:
+                print(f'   * {path}/ -> создать README.md или index.md')
+            return 1
+
+        if tree.get('missing_targets'):
+            print('documentation tree sync check: FAIL')
+            print(' - tree contains broken file links:')
+            for src, targets in sorted(tree['missing_targets'].items()):
+                for target in targets:
+                    print(f'   * {src} -> {target}')
             return 1
 
         changed = git_changed_files(root_dir)

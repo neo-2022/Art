@@ -1,11 +1,14 @@
-version: '1.0'
+version: '1.1'
 status: ACTIVE
 root: README.md
-total_documents: 59
-total_markdown_links_scanned: 138
-total_file_links_in_tree: 122
-total_lines_in_tree: 8477
-root_direct_children: 33
+total_documents: 65
+total_collection_nodes: 3
+total_markdown_links_scanned: 144
+total_tree_edges: 134
+total_file_links_in_tree: 134
+total_lines_in_tree: 9091
+total_lines_in_collections: 2235
+root_direct_children: 35
 root_influence_documents:
 - docs/INTEGRATION.md
 - docs/README.md
@@ -27,15 +30,22 @@ root_influence_documents:
 excluded_from_graph:
 - docs/portal/DOCUMENTATION_TREE.md
 - formats/documentation_tree_v0_2.yaml
+collections_without_index: []
 nodes:
 - path: CHANGELOG.md
+  node_type: document
   lines: 15
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
+  index_target: CHANGELOG.md
+  missing_index: false
 - path: README.md
+  node_type: document
   lines: 155
+  files_count: 1
   root_influence: false
   children:
   - docs/governance/release_decisions/latest_go_no_go.md
@@ -51,6 +61,7 @@ nodes:
   - docs/README.md
   - docs/api/openapi.yaml
   - docs/contracts/v2/openapi.yaml
+  - docs/contracts/v2/schemas
   - formats/platform_support.yaml
   - docs/ops/platform-support.md
   - docs/ops/platform-runtime-compatibility-matrix.md
@@ -62,6 +73,7 @@ nodes:
   - docs/release/compat_matrix.md
   - docs/ops/go_no_go_template.md
   - docs/governance/evidence/evidence_ledger.yaml
+  - docs/governance/evidence
   - docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
   - docs/foundation/AI_ENGINEERING_OPERATING_MODEL.md
   - docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md
@@ -73,20 +85,32 @@ nodes:
   - SECURITY.md
   incoming:
   - docs/README.md
+  index_target: README.md
+  missing_index: false
 - path: RELEASE_CHECKLIST.md
+  node_type: document
   lines: 25
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
+  index_target: RELEASE_CHECKLIST.md
+  missing_index: false
 - path: SECURITY.md
+  node_type: document
   lines: 15
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
+  index_target: SECURITY.md
+  missing_index: false
 - path: docs/ARCHITECTURE.md
+  node_type: document
   lines: 75
+  files_count: 1
   root_influence: false
   children:
   - docs/source/Art_v1_spec_final.md
@@ -100,8 +124,12 @@ nodes:
   incoming:
   - docs/README.md
   - docs/portal/INDEX.md
+  index_target: docs/ARCHITECTURE.md
+  missing_index: false
 - path: docs/INTEGRATION.md
+  node_type: document
   lines: 47
+  files_count: 1
   root_influence: true
   children:
   - docs/source/REGART -  LangGraph  взаимодействие с Art описание.md
@@ -117,8 +145,12 @@ nodes:
   - docs/README.md
   - docs/portal/INDEX.md
   - docs/ARCHITECTURE.md
+  index_target: docs/INTEGRATION.md
+  missing_index: false
 - path: docs/README.md
+  node_type: document
   lines: 100
+  files_count: 1
   root_influence: true
   children:
   - docs/source/Art_v1_spec_final.md
@@ -151,6 +183,7 @@ nodes:
   - docs/governance/evidence_policy.md
   - docs/governance/observability_gap_registry.md
   - docs/governance/evidence/evidence_ledger.yaml
+  - docs/governance/release_decisions
   - docs/source/checklists/README.md
   - docs/source/risk_register_v0_2.md
   - docs/source/dna_core_determinism_performance_assurance.md
@@ -159,38 +192,85 @@ nodes:
   incoming:
   - README.md
   - docs/portal/INDEX.md
+  index_target: docs/README.md
+  missing_index: false
 - path: docs/api/openapi.yaml
+  node_type: document
   lines: 82
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
   - docs/portal/INDEX.md
+  index_target: docs/api/openapi.yaml
+  missing_index: false
 - path: docs/contracts/v2/openapi.yaml
+  node_type: document
   lines: 199
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
+  - docs/contracts/v2/schemas/README.md
   - docs/portal/INDEX.md
+  index_target: docs/contracts/v2/openapi.yaml
+  missing_index: false
+- path: docs/contracts/v2/schemas
+  node_type: collection
+  lines: 1073
+  files_count: 16
+  root_influence: false
+  children:
+  - docs/contracts/v2/schemas/README.md
+  incoming:
+  - README.md
+  index_target: docs/contracts/v2/schemas/README.md
+  missing_index: false
+- path: docs/contracts/v2/schemas/README.md
+  node_type: document
+  lines: 29
+  files_count: 1
+  root_influence: false
+  children:
+  - docs/contracts/v2/openapi.yaml
+  - docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+  - docs/source/Art_v1_spec_final.md
+  - docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
+  - docs/source/checklists/CHECKLIST_29_EVENT_DNA_CORE_V2.md
+  - docs/source/checklists/CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md
+  incoming: []
+  index_target: docs/contracts/v2/schemas/README.md
+  missing_index: false
 - path: docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md
+  node_type: document
   lines: 183
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
   - docs/README.md
   - docs/portal/INDEX.md
+  index_target: docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md
+  missing_index: false
 - path: docs/foundation/AI_ENGINEERING_OPERATING_MODEL.md
+  node_type: document
   lines: 174
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
   - docs/README.md
   - docs/portal/INDEX.md
+  index_target: docs/foundation/AI_ENGINEERING_OPERATING_MODEL.md
+  missing_index: false
 - path: docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
-  lines: 764
+  node_type: document
+  lines: 803
+  files_count: 1
   root_influence: true
   children: []
   incoming:
@@ -198,8 +278,12 @@ nodes:
   - docs/README.md
   - docs/portal/INDEX.md
   - docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
+  index_target: docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
+  missing_index: false
 - path: docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
+  node_type: document
   lines: 537
+  files_count: 1
   root_influence: false
   children:
   - docs/source/FOUNDATION_CONSTITUTION_V0_2.md
@@ -209,84 +293,172 @@ nodes:
   incoming:
   - docs/README.md
   - docs/ARCHITECTURE.md
+  index_target: docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
+  missing_index: false
 - path: docs/foundation/frontier_tech_radar.md
+  node_type: document
   lines: 46
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/README.md
   - docs/portal/INDEX.md
+  index_target: docs/foundation/frontier_tech_radar.md
+  missing_index: false
 - path: docs/foundation/lens_audit_report.md
+  node_type: document
   lines: 410
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/README.md
+  index_target: docs/foundation/lens_audit_report.md
+  missing_index: false
 - path: docs/foundation/revolutionary_hypotheses.md
+  node_type: document
   lines: 173
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/README.md
   - docs/portal/INDEX.md
+  index_target: docs/foundation/revolutionary_hypotheses.md
+  missing_index: false
+- path: docs/governance/evidence
+  node_type: collection
+  lines: 1056
+  files_count: 44
+  root_influence: false
+  children:
+  - docs/governance/evidence/README.md
+  incoming:
+  - README.md
+  index_target: docs/governance/evidence/README.md
+  missing_index: false
+- path: docs/governance/evidence/README.md
+  node_type: document
+  lines: 15
+  files_count: 1
+  root_influence: false
+  children: []
+  incoming: []
+  index_target: docs/governance/evidence/README.md
+  missing_index: false
 - path: docs/governance/evidence/evidence_ledger.yaml
+  node_type: document
   lines: 265
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
   - docs/README.md
+  index_target: docs/governance/evidence/evidence_ledger.yaml
+  missing_index: false
 - path: docs/governance/evidence_policy.md
+  node_type: document
   lines: 29
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/README.md
+  index_target: docs/governance/evidence_policy.md
+  missing_index: false
 - path: docs/governance/observability_gap_registry.md
+  node_type: document
   lines: 68
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/README.md
+  index_target: docs/governance/observability_gap_registry.md
+  missing_index: false
+- path: docs/governance/release_decisions
+  node_type: collection
+  lines: 106
+  files_count: 2
+  root_influence: false
+  children:
+  - docs/governance/release_decisions/README.md
+  incoming:
+  - docs/README.md
+  index_target: docs/governance/release_decisions/README.md
+  missing_index: false
+- path: docs/governance/release_decisions/README.md
+  node_type: document
+  lines: 23
+  files_count: 1
+  root_influence: false
+  children: []
+  incoming: []
+  index_target: docs/governance/release_decisions/README.md
+  missing_index: false
 - path: docs/governance/release_decisions/latest_go_no_go.md
+  node_type: document
   lines: 83
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
+  index_target: docs/governance/release_decisions/latest_go_no_go.md
+  missing_index: false
 - path: docs/ops/github_actions_queue_remediation_plan.md
+  node_type: document
   lines: 212
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/README.md
   - docs/portal/INDEX.md
+  index_target: docs/ops/github_actions_queue_remediation_plan.md
+  missing_index: false
 - path: docs/ops/go_no_go_template.md
+  node_type: document
   lines: 129
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
   - docs/README.md
   - docs/portal/INDEX.md
+  index_target: docs/ops/go_no_go_template.md
+  missing_index: false
 - path: docs/ops/platform-container-k8s-testing.md
+  node_type: document
   lines: 68
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
   - docs/README.md
   - docs/portal/INDEX.md
+  index_target: docs/ops/platform-container-k8s-testing.md
+  missing_index: false
 - path: docs/ops/platform-runtime-compatibility-matrix.md
+  node_type: document
   lines: 43
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
   - docs/README.md
   - docs/release/compat_matrix.md
+  index_target: docs/ops/platform-runtime-compatibility-matrix.md
+  missing_index: false
 - path: docs/ops/platform-support.md
+  node_type: document
   lines: 98
+  files_count: 1
   root_influence: true
   children: []
   incoming:
@@ -294,55 +466,87 @@ nodes:
   - docs/README.md
   - docs/release/compat_matrix.md
   - docs/portal/INDEX.md
+  index_target: docs/ops/platform-support.md
+  missing_index: false
 - path: docs/ops/platform-vm-testing.md
+  node_type: document
   lines: 54
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
   - docs/README.md
   - docs/portal/INDEX.md
+  index_target: docs/ops/platform-vm-testing.md
+  missing_index: false
 - path: docs/portal/ART_VISUAL_LANGUAGE.md
+  node_type: document
   lines: 119
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
   - docs/portal/INDEX.md
+  index_target: docs/portal/ART_VISUAL_LANGUAGE.md
+  missing_index: false
 - path: docs/portal/COMPATIBILITY_MATRIX_ART_REGART.md
+  node_type: document
   lines: 13
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/portal/INDEX.md
+  index_target: docs/portal/COMPATIBILITY_MATRIX_ART_REGART.md
+  missing_index: false
 - path: docs/portal/DELIVERY_EVIDENCE.md
+  node_type: document
   lines: 26
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
   - docs/README.md
   - docs/portal/INDEX.md
+  index_target: docs/portal/DELIVERY_EVIDENCE.md
+  missing_index: false
 - path: docs/portal/DOC_AUTHORITY.md
+  node_type: document
   lines: 19
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/portal/INDEX.md
+  index_target: docs/portal/DOC_AUTHORITY.md
+  missing_index: false
 - path: docs/portal/DOC_STYLE_GUIDE.md
+  node_type: document
   lines: 22
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/portal/INDEX.md
+  index_target: docs/portal/DOC_STYLE_GUIDE.md
+  missing_index: false
 - path: docs/portal/GLOSSARY.md
+  node_type: document
   lines: 14
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/portal/INDEX.md
+  index_target: docs/portal/GLOSSARY.md
+  missing_index: false
 - path: docs/portal/INDEX.md
+  node_type: document
   lines: 61
+  files_count: 1
   root_influence: false
   children:
   - docs/README.md
@@ -378,35 +582,55 @@ nodes:
   incoming:
   - README.md
   - docs/README.md
+  index_target: docs/portal/INDEX.md
+  missing_index: false
 - path: docs/portal/PRODUCT_GUARANTEES.md
+  node_type: document
   lines: 14
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/README.md
   - docs/portal/INDEX.md
+  index_target: docs/portal/PRODUCT_GUARANTEES.md
+  missing_index: false
 - path: docs/portal/SECURITY_POSTURE.md
+  node_type: document
   lines: 14
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/README.md
   - docs/portal/INDEX.md
+  index_target: docs/portal/SECURITY_POSTURE.md
+  missing_index: false
 - path: docs/regart/art_bridge_runbook.md
+  node_type: document
   lines: 19
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/portal/INDEX.md
   - docs/INTEGRATION.md
+  index_target: docs/regart/art_bridge_runbook.md
+  missing_index: false
 - path: docs/regart/upstream_error_format.md
+  node_type: document
   lines: 29
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/INTEGRATION.md
+  index_target: docs/regart/upstream_error_format.md
+  missing_index: false
 - path: docs/release/compat_matrix.md
+  node_type: document
   lines: 40
+  files_count: 1
   root_influence: false
   children:
   - docs/release/versioning.md
@@ -416,66 +640,100 @@ nodes:
   incoming:
   - README.md
   - docs/README.md
+  index_target: docs/release/compat_matrix.md
+  missing_index: false
 - path: docs/release/release_process.md
+  node_type: document
   lines: 33
+  files_count: 1
   root_influence: true
   children: []
   incoming:
   - README.md
   - docs/README.md
   - docs/release/compat_matrix.md
+  index_target: docs/release/release_process.md
+  missing_index: false
 - path: docs/release/versioning.md
+  node_type: document
   lines: 35
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
   - docs/README.md
   - docs/release/compat_matrix.md
+  index_target: docs/release/versioning.md
+  missing_index: false
 - path: docs/security/fstec-certified-profile.md
+  node_type: document
   lines: 30
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
+  index_target: docs/security/fstec-certified-profile.md
+  missing_index: false
 - path: docs/source/Art_v1_spec_final.md
+  node_type: document
   lines: 614
+  files_count: 1
   root_influence: true
   children: []
   incoming:
   - README.md
   - docs/README.md
+  - docs/contracts/v2/schemas/README.md
   - docs/portal/INDEX.md
   - docs/INTEGRATION.md
   - docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
   - docs/ARCHITECTURE.md
+  index_target: docs/source/Art_v1_spec_final.md
+  missing_index: false
 - path: docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+  node_type: document
   lines: 693
+  files_count: 1
   root_influence: true
   children: []
   incoming:
   - README.md
   - docs/README.md
+  - docs/contracts/v2/schemas/README.md
   - docs/portal/INDEX.md
   - docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
   - docs/ARCHITECTURE.md
+  index_target: docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+  missing_index: false
 - path: docs/source/README.md
-  lines: 57
+  node_type: document
+  lines: 68
+  files_count: 1
   root_influence: true
   children: []
   incoming:
   - README.md
   - docs/README.md
+  index_target: docs/source/README.md
+  missing_index: false
 - path: docs/source/REGART -  LangGraph  взаимодействие с Art описание.md
+  node_type: document
   lines: 313
+  files_count: 1
   root_influence: true
   children: []
   incoming:
   - docs/portal/INDEX.md
   - docs/INTEGRATION.md
   - docs/ARCHITECTURE.md
+  index_target: docs/source/REGART -  LangGraph  взаимодействие с Art описание.md
+  missing_index: false
 - path: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
-  lines: 290
+  node_type: document
+  lines: 307
+  files_count: 1
   root_influence: true
   children: []
   incoming:
@@ -484,93 +742,171 @@ nodes:
   - docs/portal/INDEX.md
   - docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
   - docs/ARCHITECTURE.md
+  index_target: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
+  missing_index: false
 - path: docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md
+  node_type: document
   lines: 124
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/INTEGRATION.md
+  index_target: docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md
+  missing_index: false
 - path: docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md
+  node_type: document
   lines: 125
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/INTEGRATION.md
+  index_target: docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md
+  missing_index: false
 - path: docs/source/checklists/CHECKLIST_20_PACK_REGART.md
+  node_type: document
   lines: 125
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/INTEGRATION.md
+  index_target: docs/source/checklists/CHECKLIST_20_PACK_REGART.md
+  missing_index: false
+- path: docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
+  node_type: document
+  lines: 172
+  files_count: 1
+  root_influence: false
+  children: []
+  incoming:
+  - docs/contracts/v2/schemas/README.md
+  index_target: docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
+  missing_index: false
+- path: docs/source/checklists/CHECKLIST_29_EVENT_DNA_CORE_V2.md
+  node_type: document
+  lines: 163
+  files_count: 1
+  root_influence: false
+  children: []
+  incoming:
+  - docs/contracts/v2/schemas/README.md
+  index_target: docs/source/checklists/CHECKLIST_29_EVENT_DNA_CORE_V2.md
+  missing_index: false
+- path: docs/source/checklists/CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md
+  node_type: document
+  lines: 125
+  files_count: 1
+  root_influence: false
+  children: []
+  incoming:
+  - docs/contracts/v2/schemas/README.md
+  index_target: docs/source/checklists/CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md
+  missing_index: false
 - path: docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
+  node_type: document
   lines: 78
+  files_count: 1
   root_influence: true
   children: []
   incoming:
   - README.md
+  index_target: docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
+  missing_index: false
 - path: docs/source/checklists/README.md
+  node_type: document
   lines: 89
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
   - docs/README.md
+  index_target: docs/source/checklists/README.md
+  missing_index: false
 - path: docs/source/dna_core_determinism_performance_assurance.md
+  node_type: document
   lines: 138
+  files_count: 1
   root_influence: true
   children: []
   incoming:
   - README.md
   - docs/README.md
+  index_target: docs/source/dna_core_determinism_performance_assurance.md
+  missing_index: false
 - path: docs/source/risk_register_v0_2.md
+  node_type: document
   lines: 42
+  files_count: 1
   root_influence: true
   children: []
   incoming:
   - README.md
   - docs/README.md
+  index_target: docs/source/risk_register_v0_2.md
+  missing_index: false
 - path: docs/source/secure_actions_protocol_v2.md
+  node_type: document
   lines: 27
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/portal/INDEX.md
+  index_target: docs/source/secure_actions_protocol_v2.md
+  missing_index: false
 - path: docs/testing/defect_remediation_control_matrix_v0_2.md
-  lines: 414
+  node_type: document
+  lines: 421
+  files_count: 1
   root_influence: true
   children: []
   incoming:
   - docs/ARCHITECTURE.md
+  index_target: docs/testing/defect_remediation_control_matrix_v0_2.md
+  missing_index: false
 - path: docs/testing/defect_remediation_ladder_v0_2.md
-  lines: 258
+  node_type: document
+  lines: 271
+  files_count: 1
   root_influence: true
   children: []
   incoming:
   - docs/portal/INDEX.md
   - docs/INTEGRATION.md
   - docs/ARCHITECTURE.md
+  index_target: docs/testing/defect_remediation_ladder_v0_2.md
+  missing_index: false
 - path: docs/testing/production_adversarial_validation_law.md
+  node_type: document
   lines: 203
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/README.md
+  index_target: docs/testing/production_adversarial_validation_law.md
+  missing_index: false
 - path: docs/testing/test_system_audit_v0_2.md
+  node_type: document
   lines: 97
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - docs/README.md
+  index_target: docs/testing/test_system_audit_v0_2.md
+  missing_index: false
 - path: formats/platform_support.yaml
+  node_type: document
   lines: 253
+  files_count: 1
   root_influence: false
   children: []
   incoming:
   - README.md
-omitted_directory_links:
-  README.md:
-  - docs/contracts/v2/schemas
-  - docs/governance/evidence
-  docs/README.md:
-  - docs/governance/release_decisions
+  index_target: formats/platform_support.yaml
+  missing_index: false
 missing_targets: {}

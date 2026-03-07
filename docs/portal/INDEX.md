@@ -21,7 +21,7 @@
 - Radar технологий: [frontier_tech_radar.md](../foundation/frontier_tech_radar.md)
 
 ### Корневое дерево решений
-- Графическое дерево документации: [DOCUMENTATION_TREE.md](./DOCUMENTATION_TREE.md)
+- Графическое дерево документации с каталоговыми узлами и контролем строк: [DOCUMENTATION_TREE.md](./DOCUMENTATION_TREE.md)
 - Корневой закон: [FOUNDATION_CONSTITUTION_V0_2.md](../source/FOUNDATION_CONSTITUTION_V0_2.md)
 - Исторический корпус: [PROJECT_HISTORY_AND_CONCEPTS.md](../foundation/PROJECT_HISTORY_AND_CONCEPTS.md)
 - Базовый предметный spec: [Art_v1_spec_final.md](../source/Art_v1_spec_final.md)

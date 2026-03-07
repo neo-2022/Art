@@ -131,7 +131,7 @@ Art проектируется как `Incident OS`, где:
 - advanced automation backlog: [ADVANCED_AUTOMATION_BACKLOG.md](docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md)
 - visual language: [ART_VISUAL_LANGUAGE.md](docs/portal/ART_VISUAL_LANGUAGE.md)
 - портал: [docs/portal/INDEX.md](docs/portal/INDEX.md)
-- дерево документации: [docs/portal/DOCUMENTATION_TREE.md](docs/portal/DOCUMENTATION_TREE.md)
+- дерево документации с каталоговыми узлами, line-count контролем и сигналами рассинхрона: [docs/portal/DOCUMENTATION_TREE.md](docs/portal/DOCUMENTATION_TREE.md)
 - source docs: [docs/source/README.md](docs/source/README.md)
 - index чек-листов: [docs/source/checklists/README.md](docs/source/checklists/README.md)
 

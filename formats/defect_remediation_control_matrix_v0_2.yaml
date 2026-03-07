@@ -4,6 +4,7 @@ last_updated: "2026-03-07"
 notes:
   - "Этот файл задаёт прямую defect-to-stage контрольную связь между аудитом, MASTER и stage-checklists."
   - "Stage не может быть повторно закрыт, пока хотя бы один активный defect, ссылающийся на него, остаётся open."
+  - "Документные и обзорные дефекты дополнительно обязаны синхронизироваться с docs/portal/DOCUMENTATION_TREE.md и formats/documentation_tree_v0_2.yaml."
 
 defects:
   - id: DEF-001

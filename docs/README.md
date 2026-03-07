@@ -15,7 +15,7 @@
 - канонический foundation: [FOUNDATION_CONSTITUTION_V0_2.md](source/FOUNDATION_CONSTITUTION_V0_2.md)
 - мастер-чек-лист: [CHECKLIST_00_MASTER_ART_REGART.md](source/checklists/CHECKLIST_00_MASTER_ART_REGART.md)
 - портал документации: [INDEX.md](portal/INDEX.md)
-- графическое дерево документации: [DOCUMENTATION_TREE.md](portal/DOCUMENTATION_TREE.md)
+- графическое дерево документации с каталоговыми узлами, подсчётом строк и контролем рассинхрона: [DOCUMENTATION_TREE.md](portal/DOCUMENTATION_TREE.md)
 
 ## Foundation И История Замысла
 - модель работы AI-команды: [AI_ENGINEERING_OPERATING_MODEL.md](foundation/AI_ENGINEERING_OPERATING_MODEL.md)

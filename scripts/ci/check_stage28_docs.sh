@@ -12,6 +12,7 @@ required_files=(
   "formats/documentation_tree_v0_2.yaml"
   "scripts/ci/generate_documentation_tree.py"
   "scripts/ci/check_documentation_tree_sync.sh"
+  "scripts/tests/test_documentation_tree.py"
   "docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md"
   "docs/source/checklists/CHECKLIST_29_EVENT_DNA_CORE_V2.md"
   "docs/source/checklists/CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md"
@@ -24,6 +25,7 @@ required_files=(
   "docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md"
   "docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md"
   "docs/contracts/v2/openapi.yaml"
+  "docs/contracts/v2/schemas/README.md"
   "docs/contracts/v2/schemas/raw_event_v2.json"
   "docs/contracts/v2/schemas/dna_signature.json"
   "docs/contracts/v2/schemas/evidence_block.json"
@@ -139,6 +141,7 @@ bash scripts/ci/check_stage28_lens.sh
 bash scripts/ci/check_docs_portal_quality.sh
 bash scripts/ci/check_root_decision_tree_sync.sh
 bash scripts/ci/check_documentation_tree_sync.sh
+python3 -m unittest scripts.tests.test_documentation_tree -v
 bash scripts/ci/check_defect_remediation_control_matrix.sh
 
 grep -q "CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
