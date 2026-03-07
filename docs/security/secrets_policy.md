@@ -37,6 +37,7 @@
   - внесённой через code review;
 - широкие allowlist-паттерны уровня “весь каталог”, “все md”, “все json” запрещены;
 - временные исключения без даты и причины запрещены.
+- изменение allowlist без code review запрещено.
 
 ## Текущий baseline allowlist
 - baseline allowlist по умолчанию пустой;
@@ -59,6 +60,11 @@ gitleaks detect --source . --redact --config docs/security/allowlist.gitleaks.to
   - использовать `docs/security/allowlist.gitleaks.toml`;
   - завершаться ошибкой при любом finding;
 - job `gitleaks` в основном CI не отменяет и не ослабляет Stage04 policy, а дублирует её как baseline repository-wide gate.
+
+## Merge blocking rule
+- любые найденные secrets блокируют merge без исключений;
+- единственный допустимый способ не получить false positive blocking — точечный reviewed allowlist;
+- отключать job `secrets`, ослаблять fail-mode или переводить его в warning-only запрещено.
 
 ## Требования к артефактам и аудиту
 - изменения allowlist считаются security-sensitive изменениями;
