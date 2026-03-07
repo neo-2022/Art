@@ -1,0 +1,21 @@
+stage11 backup scope isolation proof
+=================================
+
+Command: cargo test -p art-core storage_backup_dir_is_unique_per_db_instance_even_with_same_profile -- --nocapture
+Result: PASS
+Detail: two different SQLite db_path values with the same effective_profile_id resolve to different storage backup directories.
+
+Command: cargo test -p art-core --quiet
+Result: PASS
+Detail: full art-core suite passed after backup directory scoping fix.
+
+Command: python3 -m unittest scripts.tests.test_storage_stage11 -v
+Result: PASS
+
+Command: python3 -m unittest scripts.tests.test_stage11_systemd_vacuum -v
+Result: PASS
+
+Meaning:
+- backup directories no longer collide between parallel tests or multiple Core instances that share the same profile id;
+- backup/restore hostile tests remain green after the scoping change;
+- stage11 root cause moved back to live corruption/read_only runtime handling, not backup directory contention.

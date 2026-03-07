@@ -5,6 +5,7 @@ use std::fs;
 use std::net::SocketAddr;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -47,7 +48,12 @@ const DNA_SCHEMA_VERSION: &str = "2.0.0";
 const DEFAULT_ANALYTICS_MAX_BUCKETS: usize = 1_440;
 const DEFAULT_ANALYTICS_STATE_PATH: &str = "/tmp/art_core_analytics_state.json";
 const DEFAULT_CORE_DB_PATH: &str = "data/art/core.sqlite3";
+const DEFAULT_STORAGE_BACKUP_ROOT: &str = "/var/lib/art/backups";
+const DEFAULT_STORAGE_RECOVERY_RETRY_AFTER_MS: u64 = 1_000;
+const DEFAULT_STORAGE_READ_ONLY_RETRY_AFTER_MS: u64 = 2_000;
+const DEFAULT_STORAGE_BACKUP_RETENTION: usize = 96;
 const ANALYTICS_STATE_ROW_ID: i64 = 1;
+static STORAGE_BACKUP_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct StoredEvent {
@@ -190,6 +196,10 @@ struct CoreState {
     analytics: AnalyticsState,
     analytics_state_path: PathBuf,
     db_path: PathBuf,
+    storage_backup_dir: PathBuf,
+    last_ok_backup_id: Option<String>,
+    storage_read_only: bool,
+    storage_fault_handling: bool,
 }
 
 impl CoreState {
@@ -210,6 +220,17 @@ impl CoreState {
         while analytics.buckets.len() > analytics.max_buckets {
             analytics.buckets.pop_front();
         }
+        let backup_dir = storage_backup_dir(&effective_profile_id, &db_path);
+        let last_ok_backup_id = refresh_storage_backup(&effective_profile_id, &db_path)
+            .map(Some)
+            .or_else(|error| -> anyhow::Result<Option<String>> {
+                warn!(
+                    "failed to create initial sqlite backup for {}: {}",
+                    db_path.display(),
+                    error
+                );
+                Ok(latest_storage_backup_id(&backup_dir))
+            })?;
         Ok(Self {
             next_seq: storage.next_seq,
             events: storage.events,
@@ -234,8 +255,22 @@ impl CoreState {
             analytics,
             analytics_state_path,
             db_path,
+            storage_backup_dir: backup_dir,
+            last_ok_backup_id,
+            storage_read_only: false,
+            storage_fault_handling: false,
         })
     }
+}
+
+fn sqlite_path_literal(path: &std::path::Path) -> String {
+    path.to_string_lossy().replace('\'', "''")
+}
+
+fn sqlite_integrity_status(db_path: &std::path::Path) -> Result<String, String> {
+    let conn = Connection::open(db_path).map_err(|err| err.to_string())?;
+    conn.query_row("PRAGMA integrity_check;", [], |row| row.get::<_, String>(0))
+        .map_err(|err| err.to_string())
 }
 
 #[derive(Debug)]
@@ -254,6 +289,21 @@ struct StorageBootstrap {
     audits: Vec<AuditEntry>,
     next_audit_id: u64,
     audit_chain_head: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct StorageBackupMetadata {
+    backup_id: String,
+    profile_id: String,
+    db_path: String,
+    created_ts_ms: u64,
+    format: String,
+}
+
+#[derive(Debug, Clone)]
+struct StorageFaultOutcome {
+    error: String,
+    retry_after_ms: u64,
 }
 
 fn open_storage_connection(db_path: &PathBuf) -> anyhow::Result<Connection> {
@@ -440,6 +490,358 @@ fn rollback_storage_transaction(conn: &Connection) {
     if let Err(error) = conn.execute_batch("ROLLBACK") {
         warn!("failed to rollback storage transaction: {}", error);
     }
+}
+
+fn storage_backup_dir(profile_id: &str, db_path: &PathBuf) -> PathBuf {
+    let db_scope_id = sha256_hex(&db_path.display().to_string())[..16].to_string();
+    if let Ok(root) = env::var("CORE_BACKUP_DIR") {
+        let root = PathBuf::from(root);
+        return root.join(profile_id).join(db_scope_id);
+    }
+    let temp_dir = env::temp_dir();
+    if db_path.starts_with(&temp_dir) {
+        return db_path
+            .parent()
+            .unwrap_or(temp_dir.as_path())
+            .join("backups")
+            .join(profile_id)
+            .join(db_scope_id);
+    }
+    PathBuf::from(DEFAULT_STORAGE_BACKUP_ROOT)
+        .join(profile_id)
+        .join(db_scope_id)
+}
+
+fn next_storage_backup_id() -> String {
+    format!(
+        "core-{:020}-{:06}",
+        now_ms(),
+        STORAGE_BACKUP_COUNTER.fetch_add(1, Ordering::Relaxed)
+    )
+}
+
+fn latest_storage_backup_id(backup_dir: &PathBuf) -> Option<String> {
+    let mut items = fs::read_dir(backup_dir)
+        .ok()?
+        .filter_map(Result::ok)
+        .filter_map(|entry| {
+            let path = entry.path();
+            let name = path.file_name()?.to_string_lossy().to_string();
+            if !name.starts_with("core-") || !name.ends_with(".sqlite3") {
+                return None;
+            }
+            Some(name.trim_end_matches(".sqlite3").to_string())
+        })
+        .collect::<Vec<_>>();
+    items.sort();
+    items.pop()
+}
+
+fn prune_storage_backups(backup_dir: &PathBuf) -> anyhow::Result<()> {
+    let mut ids = fs::read_dir(backup_dir)?
+        .filter_map(Result::ok)
+        .filter_map(|entry| {
+            let path = entry.path();
+            let name = path.file_name()?.to_string_lossy().to_string();
+            if !name.starts_with("core-") || !name.ends_with(".sqlite3") {
+                return None;
+            }
+            Some(name.trim_end_matches(".sqlite3").to_string())
+        })
+        .collect::<Vec<_>>();
+    ids.sort();
+    let total = ids.len();
+    if total <= DEFAULT_STORAGE_BACKUP_RETENTION {
+        return Ok(());
+    }
+    for backup_id in ids
+        .into_iter()
+        .take(total.saturating_sub(DEFAULT_STORAGE_BACKUP_RETENTION))
+    {
+        for suffix in [".sqlite3", ".sqlite3-wal", ".metadata.json"] {
+            let path = backup_dir.join(format!("{}{}", backup_id, suffix));
+            if path.exists() {
+                fs::remove_file(path)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn refresh_storage_backup(profile_id: &str, db_path: &PathBuf) -> anyhow::Result<String> {
+    let backup_dir = storage_backup_dir(profile_id, db_path);
+    fs::create_dir_all(&backup_dir)
+        .with_context(|| format!("failed to create backup directory {}", backup_dir.display()))?;
+    let backup_id = next_storage_backup_id();
+    let sqlite_path = backup_dir.join(format!("{}.sqlite3", backup_id));
+    let wal_path = backup_dir.join(format!("{}.sqlite3-wal", backup_id));
+    let metadata_path = backup_dir.join(format!("{}.metadata.json", backup_id));
+
+    let conn = Connection::open(db_path)
+        .with_context(|| format!("failed to open sqlite db {} for backup", db_path.display()))?;
+    let backup_sql = format!("VACUUM INTO '{}';", sqlite_path_literal(&sqlite_path));
+    conn.execute_batch(&backup_sql)
+        .with_context(|| format!("failed to create sqlite backup {}", sqlite_path.display()))?;
+
+    let source_wal = db_path.with_file_name(format!(
+        "{}-wal",
+        db_path.file_name().expect("db file name").to_string_lossy()
+    ));
+    if source_wal.exists() {
+        fs::copy(&source_wal, &wal_path).with_context(|| {
+            format!(
+                "failed to copy sqlite wal from {} to {}",
+                source_wal.display(),
+                wal_path.display()
+            )
+        })?;
+    }
+
+    let metadata = StorageBackupMetadata {
+        backup_id: backup_id.clone(),
+        profile_id: profile_id.to_string(),
+        db_path: db_path.display().to_string(),
+        created_ts_ms: now_ms(),
+        format: "sqlite-vacuum-into-v1".to_string(),
+    };
+    fs::write(&metadata_path, serde_json::to_string_pretty(&metadata)?).with_context(|| {
+        format!(
+            "failed to write backup metadata {}",
+            metadata_path.display()
+        )
+    })?;
+    prune_storage_backups(&backup_dir)?;
+    Ok(backup_id)
+}
+
+fn restore_storage_backup(
+    backup_dir: &PathBuf,
+    backup_id: &str,
+    db_path: &PathBuf,
+) -> anyhow::Result<()> {
+    let sqlite_path = backup_dir.join(format!("{}.sqlite3", backup_id));
+    anyhow::ensure!(
+        sqlite_path.exists(),
+        "backup sqlite snapshot missing: {}",
+        sqlite_path.display()
+    );
+    for path in [
+        db_path.to_path_buf(),
+        db_path.with_file_name(format!(
+            "{}-wal",
+            db_path.file_name().expect("db file name").to_string_lossy()
+        )),
+        db_path.with_file_name(format!(
+            "{}-shm",
+            db_path.file_name().expect("db file name").to_string_lossy()
+        )),
+    ] {
+        if path.exists() {
+            fs::remove_file(&path).with_context(|| {
+                format!("failed to remove stale sqlite artifact {}", path.display())
+            })?;
+        }
+    }
+    fs::copy(&sqlite_path, db_path).with_context(|| {
+        format!(
+            "failed to restore sqlite backup {} -> {}",
+            sqlite_path.display(),
+            db_path.display()
+        )
+    })?;
+    let integrity = sqlite_integrity_status(db_path)
+        .map_err(anyhow::Error::msg)
+        .context("restored sqlite integrity check failed")?;
+    anyhow::ensure!(
+        integrity == "ok",
+        "restored sqlite integrity status: {}",
+        integrity
+    );
+    Ok(())
+}
+
+fn is_storage_corruption_error(error: &anyhow::Error) -> bool {
+    error.chain().any(|cause| {
+        let msg = cause.to_string().to_ascii_lowercase();
+        msg.contains("database disk image is malformed")
+            || msg.contains("file is not a database")
+            || msg.contains("sqlite")
+                && (msg.contains("malformed")
+                    || msg.contains("corrupt")
+                    || msg.contains("not a database")
+                    || msg.contains("integrity"))
+    })
+}
+
+fn storage_corruption_type(error: &anyhow::Error) -> &'static str {
+    let joined = error
+        .chain()
+        .map(|cause| cause.to_string().to_ascii_lowercase())
+        .collect::<Vec<_>>()
+        .join(" | ");
+    if joined.contains("wal") {
+        "wal_corruption"
+    } else {
+        "sqlite_corruption"
+    }
+}
+
+fn refresh_storage_backup_state(s: &mut CoreState) {
+    match refresh_storage_backup(&s.effective_profile_id, &s.db_path) {
+        Ok(backup_id) => s.last_ok_backup_id = Some(backup_id),
+        Err(error) => warn!(
+            "failed to refresh sqlite backup for {}: {}",
+            s.db_path.display(),
+            error
+        ),
+    }
+}
+
+fn replace_runtime_state_from_storage(s: &mut CoreState, storage: StorageBootstrap) {
+    let fallback_max_buckets = s.analytics.max_buckets;
+    let mut analytics = storage.analytics.unwrap_or_else(|| s.analytics.clone());
+    analytics.max_buckets = fallback_max_buckets;
+    while analytics.buckets.len() > analytics.max_buckets {
+        analytics.buckets.pop_front();
+    }
+    s.next_seq = storage.next_seq;
+    s.events = storage.events;
+    s.next_seq_v2 = storage.next_seq_v2;
+    s.events_v2 = storage.events_v2;
+    s.dna_clusters = storage.dna_clusters;
+    s.evidence_blocks = storage.evidence_blocks;
+    s.incidents = storage.incidents;
+    s.fingerprint_index = storage.fingerprint_index;
+    s.source_last_seen = storage.source_last_seen;
+    s.analytics = analytics;
+    s.counters = storage.counters.unwrap_or_default();
+    s.audits = storage.audits;
+    s.next_audit_id = storage.next_audit_id;
+    s.audit_chain_head = storage.audit_chain_head;
+}
+
+fn storage_fault_response(error: &str, retry_after_ms: u64) -> Response {
+    (
+        StatusCode::SERVICE_UNAVAILABLE,
+        Json(json!(BackpressureError {
+            error: error.to_string(),
+            retry_after_ms,
+        })),
+    )
+        .into_response()
+}
+
+fn handle_storage_corruption_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    error: &anyhow::Error,
+) -> StorageFaultOutcome {
+    let sqlite_error = error.to_string();
+    let corruption_type = storage_corruption_type(error);
+    let last_ok_backup_id = s
+        .last_ok_backup_id
+        .clone()
+        .or_else(|| latest_storage_backup_id(&s.storage_backup_dir))
+        .unwrap_or_else(|| "none".to_string());
+
+    let restore_result = if last_ok_backup_id != "none" {
+        restore_storage_backup(&s.storage_backup_dir, &last_ok_backup_id, &s.db_path)
+            .and_then(|_| load_storage_state(&s.db_path, s.queue_depth_limit))
+    } else {
+        Err(anyhow::anyhow!("no valid backup available"))
+    };
+
+    s.storage_fault_handling = true;
+    match restore_result {
+        Ok(storage) => {
+            replace_runtime_state_from_storage(s, storage);
+            s.storage_read_only = false;
+            push_gap_event_memory_only_locked(
+                s,
+                "observability_gap.storage_corrupted",
+                json!({
+                    "db_path": s.db_path.display().to_string(),
+                    "corruption_type": corruption_type,
+                    "sqlite_error": sqlite_error,
+                    "last_ok_backup_id": last_ok_backup_id,
+                    "trace_id": trace_id
+                }),
+            );
+            refresh_storage_backup_state(s);
+            s.storage_fault_handling = false;
+            StorageFaultOutcome {
+                error: "storage_recovering".to_string(),
+                retry_after_ms: DEFAULT_STORAGE_RECOVERY_RETRY_AFTER_MS,
+            }
+        }
+        Err(restore_error) => {
+            s.storage_read_only = true;
+            push_gap_event_memory_only_locked(
+                s,
+                "observability_gap.storage_corrupted",
+                json!({
+                    "db_path": s.db_path.display().to_string(),
+                    "corruption_type": corruption_type,
+                    "sqlite_error": sqlite_error,
+                    "last_ok_backup_id": last_ok_backup_id,
+                    "trace_id": trace_id
+                }),
+            );
+            push_gap_event_memory_only_locked(
+                s,
+                "observability_gap.storage_read_only",
+                json!({
+                    "db_path": s.db_path.display().to_string(),
+                    "error": restore_error.to_string(),
+                    "trace_id": trace_id
+                }),
+            );
+            s.storage_fault_handling = false;
+            StorageFaultOutcome {
+                error: "storage_read_only".to_string(),
+                retry_after_ms: DEFAULT_STORAGE_READ_ONLY_RETRY_AFTER_MS,
+            }
+        }
+    }
+}
+
+fn handle_storage_runtime_error_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    reason: &str,
+    error: anyhow::Error,
+) -> StorageFaultOutcome {
+    if is_storage_corruption_error(&error) {
+        return handle_storage_corruption_locked(s, trace_id, &error);
+    }
+    let queue_depth = s.events.len();
+    s.counters.ingest_dropped_total = s.counters.ingest_dropped_total.saturating_add(1);
+    push_gap_event_memory_only_locked(
+        s,
+        "observability_gap.ingest_unavailable",
+        json!({
+            "reason": reason,
+            "error": error.to_string(),
+            "queue_depth": queue_depth,
+            "inflight": 0,
+            "retry_after_ms": 1_200,
+            "trace_id": trace_id
+        }),
+    );
+    StorageFaultOutcome {
+        error: "ingest_unavailable".to_string(),
+        retry_after_ms: 1_200,
+    }
+}
+
+fn guard_storage_read_only_locked(s: &CoreState) -> Option<Response> {
+    if s.storage_read_only {
+        return Some(storage_fault_response(
+            "storage_read_only",
+            DEFAULT_STORAGE_READ_ONLY_RETRY_AFTER_MS,
+        ));
+    }
+    None
 }
 
 fn load_storage_state(
@@ -1459,10 +1861,31 @@ async fn panel0_favicon() -> impl IntoResponse {
     ([(CONTENT_TYPE, "image/x-icon")], PANEL0_FAVICON)
 }
 
-async fn health() -> impl IntoResponse {
+async fn health(State(state): State<Shared>) -> impl IntoResponse {
+    let s = state.read().await;
+    let mode = if s.storage_read_only {
+        "read_only"
+    } else {
+        "healthy"
+    };
+    let status = if s.storage_read_only {
+        "degraded"
+    } else {
+        "ok"
+    };
+    let code = if s.storage_read_only {
+        StatusCode::SERVICE_UNAVAILABLE
+    } else {
+        StatusCode::OK
+    };
     (
-        StatusCode::OK,
-        Json(json!({"status":"ok","service":"art-core"})),
+        code,
+        Json(json!({
+            "status": status,
+            "service": "art-core",
+            "storage_mode": mode,
+            "last_ok_backup_id": s.last_ok_backup_id,
+        })),
     )
 }
 
@@ -1483,7 +1906,12 @@ async fn apply_profile(
     match validate_profile_guardrails(&req) {
         Ok(effective_profile_id) => {
             let mut s = state.write().await;
+            if let Some(resp) = guard_storage_read_only_locked(&s) {
+                return resp;
+            }
             s.effective_profile_id = effective_profile_id.clone();
+            s.storage_backup_dir = storage_backup_dir(&s.effective_profile_id, &s.db_path);
+            refresh_storage_backup_state(&mut s);
             (
                 StatusCode::OK,
                 Json(ApplyProfileResponse {
@@ -1495,6 +1923,9 @@ async fn apply_profile(
         }
         Err(err) => {
             let mut s = state.write().await;
+            if let Some(resp) = guard_storage_read_only_locked(&s) {
+                return resp;
+            }
             let now_ms = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map(|d| d.as_millis() as u64)
@@ -1538,16 +1969,36 @@ async fn apply_profile(
                 Ok(conn) => {
                     if let Err(error) = persist_event_v1_with_conn(&conn, &stored_event) {
                         warn!("failed to persist profile violation event: {}", error);
+                        if is_storage_corruption_error(&error) {
+                            let outcome = handle_storage_corruption_locked(
+                                &mut s,
+                                &format!("profile-violation-{}", seq),
+                                &error,
+                            );
+                            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
+                        }
                     }
                     if let Err(error) = persist_incident_with_conn(&conn, &incident) {
                         warn!("failed to persist profile violation incident: {}", error);
+                        if is_storage_corruption_error(&error) {
+                            let outcome = handle_storage_corruption_locked(
+                                &mut s,
+                                &format!("profile-violation-{}", seq),
+                                &error,
+                            );
+                            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
+                        }
                     }
+                    refresh_storage_backup_state(&mut s);
                 }
                 Err(error) => {
-                    warn!(
-                        "failed to initialize sqlite during profile violation persistence: {}",
-                        error
+                    let outcome = handle_storage_runtime_error_locked(
+                        &mut s,
+                        &format!("profile-violation-{}", seq),
+                        "storage_init_failed",
+                        error,
                     );
+                    return storage_fault_response(&outcome.error, outcome.retry_after_ms);
                 }
             }
             (
@@ -1605,6 +2056,9 @@ async fn ingest(
     Json(payload): Json<IngestEnvelope>,
 ) -> impl IntoResponse {
     let mut s = state.write().await;
+    if let Some(resp) = guard_storage_read_only_locked(&s) {
+        return resp;
+    }
     let now = ingest_now_ms(&headers);
     let trace_id = format!("ingest-{}", now);
     if let Some(len) = content_length(&headers) {
@@ -1680,25 +2134,13 @@ async fn ingest(
     let storage_conn = match open_storage_connection(&s.db_path) {
         Ok(conn) => conn,
         Err(error) => {
-            let queue_depth = s.events.len();
-            s.counters.ingest_dropped_total += 1;
-            push_gap_event_memory_only_locked(
+            let outcome = handle_storage_runtime_error_locked(
                 &mut s,
-                "observability_gap.ingest_unavailable",
-                json!({
-                    "reason": "storage_init_failed",
-                    "error": error.to_string(),
-                    "queue_depth": queue_depth,
-                    "inflight": 0,
-                    "retry_after_ms": 1_200,
-                    "trace_id": trace_id
-                }),
+                &trace_id,
+                "storage_init_failed",
+                error,
             );
-            let err = BackpressureError {
-                error: "ingest_unavailable".to_string(),
-                retry_after_ms: 1_200,
-            };
-            return (StatusCode::SERVICE_UNAVAILABLE, Json(json!(err))).into_response();
+            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
         }
     };
 
@@ -1882,25 +2324,13 @@ async fn ingest(
                 })();
                 if let Err(error) = persist_result {
                     rollback_storage_transaction(&storage_conn);
-                    let queue_depth = s.events.len();
-                    s.counters.ingest_dropped_total += 1;
-                    push_gap_event_memory_only_locked(
+                    let outcome = handle_storage_runtime_error_locked(
                         &mut s,
-                        "observability_gap.ingest_unavailable",
-                        json!({
-                            "reason": "storage_write_failed",
-                            "error": error.to_string(),
-                            "queue_depth": queue_depth,
-                            "inflight": 0,
-                            "retry_after_ms": 1_200,
-                            "trace_id": trace_id
-                        }),
+                        &trace_id,
+                        "storage_write_failed",
+                        error,
                     );
-                    let err = BackpressureError {
-                        error: "ingest_unavailable".to_string(),
-                        retry_after_ms: 1_200,
-                    };
-                    return (StatusCode::SERVICE_UNAVAILABLE, Json(json!(err))).into_response();
+                    return storage_fault_response(&outcome.error, outcome.retry_after_ms);
                 }
                 if !s.fingerprint_index.contains_key(&fingerprint) {
                     s.fingerprint_index.insert(fingerprint, canonical);
@@ -1939,6 +2369,7 @@ async fn ingest(
         invalid: invalid_details.len(),
         invalid_details,
     };
+    refresh_storage_backup_state(&mut s);
     persist_analytics_recovery_contour(
         &s.db_path,
         &s.analytics_state_path,
@@ -1992,26 +2423,22 @@ async fn ingest_v2(
     let events = payload.events;
     let accepted = events.len();
     let mut s = state.write().await;
+    if let Some(resp) = guard_storage_read_only_locked(&s) {
+        return resp;
+    }
     let mut upto_seq = s.next_seq_v2.saturating_sub(1);
+    let trace_id = format!("v2-ingest-{}", now);
 
     let storage_conn = match open_storage_connection(&s.db_path) {
         Ok(conn) => conn,
         Err(error) => {
-            push_gap_event_memory_only_locked(
+            let outcome = handle_storage_runtime_error_locked(
                 &mut s,
-                "observability_gap.ingest_unavailable",
-                json!({
-                    "reason": "storage_init_failed",
-                    "error": error.to_string(),
-                    "retry_after_ms": 1_200,
-                    "trace_id": format!("v2-ingest-{}", now),
-                }),
+                &trace_id,
+                "storage_init_failed",
+                error,
             );
-            let err = BackpressureError {
-                error: "ingest_unavailable".to_string(),
-                retry_after_ms: 1_200,
-            };
-            return (StatusCode::SERVICE_UNAVAILABLE, Json(json!(err))).into_response();
+            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
         }
     };
 
@@ -2079,21 +2506,13 @@ async fn ingest_v2(
         })();
         if let Err(error) = persist_result {
             rollback_storage_transaction(&storage_conn);
-            push_gap_event_memory_only_locked(
+            let outcome = handle_storage_runtime_error_locked(
                 &mut s,
-                "observability_gap.ingest_unavailable",
-                json!({
-                    "reason": "storage_write_failed",
-                    "error": error.to_string(),
-                    "retry_after_ms": 1_200,
-                    "trace_id": format!("v2-ingest-{}", now),
-                }),
+                &trace_id,
+                "storage_write_failed",
+                error,
             );
-            let err = BackpressureError {
-                error: "ingest_unavailable".to_string(),
-                retry_after_ms: 1_200,
-            };
-            return (StatusCode::SERVICE_UNAVAILABLE, Json(json!(err))).into_response();
+            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
         }
         for block in evidence_blocks {
             s.evidence_blocks.insert(block.evidence_id.clone(), block);
@@ -2115,6 +2534,7 @@ async fn ingest_v2(
         invalid: 0,
         invalid_details: Vec::new(),
     };
+    refresh_storage_backup_state(&mut s);
     persist_analytics_recovery_contour(
         &s.db_path,
         &s.analytics_state_path,
@@ -3068,14 +3488,29 @@ fn push_gap_event_memory_only_locked(s: &mut CoreState, kind: &str, details: Val
 
 fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
     push_gap_event_memory_only_locked(s, kind, details);
-    if let Some(stored) = s.events.back() {
-        if let Err(error) = persist_event_v1(&s.db_path, stored) {
+    if s.storage_fault_handling {
+        return;
+    }
+    let persisted = s.events.back().cloned();
+    if let Some(stored) = persisted {
+        if let Err(error) = persist_event_v1(&s.db_path, &stored) {
             warn!(
                 "failed to persist gap event seq={} to {}: {}",
                 stored.seq,
                 s.db_path.display(),
                 error
             );
+            if is_storage_corruption_error(&error) {
+                let trace_id = stored
+                    .event
+                    .get("details")
+                    .and_then(|value| value.get("trace_id"))
+                    .and_then(Value::as_str)
+                    .unwrap_or("storage-gap");
+                let _ = handle_storage_corruption_locked(s, trace_id, &error);
+            }
+        } else {
+            refresh_storage_backup_state(s);
         }
     }
 }
@@ -3178,6 +3613,16 @@ fn incident_policy_for_gap(kind: &str) -> Option<(&'static str, &'static str, &'
             "SEV2",
             "docs/runbooks/metrics_unavailable.md",
         )),
+        "observability_gap.storage_corrupted" => Some((
+            "storage_corrupted",
+            "SEV1",
+            "docs/ops/storage_corruption_runbook.md",
+        )),
+        "observability_gap.storage_read_only" => Some((
+            "storage_read_only",
+            "SEV1",
+            "docs/ops/storage_corruption_runbook.md",
+        )),
         "observability_gap.otlp_rate_limited" => Some((
             "otlp_rate_limited",
             "SEV2",
@@ -3228,8 +3673,20 @@ fn push_incident_locked(
         span_id,
     );
     s.incidents.push(incident.clone());
+    if s.storage_fault_handling {
+        return;
+    }
     if let Err(error) = persist_incident(&s.db_path, &incident) {
         warn!("failed to persist incident {}: {}", incident.id, error);
+        if is_storage_corruption_error(&error) {
+            let trace_id = incident
+                .trace_id
+                .clone()
+                .unwrap_or_else(|| "storage-incident".to_string());
+            let _ = handle_storage_corruption_locked(s, &trace_id, &error);
+        }
+    } else {
+        refresh_storage_backup_state(s);
     }
 }
 
@@ -3862,8 +4319,16 @@ fn append_audit_entry(state: &mut CoreState, mut entry: AuditEntry) {
     state.next_audit_id += 1;
     state.audit_chain_head = entry.entry_hash.clone();
     state.audits.push(entry.clone());
+    if state.storage_fault_handling {
+        return;
+    }
     if let Err(error) = persist_audit_entry(&state.db_path, &entry) {
         warn!("failed to persist audit entry {}: {}", entry.id, error);
+        if is_storage_corruption_error(&error) {
+            let _ = handle_storage_corruption_locked(state, &entry.trace_id, &error);
+        }
+    } else {
+        refresh_storage_backup_state(state);
     }
 }
 
@@ -3875,8 +4340,16 @@ fn append_audit_entry_and_get(state: &mut CoreState, mut entry: AuditEntry) -> A
     state.next_audit_id += 1;
     state.audit_chain_head = entry.entry_hash.clone();
     state.audits.push(entry.clone());
+    if state.storage_fault_handling {
+        return entry;
+    }
     if let Err(error) = persist_audit_entry(&state.db_path, &entry) {
         warn!("failed to persist audit entry {}: {}", entry.id, error);
+        if is_storage_corruption_error(&error) {
+            let _ = handle_storage_corruption_locked(state, &entry.trace_id, &error);
+        }
+    } else {
+        refresh_storage_backup_state(state);
     }
     entry
 }
@@ -4006,6 +4479,9 @@ async fn incident_ack(
     .await
     .err();
     let mut s = state.write().await;
+    if let Some(resp) = guard_storage_read_only_locked(&s) {
+        return resp;
+    }
     if let Some(resp) = deny {
         append_audit_entry(
             &mut s,
@@ -4019,11 +4495,19 @@ async fn incident_ack(
         );
         return resp;
     }
-    if let Some(item) = s.incidents.iter_mut().find(|x| x.id == id) {
-        item.status = "acknowledged".to_string();
-        let incident = item.clone();
+    if let Some(index) = s.incidents.iter().position(|x| x.id == id) {
+        let previous_status = s.incidents[index].status.clone();
+        s.incidents[index].status = "acknowledged".to_string();
+        let incident = s.incidents[index].clone();
         if let Err(error) = persist_incident(&s.db_path, &incident) {
             warn!("failed to persist incident ack {}: {}", incident.id, error);
+            s.incidents[index].status = previous_status;
+            if is_storage_corruption_error(&error) {
+                let outcome = handle_storage_corruption_locked(&mut s, &id, &error);
+                return storage_fault_response(&outcome.error, outcome.retry_after_ms);
+            }
+        } else {
+            refresh_storage_backup_state(&mut s);
         }
         append_audit_entry(
             &mut s,
@@ -4058,6 +4542,9 @@ async fn incident_resolve(
     .await
     .err();
     let mut s = state.write().await;
+    if let Some(resp) = guard_storage_read_only_locked(&s) {
+        return resp;
+    }
     if let Some(resp) = deny {
         append_audit_entry(
             &mut s,
@@ -4071,14 +4558,22 @@ async fn incident_resolve(
         );
         return resp;
     }
-    if let Some(item) = s.incidents.iter_mut().find(|x| x.id == id) {
-        item.status = "resolved".to_string();
-        let incident = item.clone();
+    if let Some(index) = s.incidents.iter().position(|x| x.id == id) {
+        let previous_status = s.incidents[index].status.clone();
+        s.incidents[index].status = "resolved".to_string();
+        let incident = s.incidents[index].clone();
         if let Err(error) = persist_incident(&s.db_path, &incident) {
             warn!(
                 "failed to persist incident resolve {}: {}",
                 incident.id, error
             );
+            s.incidents[index].status = previous_status;
+            if is_storage_corruption_error(&error) {
+                let outcome = handle_storage_corruption_locked(&mut s, &id, &error);
+                return storage_fault_response(&outcome.error, outcome.retry_after_ms);
+            }
+        } else {
+            refresh_storage_backup_state(&mut s);
         }
         append_audit_entry(
             &mut s,
@@ -4138,6 +4633,9 @@ async fn actions_execute(
         .err()
     };
     let mut s = state.write().await;
+    if let Some(resp) = guard_storage_read_only_locked(&s) {
+        return resp;
+    }
     let (sanitized_params, redacted) =
         sanitize_sensitive(&req.params.clone().unwrap_or(Value::Null));
     if preflight_id.is_empty() {
@@ -4553,6 +5051,17 @@ mod tests {
         let conn = Connection::open(db_path).map_err(|err| err.to_string())?;
         conn.query_row("PRAGMA integrity_check;", [], |row| row.get::<_, String>(0))
             .map_err(|err| err.to_string())
+    }
+
+    #[test]
+    fn storage_backup_dir_is_unique_per_db_instance_even_with_same_profile() {
+        let db_a = next_test_db_path();
+        let db_b = next_test_db_path();
+        let dir_a = storage_backup_dir("global", &db_a);
+        let dir_b = storage_backup_dir("global", &db_b);
+        assert_ne!(dir_a, dir_b);
+        assert!(dir_a.starts_with(std::env::temp_dir()));
+        assert!(dir_b.starts_with(std::env::temp_dir()));
     }
 
     fn corrupt_sqlite_header(db_path: &std::path::Path) {
@@ -5286,6 +5795,164 @@ mod tests {
             metric_value(&metrics_before, "ingest_dropped_total"),
             metric_value(&metrics_after, "ingest_dropped_total")
         );
+    }
+
+    #[tokio::test]
+    async fn live_ingest_corruption_auto_restores_and_next_retry_succeeds() {
+        let db_path = next_test_db_path();
+        let state = test_state_with_db(db_path.clone());
+        let app = build_app(state.clone());
+
+        ingest_info_events(&app, 2).await;
+        corrupt_sqlite_header(&db_path);
+
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"after-corruption"}]}).to_string(),
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["error"], "storage_recovering");
+        assert_eq!(
+            json["retry_after_ms"].as_u64(),
+            Some(DEFAULT_STORAGE_RECOVERY_RETRY_AFTER_MS)
+        );
+
+        let snapshot = snapshot_json(&app).await;
+        assert!(snapshot["events"]
+            .as_array()
+            .expect("events")
+            .iter()
+            .any(|row| row["event"]["kind"] == "observability_gap.storage_corrupted"));
+        let incidents = incidents_json(&app).await;
+        assert!(incidents["items"]
+            .as_array()
+            .expect("incidents")
+            .iter()
+            .any(|row| row["kind"] == "storage_corrupted"));
+
+        let health_req = Request::builder()
+            .method("GET")
+            .uri("/health")
+            .body(Body::empty())
+            .expect("request");
+        let health_resp = app.clone().oneshot(health_req).await.expect("response");
+        assert_eq!(health_resp.status(), StatusCode::OK);
+        let health_body = health_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let health_json: Value = serde_json::from_slice(&health_body).expect("health json");
+        assert_eq!(health_json["storage_mode"], "healthy");
+        assert!(health_json["last_ok_backup_id"].is_string());
+
+        let retry_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"retry-after-restore"}]}).to_string(),
+            ))
+            .expect("request");
+        let retry_resp = app.clone().oneshot(retry_req).await.expect("response");
+        assert_eq!(retry_resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn live_ingest_corruption_without_backup_forces_read_only_and_blocks_writes() {
+        let db_path = next_test_db_path();
+        let state = test_state_with_db(db_path.clone());
+        let app = build_app(state.clone());
+
+        ingest_info_events(&app, 1).await;
+        {
+            let mut s = state.write().await;
+            if s.storage_backup_dir.exists() {
+                fs::remove_dir_all(&s.storage_backup_dir).expect("remove backup dir");
+            }
+            s.last_ok_backup_id = None;
+        }
+        corrupt_sqlite_header(&db_path);
+
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"read-only-trigger"}]}).to_string(),
+            ))
+            .expect("request");
+        let ingest_resp = app.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let body = ingest_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["error"], "storage_read_only");
+        assert_eq!(
+            json["retry_after_ms"].as_u64(),
+            Some(DEFAULT_STORAGE_READ_ONLY_RETRY_AFTER_MS)
+        );
+
+        let snapshot = snapshot_json(&app).await;
+        let events = snapshot["events"].as_array().expect("events");
+        assert!(events
+            .iter()
+            .any(|row| row["event"]["kind"] == "observability_gap.storage_corrupted"));
+        assert!(events
+            .iter()
+            .any(|row| row["event"]["kind"] == "observability_gap.storage_read_only"));
+
+        let health_req = Request::builder()
+            .method("GET")
+            .uri("/health")
+            .body(Body::empty())
+            .expect("request");
+        let health_resp = app.clone().oneshot(health_req).await.expect("response");
+        assert_eq!(health_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let health_body = health_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let health_json: Value = serde_json::from_slice(&health_body).expect("health json");
+        assert_eq!(health_json["storage_mode"], "read_only");
+
+        let action_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-action-preflight-id", "pf-read-only")
+            .header("x-actor-role", "operator")
+            .body(Body::from(r#"{"action":"service.status","target":"core"}"#))
+            .expect("request");
+        let action_resp = app.clone().oneshot(action_req).await.expect("response");
+        assert_eq!(action_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let action_body = action_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let action_json: Value = serde_json::from_slice(&action_body).expect("action json");
+        assert_eq!(action_json["error"], "storage_read_only");
     }
 
     fn otlp_payload_with_count(count: usize, severity_text: &str) -> Value {

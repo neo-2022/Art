@@ -13,6 +13,7 @@
   - `DNA-derived state` (`dna_clusters`) и `evidence_blocks` сохраняются и поднимаются обратно после рестарта;
   - `analytics` и `counters` теперь сохраняются в SQLite как primary recovery state, а `CORE_ANALYTICS_STATE_PATH` остаётся только legacy mirror/import path;
   - `WAL` и `busy_timeout` для SQLite basement включаются при старте;
+  - backup-каталог теперь вычисляется не только по профилю, но и по конкретному пути к БД, чтобы разные экземпляры `Core` не делили один backup-root;
   - restart-proof для `v1/v2`, `incidents`, `audit chain`, `fingerprint/source indexes`, `dna/evidence` и аналитики зафиксирован в evidence `stage11_core_sqlite_restart.log`.
   - hostile backup/restore proof для полного состояния `art-core` после corruption теперь тоже зафиксирован в evidence `stage11_core_sqlite_hostile_recovery.log`.
 - При этом storage contour `stage11` всё ещё не доведён до полного production-состояния:
