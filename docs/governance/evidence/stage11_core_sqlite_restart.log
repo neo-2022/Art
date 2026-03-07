@@ -1,11 +1,12 @@
-# stage11 core sqlite restart proof
-2026-03-07T14:57:21+03:00
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.06s
+   Compiling art-core v0.1.0 (/home/art/Art/core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.17s
      Running unittests src/main.rs (target/debug/deps/art_core-a7679bcddd987b4c)
 
-running 2 tests
+running 4 tests
 test tests::storage_reloads_v2_events_from_sqlite_after_restart ... ok
 test tests::storage_reloads_v1_events_from_sqlite_after_restart ... ok
+test tests::storage_reloads_incidents_from_sqlite_after_restart_and_status_update ... ok
+test tests::storage_reloads_audits_from_sqlite_after_restart_and_keeps_chain_valid ... ok
 
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 65 filtered out; finished in 0.06s
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 65 filtered out; finished in 0.12s
 

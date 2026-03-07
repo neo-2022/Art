@@ -210,7 +210,7 @@ impl CoreState {
             events_v2: storage.events_v2,
             dna_clusters: HashMap::new(),
             evidence_blocks: HashMap::new(),
-            incidents: Vec::new(),
+            incidents: storage.incidents,
             fingerprint_index: HashMap::new(),
             source_last_seen: HashMap::new(),
             counters: Counters::default(),
@@ -218,9 +218,9 @@ impl CoreState {
             queue_depth_limit,
             max_batch_events,
             max_payload_bytes,
-            audits: Vec::new(),
-            next_audit_id: 1,
-            audit_chain_head: "genesis".to_string(),
+            audits: storage.audits,
+            next_audit_id: storage.next_audit_id,
+            audit_chain_head: storage.audit_chain_head,
             limited_actions_allowlist,
             otlp_tokens: OTLP_BURST,
             otlp_last_refill_ms: 0,
@@ -237,6 +237,10 @@ struct StorageBootstrap {
     events: VecDeque<StoredEvent>,
     next_seq_v2: u64,
     events_v2: VecDeque<StoredEventV2>,
+    incidents: Vec<Incident>,
+    audits: Vec<AuditEntry>,
+    next_audit_id: u64,
+    audit_chain_head: String,
 }
 
 fn open_storage_connection(db_path: &PathBuf) -> anyhow::Result<Connection> {
@@ -263,6 +267,16 @@ fn open_storage_connection(db_path: &PathBuf) -> anyhow::Result<Connection> {
             raw_event_json TEXT NOT NULL,
             dna_signature_json TEXT NOT NULL,
             evidence_refs_json TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS incidents_v1 (
+            id TEXT PRIMARY KEY,
+            updated_ts_ms INTEGER NOT NULL,
+            incident_json TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS audits_v1 (
+            id INTEGER PRIMARY KEY,
+            timestamp INTEGER NOT NULL,
+            audit_json TEXT NOT NULL
         );
         "#,
     )
@@ -361,11 +375,62 @@ fn load_storage_state(
         .context("failed to collect events_v2 bootstrap rows")?;
     loaded_v2.reverse();
 
+    let mut stmt_incidents = conn
+        .prepare("SELECT incident_json FROM incidents_v1 ORDER BY updated_ts_ms ASC, id ASC")
+        .context("failed to prepare incidents bootstrap query")?;
+    let loaded_incidents = stmt_incidents
+        .query_map([], |row| {
+            let incident_json: String = row.get(0)?;
+            serde_json::from_str::<Incident>(&incident_json).map_err(|err| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    incident_json.len(),
+                    rusqlite::types::Type::Text,
+                    Box::new(err),
+                )
+            })
+        })
+        .context("failed to iterate incidents bootstrap rows")?
+        .collect::<Result<Vec<_>, _>>()
+        .context("failed to collect incidents bootstrap rows")?;
+
+    let mut stmt_audits = conn
+        .prepare("SELECT audit_json FROM audits_v1 ORDER BY id ASC")
+        .context("failed to prepare audits bootstrap query")?;
+    let loaded_audits = stmt_audits
+        .query_map([], |row| {
+            let audit_json: String = row.get(0)?;
+            serde_json::from_str::<AuditEntry>(&audit_json).map_err(|err| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    audit_json.len(),
+                    rusqlite::types::Type::Text,
+                    Box::new(err),
+                )
+            })
+        })
+        .context("failed to iterate audits bootstrap rows")?
+        .collect::<Result<Vec<_>, _>>()
+        .context("failed to collect audits bootstrap rows")?;
+    let next_audit_id = conn
+        .query_row(
+            "SELECT COALESCE(MAX(id), 0) + 1 FROM audits_v1",
+            [],
+            |row| row.get::<_, u64>(0),
+        )
+        .context("failed to query next_audit_id for audits_v1")?;
+    let audit_chain_head = loaded_audits
+        .last()
+        .map(|entry| entry.entry_hash.clone())
+        .unwrap_or_else(|| "genesis".to_string());
+
     Ok(StorageBootstrap {
         next_seq,
         events: VecDeque::from(loaded_v1),
         next_seq_v2,
         events_v2: VecDeque::from(loaded_v2),
+        incidents: loaded_incidents,
+        audits: loaded_audits,
+        next_audit_id,
+        audit_chain_head,
     })
 }
 
@@ -397,6 +462,34 @@ fn persist_event_v2_with_conn(conn: &Connection, event: &StoredEventV2) -> anyho
     )
     .context("failed to persist events_v2 row")?;
     Ok(())
+}
+
+fn persist_incident_with_conn(conn: &Connection, incident: &Incident) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO incidents_v1(id, updated_ts_ms, incident_json) VALUES (?1, ?2, ?3)",
+        params![incident.id, now_ms(), serde_json::to_string(incident)?,],
+    )
+    .context("failed to persist incidents_v1 row")?;
+    Ok(())
+}
+
+fn persist_incident(db_path: &PathBuf, incident: &Incident) -> anyhow::Result<()> {
+    let conn = open_storage_connection(db_path)?;
+    persist_incident_with_conn(&conn, incident)
+}
+
+fn persist_audit_entry_with_conn(conn: &Connection, entry: &AuditEntry) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO audits_v1(id, timestamp, audit_json) VALUES (?1, ?2, ?3)",
+        params![entry.id, entry.timestamp, serde_json::to_string(entry)?],
+    )
+    .context("failed to persist audits_v1 row")?;
+    Ok(())
+}
+
+fn persist_audit_entry(db_path: &PathBuf, entry: &AuditEntry) -> anyhow::Result<()> {
+    let conn = open_storage_connection(db_path)?;
+    persist_audit_entry_with_conn(&conn, entry)
 }
 
 type Shared = Arc<RwLock<CoreState>>;
@@ -1138,15 +1231,16 @@ async fn apply_profile(
             });
             let seq = s.next_seq;
             s.next_seq += 1;
-            s.events.push_back(StoredEvent {
+            let stored_event = StoredEvent {
                 seq,
                 ts_ms: now_ms,
                 event,
-            });
+            };
+            s.events.push_back(stored_event.clone());
             if s.events.len() > s.queue_depth_limit {
                 s.events.pop_front();
             }
-            s.incidents.push(Incident {
+            let incident = Incident {
                 id: format!("profile-violation-{}", seq),
                 status: "open".to_string(),
                 kind: "profile_violation".to_string(),
@@ -1155,7 +1249,24 @@ async fn apply_profile(
                 run_id: None,
                 trace_id: None,
                 span_id: None,
-            });
+            };
+            s.incidents.push(incident.clone());
+            match open_storage_connection(&s.db_path) {
+                Ok(conn) => {
+                    if let Err(error) = persist_event_v1_with_conn(&conn, &stored_event) {
+                        warn!("failed to persist profile violation event: {}", error);
+                    }
+                    if let Err(error) = persist_incident_with_conn(&conn, &incident) {
+                        warn!("failed to persist profile violation incident: {}", error);
+                    }
+                }
+                Err(error) => {
+                    warn!(
+                        "failed to initialize sqlite during profile violation persistence: {}",
+                        error
+                    );
+                }
+            }
             (
                 StatusCode::BAD_REQUEST,
                 Json(json!({
@@ -2749,7 +2860,7 @@ fn push_incident_locked(
     span_id: Option<String>,
 ) {
     let incident_id = format!("incident-{}", s.next_seq);
-    s.incidents.push(Incident {
+    let incident = Incident {
         id: incident_id,
         status: "open".to_string(),
         kind,
@@ -2758,7 +2869,11 @@ fn push_incident_locked(
         run_id,
         trace_id,
         span_id,
-    });
+    };
+    s.incidents.push(incident.clone());
+    if let Err(error) = persist_incident(&s.db_path, &incident) {
+        warn!("failed to persist incident {}: {}", incident.id, error);
+    }
 }
 
 fn contains_injection_pattern(value: &str) -> bool {
@@ -3389,7 +3504,10 @@ fn append_audit_entry(state: &mut CoreState, mut entry: AuditEntry) {
     entry.merkle_proof = build_merkle_proof(&entry.prev_hash, &entry.entry_hash);
     state.next_audit_id += 1;
     state.audit_chain_head = entry.entry_hash.clone();
-    state.audits.push(entry);
+    state.audits.push(entry.clone());
+    if let Err(error) = persist_audit_entry(&state.db_path, &entry) {
+        warn!("failed to persist audit entry {}: {}", entry.id, error);
+    }
 }
 
 fn append_audit_entry_and_get(state: &mut CoreState, mut entry: AuditEntry) -> AuditEntry {
@@ -3400,6 +3518,9 @@ fn append_audit_entry_and_get(state: &mut CoreState, mut entry: AuditEntry) -> A
     state.next_audit_id += 1;
     state.audit_chain_head = entry.entry_hash.clone();
     state.audits.push(entry.clone());
+    if let Err(error) = persist_audit_entry(&state.db_path, &entry) {
+        warn!("failed to persist audit entry {}: {}", entry.id, error);
+    }
     entry
 }
 
@@ -3543,6 +3664,10 @@ async fn incident_ack(
     }
     if let Some(item) = s.incidents.iter_mut().find(|x| x.id == id) {
         item.status = "acknowledged".to_string();
+        let incident = item.clone();
+        if let Err(error) = persist_incident(&s.db_path, &incident) {
+            warn!("failed to persist incident ack {}: {}", incident.id, error);
+        }
         append_audit_entry(
             &mut s,
             build_audit_entry(&headers, "incident.ack", &id, "success", "none"),
@@ -3591,6 +3716,13 @@ async fn incident_resolve(
     }
     if let Some(item) = s.incidents.iter_mut().find(|x| x.id == id) {
         item.status = "resolved".to_string();
+        let incident = item.clone();
+        if let Err(error) = persist_incident(&s.db_path, &incident) {
+            warn!(
+                "failed to persist incident resolve {}: {}",
+                incident.id, error
+            );
+        }
         append_audit_entry(
             &mut s,
             build_audit_entry(&headers, "incident.resolve", &id, "success", "none"),
@@ -4153,6 +4285,169 @@ mod tests {
         assert_eq!(events[0]["raw_event"]["message"], "v2-event-2");
         assert_eq!(events[1]["raw_event"]["message"], "v2-event-1");
         assert_eq!(snapshot["cursor"], 2);
+    }
+
+    #[tokio::test]
+    async fn storage_reloads_incidents_from_sqlite_after_restart_and_status_update() {
+        let db_path = next_test_db_path();
+        let app1 = build_app(test_state_with_db(db_path.clone()));
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/profile/apply")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "profile_id": "ru",
+                    "retention_days": 30,
+                    "export_mode": "on",
+                    "egress_policy": "allow",
+                    "residency": "global",
+                    "updates_mode": "online",
+                })
+                .to_string(),
+            ))
+            .expect("request");
+        let resp = app1.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+        let app2 = build_app(test_state_with_db(db_path.clone()));
+        let incidents_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/incidents")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let incidents_resp = app2.clone().oneshot(incidents_req).await.expect("response");
+        assert_eq!(incidents_resp.status(), StatusCode::OK);
+        let incidents_body = incidents_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let incidents_json: Value = serde_json::from_slice(&incidents_body).expect("json");
+        let items = incidents_json["items"].as_array().expect("items");
+        assert_eq!(items.len(), 1);
+        let incident_id = items[0]["id"].as_str().expect("incident id").to_string();
+        assert_eq!(items[0]["status"], "open");
+        assert_eq!(items[0]["kind"], "profile_violation");
+
+        let ack_req = Request::builder()
+            .method("POST")
+            .uri(format!("/api/v1/incidents/{incident_id}/ack"))
+            .header("x-actor-role", "operator")
+            .body(Body::empty())
+            .expect("request");
+        let ack_resp = app2.clone().oneshot(ack_req).await.expect("response");
+        assert_eq!(ack_resp.status(), StatusCode::OK);
+
+        let app3 = build_app(test_state_with_db(db_path));
+        let incidents_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/incidents")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let incidents_resp = app3.oneshot(incidents_req).await.expect("response");
+        assert_eq!(incidents_resp.status(), StatusCode::OK);
+        let incidents_body = incidents_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let incidents_json: Value = serde_json::from_slice(&incidents_body).expect("json");
+        let items = incidents_json["items"].as_array().expect("items");
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0]["id"], incident_id);
+        assert_eq!(items[0]["status"], "acknowledged");
+    }
+
+    #[tokio::test]
+    async fn storage_reloads_audits_from_sqlite_after_restart_and_keeps_chain_valid() {
+        let db_path = next_test_db_path();
+        let app1 = build_app(test_state_with_db(db_path.clone()));
+        let exec_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-stage11")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core"}"#,
+            ))
+            .expect("request");
+        let exec_resp = app1.clone().oneshot(exec_req).await.expect("response");
+        assert_eq!(exec_resp.status(), StatusCode::OK);
+
+        let app2 = build_app(test_state_with_db(db_path.clone()));
+        let verify_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit/verify")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let verify_resp = app2.clone().oneshot(verify_req).await.expect("response");
+        assert_eq!(verify_resp.status(), StatusCode::OK);
+        let verify_body = verify_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let verify_json: Value = serde_json::from_slice(&verify_body).expect("json");
+        assert_eq!(verify_json["status"], "verified");
+        assert_eq!(verify_json["count"], 2);
+
+        let exec_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-stage11-restart")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .body(Body::from(r#"{"action":"service.status","target":"core"}"#))
+            .expect("request");
+        let exec_resp = app2.clone().oneshot(exec_req).await.expect("response");
+        assert_eq!(exec_resp.status(), StatusCode::OK);
+
+        let app3 = build_app(test_state_with_db(db_path));
+        let audit_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let audit_resp = app3.clone().oneshot(audit_req).await.expect("response");
+        assert_eq!(audit_resp.status(), StatusCode::OK);
+        let audit_body = audit_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let audit_json: Value = serde_json::from_slice(&audit_body).expect("json");
+        let items = audit_json["items"].as_array().expect("items");
+        assert_eq!(items.len(), 4);
+        assert_eq!(items[0]["id"], 1);
+        assert_eq!(items[3]["id"], 4);
+
+        let verify_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit/verify")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let verify_resp = app3.oneshot(verify_req).await.expect("response");
+        assert_eq!(verify_resp.status(), StatusCode::OK);
+        let verify_body = verify_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let verify_json: Value = serde_json::from_slice(&verify_body).expect("json");
+        assert_eq!(verify_json["status"], "verified");
+        assert_eq!(verify_json["count"], 4);
     }
 
     fn otlp_payload_with_count(count: usize, severity_text: &str) -> Value {
