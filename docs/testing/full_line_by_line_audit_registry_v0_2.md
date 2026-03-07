@@ -862,3 +862,23 @@
 | `scripts/tests/test_stage22_e2e.py` | REVIEWED | WEAK | Это не real e2e harness, а orchestrator нескольких cargo tests. Полезно как wrapper, но название и stage semantics сильнее фактического execution path. | 17, 18, 22, 38 |
 | `scripts/tests/test_stage31_investigation_doc_schema.py` | REVIEWED | OK | Честный schema-level regression test: валидирует JSON Schema и positive/negative payloads. Его scope ограничен schema layer, но в этих пределах он корректен. | 31, 38, 44 |
 | `scripts/tests/workspace_boundary_negative_smoke.sh` | REVIEWED | OK | Это настоящий negative smoke: искусственно внедряет forbidden import, ожидает fail boundary-check и восстанавливает файл. Сильный anti-breakage для stage28 boundary contour. | 28, 38, 41 |
+
+## Слой 12 — Хвост покрытия: внешние sources, reopening logic и audit validators
+
+| Файл | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md` | REVIEWED | WEAK | Документ полезен как историко-архитектурный source, но остаётся описательной инструкцией без machine-readable контрактов, без фиксированной версии внешнего REGART-repo и с несколькими местами, где target-state уже сильнее фактической materialization в коде Art/REGART bridge. Как источник замысла ценен, как доказательство текущего runtime contour недостаточен. | 05, 06, 18, 20, 28, 38 |
+| `docs/testing/stage_reopening_matrix_v0_2.md` | REVIEWED | OK | Матрица корректно отделяет reopened `01..03` от уже открытых поздних стадий и удерживает связь между audit registry и MASTER. Сильна именно как governance-артефакт handoff из аудита в remediation. | 00, 38 |
+| `scripts/generate/normalize_runbooks.py` | REVIEWED | WEAK | Скрипт полезен как normalizer корпуса runbook, но он структурный, а не семантический: может сделать corpus визуально каноничным без доказательства полноты hostile/recovery content. Его нельзя считать доказательством качества runbook сам по себе. | 01, 23, 38 |
+| `scripts/tests/validate_audit_policy_corpus.py` | REVIEWED | WEAK | Валидатор полезен, но проверяет audit policy строками и не доказывает реальную append-only materialization, identity model или privacy boundary в runtime. Это corpus-guard, не эксплуатационный proof. | 01, 15, 32, 38 |
+| `scripts/tests/validate_governance_enforce_artifacts.py` | REVIEWED | WEAK | Проверяет, что `CODEOWNERS` и PR template содержат нужные секции, но не доказывает, что GitHub branch protection и review policy действительно enforced во всех путях merge. Это structural governance check. | 01, 38 |
+| `scripts/tests/validate_postmortem_corpus.py` | REVIEWED | WEAK | Валидатор хорошо удерживает обязательные секции postmortem corpus, но не доказывает качество root-cause analysis, evidence discipline и hostile lessons-learned в реальных инцидентах. | 01, 38 |
+| `scripts/tests/validate_release_governance_corpus.py` | REVIEWED | WEAK | Полезный guard против деградации release docs, но не доказывает реальную release discipline, signed-tag provenance и rollback readiness в живом процессе. | 01, 04, 24, 38 |
+| `scripts/tests/validate_runbook_corpus.py` | REVIEWED | WEAK | Сильный structural guard runbook-корпуса, но он не ловит semantic hollowness: hostile paths, real rollback criteria, ownership depth и runtime parity могут отсутствовать при зелёном результате. | 01, 23, 38 |
+
+## Итог покрытия tracked-корпуса
+
+- Покрытие tracked-файлов в реестре: `COMPLETE`
+- Непокрытых tracked-файлов после слоя 12: `0` (проверено через `git -c core.quotePath=false ls-files`)
+- Это завершает фазу полного postrочного покрытия корпуса.
+- Это не означает завершение remediation: карта reopening и root-cause backlog остаются обязательными до отдельного завершения corrective программы.
