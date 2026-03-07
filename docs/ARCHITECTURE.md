@@ -67,6 +67,8 @@ Art строится как единый продукт с тремя архит
 - архитектурные решения принимаются только по пути `корень -> ствол -> крона`
 - hardcoding запрещён как архитектурный anti-pattern и допускается только как явно оформленный test fixture вне production baseline
 - internet-exposed deployment без ingress/perimeter shield запрещён как архитектурный anti-pattern
+- high-risk монолитные entrypoint-файлы считаются архитектурным долгом и должны разрезаться после стабилизации basement по defect-линии `DEF-017`
+- string/render-only test corpus не считается достаточным архитектурным доказательством поведения; hostile integration/e2e hardening обязателен по defect-линии `DEF-018`
 
 ## Ingress / perimeter boundary
 - app-level backpressure внутри `art-core` обязателен, но не считается полноценной DDoS-защитой;

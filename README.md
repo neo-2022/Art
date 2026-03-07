@@ -24,6 +24,7 @@
 | Текущий baseline | `v0.2.0-rc.2` |
 | Статус релиза | production candidate |
 | Активный corrective baseline | `DEF-001 -> stage11 (durable Core storage/recovery; hostile backup/restore proof added)` |
+| Следующие structural defects в стволе | `DEF-017` high-risk monolith decomposition, `DEF-018` hostile e2e depth hardening |
 | Execute-gated платформы | Ubuntu native, Docker runtime, Kubernetes runtime |
 | Расширенная Linux-матрица | validate-only до включения выделенных runner'ов |
 
@@ -35,6 +36,7 @@
 - активная дефектовочная контрольная строка: [defect_remediation_control_matrix_v0_2.md](docs/testing/defect_remediation_control_matrix_v0_2.md)
 - дефектовочная лестница: [defect_remediation_ladder_v0_2.md](docs/testing/defect_remediation_ladder_v0_2.md)
 - baseline ingress/perimeter защиты: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
+- buyer due diligence triage: [buyer_due_diligence_signal_triage_v0_2.md](docs/testing/buyer_due_diligence_signal_triage_v0_2.md)
 
 ## Что такое Art
 

@@ -40,6 +40,7 @@ Art и REGART — это интегрированные системы, а не 
 - acceptance criteria подтверждаются evidence
 - cross-repo parity должна быть машинно проверяемой
 - изменение корневого REGART integration source-of-truth требует синхронного обновления этого документа и зависимого контура по `formats/root_decision_tree_dependencies.yaml`
+- console/browser integration не считается доказанной только по HTML/render-проверкам; для hostile production стандарта нужен отдельный e2e/runtime proof contour из defect-линии `DEF-018`
 
 ## Операционные ссылки
 - runbook моста: [art_bridge_runbook.md](regart/art_bridge_runbook.md)

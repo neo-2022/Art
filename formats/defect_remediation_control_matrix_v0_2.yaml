@@ -194,3 +194,33 @@ defects:
       - docs/source/checklists/CHECKLIST_43_SAFE_ACTION_INTELLIGENCE.md
       - docs/source/checklists/CHECKLIST_44_INCIDENT_CAPSULE_AND_TWIN.md
       - docs/source/checklists/CHECKLIST_45_FORENSIC_ENRICHMENT_AND_GRAPH.md
+  - id: DEF-017
+    title: High-risk runtime entrypoints remain too monolithic
+    ladder_level: E
+    execution_order: 17
+    execution_dependencies: ["DEF-016"]
+    affected_stages: ["10", "11", "17", "18", "28", "35", "37", "39"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md
+      - docs/source/checklists/CHECKLIST_11_ART_CORE_STORAGE_SQLITE.md
+      - docs/source/checklists/CHECKLIST_17_ART_AGENT_SPOOL_OUTBOX.md
+      - docs/source/checklists/CHECKLIST_18_ART_AGENT_RECEIVERS.md
+      - docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
+      - docs/source/checklists/CHECKLIST_35_SPATIAL_STORE_3D_READINESS.md
+      - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
+      - docs/source/checklists/CHECKLIST_39_AI_ENGINEERING_GOVERNANCE.md
+  - id: DEF-018
+    title: Hostile integration and e2e test depth remains uneven
+    ladder_level: E
+    execution_order: 18
+    execution_dependencies: ["DEF-017"]
+    affected_stages: ["10", "16", "22", "24", "28", "34", "36", "38"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md
+      - docs/source/checklists/CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md
+      - docs/source/checklists/CHECKLIST_22_E2E_STRESS_CHAOS_SOAK_PERF.md
+      - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
+      - docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
+      - docs/source/checklists/CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md
+      - docs/source/checklists/CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md
+      - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md

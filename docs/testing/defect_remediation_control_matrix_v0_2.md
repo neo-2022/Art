@@ -71,6 +71,8 @@
 | `DEF-014` | `[ ]` | `D.1` | `DEF-013` | `04, 07, 08, 24, 38` | Contracts/CI/release/gates ещё дают false-green и weak proof |
 | `DEF-015` | `[ ]` | `D.2` | `DEF-014` | `12, 24, 36, 37, 45` | Нет полноценного ingress/perimeter anti-DDoS контура для hostile production среды |
 | `DEF-016` | `[ ]` | `E.1` | `DEF-015` | `29..45` | Утверждённые differentiators ещё не materialize в runtime/contracts/tests |
+| `DEF-017` | `[ ]` | `E.2` | `DEF-016` | `10, 11, 17, 18, 28, 35, 37, 39` | Высокорисковые монолитные entrypoint-файлы затрудняют review, hardening и смену владельца |
+| `DEF-018` | `[ ]` | `E.3` | `DEF-017` | `10, 16, 22, 24, 28, 34, 36, 38` | Сила test-corpus неравномерна: console/browser и часть release-path ещё слабее hostile production стандарта |
 
 ## Контрольные строки
 
@@ -435,6 +437,64 @@
   - contract surfaces;
   - negative-path and regression evidence;
   - continuity with historical corpus.
+
+### [ ] DEF-017 — Structural decomposition of high-risk monoliths
+- Уровень: `E.2`
+- Зависит от: `DEF-016`
+- Затронутые stage-листы:
+  - `CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md`
+  - `CHECKLIST_11_ART_CORE_STORAGE_SQLITE.md`
+  - `CHECKLIST_17_ART_AGENT_SPOOL_OUTBOX.md`
+  - `CHECKLIST_18_ART_AGENT_RECEIVERS.md`
+  - `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md`
+  - `CHECKLIST_35_SPATIAL_STORE_3D_READINESS.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+  - `CHECKLIST_39_AI_ENGINEERING_GOVERNANCE.md`
+- Audit basis:
+  - `core/src/main.rs`
+  - `agent/src/main.rs`
+  - `apps/console-web/src/main.ts`
+  - `packages/local-stores/src/index.ts`
+  - `browser/src/outbox.js`
+  - `docs/testing/buyer_due_diligence_signal_triage_v0_2.md`
+- Что нужно сделать:
+  1. декомпозировать high-risk entrypoints по bounded responsibilities, а не только выносить helper-функции;
+  2. снизить code concentration в `core` и связанных runtime entrypoints;
+  3. сделать так, чтобы security/runtime review и owner handoff не зависели от одного файла и одного человека;
+  4. синхронизировать decomposition с architecture/docs и не потерять корневой замысел проекта.
+- Чем доказать закрытие:
+  - decomposition report с line-count и responsibility split;
+  - module-boundary tests;
+  - reviewer-oriented architecture evidence;
+  - отсутствие regressions после extraction.
+
+### [ ] DEF-018 — Hostile integration and e2e test depth hardening
+- Уровень: `E.3`
+- Зависит от: `DEF-017`
+- Затронутые stage-листы:
+  - `CHECKLIST_10_ART_BROWSER_LEVEL0_UNIVERSAL.md`
+  - `CHECKLIST_16_ART_CORE_PANEL0_EMBEDDED_UI.md`
+  - `CHECKLIST_22_E2E_STRESS_CHAOS_SOAK_PERF.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md`
+  - `CHECKLIST_34_PERF_LOAD_COVERAGE_RATCHET.md`
+  - `CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md`
+  - `CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md`
+- Audit basis:
+  - `apps/console-web/test/console-web.test.mjs`
+  - `browser/test/*.js`
+  - `scripts/tests/*`
+  - `docs/testing/buyer_due_diligence_signal_triage_v0_2.md`
+- Что нужно сделать:
+  1. усилить console/browser tests от string/render checks к hostile runtime/e2e chains;
+  2. добавить длинные сценарии rollback/migration/reconnect/incident-chain именно для UI/runtime path;
+  3. убрать зависимость от false-green статических HTML/assertion tests как от основного доказательства;
+  4. связать эти tests с evidence и regression corpus.
+- Чем доказать закрытие:
+  - real browser/console hostile e2e suite;
+  - rollback/migration/reconnect evidence;
+  - anti-breakage screenshots/logs не placeholder-backed;
+  - reduction of weak string-only gate dependence.
 
 ## Правило применения
 1. Работа по remediation начинается с первой строки `[ ]` в порядке ведомости.

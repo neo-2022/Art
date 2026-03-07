@@ -44,6 +44,7 @@
 ### Governance
 - Visual language: [ART_VISUAL_LANGUAGE.md](./ART_VISUAL_LANGUAGE.md)
 - Delivery evidence: [DELIVERY_EVIDENCE.md](./DELIVERY_EVIDENCE.md)
+- Buyer due diligence triage: [buyer_due_diligence_signal_triage_v0_2.md](../testing/buyer_due_diligence_signal_triage_v0_2.md)
 - Security posture: [SECURITY_POSTURE.md](./SECURITY_POSTURE.md)
 - Ingress / perimeter protection baseline: [ingress_perimeter_protection_v0_2.md](../source/ingress_perimeter_protection_v0_2.md)
 - Матрица совместимости Art↔REGART: [COMPATIBILITY_MATRIX_ART_REGART.md](./COMPATIBILITY_MATRIX_ART_REGART.md)

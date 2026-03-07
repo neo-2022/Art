@@ -232,14 +232,19 @@
 12. `43`
 13. `44`
 14. `45`
+15. structural decomposition of high-risk runtime entrypoints
+16. hostile integration/e2e depth hardening for console/browser/release/SaaS paths
 
 Почему этот уровень последний:
 - differentiators нельзя честно закрывать на слабом basement;
 - исторический корпус уже утверждён, но его реализация должна опираться на исправленное основание.
+- decomposition и buyer-grade test hardening нельзя делать поверх ещё неустойчивого основания, иначе это даст дорогой и хрупкий refactor без реального эффекта.
 
 Что считается успехом уровня:
 - historical differentiators больше не висят только в foundation;
 - их contracts/runtime/tests/evidence materialized;
+- high-risk entrypoints больше не держат критическую архитектуру в одном файле;
+- console/browser/release corpus доказывает hostile runtime-цепочки, а не только наличие HTML/строк;
 - проект перестаёт расходиться между замыслом и кодом.
 
 ## Запрещённые маршруты
