@@ -121,3 +121,16 @@
 | `core/embedded/panel0/bootstrap.html` | REVIEWED | MISMATCH | Fallback/bootstrap path рабочий и stage16 runtime зелёный, но двуязычность неполная: title/часть EN-строк остаются жёстко вшитыми. | 16, 28 |
 | `packages/ui-laws/src/index.ts` | REVIEWED | OK | Runtime law layer сильный: truth modes, RTP, semantic token discipline, evidence-link invariants уже пришиты кодом. Нерешённой остаётся не библиотека, а отсутствие AST/static enforcement слоя. | 28, 30, 41 |
 | `packages/evidence-linking/src/index.ts` | REVIEWED | WEAK | Пакет пока очень тонкий: только href builders. Для заявленного evidence-linking differentiator этого недостаточно. | 28, 30, 45 |
+
+## Слой 6 — Browser-facing support / worker / static generation
+
+| Файл | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `core/embedded/panel0/index.html` | REVIEWED | MISMATCH | Index page Panel0 остаётся частично англоязычной (`lang=\"en\"`, `Embedded emergency panel for Core`, `Language`, `Core is unavailable`, `Evidence payload`). | 16, 28 |
+| `core/embedded/panel0/panel0.js` | REVIEWED | MISMATCH | RU-словарь неполон: часть ключей и значений остаются англоязычными (`Art Panel0`, `build_id`, `effective_profile_id`, `Evidence payload`, `network error`). | 16, 28 |
+| `core/embedded/panel0/panel0.css` | REVIEWED | OK | CSS простая, но честная: не маскирует runtime gaps и не вносит дополнительной логической слабости. | 16 |
+| `core/embedded/panel0/panel0_sw.js` | REVIEWED | WEAK | SW реализует базовый offline cache, но fallback ответ `offline` примитивен и не несёт structured degraded-mode semantics. | 16, 37 |
+| `packages/worker-runtime/src/index.ts` | REVIEWED | MISMATCH | Worker runtime фактически stub: `runTask` просто возвращает payload. Для заявленного worker/Wasm isolation layer это пока только каркас. | 28, 34, 35, 43 |
+| `packages/worker-runtime/README.md` | REVIEWED | MISMATCH | README отсутствует, несмотря на наличие пакета. Это ухудшает честность package surface и вводит в заблуждение о зрелости worker-layer. | 07, 28 |
+| `apps/console-web/scripts/generate-static.mjs` | REVIEWED | WEAK | Генератор статического shell строит только `en` вариант `index.html`; для строгой bilingual philosophy этого недостаточно. | 16, 28 |
+| `apps/console-web/test/console-web.test.mjs` | REVIEWED | WEAK | Тесты сильны в breadth UI laws, но принимают неполную RU локализацию и не ловят hardcoded bilingual leaks. | 16, 28, 30, 40 |
