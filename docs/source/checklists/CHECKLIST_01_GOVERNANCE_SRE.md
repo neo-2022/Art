@@ -66,7 +66,7 @@ A) Полный запрет опциональности:
    - для каждой записи присутствуют все поля из списка выше
    - для всех записей с `incident_rule != no_incident` присутствует `action_ref` на runbook в `docs/runbooks/`
 
-7. [ ] **Сделать:** Описать runbook-структуру и минимальные требования к runbook для каждого случая, где создаётся инцидент (по `observability_gap.*` и по SLO breach).  
+7. [x] **Сделать:** Описать runbook-структуру и минимальные требования к runbook для каждого случая, где создаётся инцидент (по `observability_gap.*` и по SLO breach).  
    **Проверка (pass/fail):** существует файл `docs/governance/runbook_policy.md`, содержит:
    - обязательные разделы runbook (symptoms, checks, mitigations, rollback, verification, escalation)
    - правило хранения runbook в `docs/runbooks/`

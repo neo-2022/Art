@@ -1,18 +1,45 @@
 # Runbook: observability_gap.claim_without_evidence
 
-## Symptoms
+## Source of truth
+- `docs/governance/runbook_policy.md`
+- `docs/governance/observability_gap_registry.md`
+- `docs/source/checklists/CHECKLIST_01_GOVERNANCE_SRE.md`
+
+## symptoms
 - UI/API пытается показать claim без `evidence_refs`.
 - Нарушение закона Evidence-First.
 
-## Diagnosis
+## checks
 1. Проверить `claim_id/component/rule`.
 2. Запустить `corepack pnpm --filter @art/ui-laws run test`.
 3. Проверить источник данных claim.
 
-## Resolution
+## mitigations
 1. Запретить render claim без evidence_refs.
 2. Исправить producer claim payload.
 3. Повторить stage30 tests.
 
-## Rollback
+## rollback
 - Включить hard-block claims UI section до исправления producer.
+
+## verification
+- Повторная проверка не воспроизводит сигнал `observability_gap.claim_without_evidence`.
+- Snapshot/stream/метрики подтверждают восстановление без новых regressions.
+- Смежные hostile paths не деградировали после remediation.
+
+## escalation
+- Эскалировать on-call и Incident Commander, если mitigation не восстановила сервис в рамках SLA severity.
+- При SEV1+ или повторном срабатывании приложить evidence refs и связанный incident/postmortem trail.
+
+## evidence
+- Сохранить event payload, `trace_id`/`request_id`/`audit_id`, affected component, version/build, config diff и relevant log excerpts.
+- Для UI/runtime проблем приложить screenshot/video reproduction и browser/runtime context.
+- Для release/config проблем приложить commit/tag/PR и rollback decision.
+
+## owner
+- Основной владелец: дежурный инженер и компонент-владелец по RACI/реестру событий.
+- Ответственный за эскалацию: Incident Commander для SEV1+ или затяжного инцидента.
+
+## degraded mode
+- Если полное восстановление недоступно, включить документированный degraded/read-only mode для затронутой поверхности.
+- Зафиксировать scope деградации, срок действия и условие выхода из degraded mode.
