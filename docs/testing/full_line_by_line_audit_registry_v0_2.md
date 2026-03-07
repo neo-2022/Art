@@ -257,6 +257,12 @@
 | `systemd/art-vacuum.service` | REVIEWED | MISMATCH | Unit использует `User=%i`, но файл не шаблонный (`art-vacuum.service`, не `art-vacuum@.service`); при запуске через timer `%i` не будет материализован корректно. Это корневой runtime defect, не пойманный текущим stage11 coverage. | 11, 23, 37, 38 |
 | `systemd/art-vacuum.timer` | REVIEWED | MISMATCH | Timer ссылается на `Unit=art-vacuum.service`, то есть на неинстанцируемый unit, который одновременно использует `%i`; вместе с service это образует broken scheduled vacuum path. | 11, 23, 37, 38 |
 
+## Внешний buyer due diligence — локально подтверждённые сигналы
+
+| Артефакт | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `docs/testing/buyer_due_diligence_signal_triage_v0_2.md` | REVIEWED | OK | Внешний аудит покупателя переведён в рабочий инженерный артефакт: подтверждены branch split, bus factor, in-memory foundation в Core/Agent, cross-repo strict dependency, dev/prod transport split и platform evidence gap; устаревшие или недоказанные тезисы отделены отдельно. | 00, 01, 04, 05, 06, 18, 20, 23, 24, 37, 38, 39 |
+
 ## Слой 10 — Нижние корневые причины найденных runtime-разрывов
 
 > Этот слой отражает не просто симптомы, а нижние причины несоответствий, обнаруженных в слоях 8–9. Аудит выполнен по закону спуска к корню: фиксируется именно то, что делает верхние green-path ложными.
