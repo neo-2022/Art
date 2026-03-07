@@ -124,7 +124,9 @@
   - backup policy больше не расходится с runtime: cadence `15 минут` enforced внутри `Core`, а не только описан в docs;
   - отдельный evidence `stage11_step2_backup_policy.log` фиксирует cadence-test, полный `art-core`, Python storage-suite и весь стволовой guard-chain для шага `11.2`;
   - live-process contour `kill -9 Core во время ingest` теперь материализован отдельным runtime smoke `scripts/tests/storage_kill9_runtime.sh` и evidence `stage11_kill9_runtime.log`;
-  - дефект всё ещё открыт, потому что следующий корневой blocker уже сместился на `storage pressure / disk exhaustion`: пока не materialize watermarks, reserve free space, controlled degradation и runtime recovery без ручной импровизации.
+  - ранний `storage pressure` contour теперь тоже materialized: `high/critical watermarks`, `reserve free space`, write-shed на `high`, жёсткий `503 + retry_after_ms` на `critical`, recovery после возврата свободного места и live evidence `stage11_storage_pressure_runtime.log`;
+  - для `stage11` blocker `storage pressure / disk exhaustion` уже снят: фактический `disk full` hostile proof и archive/prune discipline доказаны live runtime smoke;
+  - сам `DEF-001` остаётся открыт, потому что следующие локальные blockers `stage11` теперь сместились на concurrency proof (`11.3`) и production-proof для `VACUUM/systemd` (`11.4`).
 
 ### [ ] DEF-002 — Durable spool у `Agent`
 - Уровень: `A.2`
@@ -494,15 +496,25 @@
   - `docs/ops/storage.md`
   - `docs/governance/observability_gap_registry.md`
 - Что нужно сделать:
-  1. materialize `high watermark`, `critical watermark` и `reserve free space` как живой runtime-контур до фактического `disk full`;
-  2. сделать `observability_gap.storage_pressure_high` и `observability_gap.storage_disk_full` разными стадиями деградации, а не одним поздним отказом;
-  3. ввести controlled degraded mode, pruning/archive policy и recovery discipline для длительного hostile потока;
-  4. запретить release claim про durable storage, пока нет hostile disk-exhaustion proof.
+  1. удержать уже materialized `high watermark`, `critical watermark` и `reserve free space` как release-grade baseline на уровнях `12/24/37`;
+  2. сохранить `observability_gap.storage_pressure_high` и `observability_gap.storage_disk_full` разными стадиями деградации в ingest/release/Linux profiles;
+  3. протащить archive/prune discipline и reserve-space policy в release blockers и platform hardening, а не только в `stage11`;
+  4. запретить release claim про durable storage, пока hostile disk-exhaustion proof не закреплён в `stage24/37` как production evidence.
 - Чем доказать закрытие:
   - hostile disk-pressure tests;
   - runtime evidence по `storage_pressure_high` и `storage_disk_full`;
   - release blocker evidence;
   - recovery logs и proof сохранения reserve free space.
+- Текущий прогресс:
+  - `stage11`-часть дефекта уже materialized и подтверждена:
+    - `observability_gap.storage_pressure_high`
+    - `high -> heavy write shed`
+    - `critical -> write block`
+    - `storage_disk_full -> 503 + retry_after_ms`
+    - `storage_archive_prune_activated`
+    - recovery после возврата свободного места
+    - evidence `stage11_storage_pressure_runtime.log`
+  - дефект остаётся открыт только как cross-stage protective contour для `12/24/37`: release/perimeter/runtime hardening ещё должны сделать этот baseline обязательным production-blocker.
 
 ### [ ] DEF-024 — Startup configuration fail-closed validator
 - Уровень: `D.6`

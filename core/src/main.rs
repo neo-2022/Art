@@ -1,6 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::convert::Infallible;
 use std::env;
+use std::ffi::CString;
 use std::fs;
 use std::net::SocketAddr;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
@@ -53,6 +54,15 @@ const DEFAULT_STORAGE_RECOVERY_RETRY_AFTER_MS: u64 = 1_000;
 const DEFAULT_STORAGE_READ_ONLY_RETRY_AFTER_MS: u64 = 2_000;
 const DEFAULT_STORAGE_BACKUP_RETENTION: usize = 96;
 const DEFAULT_STORAGE_BACKUP_INTERVAL_MS: u64 = 15 * 60 * 1000;
+const DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT: u8 = 85;
+const DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT: u8 = 95;
+const DEFAULT_STORAGE_RESERVED_FREE_SPACE_MB: u64 = 512;
+const DEFAULT_STORAGE_PRESSURE_HIGH_RETRY_AFTER_MS: u64 = 1_000;
+const DEFAULT_STORAGE_PRESSURE_CRITICAL_RETRY_AFTER_MS: u64 = 1_500;
+const DEFAULT_STORAGE_DISK_FULL_RETRY_AFTER_MS: u64 = 1_500;
+const DEFAULT_STORAGE_PRESSURE_WARNING_MARGIN_BYTES: u64 = 16 * 1024 * 1024;
+const DEFAULT_STORAGE_PRESSURE_HIGH_BACKUP_RETENTION: usize = 8;
+const DEFAULT_STORAGE_PRESSURE_CRITICAL_BACKUP_RETENTION: usize = 2;
 const ANALYTICS_STATE_ROW_ID: i64 = 1;
 static STORAGE_BACKUP_COUNTER: AtomicU64 = AtomicU64::new(1);
 
@@ -172,6 +182,58 @@ impl AnalyticsState {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum StoragePressureState {
+    Normal,
+    High,
+    Critical,
+}
+
+impl StoragePressureState {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::High => "high",
+            Self::Critical => "critical",
+        }
+    }
+
+    fn severity_rank(self) -> u8 {
+        match self {
+            Self::Normal => 0,
+            Self::High => 1,
+            Self::Critical => 2,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct StoragePressureConfig {
+    high_watermark_percent: u8,
+    critical_watermark_percent: u8,
+    reserved_free_space_bytes: u64,
+    hard_db_size_limit_bytes: Option<u64>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct StoragePressureSnapshot {
+    db_used_bytes: u64,
+    wal_used_bytes: u64,
+    used_bytes: u64,
+    free_bytes: u64,
+    storage_total_bytes: u64,
+    effective_used_percent: u8,
+    pressure_state: StoragePressureState,
+    hard_limit_reached: bool,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum StorageWritePressure {
+    Light,
+    Heavy,
+}
+
 #[derive(Debug)]
 struct CoreState {
     next_seq: u64,
@@ -200,6 +262,8 @@ struct CoreState {
     storage_backup_dir: PathBuf,
     last_ok_backup_id: Option<String>,
     last_backup_refresh_ms: u64,
+    storage_pressure_config: StoragePressureConfig,
+    storage_pressure_state: StoragePressureState,
     storage_read_only: bool,
     storage_fault_handling: bool,
 }
@@ -214,6 +278,7 @@ impl CoreState {
         analytics: AnalyticsState,
         analytics_state_path: PathBuf,
         db_path: PathBuf,
+        storage_pressure_config: StoragePressureConfig,
     ) -> anyhow::Result<Self> {
         let storage = load_storage_state(&db_path, queue_depth_limit)?;
         let fallback_max_buckets = analytics.max_buckets;
@@ -264,6 +329,8 @@ impl CoreState {
             storage_backup_dir: backup_dir,
             last_ok_backup_id,
             last_backup_refresh_ms,
+            storage_pressure_config,
+            storage_pressure_state: StoragePressureState::Normal,
             storage_read_only: false,
             storage_fault_handling: false,
         })
@@ -278,6 +345,99 @@ fn sqlite_integrity_status(db_path: &std::path::Path) -> Result<String, String> 
     let conn = Connection::open(db_path).map_err(|err| err.to_string())?;
     conn.query_row("PRAGMA integrity_check;", [], |row| row.get::<_, String>(0))
         .map_err(|err| err.to_string())
+}
+
+fn sqlite_wal_path(db_path: &PathBuf) -> PathBuf {
+    db_path.with_file_name(format!(
+        "{}-wal",
+        db_path.file_name().expect("db file name").to_string_lossy()
+    ))
+}
+
+fn file_size_or_zero(path: &std::path::Path) -> u64 {
+    fs::metadata(path).map(|meta| meta.len()).unwrap_or(0)
+}
+
+fn filesystem_usage_for_path(path: &std::path::Path) -> anyhow::Result<(u64, u64)> {
+    let probe_path = if path.is_dir() {
+        path.to_path_buf()
+    } else {
+        path.parent().unwrap_or(path).to_path_buf()
+    };
+    let c_path = CString::new(probe_path.to_string_lossy().as_bytes())
+        .context("failed to encode filesystem path for statvfs")?;
+    let mut stats = std::mem::MaybeUninit::<libc::statvfs>::uninit();
+    let rc = unsafe { libc::statvfs(c_path.as_ptr(), stats.as_mut_ptr()) };
+    if rc != 0 {
+        return Err(anyhow::anyhow!(
+            "statvfs failed for {}",
+            probe_path.display()
+        ));
+    }
+    let stats = unsafe { stats.assume_init() };
+    let total_bytes = (stats.f_blocks as u128)
+        .saturating_mul(stats.f_frsize as u128)
+        .min(u64::MAX as u128) as u64;
+    let free_bytes = (stats.f_bavail as u128)
+        .saturating_mul(stats.f_frsize as u128)
+        .min(u64::MAX as u128) as u64;
+    Ok((total_bytes, free_bytes))
+}
+
+fn evaluate_storage_pressure(
+    db_path: &PathBuf,
+    config: StoragePressureConfig,
+) -> anyhow::Result<StoragePressureSnapshot> {
+    let db_used_bytes = file_size_or_zero(db_path);
+    let wal_used_bytes = file_size_or_zero(&sqlite_wal_path(db_path));
+    let used_bytes = db_used_bytes.saturating_add(wal_used_bytes);
+    let (storage_total_bytes, free_bytes) = filesystem_usage_for_path(db_path)?;
+    let effective_free_bytes = free_bytes.saturating_sub(config.reserved_free_space_bytes);
+    let effective_budget_bytes = used_bytes.saturating_add(effective_free_bytes);
+    let hard_limit_reached = config
+        .hard_db_size_limit_bytes
+        .map(|limit| used_bytes >= limit)
+        .unwrap_or(false);
+    let effective_used_percent = if effective_budget_bytes == 0 {
+        0
+    } else {
+        (((used_bytes as f64) / (effective_budget_bytes as f64)) * 100.0)
+            .round()
+            .clamp(0.0, 100.0) as u8
+    };
+    let reserve_band_state = if free_bytes <= config.reserved_free_space_bytes {
+        StoragePressureState::Critical
+    } else if free_bytes
+        <= config
+            .reserved_free_space_bytes
+            .saturating_add(DEFAULT_STORAGE_PRESSURE_WARNING_MARGIN_BYTES)
+    {
+        StoragePressureState::High
+    } else {
+        StoragePressureState::Normal
+    };
+    let percent_state = if effective_used_percent >= config.critical_watermark_percent {
+        StoragePressureState::Critical
+    } else if effective_used_percent >= config.high_watermark_percent {
+        StoragePressureState::High
+    } else {
+        StoragePressureState::Normal
+    };
+    let pressure_state = if reserve_band_state.severity_rank() >= percent_state.severity_rank() {
+        reserve_band_state
+    } else {
+        percent_state
+    };
+    Ok(StoragePressureSnapshot {
+        db_used_bytes,
+        wal_used_bytes,
+        used_bytes,
+        free_bytes,
+        storage_total_bytes,
+        effective_used_percent,
+        pressure_state,
+        hard_limit_reached,
+    })
 }
 
 #[derive(Debug)]
@@ -324,6 +484,8 @@ fn open_storage_connection(db_path: &PathBuf) -> anyhow::Result<Connection> {
         .context("failed to enable WAL mode")?;
     conn.pragma_update(None, "busy_timeout", 5000i64)
         .context("failed to configure busy_timeout")?;
+    apply_storage_capacity_limit_from_env(&conn)
+        .context("failed to apply optional sqlite capacity limit")?;
     conn.execute_batch(
         r#"
         CREATE TABLE IF NOT EXISTS events_v1 (
@@ -377,6 +539,41 @@ fn open_storage_connection(db_path: &PathBuf) -> anyhow::Result<Connection> {
     )
     .context("failed to ensure sqlite storage schema")?;
     Ok(conn)
+}
+
+fn configured_storage_max_db_bytes() -> Option<u64> {
+    env::var("CORE_STORAGE_MAX_DB_BYTES")
+        .ok()
+        .and_then(|value| value.trim().parse::<u64>().ok())
+        .filter(|value| *value > 0)
+}
+
+fn apply_storage_capacity_limit_from_env(conn: &Connection) -> anyhow::Result<()> {
+    if let Some(max_bytes) = configured_storage_max_db_bytes() {
+        set_sqlite_max_db_bytes(conn, max_bytes)?;
+    }
+    Ok(())
+}
+
+fn set_sqlite_max_db_bytes(conn: &Connection, max_bytes: u64) -> anyhow::Result<u64> {
+    let page_size = conn
+        .pragma_query_value(None, "page_size", |row| row.get::<_, u64>(0))
+        .context("failed to query sqlite page_size")?;
+    anyhow::ensure!(page_size > 0, "sqlite page_size must be positive");
+    let current_page_count = conn
+        .pragma_query_value(None, "page_count", |row| row.get::<_, u64>(0))
+        .context("failed to query sqlite page_count")?;
+    let requested_page_count = max_bytes
+        .saturating_add(page_size.saturating_sub(1))
+        .checked_div(page_size)
+        .unwrap_or(0)
+        .max(current_page_count.max(1));
+    conn.pragma_update(None, "max_page_count", requested_page_count as i64)
+        .context("failed to set sqlite max_page_count")?;
+    let applied_page_count = conn
+        .pragma_query_value(None, "max_page_count", |row| row.get::<_, u64>(0))
+        .context("failed to query sqlite max_page_count after update")?;
+    Ok(applied_page_count.saturating_mul(page_size))
 }
 
 fn load_runtime_json<T: DeserializeOwned>(
@@ -552,7 +749,10 @@ fn latest_storage_backup_created_ts_ms(backup_dir: &PathBuf) -> Option<u64> {
     Some(metadata.created_ts_ms)
 }
 
-fn prune_storage_backups(backup_dir: &PathBuf) -> anyhow::Result<()> {
+fn prune_storage_backups_to_limit(
+    backup_dir: &PathBuf,
+    retention_limit: usize,
+) -> anyhow::Result<(usize, u64)> {
     let mut ids = fs::read_dir(backup_dir)?
         .filter_map(Result::ok)
         .filter_map(|entry| {
@@ -566,20 +766,29 @@ fn prune_storage_backups(backup_dir: &PathBuf) -> anyhow::Result<()> {
         .collect::<Vec<_>>();
     ids.sort();
     let total = ids.len();
-    if total <= DEFAULT_STORAGE_BACKUP_RETENTION {
-        return Ok(());
+    if total <= retention_limit {
+        return Ok((0, 0));
     }
+    let mut removed_files = 0usize;
+    let mut reclaimed_bytes = 0u64;
     for backup_id in ids
         .into_iter()
-        .take(total.saturating_sub(DEFAULT_STORAGE_BACKUP_RETENTION))
+        .take(total.saturating_sub(retention_limit))
     {
         for suffix in [".sqlite3", ".sqlite3-wal", ".metadata.json"] {
             let path = backup_dir.join(format!("{}{}", backup_id, suffix));
             if path.exists() {
+                reclaimed_bytes = reclaimed_bytes.saturating_add(file_size_or_zero(&path));
                 fs::remove_file(path)?;
+                removed_files = removed_files.saturating_add(1);
             }
         }
     }
+    Ok((removed_files, reclaimed_bytes))
+}
+
+fn prune_storage_backups(backup_dir: &PathBuf) -> anyhow::Result<()> {
+    prune_storage_backups_to_limit(backup_dir, DEFAULT_STORAGE_BACKUP_RETENTION)?;
     Ok(())
 }
 
@@ -728,6 +937,30 @@ fn refresh_storage_backup_state_if_due(s: &mut CoreState) {
     refresh_storage_backup_state_force(s);
 }
 
+fn validate_storage_pressure_config(config: StoragePressureConfig) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        config.high_watermark_percent > 0 && config.high_watermark_percent < 100,
+        "invalid storage high watermark percent: {}",
+        config.high_watermark_percent
+    );
+    anyhow::ensure!(
+        config.critical_watermark_percent > 0 && config.critical_watermark_percent <= 100,
+        "invalid storage critical watermark percent: {}",
+        config.critical_watermark_percent
+    );
+    anyhow::ensure!(
+        config.high_watermark_percent < config.critical_watermark_percent,
+        "storage high watermark must be lower than critical watermark"
+    );
+    if let Some(hard_limit_bytes) = config.hard_db_size_limit_bytes {
+        anyhow::ensure!(
+            hard_limit_bytes > 0,
+            "storage hard db size limit must be positive"
+        );
+    }
+    Ok(())
+}
+
 fn replace_runtime_state_from_storage(s: &mut CoreState, storage: StorageBootstrap) {
     let fallback_max_buckets = s.analytics.max_buckets;
     let mut analytics = storage.analytics.unwrap_or_else(|| s.analytics.clone());
@@ -756,6 +989,17 @@ fn storage_fault_response(error: &str, retry_after_ms: u64) -> Response {
         StatusCode::SERVICE_UNAVAILABLE,
         Json(json!(BackpressureError {
             error: error.to_string(),
+            retry_after_ms,
+        })),
+    )
+        .into_response()
+}
+
+fn storage_pressure_response(state: StoragePressureState, retry_after_ms: u64) -> Response {
+    (
+        StatusCode::SERVICE_UNAVAILABLE,
+        Json(json!(BackpressureError {
+            error: format!("storage_pressure_{}", state.as_str()),
             retry_after_ms,
         })),
     )
@@ -838,6 +1082,194 @@ fn handle_storage_corruption_locked(
     }
 }
 
+fn is_storage_disk_full_error(error: &anyhow::Error) -> bool {
+    error.chain().any(|cause| {
+        let msg = cause.to_string().to_ascii_lowercase();
+        msg.contains("database or disk is full")
+            || msg.contains("no space left on device")
+            || msg.contains("sqlite_full")
+            || msg.contains("disk is full")
+    })
+}
+
+fn emit_storage_pressure_gap_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    snapshot: StoragePressureSnapshot,
+    retry_after_ms: u64,
+) {
+    push_gap_event_locked(
+        s,
+        "observability_gap.storage_pressure_high",
+        json!({
+            "db_path": s.db_path.display().to_string(),
+            "used_bytes": snapshot.used_bytes,
+            "db_used_bytes": snapshot.db_used_bytes,
+            "wal_used_bytes": snapshot.wal_used_bytes,
+            "free_bytes": snapshot.free_bytes,
+            "storage_total_bytes": snapshot.storage_total_bytes,
+            "effective_used_percent": snapshot.effective_used_percent,
+            "watermark": snapshot.pressure_state.as_str(),
+            "pressure_state": snapshot.pressure_state.as_str(),
+            "retry_after_ms": retry_after_ms,
+            "trace_id": trace_id
+        }),
+    );
+}
+
+fn emit_storage_disk_full_gap_locked(s: &mut CoreState, trace_id: &str, retry_after_ms: u64) {
+    let free_bytes = filesystem_usage_for_path(&s.db_path)
+        .map(|(_, free)| free)
+        .unwrap_or(0);
+    push_gap_event_memory_only_locked(
+        s,
+        "observability_gap.storage_disk_full",
+        json!({
+            "path": s.db_path.display().to_string(),
+            "free_bytes": free_bytes,
+            "retry_after_ms": retry_after_ms,
+            "trace_id": trace_id
+        }),
+    );
+}
+
+fn emit_storage_archive_prune_gap_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    pressure_state: StoragePressureState,
+    removed_files: usize,
+    reclaimed_bytes: u64,
+    retention_limit: usize,
+) {
+    push_gap_event_locked(
+        s,
+        "observability_gap.storage_archive_prune_activated",
+        json!({
+            "db_path": s.db_path.display().to_string(),
+            "pressure_state": pressure_state.as_str(),
+            "removed_files": removed_files,
+            "reclaimed_bytes": reclaimed_bytes,
+            "retention_limit": retention_limit,
+            "trace_id": trace_id
+        }),
+    );
+}
+
+fn apply_storage_pressure_housekeeping_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    pressure_state: StoragePressureState,
+) {
+    let retention_limit = match pressure_state {
+        StoragePressureState::Normal => return,
+        StoragePressureState::High => DEFAULT_STORAGE_PRESSURE_HIGH_BACKUP_RETENTION,
+        StoragePressureState::Critical => DEFAULT_STORAGE_PRESSURE_CRITICAL_BACKUP_RETENTION,
+    };
+    match prune_storage_backups_to_limit(&s.storage_backup_dir, retention_limit) {
+        Ok((removed_files, reclaimed_bytes)) if removed_files > 0 => {
+            emit_storage_archive_prune_gap_locked(
+                s,
+                trace_id,
+                pressure_state,
+                removed_files,
+                reclaimed_bytes,
+                retention_limit,
+            );
+        }
+        Ok(_) => {}
+        Err(error) => warn!(
+            "failed to apply emergency storage prune for {}: {}",
+            s.db_path.display(),
+            error
+        ),
+    }
+}
+
+fn evaluate_storage_pressure_locked(s: &CoreState) -> anyhow::Result<StoragePressureSnapshot> {
+    evaluate_storage_pressure(&s.db_path, s.storage_pressure_config)
+}
+
+fn maybe_emit_storage_pressure_transition_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    snapshot: StoragePressureSnapshot,
+    retry_after_ms: u64,
+) {
+    let previous = s.storage_pressure_state;
+    s.storage_pressure_state = snapshot.pressure_state;
+    if snapshot.pressure_state == StoragePressureState::Normal {
+        return;
+    }
+    if snapshot.pressure_state == previous {
+        return;
+    }
+    emit_storage_pressure_gap_locked(s, trace_id, snapshot, retry_after_ms);
+}
+
+fn guard_storage_pressure_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    write_pressure: StorageWritePressure,
+) -> Option<Response> {
+    let snapshot = match evaluate_storage_pressure_locked(s) {
+        Ok(snapshot) => snapshot,
+        Err(error) => {
+            warn!(
+                "failed to evaluate storage pressure for {}: {}",
+                s.db_path.display(),
+                error
+            );
+            return None;
+        }
+    };
+    if snapshot.hard_limit_reached {
+        s.storage_pressure_state = StoragePressureState::Critical;
+        apply_storage_pressure_housekeeping_locked(s, trace_id, StoragePressureState::Critical);
+        emit_storage_disk_full_gap_locked(s, trace_id, DEFAULT_STORAGE_DISK_FULL_RETRY_AFTER_MS);
+        return Some(storage_fault_response(
+            "storage_disk_full",
+            DEFAULT_STORAGE_DISK_FULL_RETRY_AFTER_MS,
+        ));
+    }
+    match snapshot.pressure_state {
+        StoragePressureState::Normal => {
+            s.storage_pressure_state = StoragePressureState::Normal;
+            None
+        }
+        StoragePressureState::High => {
+            apply_storage_pressure_housekeeping_locked(s, trace_id, StoragePressureState::High);
+            maybe_emit_storage_pressure_transition_locked(
+                s,
+                trace_id,
+                snapshot,
+                DEFAULT_STORAGE_PRESSURE_HIGH_RETRY_AFTER_MS,
+            );
+            refresh_storage_backup_state_force(s);
+            if matches!(write_pressure, StorageWritePressure::Heavy) {
+                Some(storage_pressure_response(
+                    StoragePressureState::High,
+                    DEFAULT_STORAGE_PRESSURE_HIGH_RETRY_AFTER_MS,
+                ))
+            } else {
+                None
+            }
+        }
+        StoragePressureState::Critical => {
+            apply_storage_pressure_housekeeping_locked(s, trace_id, StoragePressureState::Critical);
+            maybe_emit_storage_pressure_transition_locked(
+                s,
+                trace_id,
+                snapshot,
+                DEFAULT_STORAGE_PRESSURE_CRITICAL_RETRY_AFTER_MS,
+            );
+            Some(storage_pressure_response(
+                StoragePressureState::Critical,
+                DEFAULT_STORAGE_PRESSURE_CRITICAL_RETRY_AFTER_MS,
+            ))
+        }
+    }
+}
+
 fn handle_storage_runtime_error_locked(
     s: &mut CoreState,
     trace_id: &str,
@@ -846,6 +1278,15 @@ fn handle_storage_runtime_error_locked(
 ) -> StorageFaultOutcome {
     if is_storage_corruption_error(&error) {
         return handle_storage_corruption_locked(s, trace_id, &error);
+    }
+    if is_storage_disk_full_error(&error) {
+        s.storage_pressure_state = StoragePressureState::Critical;
+        apply_storage_pressure_housekeeping_locked(s, trace_id, StoragePressureState::Critical);
+        emit_storage_disk_full_gap_locked(s, trace_id, DEFAULT_STORAGE_DISK_FULL_RETRY_AFTER_MS);
+        return StorageFaultOutcome {
+            error: "storage_disk_full".to_string(),
+            retry_after_ms: DEFAULT_STORAGE_DISK_FULL_RETRY_AFTER_MS,
+        };
     }
     let queue_depth = s.events.len();
     s.counters.ingest_dropped_total = s.counters.ingest_dropped_total.saturating_add(1);
@@ -1495,6 +1936,26 @@ async fn main() -> anyhow::Result<()> {
         .ok()
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(DEFAULT_CORE_DB_PATH));
+    let storage_pressure_config = StoragePressureConfig {
+        high_watermark_percent: env::var("CORE_STORAGE_HIGH_WATERMARK_PERCENT")
+            .ok()
+            .and_then(|v| v.parse::<u8>().ok())
+            .unwrap_or(DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT),
+        critical_watermark_percent: env::var("CORE_STORAGE_CRITICAL_WATERMARK_PERCENT")
+            .ok()
+            .and_then(|v| v.parse::<u8>().ok())
+            .unwrap_or(DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT),
+        reserved_free_space_bytes: env::var("CORE_STORAGE_RESERVED_FREE_SPACE_MB")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .unwrap_or(DEFAULT_STORAGE_RESERVED_FREE_SPACE_MB)
+            .saturating_mul(1024 * 1024),
+        hard_db_size_limit_bytes: env::var("CORE_STORAGE_MAX_DB_BYTES")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .filter(|value| *value > 0),
+    };
+    validate_storage_pressure_config(storage_pressure_config)?;
     let analytics = load_analytics_state(&analytics_state_path, analytics_max_buckets);
 
     let state = Arc::new(RwLock::new(CoreState::new(
@@ -1506,6 +1967,7 @@ async fn main() -> anyhow::Result<()> {
         analytics,
         analytics_state_path,
         db_path,
+        storage_pressure_config,
     )?));
 
     install_runtime_signal_handlers();
@@ -1895,7 +2357,11 @@ async fn panel0_favicon() -> impl IntoResponse {
 }
 
 async fn health(State(state): State<Shared>) -> impl IntoResponse {
-    let s = state.read().await;
+    let mut s = state.write().await;
+    let snapshot = evaluate_storage_pressure_locked(&s).ok();
+    if let Some(snapshot) = snapshot {
+        s.storage_pressure_state = snapshot.pressure_state;
+    }
     let mode = if s.storage_read_only {
         "read_only"
     } else {
@@ -1917,6 +2383,15 @@ async fn health(State(state): State<Shared>) -> impl IntoResponse {
             "status": status,
             "service": "art-core",
             "storage_mode": mode,
+            "storage_pressure_state": s.storage_pressure_state.as_str(),
+            "storage_pressure": snapshot.map(|details| json!({
+                "used_bytes": details.used_bytes,
+                "db_used_bytes": details.db_used_bytes,
+                "wal_used_bytes": details.wal_used_bytes,
+                "free_bytes": details.free_bytes,
+                "storage_total_bytes": details.storage_total_bytes,
+                "effective_used_percent": details.effective_used_percent
+            })),
             "last_ok_backup_id": s.last_ok_backup_id,
         })),
     )
@@ -1942,6 +2417,12 @@ async fn apply_profile(
             if let Some(resp) = guard_storage_read_only_locked(&s) {
                 return resp;
             }
+            let trace_id = format!("profile-apply-{}", now_ms());
+            if let Some(resp) =
+                guard_storage_pressure_locked(&mut s, &trace_id, StorageWritePressure::Light)
+            {
+                return resp;
+            }
             s.effective_profile_id = effective_profile_id.clone();
             s.storage_backup_dir = storage_backup_dir(&s.effective_profile_id, &s.db_path);
             refresh_storage_backup_state_force(&mut s);
@@ -1957,6 +2438,12 @@ async fn apply_profile(
         Err(err) => {
             let mut s = state.write().await;
             if let Some(resp) = guard_storage_read_only_locked(&s) {
+                return resp;
+            }
+            let trace_id = format!("profile-violation-{}", now_ms());
+            if let Some(resp) =
+                guard_storage_pressure_locked(&mut s, &trace_id, StorageWritePressure::Light)
+            {
                 return resp;
             }
             let now_ms = SystemTime::now()
@@ -2094,6 +2581,14 @@ async fn ingest(
     }
     let now = ingest_now_ms(&headers);
     let trace_id = format!("ingest-{}", now);
+    let write_pressure = if payload.events.len() > 1 {
+        StorageWritePressure::Heavy
+    } else {
+        StorageWritePressure::Light
+    };
+    if let Some(resp) = guard_storage_pressure_locked(&mut s, &trace_id, write_pressure) {
+        return resp;
+    }
     if let Some(len) = content_length(&headers) {
         if len > s.max_payload_bytes {
             let max_payload_bytes = s.max_payload_bytes;
@@ -2461,6 +2956,14 @@ async fn ingest_v2(
     }
     let mut upto_seq = s.next_seq_v2.saturating_sub(1);
     let trace_id = format!("v2-ingest-{}", now);
+    let write_pressure = if accepted > 1 {
+        StorageWritePressure::Heavy
+    } else {
+        StorageWritePressure::Light
+    };
+    if let Some(resp) = guard_storage_pressure_locked(&mut s, &trace_id, write_pressure) {
+        return resp;
+    }
 
     let storage_conn = match open_storage_connection(&s.db_path) {
         Ok(conn) => conn,
@@ -3533,15 +4036,18 @@ fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
                 s.db_path.display(),
                 error
             );
-            if is_storage_corruption_error(&error) {
-                let trace_id = stored
-                    .event
-                    .get("details")
-                    .and_then(|value| value.get("trace_id"))
-                    .and_then(Value::as_str)
-                    .unwrap_or("storage-gap");
-                let _ = handle_storage_corruption_locked(s, trace_id, &error);
-            }
+            let trace_id = stored
+                .event
+                .get("details")
+                .and_then(|value| value.get("trace_id"))
+                .and_then(Value::as_str)
+                .unwrap_or("storage-gap");
+            let _ = handle_storage_runtime_error_locked(
+                s,
+                trace_id,
+                "storage_write_failed",
+                error,
+            );
         } else {
             refresh_storage_backup_state_if_due(s);
         }
@@ -3656,6 +4162,14 @@ fn incident_policy_for_gap(kind: &str) -> Option<(&'static str, &'static str, &'
             "SEV1",
             "docs/ops/storage_corruption_runbook.md",
         )),
+        "observability_gap.storage_disk_full" => {
+            Some(("storage_disk_full", "SEV1", "docs/ops/storage.md"))
+        }
+        "observability_gap.storage_pressure_high" => Some((
+            "storage_pressure_high",
+            "SEV2",
+            "docs/runbooks/storage_pressure_high.md",
+        )),
         "observability_gap.otlp_rate_limited" => Some((
             "otlp_rate_limited",
             "SEV2",
@@ -3711,13 +4225,11 @@ fn push_incident_locked(
     }
     if let Err(error) = persist_incident(&s.db_path, &incident) {
         warn!("failed to persist incident {}: {}", incident.id, error);
-        if is_storage_corruption_error(&error) {
-            let trace_id = incident
-                .trace_id
-                .clone()
-                .unwrap_or_else(|| "storage-incident".to_string());
-            let _ = handle_storage_corruption_locked(s, &trace_id, &error);
-        }
+        let trace_id = incident
+            .trace_id
+            .clone()
+            .unwrap_or_else(|| "storage-incident".to_string());
+        let _ = handle_storage_runtime_error_locked(s, &trace_id, "storage_write_failed", error);
     } else {
         refresh_storage_backup_state_if_due(s);
     }
@@ -4357,9 +4869,8 @@ fn append_audit_entry(state: &mut CoreState, mut entry: AuditEntry) {
     }
     if let Err(error) = persist_audit_entry(&state.db_path, &entry) {
         warn!("failed to persist audit entry {}: {}", entry.id, error);
-        if is_storage_corruption_error(&error) {
-            let _ = handle_storage_corruption_locked(state, &entry.trace_id, &error);
-        }
+        let _ =
+            handle_storage_runtime_error_locked(state, &entry.trace_id, "storage_write_failed", error);
     } else {
         refresh_storage_backup_state_if_due(state);
     }
@@ -4378,9 +4889,8 @@ fn append_audit_entry_and_get(state: &mut CoreState, mut entry: AuditEntry) -> A
     }
     if let Err(error) = persist_audit_entry(&state.db_path, &entry) {
         warn!("failed to persist audit entry {}: {}", entry.id, error);
-        if is_storage_corruption_error(&error) {
-            let _ = handle_storage_corruption_locked(state, &entry.trace_id, &error);
-        }
+        let _ =
+            handle_storage_runtime_error_locked(state, &entry.trace_id, "storage_write_failed", error);
     } else {
         refresh_storage_backup_state_if_due(state);
     }
@@ -4515,6 +5025,12 @@ async fn incident_ack(
     if let Some(resp) = guard_storage_read_only_locked(&s) {
         return resp;
     }
+    let trace_id = format!("incident-ack-{}", now_ms());
+    if let Some(resp) =
+        guard_storage_pressure_locked(&mut s, &trace_id, StorageWritePressure::Light)
+    {
+        return resp;
+    }
     if let Some(resp) = deny {
         append_audit_entry(
             &mut s,
@@ -4535,10 +5051,9 @@ async fn incident_ack(
         if let Err(error) = persist_incident(&s.db_path, &incident) {
             warn!("failed to persist incident ack {}: {}", incident.id, error);
             s.incidents[index].status = previous_status;
-            if is_storage_corruption_error(&error) {
-                let outcome = handle_storage_corruption_locked(&mut s, &id, &error);
-                return storage_fault_response(&outcome.error, outcome.retry_after_ms);
-            }
+            let outcome =
+                handle_storage_runtime_error_locked(&mut s, &trace_id, "storage_write_failed", error);
+            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
         } else {
             refresh_storage_backup_state_if_due(&mut s);
         }
@@ -4578,6 +5093,12 @@ async fn incident_resolve(
     if let Some(resp) = guard_storage_read_only_locked(&s) {
         return resp;
     }
+    let trace_id = format!("incident-resolve-{}", now_ms());
+    if let Some(resp) =
+        guard_storage_pressure_locked(&mut s, &trace_id, StorageWritePressure::Light)
+    {
+        return resp;
+    }
     if let Some(resp) = deny {
         append_audit_entry(
             &mut s,
@@ -4601,10 +5122,9 @@ async fn incident_resolve(
                 incident.id, error
             );
             s.incidents[index].status = previous_status;
-            if is_storage_corruption_error(&error) {
-                let outcome = handle_storage_corruption_locked(&mut s, &id, &error);
-                return storage_fault_response(&outcome.error, outcome.retry_after_ms);
-            }
+            let outcome =
+                handle_storage_runtime_error_locked(&mut s, &trace_id, "storage_write_failed", error);
+            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
         } else {
             refresh_storage_backup_state_if_due(&mut s);
         }
@@ -4667,6 +5187,13 @@ async fn actions_execute(
     };
     let mut s = state.write().await;
     if let Some(resp) = guard_storage_read_only_locked(&s) {
+        return resp;
+    }
+    if let Some(resp) = guard_storage_pressure_locked(
+        &mut s,
+        &trace_id_from_headers(&headers),
+        StorageWritePressure::Light,
+    ) {
         return resp;
     }
     let (sanitized_params, redacted) =
@@ -5058,6 +5585,12 @@ mod tests {
                 AnalyticsState::new(1_440),
                 analytics_state_path,
                 db_path,
+                StoragePressureConfig {
+                    high_watermark_percent: DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT,
+                    critical_watermark_percent: DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT,
+                    reserved_free_space_bytes: DEFAULT_STORAGE_RESERVED_FREE_SPACE_MB * 1024 * 1024,
+                    hard_db_size_limit_bytes: None,
+                },
             )
             .expect("test core state"),
         ))
@@ -5110,6 +5643,12 @@ mod tests {
             AnalyticsState::new(1_440),
             analytics_state_path,
             db_path,
+            StoragePressureConfig {
+                high_watermark_percent: DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT,
+                critical_watermark_percent: DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT,
+                reserved_free_space_bytes: DEFAULT_STORAGE_RESERVED_FREE_SPACE_MB * 1024 * 1024,
+                hard_db_size_limit_bytes: None,
+            },
         )
         .expect("core state");
 
@@ -5204,6 +5743,51 @@ mod tests {
         fs::copy(backup_path, db_path).expect("restore sqlite backup file");
     }
 
+    fn write_non_sparse_file(path: &std::path::Path, target_bytes: u64) {
+        let mut file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(path)
+            .expect("open filler file");
+        let chunk = vec![0x5a_u8; 1024 * 1024];
+        let mut written = 0_u64;
+        while written < target_bytes {
+            let remaining = target_bytes.saturating_sub(written);
+            let chunk_len = remaining.min(chunk.len() as u64) as usize;
+            file.write_all(&chunk[..chunk_len]).expect("write filler chunk");
+            written = written.saturating_add(chunk_len as u64);
+        }
+        file.sync_all().expect("sync filler file");
+    }
+
+    fn remove_file_if_exists(path: &std::path::Path) {
+        if path.exists() {
+            fs::remove_file(path).expect("remove file");
+        }
+    }
+
+    fn test_state_with_db_and_pressure(
+        db_path: PathBuf,
+        storage_pressure_config: StoragePressureConfig,
+    ) -> Shared {
+        let analytics_state_path = db_path.with_extension("analytics.json");
+        Arc::new(RwLock::new(
+            CoreState::new(
+                "global".to_string(),
+                10_000,
+                200,
+                524_288,
+                vec!["service.restart".to_string(), "service.status".to_string()],
+                AnalyticsState::new(1_440),
+                analytics_state_path,
+                db_path,
+                storage_pressure_config,
+            )
+            .expect("test core state"),
+        ))
+    }
+
     async fn ingest_info_events(app: &Router, count: usize) {
         let mut left = count;
         while left > 0 {
@@ -5239,6 +5823,26 @@ mod tests {
             .expect("collect")
             .to_bytes();
         serde_json::from_slice(&body).expect("snapshot json")
+    }
+
+    async fn health_json(app: &Router) -> (StatusCode, Value) {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/health")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        let status = resp.status();
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        (
+            status,
+            serde_json::from_slice(&body).expect("health json"),
+        )
     }
 
     async fn snapshot_v2_json(app: &Router) -> Value {
@@ -6052,6 +6656,283 @@ mod tests {
             .to_bytes();
         let action_json: Value = serde_json::from_slice(&action_body).expect("action json");
         assert_eq!(action_json["error"], "storage_read_only");
+    }
+
+    #[tokio::test]
+    async fn live_storage_pressure_transitions_shed_heavy_then_block_and_recover() {
+        let db_path = next_test_db_path();
+        let filler_path = db_path.with_extension("pressure.bin");
+        let free_bytes = filesystem_usage_for_path(&db_path)
+            .expect("filesystem usage")
+            .1;
+        assert!(
+            free_bytes > 96 * 1024 * 1024,
+            "not enough free space for storage pressure test: {}",
+            free_bytes
+        );
+        let reserve_bytes = free_bytes.saturating_sub(64 * 1024 * 1024);
+        let state = test_state_with_db_and_pressure(
+            db_path.clone(),
+            StoragePressureConfig {
+                high_watermark_percent: DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT,
+                critical_watermark_percent: DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT,
+                reserved_free_space_bytes: reserve_bytes,
+                hard_db_size_limit_bytes: None,
+            },
+        );
+        let app = build_app(state.clone());
+
+        let (health_status_normal, health_normal) = health_json(&app).await;
+        assert_eq!(health_status_normal, StatusCode::OK);
+        assert_eq!(health_normal["storage_mode"], "healthy");
+        assert_eq!(health_normal["storage_pressure_state"], "normal");
+
+        write_non_sparse_file(&filler_path, 52 * 1024 * 1024);
+
+        let heavy_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[
+                    {"severity":"info","msg":"pressure-heavy-1"},
+                    {"severity":"info","msg":"pressure-heavy-2"}
+                ]})
+                .to_string(),
+            ))
+            .expect("request");
+        let heavy_resp = app.clone().oneshot(heavy_req).await.expect("response");
+        assert_eq!(heavy_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let heavy_body = heavy_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let heavy_json: Value = serde_json::from_slice(&heavy_body).expect("json");
+        assert_eq!(heavy_json["error"], "storage_pressure_high");
+        assert_eq!(
+            heavy_json["retry_after_ms"].as_u64(),
+            Some(DEFAULT_STORAGE_PRESSURE_HIGH_RETRY_AFTER_MS)
+        );
+
+        let (health_status_high, health_high) = health_json(&app).await;
+        assert_eq!(health_status_high, StatusCode::OK);
+        assert_eq!(health_high["storage_mode"], "healthy");
+        assert_eq!(health_high["storage_pressure_state"], "high");
+
+        let light_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"pressure-light-ok"}]}).to_string(),
+            ))
+            .expect("request");
+        let light_resp = app.clone().oneshot(light_req).await.expect("response");
+        assert_eq!(light_resp.status(), StatusCode::OK);
+
+        let high_snapshot = snapshot_json(&app).await;
+        assert!(high_snapshot["events"]
+            .as_array()
+            .expect("events")
+            .iter()
+            .any(|row| {
+                row["event"]["kind"] == "observability_gap.storage_pressure_high"
+                    && row["event"]["details"]["pressure_state"] == "high"
+            }));
+
+        write_non_sparse_file(&filler_path, 72 * 1024 * 1024);
+
+        let critical_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"pressure-critical-blocked"}]})
+                    .to_string(),
+            ))
+            .expect("request");
+        let critical_resp = app.clone().oneshot(critical_req).await.expect("response");
+        assert_eq!(critical_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let critical_body = critical_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let critical_json: Value = serde_json::from_slice(&critical_body).expect("json");
+        assert_eq!(critical_json["error"], "storage_pressure_critical");
+        assert_eq!(
+            critical_json["retry_after_ms"].as_u64(),
+            Some(DEFAULT_STORAGE_PRESSURE_CRITICAL_RETRY_AFTER_MS)
+        );
+
+        let (health_status_critical, health_critical) = health_json(&app).await;
+        assert_eq!(health_status_critical, StatusCode::OK);
+        assert_eq!(health_critical["storage_pressure_state"], "critical");
+
+        let critical_snapshot = snapshot_json(&app).await;
+        assert!(critical_snapshot["events"]
+            .as_array()
+            .expect("events")
+            .iter()
+            .any(|row| {
+                row["event"]["kind"] == "observability_gap.storage_pressure_high"
+                    && row["event"]["details"]["pressure_state"] == "critical"
+            }));
+
+        remove_file_if_exists(&filler_path);
+        for _ in 0..20 {
+            let (_status, health_json) = health_json(&app).await;
+            if health_json["storage_pressure_state"] == "normal" {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        }
+
+        let (health_status_recovered, health_recovered) = health_json(&app).await;
+        assert_eq!(health_status_recovered, StatusCode::OK);
+        assert_eq!(health_recovered["storage_mode"], "healthy");
+        assert_eq!(health_recovered["storage_pressure_state"], "normal");
+
+        let recovered_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"pressure-recovered"}]}).to_string(),
+            ))
+            .expect("request");
+        let recovered_resp = app.clone().oneshot(recovered_req).await.expect("response");
+        assert_eq!(recovered_resp.status(), StatusCode::OK);
+
+        remove_file_if_exists(&filler_path);
+    }
+
+    #[tokio::test]
+    async fn live_storage_disk_full_emits_gap_and_recovers_after_capacity_increase() {
+        let db_path = next_test_db_path();
+        let state = test_state_with_db_and_pressure(
+            db_path.clone(),
+            StoragePressureConfig {
+                high_watermark_percent: DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT,
+                critical_watermark_percent: DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT,
+                reserved_free_space_bytes: DEFAULT_STORAGE_RESERVED_FREE_SPACE_MB * 1024 * 1024,
+                hard_db_size_limit_bytes: Some(256 * 1024),
+            },
+        );
+        let app = build_app(state.clone());
+
+        let large_message = "x".repeat(64 * 1024);
+        let mut saw_disk_full = false;
+        for idx in 0..64 {
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/ingest")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({"events":[{"severity":"info","msg":format!("disk-full-{idx}-{large_message}")}]})
+                        .to_string(),
+                ))
+                .expect("request");
+            let resp = app.clone().oneshot(req).await.expect("response");
+            if resp.status() == StatusCode::SERVICE_UNAVAILABLE {
+                let body = resp
+                    .into_body()
+                    .collect()
+                    .await
+                    .expect("collect")
+                    .to_bytes();
+                let json: Value = serde_json::from_slice(&body).expect("json");
+                assert_eq!(json["error"], "storage_disk_full");
+                assert_eq!(
+                    json["retry_after_ms"].as_u64(),
+                    Some(DEFAULT_STORAGE_DISK_FULL_RETRY_AFTER_MS)
+                );
+                saw_disk_full = true;
+                break;
+            }
+            assert_eq!(resp.status(), StatusCode::OK);
+        }
+        assert!(saw_disk_full, "disk full response was not reached");
+
+        let snapshot = snapshot_json(&app).await;
+        assert!(snapshot["events"]
+            .as_array()
+            .expect("events")
+            .iter()
+            .any(|row| row["event"]["kind"] == "observability_gap.storage_disk_full"));
+
+        {
+            let mut locked = state.write().await;
+            locked.storage_pressure_config.hard_db_size_limit_bytes = Some(8 * 1024 * 1024);
+            locked.storage_pressure_state = StoragePressureState::Normal;
+        }
+        let recovered_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"disk-full-recovered"}]}).to_string(),
+            ))
+            .expect("request");
+        let recovered_resp = app.clone().oneshot(recovered_req).await.expect("response");
+        assert_eq!(recovered_resp.status(), StatusCode::OK);
+    }
+
+    #[test]
+    fn storage_pressure_housekeeping_prunes_old_backups_under_critical_state() {
+        let db_path = next_test_db_path();
+        let analytics_state_path = db_path.with_extension("analytics.json");
+        let mut state = CoreState::new(
+            "global".to_string(),
+            10_000,
+            200,
+            524_288,
+            vec!["service.restart".to_string(), "service.status".to_string()],
+            AnalyticsState::new(1_440),
+            analytics_state_path,
+            db_path,
+            StoragePressureConfig {
+                high_watermark_percent: DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT,
+                critical_watermark_percent: DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT,
+                reserved_free_space_bytes: DEFAULT_STORAGE_RESERVED_FREE_SPACE_MB * 1024 * 1024,
+                hard_db_size_limit_bytes: None,
+            },
+        )
+        .expect("core state");
+        for _ in 0..6 {
+            state.last_backup_refresh_ms = 0;
+            refresh_storage_backup_state_if_due(&mut state);
+        }
+        let before = fs::read_dir(&state.storage_backup_dir)
+            .expect("backup dir")
+            .filter_map(Result::ok)
+            .filter(|entry| entry.file_name().to_string_lossy().ends_with(".sqlite3"))
+            .count();
+        assert!(before >= 6, "expected multiple sqlite backups, got {before}");
+
+        apply_storage_pressure_housekeeping_locked(
+            &mut state,
+            "trace-storage-prune",
+            StoragePressureState::Critical,
+        );
+
+        let after = fs::read_dir(&state.storage_backup_dir)
+            .expect("backup dir")
+            .filter_map(Result::ok)
+            .filter(|entry| entry.file_name().to_string_lossy().ends_with(".sqlite3"))
+            .count();
+        assert!(
+            after <= DEFAULT_STORAGE_PRESSURE_CRITICAL_BACKUP_RETENTION,
+            "expected critical retention to prune backups down to <= {}, got {}",
+            DEFAULT_STORAGE_PRESSURE_CRITICAL_BACKUP_RETENTION,
+            after
+        );
+        assert!(state.events.iter().any(|row| {
+            row.event["kind"] == "observability_gap.storage_archive_prune_activated"
+        }));
     }
 
     fn otlp_payload_with_count(count: usize, severity_text: &str) -> Value {

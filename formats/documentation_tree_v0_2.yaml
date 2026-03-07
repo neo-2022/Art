@@ -3,10 +3,10 @@ status: ACTIVE
 root: README.md
 total_documents: 80
 total_collection_nodes: 3
-total_markdown_links_scanned: 209
-total_tree_edges: 173
-total_file_links_in_tree: 173
-total_lines_in_tree: 12344
+total_markdown_links_scanned: 213
+total_tree_edges: 176
+total_file_links_in_tree: 176
+total_lines_in_tree: 12446
 total_lines_in_collections: 2243
 root_direct_children: 52
 root_influence_documents:
@@ -54,7 +54,7 @@ nodes:
   missing_index: false
 - path: README.md
   node_type: document
-  lines: 196
+  lines: 197
   files_count: 1
   root_influence: false
   children:
@@ -136,7 +136,7 @@ nodes:
   missing_index: false
 - path: docs/ARCHITECTURE.md
   node_type: document
-  lines: 97
+  lines: 98
   files_count: 1
   root_influence: false
   children:
@@ -155,7 +155,7 @@ nodes:
   missing_index: false
 - path: docs/INTEGRATION.md
   node_type: document
-  lines: 60
+  lines: 67
   files_count: 1
   root_influence: true
   children:
@@ -168,6 +168,7 @@ nodes:
   - docs/testing/defect_remediation_ladder_v0_2.md
   - docs/regart/art_bridge_runbook.md
   - docs/regart/upstream_error_format.md
+  - docs/testing/defect_remediation_control_matrix_v0_2.md
   incoming:
   - README.md
   - docs/README.md
@@ -177,7 +178,7 @@ nodes:
   missing_index: false
 - path: docs/README.md
   node_type: document
-  lines: 124
+  lines: 136
   files_count: 1
   root_influence: true
   children:
@@ -227,6 +228,8 @@ nodes:
   - docs/source/ingress_perimeter_protection_v0_2.md
   - docs/testing/production_adversarial_validation_law.md
   - docs/testing/test_system_audit_v0_2.md
+  - docs/testing/defect_remediation_control_matrix_v0_2.md
+  - docs/testing/defect_remediation_ladder_v0_2.md
   incoming:
   - README.md
   - docs/portal/INDEX.md
@@ -408,7 +411,7 @@ nodes:
   missing_index: false
 - path: docs/governance/observability_gap_registry.md
   node_type: document
-  lines: 86
+  lines: 87
   files_count: 1
   root_influence: false
   children: []
@@ -583,7 +586,7 @@ nodes:
   missing_index: false
 - path: docs/portal/INDEX.md
   node_type: document
-  lines: 74
+  lines: 75
   files_count: 1
   root_influence: false
   children:
@@ -1045,7 +1048,7 @@ nodes:
   missing_index: false
 - path: docs/source/storage_pressure_protection_v0_2.md
   node_type: document
-  lines: 53
+  lines: 119
   files_count: 1
   root_influence: true
   children: []
@@ -1080,23 +1083,26 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_control_matrix_v0_2.md
   node_type: document
-  lines: 929
+  lines: 941
   files_count: 1
   root_influence: true
   children: []
   incoming:
   - README.md
+  - docs/README.md
+  - docs/INTEGRATION.md
   - docs/ARCHITECTURE.md
   index_target: docs/testing/defect_remediation_control_matrix_v0_2.md
   missing_index: false
 - path: docs/testing/defect_remediation_ladder_v0_2.md
   node_type: document
-  lines: 304
+  lines: 305
   files_count: 1
   root_influence: true
   children: []
   incoming:
   - README.md
+  - docs/README.md
   - docs/portal/INDEX.md
   - docs/INTEGRATION.md
   - docs/ARCHITECTURE.md

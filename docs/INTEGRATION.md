@@ -58,3 +58,10 @@ Art и REGART — это интегрированные системы, а не 
   - `art-regart-long-chain`
   - `art-regart-actions-audit`
 - Этот harness усиливает тестовую нагрузку и не заменяет standalone proof самого `Art`.
+
+## Связь со стволом corrective remediation
+- Интеграционный контур не живёт отдельно от ствола проекта.
+- Порядок corrective-работ определяется:
+  - [defect_remediation_control_matrix_v0_2.md](testing/defect_remediation_control_matrix_v0_2.md)
+  - [defect_remediation_ladder_v0_2.md](testing/defect_remediation_ladder_v0_2.md)
+- Сейчас активный базовый runtime-corrective слой остаётся в `DEF-001 -> stage11`; интеграционные hostile suites `Art <-> REGART` не подменяют этот basement, а подключаются как усиление на своих stage-узлах.

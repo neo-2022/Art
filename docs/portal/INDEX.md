@@ -28,6 +28,7 @@
 - Базовый предметный spec: [Art_v1_spec_final.md](../source/Art_v1_spec_final.md)
 - Корневой интеграционный spec: [REGART -  LangGraph  взаимодействие с Art описание.md](../source/REGART -  LangGraph  взаимодействие с Art описание.md)
 - Дефектовочная лестница: [defect_remediation_ladder_v0_2.md](../testing/defect_remediation_ladder_v0_2.md)
+- Активный corrective-контур сейчас идёт по `DEF-001 -> stage11`, где storage pressure/disk exhaustion уже materialized, а локальные blockers сдвинуты на `11.3/11.4`.
 
 ### Продукт
 - Архитектура: [ARCHITECTURE.md](../ARCHITECTURE.md)

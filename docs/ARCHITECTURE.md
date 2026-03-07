@@ -27,7 +27,7 @@ Art строится как единый продукт с тремя архит
 - snapshot и stream API
 - хост для встроенного `Panel0`
 - опорная точка release и certified profile
-- corrective baseline `stage11` уже перевёл в durable SQLite не только `events/incidents/audit`, но и `fingerprint/source indexes`, `dna/evidence` и analytics/counters; hostile backup/restore proof для полного состояния уже получен, backup-root разведен по `db_path`, backup cadence `15 минут` теперь enforced в runtime самого `Core`, live corruption/read_only contour уже материализован end-to-end, а live `kill -9 during ingest` chaos доказан как отдельный runtime-proof; текущий remaining blocker в этом basement — полный `storage pressure / disk exhaustion` contour
+- corrective baseline `stage11` уже перевёл в durable SQLite не только `events/incidents/audit`, но и `fingerprint/source indexes`, `dna/evidence` и analytics/counters; hostile backup/restore proof для полного состояния уже получен, backup-root разведен по `db_path`, backup cadence `15 минут` теперь enforced в runtime самого `Core`, live corruption/read_only contour уже материализован end-to-end, live `kill -9 during ingest` chaos доказан как отдельный runtime-proof, а `storage pressure / disk exhaustion` contour уже materialized с high/critical watermarks, `storage_disk_full`, archive/prune discipline и recovery после увеличения budget; текущие локальные blockers этого basement — `11.3` concurrency proof и `11.4` production-proof `VACUUM/systemd`
 
 ### art-agent
 - сбор сигналов на уровне ОС и сервисов
@@ -65,6 +65,7 @@ Art строится как единый продукт с тремя архит
 - архитектурная документация обязана быть человекочитаемой: любой критичный архитектурный механизм должен быть объяснён так, чтобы его понял новый инженер и оператор, а не только автор исходной реализации
 - платформенные различия разрешены только в packaging/install/runtime profiles, но не в бизнес-логике
 - порядок remediation определяется корневым деревом решений, дефектовочной контрольной ведомостью и дефектовочной лестницей, а не “следующим номером этапа”
+- defect-remediation control matrix задаёт поштучный corrective-контроль каждого дефекта, а дефектовочная лестница определяет порядок их исполнения по слоям
 - архитектурные решения принимаются только по пути `корень -> ствол -> крона`
 - hardcoding запрещён как архитектурный anti-pattern и допускается только как явно оформленный test fixture вне production baseline
 - internet-exposed deployment без ingress/perimeter shield запрещён как архитектурный anti-pattern

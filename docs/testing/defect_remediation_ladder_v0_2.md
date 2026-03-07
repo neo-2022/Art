@@ -202,6 +202,7 @@
 6. `DEF-014` -> `24` Release / upgrade / regression
 7. `DEF-015` -> `12` Ingest / backpressure / hostile ingress boundary
 8. `DEF-023` -> `11, 12` Storage pressure / disk exhaustion / reserve-space defense
+   - примечание: `stage11`-часть уже materialized; открытый corrective-хвост этого дефекта теперь живёт в `12/24/37`
 9. `DEF-024` -> `12, 18` Startup configuration fail-closed validator
 10. `DEF-025` -> `12, 17, 18` Queue integrity / duplicate / anti-loop protection
 11. `DEF-027` -> `15, 33, 43` Action execution safety guard and bounded-regret barrier

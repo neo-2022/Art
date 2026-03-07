@@ -12,10 +12,17 @@
   - `fingerprint_index` и `source_last_seen` теперь тоже сохраняются и восстанавливаются из SQLite;
   - `DNA-derived state` (`dna_clusters`) и `evidence_blocks` сохраняются и поднимаются обратно после рестарта;
   - `analytics` и `counters` теперь сохраняются в SQLite как primary recovery state, а `CORE_ANALYTICS_STATE_PATH` остаётся только legacy mirror/import path;
-  - `WAL` и `busy_timeout` для SQLite basement включаются при старте;
-  - backup-каталог теперь вычисляется не только по профилю, но и по конкретному пути к БД, чтобы разные экземпляры `Core` не делили один backup-root;
-  - restart-proof для `v1/v2`, `incidents`, `audit chain`, `fingerprint/source indexes`, `dna/evidence` и аналитики зафиксирован в evidence `stage11_core_sqlite_restart.log`.
-  - hostile backup/restore proof для полного состояния `art-core` после corruption теперь тоже зафиксирован в evidence `stage11_core_sqlite_hostile_recovery.log`.
+- `WAL` и `busy_timeout` для SQLite basement включаются при старте;
+- backup-каталог теперь вычисляется не только по профилю, но и по конкретному пути к БД, чтобы разные экземпляры `Core` не делили один backup-root;
+- restart-proof для `v1/v2`, `incidents`, `audit chain`, `fingerprint/source indexes`, `dna/evidence` и аналитики зафиксирован в evidence `stage11_core_sqlite_restart.log`.
+- hostile backup/restore proof для полного состояния `art-core` после corruption теперь тоже зафиксирован в evidence `stage11_core_sqlite_hostile_recovery.log`.
+- hostile storage-pressure proof теперь тоже materialize:
+  - `high watermark` -> `observability_gap.storage_pressure_high` -> heavy write shed;
+  - `critical watermark` -> более жёсткий `503 + retry_after_ms` на write-path;
+  - фактический `disk full` -> `observability_gap.storage_disk_full`;
+  - pressure housekeeping -> `observability_gap.storage_archive_prune_activated`;
+  - после возврата свободного места `Core` возвращается в `normal` без ручной правки БД;
+  - это подтверждено отдельным live runtime smoke и evidence `stage11_storage_pressure_runtime.log`.
 - При этом storage contour `stage11` всё ещё не доведён до полного production-состояния:
   - live corruption/read-only contour уже материализован end-to-end:
     - corruption на ingest даёт `HTTP 503 + retry_after_ms`;
@@ -25,7 +32,10 @@
   - backup cadence больше не привязан к каждой записи: живой `Core` держит фиксированное окно `15 минут`, а force-refresh допускается только на startup/profile-switch;
   - backup/restore/systemd path уже доказан по hostile proof и smoke;
   - live-process hostile contour `kill -9 Core во время живого ingest` теперь тоже материализован отдельным runtime smoke и evidence `stage11_kill9_runtime.log`;
-  - оставшийся blocker `stage11` теперь уже не в corruption/read_only и не в kill -9 recovery, а в полном `storage pressure / disk exhaustion` contour: watermarks, reserve free space, controlled degradation до фактического `disk full` и recovery без ручной импровизации.
+  - оставшиеся blocker'ы `stage11` теперь уже не относятся к `storage pressure`;
+  - открытыми остаются только:
+    - `11.3` concurrency proof как обязательный stage-level evidence contour;
+    - `11.4` production-proof для `VACUUM/systemd`.
 
 ## Целевой storage-контур `stage11`
 

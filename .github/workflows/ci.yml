@@ -430,10 +430,12 @@ jobs:
       - name: Storage chaos smoke
         run: |
           cargo test --package art-core storage_backup_restore_recovers_full_runtime_state_after_corruption
+          cargo test --package art-core live_storage_pressure_transitions_shed_heavy_then_block_and_recover
           python3 scripts/tests/test_storage_stage11.py -k test_corruption_recovery_restore_success
           python3 scripts/tests/test_storage_stage11.py -k test_corruption_recovery_restore_fail_goes_read_only
           python3 scripts/tests/test_storage_stage11.py -k test_chaos_smoke_scenarios
           bash scripts/tests/storage_kill9_runtime.sh
+          bash scripts/tests/storage_pressure_runtime.sh
 
   stage11-docs-gate:
     name: stage11-docs-gate

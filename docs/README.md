@@ -71,6 +71,16 @@ Machine-readable карта зависимостей:
 - queue integrity baseline: [queue_integrity_protection_v0_2.md](source/queue_integrity_protection_v0_2.md)
 - guard self-observability baseline: [guard_self_observability_v0_2.md](source/guard_self_observability_v0_2.md)
 
+Текущее состояние corrective-baseline:
+- в `DEF-001 -> stage11` уже materialized:
+  - durable SQLite basement;
+  - corruption -> restore -> read_only contour;
+  - live `kill -9 during ingest` chaos;
+  - live `storage pressure / disk exhaustion` contour;
+- локальными незакрытыми пунктами `stage11` остаются:
+  - `11.3` concurrency proof как stage-level closure evidence;
+  - `11.4` production-proof `VACUUM/systemd`.
+
 ### Release и клиентская коммуникация
 - release process: [release_process.md](release/release_process.md)
 - versioning: [versioning.md](release/versioning.md)
@@ -97,6 +107,8 @@ Machine-readable карта зависимостей:
 - ingress/perimeter protection baseline: [ingress_perimeter_protection_v0_2.md](source/ingress_perimeter_protection_v0_2.md)
 - закон hostile-environment проверки: [production_adversarial_validation_law.md](testing/production_adversarial_validation_law.md)
 - аудит силы тестового корпуса: [test_system_audit_v0_2.md](testing/test_system_audit_v0_2.md)
+- дефектовочная контрольная ведомость управляет corrective-отработкой поштучно: [defect_remediation_control_matrix_v0_2.md](testing/defect_remediation_control_matrix_v0_2.md)
+- дефектовочная лестница задаёт последовательность исправления от нижнего слоя вверх: [defect_remediation_ladder_v0_2.md](testing/defect_remediation_ladder_v0_2.md)
 
 ## Языковая политика
 - нормативный язык документации: русский

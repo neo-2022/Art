@@ -28,13 +28,13 @@
 
 ## Сводка
 - Корень дерева: [`../../README.md`](../../README.md)
-- Строк в корневом `README.md`: `196`
+- Строк в корневом `README.md`: `197`
 - Уникальных документов в дереве: `80`
 - Каталоговых узлов в дереве: `3`
-- Общих строк по документным узлам: `12344`
+- Общих строк по документным узлам: `12446`
 - Суммарных строк внутри каталоговых узлов: `2243`
-- Всех связей в дереве: `173`
-- Просканированных markdown-ссылок: `209`
+- Всех связей в дереве: `176`
+- Просканированных markdown-ссылок: `213`
 - Прямых дочерних ссылок у корня: `52`
 - Документов с признаком `ROOT-INFLUENCE`: `27`
 - Каталоговых узлов без индексного документа: `0`
@@ -43,12 +43,12 @@
 ```mermaid
 graph TD
     N1["CHANGELOG.md\n15 строк"]
-    N2["README.md\n196 строк"]
+    N2["README.md\n197 строк"]
     N3["RELEASE_CHECKLIST.md\n33 строк"]
     N4["SECURITY.md\n15 строк"]
-    N5["docs/ARCHITECTURE.md\n97 строк"]
-    N6["docs/INTEGRATION.md\n60 строк\nROOT-INFLUENCE"]
-    N7["docs/README.md\n124 строк\nROOT-INFLUENCE"]
+    N5["docs/ARCHITECTURE.md\n98 строк"]
+    N6["docs/INTEGRATION.md\n67 строк\nROOT-INFLUENCE"]
+    N7["docs/README.md\n136 строк\nROOT-INFLUENCE"]
     N8["docs/api/openapi.yaml\n82 строк"]
     N9["docs/contracts/v2/openapi.yaml\n199 строк"]
     N10["docs/contracts/v2/schemas/\nкаталог: 16 файлов\n1073 строк"]
@@ -64,7 +64,7 @@ graph TD
     N20["docs/governance/evidence/README.md\n15 строк"]
     N21["docs/governance/evidence/evidence_ledger.yaml\n265 строк"]
     N22["docs/governance/evidence_policy.md\n29 строк"]
-    N23["docs/governance/observability_gap_registry.md\n86 строк"]
+    N23["docs/governance/observability_gap_registry.md\n87 строк"]
     N24["docs/governance/release_decisions/\nкаталог: 2 файлов\n114 строк"]
     N25["docs/governance/release_decisions/README.md\n23 строк"]
     N26["docs/governance/release_decisions/latest_go_no_go.md\n91 строк"]
@@ -80,7 +80,7 @@ graph TD
     N36["docs/portal/DOC_AUTHORITY.md\n19 строк"]
     N37["docs/portal/DOC_STYLE_GUIDE.md\n41 строк"]
     N38["docs/portal/GLOSSARY.md\n14 строк"]
-    N39["docs/portal/INDEX.md\n74 строк"]
+    N39["docs/portal/INDEX.md\n75 строк"]
     N40["docs/portal/PRODUCT_GUARANTEES.md\n14 строк"]
     N41["docs/portal/SECURITY_POSTURE.md\n107 строк"]
     N42["docs/regart/art_bridge_runbook.md\n19 строк"]
@@ -117,11 +117,11 @@ graph TD
     N73["docs/source/risk_register_v0_2.md\n59 строк\nROOT-INFLUENCE"]
     N74["docs/source/secure_actions_protocol_v2.md\n27 строк"]
     N75["docs/source/startup_config_safety_validator_v0_2.md\n39 строк\nROOT-INFLUENCE"]
-    N76["docs/source/storage_pressure_protection_v0_2.md\n53 строк\nROOT-INFLUENCE"]
+    N76["docs/source/storage_pressure_protection_v0_2.md\n119 строк\nROOT-INFLUENCE"]
     N77["docs/source/trust_boundary_hardening_v0_2.md\n134 строк\nROOT-INFLUENCE"]
     N78["docs/testing/buyer_due_diligence_signal_triage_v0_2.md\n66 строк"]
-    N79["docs/testing/defect_remediation_control_matrix_v0_2.md\n929 строк\nROOT-INFLUENCE"]
-    N80["docs/testing/defect_remediation_ladder_v0_2.md\n304 строк\nROOT-INFLUENCE"]
+    N79["docs/testing/defect_remediation_control_matrix_v0_2.md\n941 строк\nROOT-INFLUENCE"]
+    N80["docs/testing/defect_remediation_ladder_v0_2.md\n305 строк\nROOT-INFLUENCE"]
     N81["docs/testing/production_adversarial_validation_law.md\n203 строк"]
     N82["docs/testing/test_system_audit_v0_2.md\n97 строк"]
     N83["formats/platform_support.yaml\n253 строк"]
@@ -194,6 +194,7 @@ graph TD
     N6 --> N80
     N6 --> N42
     N6 --> N43
+    N6 --> N79
     N7 --> N52
     N7 --> N53
     N7 --> N57
@@ -240,6 +241,8 @@ graph TD
     N7 --> N69
     N7 --> N81
     N7 --> N82
+    N7 --> N79
+    N7 --> N80
     N10 --> N11
     N11 --> N9
     N11 --> N53
@@ -301,17 +304,17 @@ graph TD
 ```
 
 ## Дерево ссылок
-- [`README.md`](../../README.md) — `196` строк
+- [`README.md`](../../README.md) — `197` строк
   - [`docs/governance/release_decisions/latest_go_no_go.md`](../governance/release_decisions/latest_go_no_go.md) — `91` строк
   - [`RELEASE_CHECKLIST.md`](../../RELEASE_CHECKLIST.md) — `33` строк
   - [`CHANGELOG.md`](../../CHANGELOG.md) — `15` строк
   - [`docs/portal/DELIVERY_EVIDENCE.md`](DELIVERY_EVIDENCE.md) — `26` строк
-  - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `929` строк `ROOT-INFLUENCE`
-  - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
+  - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
+  - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
   - [`docs/source/ingress_perimeter_protection_v0_2.md`](../source/ingress_perimeter_protection_v0_2.md) — `149` строк
   - [`docs/source/trust_boundary_hardening_v0_2.md`](../source/trust_boundary_hardening_v0_2.md) — `134` строк `ROOT-INFLUENCE`
   - [`docs/source/browser_surface_hardening_v0_2.md`](../source/browser_surface_hardening_v0_2.md) — `107` строк `ROOT-INFLUENCE`
-  - [`docs/source/storage_pressure_protection_v0_2.md`](../source/storage_pressure_protection_v0_2.md) — `53` строк `ROOT-INFLUENCE`
+  - [`docs/source/storage_pressure_protection_v0_2.md`](../source/storage_pressure_protection_v0_2.md) — `119` строк `ROOT-INFLUENCE`
   - [`docs/source/startup_config_safety_validator_v0_2.md`](../source/startup_config_safety_validator_v0_2.md) — `39` строк `ROOT-INFLUENCE`
   - [`docs/source/queue_integrity_protection_v0_2.md`](../source/queue_integrity_protection_v0_2.md) — `44` строк `ROOT-INFLUENCE`
   - [`docs/source/guard_self_observability_v0_2.md`](../source/guard_self_observability_v0_2.md) — `36` строк `ROOT-INFLUENCE`
@@ -325,26 +328,27 @@ graph TD
   - [`docs/source/risk_register_v0_2.md`](../source/risk_register_v0_2.md) — `59` строк `ROOT-INFLUENCE`
   - [`docs/source/dna_core_determinism_performance_assurance.md`](../source/dna_core_determinism_performance_assurance.md) — `138` строк `ROOT-INFLUENCE`
   - [`docs/source/protective_safeguards_catalog_v0_2.md`](../source/protective_safeguards_catalog_v0_2.md) — `179` строк `ROOT-INFLUENCE`
-  - [`docs/README.md`](../README.md) — `124` строк `ROOT-INFLUENCE`
+  - [`docs/README.md`](../README.md) — `136` строк `ROOT-INFLUENCE`
     - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
     - [`docs/source/FOUNDATION_CONSTITUTION_V0_2.md`](../source/FOUNDATION_CONSTITUTION_V0_2.md) — `903` строк `ROOT-INFLUENCE`
     - [`docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md) — `330` строк `ROOT-INFLUENCE`
     - [`docs/source/README.md`](../source/README.md) — `105` строк `ROOT-INFLUENCE`
-    - [`README.md`](../../README.md) — `196` строк `REUSED-LINK`
-    - [`docs/portal/INDEX.md`](INDEX.md) — `74` строк
-      - [`docs/README.md`](../README.md) — `124` строк `ROOT-INFLUENCE` `REUSED-LINK`
+    - [`README.md`](../../README.md) — `197` строк `REUSED-LINK`
+    - [`docs/portal/INDEX.md`](INDEX.md) — `75` строк
+      - [`docs/README.md`](../README.md) — `136` строк `ROOT-INFLUENCE` `REUSED-LINK`
       - [`docs/source/FOUNDATION_CONSTITUTION_V0_2.md`](../source/FOUNDATION_CONSTITUTION_V0_2.md) — `903` строк `ROOT-INFLUENCE`
       - [`docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md) — `330` строк `ROOT-INFLUENCE`
-      - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `60` строк `ROOT-INFLUENCE`
+      - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `67` строк `ROOT-INFLUENCE`
         - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
         - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
         - [`docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`](../source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md) — `134` строк
         - [`docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`](../source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md) — `140` строк
         - [`docs/source/checklists/CHECKLIST_20_PACK_REGART.md`](../source/checklists/CHECKLIST_20_PACK_REGART.md) — `140` строк
         - [`docs/source/regart_adversarial_integration_harness_v0_2.md`](../source/regart_adversarial_integration_harness_v0_2.md) — `174` строк `ROOT-INFLUENCE`
-        - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
+        - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
         - [`docs/regart/art_bridge_runbook.md`](../regart/art_bridge_runbook.md) — `19` строк
         - [`docs/regart/upstream_error_format.md`](../regart/upstream_error_format.md) — `29` строк
+        - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
       - [`docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md`](../foundation/PROJECT_HISTORY_AND_CONCEPTS.md) — `1493` строк `ROOT-INFLUENCE`
       - [`docs/foundation/AI_ENGINEERING_OPERATING_MODEL.md`](../foundation/AI_ENGINEERING_OPERATING_MODEL.md) — `174` строк
       - [`docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md`](../foundation/ADVANCED_AUTOMATION_BACKLOG.md) — `183` строк
@@ -352,8 +356,8 @@ graph TD
       - [`docs/foundation/frontier_tech_radar.md`](../foundation/frontier_tech_radar.md) — `46` строк
       - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
       - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
-      - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
-      - [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) — `97` строк
+      - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
+      - [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) — `98` строк
         - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
         - [`docs/source/FOUNDATION_CONSTITUTION_V0_2.md`](../source/FOUNDATION_CONSTITUTION_V0_2.md) — `903` строк `ROOT-INFLUENCE`
         - [`docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md`](../foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md) — `579` строк
@@ -363,18 +367,19 @@ graph TD
           - [`docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md) — `330` строк `ROOT-INFLUENCE`
         - [`docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md) — `330` строк `ROOT-INFLUENCE`
         - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
-        - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `929` строк `ROOT-INFLUENCE`
-        - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
-        - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `60` строк `ROOT-INFLUENCE`
+        - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
+        - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
+        - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `67` строк `ROOT-INFLUENCE`
           - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
           - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
           - [`docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`](../source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md) — `134` строк
           - [`docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`](../source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md) — `140` строк
           - [`docs/source/checklists/CHECKLIST_20_PACK_REGART.md`](../source/checklists/CHECKLIST_20_PACK_REGART.md) — `140` строк
           - [`docs/source/regart_adversarial_integration_harness_v0_2.md`](../source/regart_adversarial_integration_harness_v0_2.md) — `174` строк `ROOT-INFLUENCE`
-          - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
+          - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
           - [`docs/regart/art_bridge_runbook.md`](../regart/art_bridge_runbook.md) — `19` строк
           - [`docs/regart/upstream_error_format.md`](../regart/upstream_error_format.md) — `29` строк
+          - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
       - [`docs/portal/GLOSSARY.md`](GLOSSARY.md) — `14` строк
       - [`docs/portal/PRODUCT_GUARANTEES.md`](PRODUCT_GUARANTEES.md) — `14` строк
       - [`docs/ops/platform-support.md`](../ops/platform-support.md) — `98` строк `ROOT-INFLUENCE`
@@ -390,7 +395,7 @@ graph TD
       - [`docs/source/ingress_perimeter_protection_v0_2.md`](../source/ingress_perimeter_protection_v0_2.md) — `149` строк
       - [`docs/source/trust_boundary_hardening_v0_2.md`](../source/trust_boundary_hardening_v0_2.md) — `134` строк `ROOT-INFLUENCE`
       - [`docs/source/browser_surface_hardening_v0_2.md`](../source/browser_surface_hardening_v0_2.md) — `107` строк `ROOT-INFLUENCE`
-      - [`docs/source/storage_pressure_protection_v0_2.md`](../source/storage_pressure_protection_v0_2.md) — `53` строк `ROOT-INFLUENCE`
+      - [`docs/source/storage_pressure_protection_v0_2.md`](../source/storage_pressure_protection_v0_2.md) — `119` строк `ROOT-INFLUENCE`
       - [`docs/source/startup_config_safety_validator_v0_2.md`](../source/startup_config_safety_validator_v0_2.md) — `39` строк `ROOT-INFLUENCE`
       - [`docs/source/queue_integrity_protection_v0_2.md`](../source/queue_integrity_protection_v0_2.md) — `44` строк `ROOT-INFLUENCE`
       - [`docs/source/guard_self_observability_v0_2.md`](../source/guard_self_observability_v0_2.md) — `36` строк `ROOT-INFLUENCE`
@@ -414,7 +419,7 @@ graph TD
     - [`docs/foundation/revolutionary_hypotheses.md`](../foundation/revolutionary_hypotheses.md) — `173` строк
     - [`docs/foundation/frontier_tech_radar.md`](../foundation/frontier_tech_radar.md) — `46` строк
     - [`docs/foundation/lens_audit_report.md`](../foundation/lens_audit_report.md) — `410` строк
-    - [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) — `97` строк
+    - [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) — `98` строк
       - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
       - [`docs/source/FOUNDATION_CONSTITUTION_V0_2.md`](../source/FOUNDATION_CONSTITUTION_V0_2.md) — `903` строк `ROOT-INFLUENCE`
       - [`docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md`](../foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md) — `579` строк
@@ -424,28 +429,30 @@ graph TD
         - [`docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md) — `330` строк `ROOT-INFLUENCE`
       - [`docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md) — `330` строк `ROOT-INFLUENCE`
       - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
-      - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `929` строк `ROOT-INFLUENCE`
-      - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
-      - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `60` строк `ROOT-INFLUENCE`
+      - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
+      - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
+      - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `67` строк `ROOT-INFLUENCE`
         - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
         - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
         - [`docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`](../source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md) — `134` строк
         - [`docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`](../source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md) — `140` строк
         - [`docs/source/checklists/CHECKLIST_20_PACK_REGART.md`](../source/checklists/CHECKLIST_20_PACK_REGART.md) — `140` строк
         - [`docs/source/regart_adversarial_integration_harness_v0_2.md`](../source/regart_adversarial_integration_harness_v0_2.md) — `174` строк `ROOT-INFLUENCE`
-        - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
+        - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
         - [`docs/regart/art_bridge_runbook.md`](../regart/art_bridge_runbook.md) — `19` строк
         - [`docs/regart/upstream_error_format.md`](../regart/upstream_error_format.md) — `29` строк
-    - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `60` строк `ROOT-INFLUENCE`
+        - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
+    - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `67` строк `ROOT-INFLUENCE`
       - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
       - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
       - [`docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`](../source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md) — `134` строк
       - [`docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`](../source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md) — `140` строк
       - [`docs/source/checklists/CHECKLIST_20_PACK_REGART.md`](../source/checklists/CHECKLIST_20_PACK_REGART.md) — `140` строк
       - [`docs/source/regart_adversarial_integration_harness_v0_2.md`](../source/regart_adversarial_integration_harness_v0_2.md) — `174` строк `ROOT-INFLUENCE`
-      - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
+      - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
       - [`docs/regart/art_bridge_runbook.md`](../regart/art_bridge_runbook.md) — `19` строк
       - [`docs/regart/upstream_error_format.md`](../regart/upstream_error_format.md) — `29` строк
+      - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
     - [`docs/source/regart_adversarial_integration_harness_v0_2.md`](../source/regart_adversarial_integration_harness_v0_2.md) — `174` строк `ROOT-INFLUENCE`
     - [`docs/source/connected_system_visibility_v0_2.md`](../source/connected_system_visibility_v0_2.md) — `193` строк `ROOT-INFLUENCE`
     - [`docs/portal/PRODUCT_GUARANTEES.md`](PRODUCT_GUARANTEES.md) — `14` строк
@@ -456,7 +463,7 @@ graph TD
     - [`docs/ops/platform-container-k8s-testing.md`](../ops/platform-container-k8s-testing.md) — `68` строк
     - [`docs/ops/go_no_go_template.md`](../ops/go_no_go_template.md) — `137` строк
     - [`docs/ops/github_actions_queue_remediation_plan.md`](../ops/github_actions_queue_remediation_plan.md) — `212` строк
-    - [`docs/source/storage_pressure_protection_v0_2.md`](../source/storage_pressure_protection_v0_2.md) — `53` строк `ROOT-INFLUENCE`
+    - [`docs/source/storage_pressure_protection_v0_2.md`](../source/storage_pressure_protection_v0_2.md) — `119` строк `ROOT-INFLUENCE`
     - [`docs/source/startup_config_safety_validator_v0_2.md`](../source/startup_config_safety_validator_v0_2.md) — `39` строк `ROOT-INFLUENCE`
     - [`docs/source/queue_integrity_protection_v0_2.md`](../source/queue_integrity_protection_v0_2.md) — `44` строк `ROOT-INFLUENCE`
     - [`docs/source/guard_self_observability_v0_2.md`](../source/guard_self_observability_v0_2.md) — `36` строк `ROOT-INFLUENCE`
@@ -472,7 +479,7 @@ graph TD
     - [`docs/source/browser_surface_hardening_v0_2.md`](../source/browser_surface_hardening_v0_2.md) — `107` строк `ROOT-INFLUENCE`
     - [`docs/source/protective_safeguards_catalog_v0_2.md`](../source/protective_safeguards_catalog_v0_2.md) — `179` строк `ROOT-INFLUENCE`
     - [`docs/governance/evidence_policy.md`](../governance/evidence_policy.md) — `29` строк
-    - [`docs/governance/observability_gap_registry.md`](../governance/observability_gap_registry.md) — `86` строк
+    - [`docs/governance/observability_gap_registry.md`](../governance/observability_gap_registry.md) — `87` строк
     - [`docs/governance/evidence/evidence_ledger.yaml`](../governance/evidence/evidence_ledger.yaml) — `265` строк
     - [`docs/governance/release_decisions/`](../governance/release_decisions/README.md) — `каталог`, файлов `2`, строк `114`
       - [`docs/governance/release_decisions/README.md`](../governance/release_decisions/README.md) — `23` строк
@@ -482,6 +489,8 @@ graph TD
     - [`docs/source/ingress_perimeter_protection_v0_2.md`](../source/ingress_perimeter_protection_v0_2.md) — `149` строк
     - [`docs/testing/production_adversarial_validation_law.md`](../testing/production_adversarial_validation_law.md) — `203` строк
     - [`docs/testing/test_system_audit_v0_2.md`](../testing/test_system_audit_v0_2.md) — `97` строк
+    - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
+    - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
   - [`docs/api/openapi.yaml`](../api/openapi.yaml) — `82` строк
   - [`docs/contracts/v2/openapi.yaml`](../contracts/v2/openapi.yaml) — `199` строк
   - [`docs/contracts/v2/schemas/`](../contracts/v2/schemas/README.md) — `каталог`, файлов `16`, строк `1073`
@@ -513,14 +522,14 @@ graph TD
   - [`docs/foundation/AI_ENGINEERING_OPERATING_MODEL.md`](../foundation/AI_ENGINEERING_OPERATING_MODEL.md) — `174` строк
   - [`docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md`](../foundation/ADVANCED_AUTOMATION_BACKLOG.md) — `183` строк
   - [`docs/portal/ART_VISUAL_LANGUAGE.md`](ART_VISUAL_LANGUAGE.md) — `119` строк
-  - [`docs/portal/INDEX.md`](INDEX.md) — `74` строк
-    - [`docs/README.md`](../README.md) — `124` строк `ROOT-INFLUENCE`
+  - [`docs/portal/INDEX.md`](INDEX.md) — `75` строк
+    - [`docs/README.md`](../README.md) — `136` строк `ROOT-INFLUENCE`
       - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
       - [`docs/source/FOUNDATION_CONSTITUTION_V0_2.md`](../source/FOUNDATION_CONSTITUTION_V0_2.md) — `903` строк `ROOT-INFLUENCE`
       - [`docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md) — `330` строк `ROOT-INFLUENCE`
       - [`docs/source/README.md`](../source/README.md) — `105` строк `ROOT-INFLUENCE`
-      - [`README.md`](../../README.md) — `196` строк `REUSED-LINK`
-      - [`docs/portal/INDEX.md`](INDEX.md) — `74` строк `REUSED-LINK`
+      - [`README.md`](../../README.md) — `197` строк `REUSED-LINK`
+      - [`docs/portal/INDEX.md`](INDEX.md) — `75` строк `REUSED-LINK`
       - [`docs/foundation/AI_ENGINEERING_OPERATING_MODEL.md`](../foundation/AI_ENGINEERING_OPERATING_MODEL.md) — `174` строк
       - [`docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md`](../foundation/ADVANCED_AUTOMATION_BACKLOG.md) — `183` строк
       - [`docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md`](../foundation/PROJECT_HISTORY_AND_CONCEPTS.md) — `1493` строк `ROOT-INFLUENCE`
@@ -532,7 +541,7 @@ graph TD
       - [`docs/foundation/revolutionary_hypotheses.md`](../foundation/revolutionary_hypotheses.md) — `173` строк
       - [`docs/foundation/frontier_tech_radar.md`](../foundation/frontier_tech_radar.md) — `46` строк
       - [`docs/foundation/lens_audit_report.md`](../foundation/lens_audit_report.md) — `410` строк
-      - [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) — `97` строк
+      - [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) — `98` строк
         - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
         - [`docs/source/FOUNDATION_CONSTITUTION_V0_2.md`](../source/FOUNDATION_CONSTITUTION_V0_2.md) — `903` строк `ROOT-INFLUENCE`
         - [`docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md`](../foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md) — `579` строк
@@ -542,28 +551,30 @@ graph TD
           - [`docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md) — `330` строк `ROOT-INFLUENCE`
         - [`docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md) — `330` строк `ROOT-INFLUENCE`
         - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
-        - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `929` строк `ROOT-INFLUENCE`
-        - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
-        - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `60` строк `ROOT-INFLUENCE`
+        - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
+        - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
+        - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `67` строк `ROOT-INFLUENCE`
           - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
           - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
           - [`docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`](../source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md) — `134` строк
           - [`docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`](../source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md) — `140` строк
           - [`docs/source/checklists/CHECKLIST_20_PACK_REGART.md`](../source/checklists/CHECKLIST_20_PACK_REGART.md) — `140` строк
           - [`docs/source/regart_adversarial_integration_harness_v0_2.md`](../source/regart_adversarial_integration_harness_v0_2.md) — `174` строк `ROOT-INFLUENCE`
-          - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
+          - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
           - [`docs/regart/art_bridge_runbook.md`](../regart/art_bridge_runbook.md) — `19` строк
           - [`docs/regart/upstream_error_format.md`](../regart/upstream_error_format.md) — `29` строк
-      - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `60` строк `ROOT-INFLUENCE`
+          - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
+      - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `67` строк `ROOT-INFLUENCE`
         - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
         - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
         - [`docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`](../source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md) — `134` строк
         - [`docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`](../source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md) — `140` строк
         - [`docs/source/checklists/CHECKLIST_20_PACK_REGART.md`](../source/checklists/CHECKLIST_20_PACK_REGART.md) — `140` строк
         - [`docs/source/regart_adversarial_integration_harness_v0_2.md`](../source/regart_adversarial_integration_harness_v0_2.md) — `174` строк `ROOT-INFLUENCE`
-        - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
+        - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
         - [`docs/regart/art_bridge_runbook.md`](../regart/art_bridge_runbook.md) — `19` строк
         - [`docs/regart/upstream_error_format.md`](../regart/upstream_error_format.md) — `29` строк
+        - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
       - [`docs/source/regart_adversarial_integration_harness_v0_2.md`](../source/regart_adversarial_integration_harness_v0_2.md) — `174` строк `ROOT-INFLUENCE`
       - [`docs/source/connected_system_visibility_v0_2.md`](../source/connected_system_visibility_v0_2.md) — `193` строк `ROOT-INFLUENCE`
       - [`docs/portal/PRODUCT_GUARANTEES.md`](PRODUCT_GUARANTEES.md) — `14` строк
@@ -574,7 +585,7 @@ graph TD
       - [`docs/ops/platform-container-k8s-testing.md`](../ops/platform-container-k8s-testing.md) — `68` строк
       - [`docs/ops/go_no_go_template.md`](../ops/go_no_go_template.md) — `137` строк
       - [`docs/ops/github_actions_queue_remediation_plan.md`](../ops/github_actions_queue_remediation_plan.md) — `212` строк
-      - [`docs/source/storage_pressure_protection_v0_2.md`](../source/storage_pressure_protection_v0_2.md) — `53` строк `ROOT-INFLUENCE`
+      - [`docs/source/storage_pressure_protection_v0_2.md`](../source/storage_pressure_protection_v0_2.md) — `119` строк `ROOT-INFLUENCE`
       - [`docs/source/startup_config_safety_validator_v0_2.md`](../source/startup_config_safety_validator_v0_2.md) — `39` строк `ROOT-INFLUENCE`
       - [`docs/source/queue_integrity_protection_v0_2.md`](../source/queue_integrity_protection_v0_2.md) — `44` строк `ROOT-INFLUENCE`
       - [`docs/source/guard_self_observability_v0_2.md`](../source/guard_self_observability_v0_2.md) — `36` строк `ROOT-INFLUENCE`
@@ -590,7 +601,7 @@ graph TD
       - [`docs/source/browser_surface_hardening_v0_2.md`](../source/browser_surface_hardening_v0_2.md) — `107` строк `ROOT-INFLUENCE`
       - [`docs/source/protective_safeguards_catalog_v0_2.md`](../source/protective_safeguards_catalog_v0_2.md) — `179` строк `ROOT-INFLUENCE`
       - [`docs/governance/evidence_policy.md`](../governance/evidence_policy.md) — `29` строк
-      - [`docs/governance/observability_gap_registry.md`](../governance/observability_gap_registry.md) — `86` строк
+      - [`docs/governance/observability_gap_registry.md`](../governance/observability_gap_registry.md) — `87` строк
       - [`docs/governance/evidence/evidence_ledger.yaml`](../governance/evidence/evidence_ledger.yaml) — `265` строк
       - [`docs/governance/release_decisions/`](../governance/release_decisions/README.md) — `каталог`, файлов `2`, строк `114`
         - [`docs/governance/release_decisions/README.md`](../governance/release_decisions/README.md) — `23` строк
@@ -600,18 +611,21 @@ graph TD
       - [`docs/source/ingress_perimeter_protection_v0_2.md`](../source/ingress_perimeter_protection_v0_2.md) — `149` строк
       - [`docs/testing/production_adversarial_validation_law.md`](../testing/production_adversarial_validation_law.md) — `203` строк
       - [`docs/testing/test_system_audit_v0_2.md`](../testing/test_system_audit_v0_2.md) — `97` строк
+      - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
+      - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
     - [`docs/source/FOUNDATION_CONSTITUTION_V0_2.md`](../source/FOUNDATION_CONSTITUTION_V0_2.md) — `903` строк `ROOT-INFLUENCE`
     - [`docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md) — `330` строк `ROOT-INFLUENCE`
-    - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `60` строк `ROOT-INFLUENCE`
+    - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `67` строк `ROOT-INFLUENCE`
       - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
       - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
       - [`docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`](../source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md) — `134` строк
       - [`docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`](../source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md) — `140` строк
       - [`docs/source/checklists/CHECKLIST_20_PACK_REGART.md`](../source/checklists/CHECKLIST_20_PACK_REGART.md) — `140` строк
       - [`docs/source/regart_adversarial_integration_harness_v0_2.md`](../source/regart_adversarial_integration_harness_v0_2.md) — `174` строк `ROOT-INFLUENCE`
-      - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
+      - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
       - [`docs/regart/art_bridge_runbook.md`](../regart/art_bridge_runbook.md) — `19` строк
       - [`docs/regart/upstream_error_format.md`](../regart/upstream_error_format.md) — `29` строк
+      - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
     - [`docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md`](../foundation/PROJECT_HISTORY_AND_CONCEPTS.md) — `1493` строк `ROOT-INFLUENCE`
     - [`docs/foundation/AI_ENGINEERING_OPERATING_MODEL.md`](../foundation/AI_ENGINEERING_OPERATING_MODEL.md) — `174` строк
     - [`docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md`](../foundation/ADVANCED_AUTOMATION_BACKLOG.md) — `183` строк
@@ -619,8 +633,8 @@ graph TD
     - [`docs/foundation/frontier_tech_radar.md`](../foundation/frontier_tech_radar.md) — `46` строк
     - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
     - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
-    - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
-    - [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) — `97` строк
+    - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
+    - [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) — `98` строк
       - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
       - [`docs/source/FOUNDATION_CONSTITUTION_V0_2.md`](../source/FOUNDATION_CONSTITUTION_V0_2.md) — `903` строк `ROOT-INFLUENCE`
       - [`docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md`](../foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md) — `579` строк
@@ -630,18 +644,19 @@ graph TD
         - [`docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md) — `330` строк `ROOT-INFLUENCE`
       - [`docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`](../source/checklists/CHECKLIST_00_MASTER_ART_REGART.md) — `330` строк `ROOT-INFLUENCE`
       - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
-      - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `929` строк `ROOT-INFLUENCE`
-      - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
-      - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `60` строк `ROOT-INFLUENCE`
+      - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
+      - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
+      - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `67` строк `ROOT-INFLUENCE`
         - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
         - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
         - [`docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`](../source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md) — `134` строк
         - [`docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`](../source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md) — `140` строк
         - [`docs/source/checklists/CHECKLIST_20_PACK_REGART.md`](../source/checklists/CHECKLIST_20_PACK_REGART.md) — `140` строк
         - [`docs/source/regart_adversarial_integration_harness_v0_2.md`](../source/regart_adversarial_integration_harness_v0_2.md) — `174` строк `ROOT-INFLUENCE`
-        - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
+        - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
         - [`docs/regart/art_bridge_runbook.md`](../regart/art_bridge_runbook.md) — `19` строк
         - [`docs/regart/upstream_error_format.md`](../regart/upstream_error_format.md) — `29` строк
+        - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
     - [`docs/portal/GLOSSARY.md`](GLOSSARY.md) — `14` строк
     - [`docs/portal/PRODUCT_GUARANTEES.md`](PRODUCT_GUARANTEES.md) — `14` строк
     - [`docs/ops/platform-support.md`](../ops/platform-support.md) — `98` строк `ROOT-INFLUENCE`
@@ -657,7 +672,7 @@ graph TD
     - [`docs/source/ingress_perimeter_protection_v0_2.md`](../source/ingress_perimeter_protection_v0_2.md) — `149` строк
     - [`docs/source/trust_boundary_hardening_v0_2.md`](../source/trust_boundary_hardening_v0_2.md) — `134` строк `ROOT-INFLUENCE`
     - [`docs/source/browser_surface_hardening_v0_2.md`](../source/browser_surface_hardening_v0_2.md) — `107` строк `ROOT-INFLUENCE`
-    - [`docs/source/storage_pressure_protection_v0_2.md`](../source/storage_pressure_protection_v0_2.md) — `53` строк `ROOT-INFLUENCE`
+    - [`docs/source/storage_pressure_protection_v0_2.md`](../source/storage_pressure_protection_v0_2.md) — `119` строк `ROOT-INFLUENCE`
     - [`docs/source/startup_config_safety_validator_v0_2.md`](../source/startup_config_safety_validator_v0_2.md) — `39` строк `ROOT-INFLUENCE`
     - [`docs/source/queue_integrity_protection_v0_2.md`](../source/queue_integrity_protection_v0_2.md) — `44` строк `ROOT-INFLUENCE`
     - [`docs/source/guard_self_observability_v0_2.md`](../source/guard_self_observability_v0_2.md) — `36` строк `ROOT-INFLUENCE`
@@ -672,16 +687,17 @@ graph TD
     - [`docs/regart/art_bridge_runbook.md`](../regart/art_bridge_runbook.md) — `19` строк
   - [`docs/source/README.md`](../source/README.md) — `105` строк `ROOT-INFLUENCE`
   - [`docs/source/checklists/README.md`](../source/checklists/README.md) — `89` строк
-  - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `60` строк `ROOT-INFLUENCE`
+  - [`docs/INTEGRATION.md`](../INTEGRATION.md) — `67` строк `ROOT-INFLUENCE`
     - [`docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`](../source/REGART -  LangGraph  взаимодействие с Art описание.md) — `313` строк `ROOT-INFLUENCE`
     - [`docs/source/Art_v1_spec_final.md`](../source/Art_v1_spec_final.md) — `614` строк `ROOT-INFLUENCE`
     - [`docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`](../source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md) — `134` строк
     - [`docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`](../source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md) — `140` строк
     - [`docs/source/checklists/CHECKLIST_20_PACK_REGART.md`](../source/checklists/CHECKLIST_20_PACK_REGART.md) — `140` строк
     - [`docs/source/regart_adversarial_integration_harness_v0_2.md`](../source/regart_adversarial_integration_harness_v0_2.md) — `174` строк `ROOT-INFLUENCE`
-    - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк `ROOT-INFLUENCE`
+    - [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк `ROOT-INFLUENCE`
     - [`docs/regart/art_bridge_runbook.md`](../regart/art_bridge_runbook.md) — `19` строк
     - [`docs/regart/upstream_error_format.md`](../regart/upstream_error_format.md) — `29` строк
+    - [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк `ROOT-INFLUENCE`
   - [`SECURITY.md`](../../SECURITY.md) — `15` строк
   - [`docs/runbooks/ddos_suspected.md`](../runbooks/ddos_suspected.md) — `40` строк
   - [`docs/runbooks/ingress_shield_degraded.md`](../runbooks/ingress_shield_degraded.md) — `41` строк
@@ -691,8 +707,8 @@ graph TD
 ## Документы, влияющие на корневой README
 Если изменяется любой документ из этого списка, а `README.md` не изменён, CI подаёт сигнал о рассинхроне.
 
-- [`docs/INTEGRATION.md`](../INTEGRATION.md) — `60` строк
-- [`docs/README.md`](../README.md) — `124` строк
+- [`docs/INTEGRATION.md`](../INTEGRATION.md) — `67` строк
+- [`docs/README.md`](../README.md) — `136` строк
 - [`docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md`](../foundation/PROJECT_HISTORY_AND_CONCEPTS.md) — `1493` строк
 - [`docs/ops/platform-support.md`](../ops/platform-support.md) — `98` строк
 - `docs/packs/source_coverage.md` — `НЕ ПОПАЛ В ДЕРЕВО`
@@ -713,10 +729,10 @@ graph TD
 - [`docs/source/regart_adversarial_integration_harness_v0_2.md`](../source/regart_adversarial_integration_harness_v0_2.md) — `174` строк
 - [`docs/source/risk_register_v0_2.md`](../source/risk_register_v0_2.md) — `59` строк
 - [`docs/source/startup_config_safety_validator_v0_2.md`](../source/startup_config_safety_validator_v0_2.md) — `39` строк
-- [`docs/source/storage_pressure_protection_v0_2.md`](../source/storage_pressure_protection_v0_2.md) — `53` строк
+- [`docs/source/storage_pressure_protection_v0_2.md`](../source/storage_pressure_protection_v0_2.md) — `119` строк
 - [`docs/source/trust_boundary_hardening_v0_2.md`](../source/trust_boundary_hardening_v0_2.md) — `134` строк
-- [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `929` строк
-- [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `304` строк
+- [`docs/testing/defect_remediation_control_matrix_v0_2.md`](../testing/defect_remediation_control_matrix_v0_2.md) — `941` строк
+- [`docs/testing/defect_remediation_ladder_v0_2.md`](../testing/defect_remediation_ladder_v0_2.md) — `305` строк
 - `formats/defect_remediation_control_matrix_v0_2.yaml` — `НЕ ПОПАЛ В ДЕРЕВО`
 
 ## Каталоговые узлы
