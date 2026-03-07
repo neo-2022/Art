@@ -38,6 +38,7 @@
 - VM testing: [platform-vm-testing.md](ops/platform-vm-testing.md)
 - Docker и Kubernetes testing: [platform-container-k8s-testing.md](ops/platform-container-k8s-testing.md)
 - GO/NO-GO template: [go_no_go_template.md](ops/go_no_go_template.md)
+- remediation plan для очередей GitHub Actions: [github_actions_queue_remediation_plan.md](ops/github_actions_queue_remediation_plan.md)
 
 ### Release и клиентская коммуникация
 - release process: [release_process.md](release/release_process.md)

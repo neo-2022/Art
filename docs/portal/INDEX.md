@@ -29,6 +29,7 @@
 - VM-тестирование: [platform-vm-testing.md](../ops/platform-vm-testing.md)
 - Docker и Kubernetes: [platform-container-k8s-testing.md](../ops/platform-container-k8s-testing.md)
 - GO/NO-GO шаблон: [go_no_go_template.md](../ops/go_no_go_template.md)
+- План устранения очередей GitHub Actions: [github_actions_queue_remediation_plan.md](../ops/github_actions_queue_remediation_plan.md)
 
 ### Governance
 - Visual language: [ART_VISUAL_LANGUAGE.md](./ART_VISUAL_LANGUAGE.md)
