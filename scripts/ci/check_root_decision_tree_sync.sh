@@ -49,32 +49,74 @@ if errors:
     sys.exit(1)
 
 
-def git(*args):
-    return subprocess.check_output(['git', *args], text=True).strip()
+def git(*args, check=True):
+    result = subprocess.run(
+        ['git', *args],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if check and result.returncode != 0:
+        raise subprocess.CalledProcessError(
+            result.returncode,
+            ['git', *args],
+            output=result.stdout,
+            stderr=result.stderr,
+        )
+    return result.stdout.strip()
 
 
-def detect_range():
+def commit_exists(rev):
+    if not rev:
+        return False
+    result = subprocess.run(
+        ['git', 'cat-file', '-e', f'{rev}^{{commit}}'],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def diff_names(a, b):
+    if not (commit_exists(a) and commit_exists(b)):
+        return None
+    result = subprocess.run(
+        ['git', 'diff', '--name-only', a, b],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return None
+    return set(filter(None, result.stdout.splitlines()))
+
+
+def detect_ranges():
+    candidates = []
     event_path = os.environ.get('GITHUB_EVENT_PATH')
     event_name = os.environ.get('GITHUB_EVENT_NAME', '')
     if event_path and pathlib.Path(event_path).exists():
         event = json.loads(pathlib.Path(event_path).read_text(encoding='utf-8'))
         if event_name == 'pull_request':
-            return event['pull_request']['base']['sha'], event['pull_request']['head']['sha']
+            candidates.append((
+                'pull_request_event',
+                event['pull_request']['base']['sha'],
+                event['pull_request']['head']['sha'],
+            ))
         if event_name == 'push':
             before = event.get('before')
             after = event.get('after') or os.environ.get('GITHUB_SHA')
             if before and before != '0000000000000000000000000000000000000000' and after:
-                return before, after
-    try:
-        return git('rev-parse', 'HEAD^'), git('rev-parse', 'HEAD')
-    except subprocess.CalledProcessError:
-        return None, None
+                candidates.append(('push_event', before, after))
+    return candidates
 
-base, head = detect_range()
-if base and head:
-    changed = set(filter(None, git('diff', '--name-only', base, head).splitlines()))
-else:
-    changed = set()
+changed = set()
+for _label, base, head in detect_ranges():
+    diff = diff_names(base, head)
+    if diff is not None:
+        changed |= diff
+        break
 
 try:
     changed |= set(filter(None, git('diff', '--name-only', 'HEAD').splitlines()))
@@ -94,7 +136,8 @@ except subprocess.CalledProcessError:
     pass
 
 if not changed:
-    changed = set(filter(None, git('ls-files').splitlines()))
+    print('root decision tree sync gate: OK (no reliable root-diff scope detected)')
+    sys.exit(0)
 
 changed_roots = []
 for root in roots:
