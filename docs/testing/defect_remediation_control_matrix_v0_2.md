@@ -93,6 +93,7 @@
   - `docs/governance/evidence/stage11_core_sqlite_restart.log`
   - `docs/governance/evidence/stage11_core_sqlite_hostile_recovery.log`
   - `docs/governance/evidence/stage11_core_backup_scope_isolation.log`
+  - `docs/governance/evidence/stage11_step2_backup_policy.log`
 - Что нужно сделать:
   1. довести durable persistence не только для `events/incidents/audit`, но и для derived/runtime state;
   2. материализовать recovery contour для fingerprint/source indexes, `dna/evidence` и аналитики;
@@ -108,6 +109,8 @@
   - hostile backup/restore recovery для полного `Core state` теперь доказан отдельным evidence и runtime test;
   - коллизия backup-root между экземплярами `Core` с одинаковым профилем устранена: backup-каталог теперь детерминированно зависит и от `db_path`, а не только от `effective_profile_id`;
   - live `art-core` уже материализует автоматический corruption-handling contour (`503/retry_after_ms`, `storage_corrupted`, restore, `read_only`) end-to-end;
+  - backup policy больше не расходится с runtime: cadence `15 минут` enforced внутри `Core`, а не только описан в docs;
+  - отдельный evidence `stage11_step2_backup_policy.log` фиксирует cadence-test, полный `art-core`, Python storage-suite и весь стволовой guard-chain для шага `11.2`;
   - дефект всё ещё открыт, потому что `kill -9 Core во время ingest` пока подтверждён только helper/smoke-путём и не доказан как полноценный live-process chaos contour вокруг настоящего runtime.
 
 ### [ ] DEF-002 — Durable spool у `Agent`

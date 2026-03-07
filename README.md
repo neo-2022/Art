@@ -23,7 +23,7 @@
 | Ветка-источник истины | `main` |
 | Текущий baseline | `v0.2.0-rc.2` |
 | Статус релиза | production candidate, `NO-GO` до доказательства protective contours |
-| Активный corrective baseline | `DEF-001 -> stage11 (durable Core storage/recovery и live corruption/read_only contour уже materialized; hostile backup/restore proof и backup-root scoping by db_path подтверждены; открытым остаётся live kill -9 during ingest chaos)` |
+| Активный corrective baseline | `DEF-001 -> stage11 (durable Core storage/recovery и live corruption/read_only contour уже materialized; hostile backup/restore proof, fixed 15-minute backup cadence и backup-root scoping by db_path подтверждены; открытым остаётся live kill -9 during ingest chaos)` |
 | Следующие structural defects в стволе | `DEF-017` high-risk monolith decomposition, `DEF-018` hostile e2e depth hardening, `DEF-019/020` trust boundary и browser surface hardening |
 | Execute-gated платформы | Ubuntu native, Docker runtime, Kubernetes runtime |
 | Расширенная Linux-матрица | validate-only до включения выделенных runner'ов |

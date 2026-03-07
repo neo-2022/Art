@@ -52,6 +52,7 @@ const DEFAULT_STORAGE_BACKUP_ROOT: &str = "/var/lib/art/backups";
 const DEFAULT_STORAGE_RECOVERY_RETRY_AFTER_MS: u64 = 1_000;
 const DEFAULT_STORAGE_READ_ONLY_RETRY_AFTER_MS: u64 = 2_000;
 const DEFAULT_STORAGE_BACKUP_RETENTION: usize = 96;
+const DEFAULT_STORAGE_BACKUP_INTERVAL_MS: u64 = 15 * 60 * 1000;
 const ANALYTICS_STATE_ROW_ID: i64 = 1;
 static STORAGE_BACKUP_COUNTER: AtomicU64 = AtomicU64::new(1);
 
@@ -198,6 +199,7 @@ struct CoreState {
     db_path: PathBuf,
     storage_backup_dir: PathBuf,
     last_ok_backup_id: Option<String>,
+    last_backup_refresh_ms: u64,
     storage_read_only: bool,
     storage_fault_handling: bool,
 }
@@ -221,15 +223,19 @@ impl CoreState {
             analytics.buckets.pop_front();
         }
         let backup_dir = storage_backup_dir(&effective_profile_id, &db_path);
-        let last_ok_backup_id = refresh_storage_backup(&effective_profile_id, &db_path)
-            .map(Some)
-            .or_else(|error| -> anyhow::Result<Option<String>> {
+        let (last_ok_backup_id, last_backup_refresh_ms) =
+            refresh_storage_backup(&effective_profile_id, &db_path)
+                .map(|backup_id| (Some(backup_id), now_ms()))
+                .or_else(|error| -> anyhow::Result<(Option<String>, u64)> {
                 warn!(
                     "failed to create initial sqlite backup for {}: {}",
                     db_path.display(),
                     error
                 );
-                Ok(latest_storage_backup_id(&backup_dir))
+                Ok((
+                    latest_storage_backup_id(&backup_dir),
+                    latest_storage_backup_created_ts_ms(&backup_dir).unwrap_or(0),
+                ))
             })?;
         Ok(Self {
             next_seq: storage.next_seq,
@@ -257,6 +263,7 @@ impl CoreState {
             db_path,
             storage_backup_dir: backup_dir,
             last_ok_backup_id,
+            last_backup_refresh_ms,
             storage_read_only: false,
             storage_fault_handling: false,
         })
@@ -291,7 +298,7 @@ struct StorageBootstrap {
     audit_chain_head: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct StorageBackupMetadata {
     backup_id: String,
     profile_id: String,
@@ -537,6 +544,14 @@ fn latest_storage_backup_id(backup_dir: &PathBuf) -> Option<String> {
     items.pop()
 }
 
+fn latest_storage_backup_created_ts_ms(backup_dir: &PathBuf) -> Option<u64> {
+    let backup_id = latest_storage_backup_id(backup_dir)?;
+    let metadata_path = backup_dir.join(format!("{}.metadata.json", backup_id));
+    let raw = fs::read_to_string(metadata_path).ok()?;
+    let metadata: StorageBackupMetadata = serde_json::from_str(&raw).ok()?;
+    Some(metadata.created_ts_ms)
+}
+
 fn prune_storage_backups(backup_dir: &PathBuf) -> anyhow::Result<()> {
     let mut ids = fs::read_dir(backup_dir)?
         .filter_map(Result::ok)
@@ -686,15 +701,31 @@ fn storage_corruption_type(error: &anyhow::Error) -> &'static str {
     }
 }
 
-fn refresh_storage_backup_state(s: &mut CoreState) {
+fn refresh_storage_backup_state_force(s: &mut CoreState) {
     match refresh_storage_backup(&s.effective_profile_id, &s.db_path) {
-        Ok(backup_id) => s.last_ok_backup_id = Some(backup_id),
+        Ok(backup_id) => {
+            s.last_ok_backup_id = Some(backup_id);
+            s.last_backup_refresh_ms = now_ms();
+        }
         Err(error) => warn!(
             "failed to refresh sqlite backup for {}: {}",
             s.db_path.display(),
             error
         ),
     }
+}
+
+fn refresh_storage_backup_state_if_due(s: &mut CoreState) {
+    let now = now_ms();
+    if s
+        .last_backup_refresh_ms
+        .checked_add(DEFAULT_STORAGE_BACKUP_INTERVAL_MS)
+        .map(|deadline| deadline > now)
+        .unwrap_or(false)
+    {
+        return;
+    }
+    refresh_storage_backup_state_force(s);
 }
 
 fn replace_runtime_state_from_storage(s: &mut CoreState, storage: StorageBootstrap) {
@@ -756,6 +787,8 @@ fn handle_storage_corruption_locked(
         Ok(storage) => {
             replace_runtime_state_from_storage(s, storage);
             s.storage_read_only = false;
+            s.last_backup_refresh_ms = latest_storage_backup_created_ts_ms(&s.storage_backup_dir)
+                .unwrap_or_else(now_ms);
             push_gap_event_memory_only_locked(
                 s,
                 "observability_gap.storage_corrupted",
@@ -767,7 +800,7 @@ fn handle_storage_corruption_locked(
                     "trace_id": trace_id
                 }),
             );
-            refresh_storage_backup_state(s);
+            refresh_storage_backup_state_if_due(s);
             s.storage_fault_handling = false;
             StorageFaultOutcome {
                 error: "storage_recovering".to_string(),
@@ -1911,7 +1944,7 @@ async fn apply_profile(
             }
             s.effective_profile_id = effective_profile_id.clone();
             s.storage_backup_dir = storage_backup_dir(&s.effective_profile_id, &s.db_path);
-            refresh_storage_backup_state(&mut s);
+            refresh_storage_backup_state_force(&mut s);
             (
                 StatusCode::OK,
                 Json(ApplyProfileResponse {
@@ -1989,7 +2022,7 @@ async fn apply_profile(
                             return storage_fault_response(&outcome.error, outcome.retry_after_ms);
                         }
                     }
-                    refresh_storage_backup_state(&mut s);
+                    refresh_storage_backup_state_if_due(&mut s);
                 }
                 Err(error) => {
                     let outcome = handle_storage_runtime_error_locked(
@@ -2369,7 +2402,7 @@ async fn ingest(
         invalid: invalid_details.len(),
         invalid_details,
     };
-    refresh_storage_backup_state(&mut s);
+    refresh_storage_backup_state_if_due(&mut s);
     persist_analytics_recovery_contour(
         &s.db_path,
         &s.analytics_state_path,
@@ -2534,7 +2567,7 @@ async fn ingest_v2(
         invalid: 0,
         invalid_details: Vec::new(),
     };
-    refresh_storage_backup_state(&mut s);
+    refresh_storage_backup_state_if_due(&mut s);
     persist_analytics_recovery_contour(
         &s.db_path,
         &s.analytics_state_path,
@@ -3510,7 +3543,7 @@ fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
                 let _ = handle_storage_corruption_locked(s, trace_id, &error);
             }
         } else {
-            refresh_storage_backup_state(s);
+            refresh_storage_backup_state_if_due(s);
         }
     }
 }
@@ -3686,7 +3719,7 @@ fn push_incident_locked(
             let _ = handle_storage_corruption_locked(s, &trace_id, &error);
         }
     } else {
-        refresh_storage_backup_state(s);
+        refresh_storage_backup_state_if_due(s);
     }
 }
 
@@ -4328,7 +4361,7 @@ fn append_audit_entry(state: &mut CoreState, mut entry: AuditEntry) {
             let _ = handle_storage_corruption_locked(state, &entry.trace_id, &error);
         }
     } else {
-        refresh_storage_backup_state(state);
+        refresh_storage_backup_state_if_due(state);
     }
 }
 
@@ -4349,7 +4382,7 @@ fn append_audit_entry_and_get(state: &mut CoreState, mut entry: AuditEntry) -> A
             let _ = handle_storage_corruption_locked(state, &entry.trace_id, &error);
         }
     } else {
-        refresh_storage_backup_state(state);
+        refresh_storage_backup_state_if_due(state);
     }
     entry
 }
@@ -4507,7 +4540,7 @@ async fn incident_ack(
                 return storage_fault_response(&outcome.error, outcome.retry_after_ms);
             }
         } else {
-            refresh_storage_backup_state(&mut s);
+            refresh_storage_backup_state_if_due(&mut s);
         }
         append_audit_entry(
             &mut s,
@@ -4573,7 +4606,7 @@ async fn incident_resolve(
                 return storage_fault_response(&outcome.error, outcome.retry_after_ms);
             }
         } else {
-            refresh_storage_backup_state(&mut s);
+            refresh_storage_backup_state_if_due(&mut s);
         }
         append_audit_entry(
             &mut s,
@@ -5062,6 +5095,72 @@ mod tests {
         assert_ne!(dir_a, dir_b);
         assert!(dir_a.starts_with(std::env::temp_dir()));
         assert!(dir_b.starts_with(std::env::temp_dir()));
+    }
+
+    #[test]
+    fn storage_backup_refresh_obeys_fixed_interval_policy() {
+        let db_path = next_test_db_path();
+        let analytics_state_path = db_path.with_extension("analytics.json");
+        let mut state = CoreState::new(
+            "global".to_string(),
+            10_000,
+            200,
+            524_288,
+            vec!["service.restart".to_string(), "service.status".to_string()],
+            AnalyticsState::new(1_440),
+            analytics_state_path,
+            db_path,
+        )
+        .expect("core state");
+
+        let backup_count_before = fs::read_dir(&state.storage_backup_dir)
+            .expect("backup dir")
+            .filter_map(Result::ok)
+            .filter(|entry| {
+                entry
+                    .path()
+                    .extension()
+                    .map(|ext| ext == "json")
+                    .unwrap_or(false)
+            })
+            .count();
+        let backup_id_before = state.last_ok_backup_id.clone();
+        let refresh_ts_before = state.last_backup_refresh_ms;
+
+        refresh_storage_backup_state_if_due(&mut state);
+
+        let backup_count_after_skip = fs::read_dir(&state.storage_backup_dir)
+            .expect("backup dir")
+            .filter_map(Result::ok)
+            .filter(|entry| {
+                entry
+                    .path()
+                    .extension()
+                    .map(|ext| ext == "json")
+                    .unwrap_or(false)
+            })
+            .count();
+        assert_eq!(backup_count_after_skip, backup_count_before);
+        assert_eq!(state.last_ok_backup_id, backup_id_before);
+        assert_eq!(state.last_backup_refresh_ms, refresh_ts_before);
+
+        state.last_backup_refresh_ms = 0;
+        refresh_storage_backup_state_if_due(&mut state);
+
+        let backup_count_after_due = fs::read_dir(&state.storage_backup_dir)
+            .expect("backup dir")
+            .filter_map(Result::ok)
+            .filter(|entry| {
+                entry
+                    .path()
+                    .extension()
+                    .map(|ext| ext == "json")
+                    .unwrap_or(false)
+            })
+            .count();
+        assert!(backup_count_after_due > backup_count_after_skip);
+        assert_ne!(state.last_ok_backup_id, backup_id_before);
+        assert!(state.last_backup_refresh_ms > refresh_ts_before);
     }
 
     fn corrupt_sqlite_header(db_path: &std::path::Path) {
