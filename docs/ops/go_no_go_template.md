@@ -27,6 +27,7 @@
 4. Решение `GO` запрещено, если отсутствует rollback plan с проверяемой точкой возврата.
 5. Решение `GO` запрещено, если evidence artifacts не приложены или не трассируются к MASTER/checklists.
 6. Решение `GO` запрещено, если не доказаны `trust boundary`, `browser surface` baseline или ingress/perimeter shield для целевого профиля.
+7. Решение `GO` запрещено, если для partner-exposed или `REGART` rollout отсутствует pinned external adversarial harness proof.
 
 ## Шаблон
 
@@ -58,6 +59,7 @@
 - [ ] `Trust boundary` доказана для privileged/restricted paths
 - [ ] `Browser surface` baseline доказан для browser-facing routes
 - [ ] `Ingress/perimeter` shield baseline доказан для internet-exposed rollout
+- [ ] Pinned external adversarial harness proof приложен для partner-exposed / `REGART` rollout
 
 ## 3. Критические метрики перед релизом
 - Error budget:
@@ -73,6 +75,7 @@
 - Открытые blockers:
 - Допустимые риски с owner:
 - Условие немедленного STOP rollout:
+- `missing pinned external adversarial harness evidence for partner-exposed / REGART rollout`
 - Требуется ли manual watch window:
 
 ## 5. План выката
@@ -131,3 +134,4 @@
 - есть расхождение между runtime state и documented state;
 - отсутствует часть release artifacts;
 - нет подтверждения по Linux prod readiness или platform compatibility.
+- отсутствует pinned external adversarial harness proof для partner-exposed / `REGART` rollout.

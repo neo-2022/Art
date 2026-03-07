@@ -41,6 +41,9 @@
   - [ ] Проверка (pass/fail): `scripts/ci/check_evidence_ledger.sh` FAIL, если закрытый этап в MASTER не имеет записи и артефактов в `docs/governance/evidence/evidence_ledger.yaml`.
   - [ ] Проверка (pass/fail): `scripts/ci/check_stage_ladder_enforcement.sh` включает `check_evidence_ledger.sh`.
   - [ ] Артефакт результата: evidence gate log + ledger diff.
+- [ ] 8. Сделать: enforce pinned external adversarial harness proof для stage 05/06/20/24.
+  - [ ] Проверка (pass/fail): `scripts/ci/check_stage_ladder_enforcement.sh` или связанный gate возвращает FAIL, если для stage 05/06/20/24 отсутствует harness policy/evidence.
+  - [ ] Артефакт результата: harness gate log + negative scenario.
 
 ## Документация (RU)
 - [ ] docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
@@ -68,6 +71,7 @@
 - [ ] Невозможен merge с нарушением последовательности.
 - [ ] Невозможен merge закрытого этапа без evidence-записи и реальных артефактов.
 - [ ] observability-gap событие этапа 38 зарегистрировано и имеет runbook.
+- [ ] stage 05/06/20/24 не могут быть закрыты без pinned external adversarial harness evidence.
 
 ## Метаданные
 - Ответственный: @neo-2022

@@ -24,6 +24,7 @@ A) Полный запрет опциональности:
 - Ingress / perimeter protection baseline: `docs/source/ingress_perimeter_protection_v0_2.md`
 - Trust boundary / canonical actor context baseline: `docs/source/trust_boundary_hardening_v0_2.md`
 - Browser surface hardening baseline: `docs/source/browser_surface_hardening_v0_2.md`
+- Pinned external adversarial harness baseline: `docs/source/regart_adversarial_integration_harness_v0_2.md`
 
 ⚠️ ПРАВИЛО: переход к следующему этапу возможен только после полного закрытия предыдущего.  
 ⚠️ ПРАВИЛО: запрещено удалять пункты из чек-листов без согласования с владельцем проекта.  
@@ -34,6 +35,7 @@ A) Полный запрет опциональности:
 ⚠️ ПРАВИЛО: всегда держать в контексте файл `/home/art/my_langgraph_agent/AGENTS.md`; для Codex он считается системным промтом проекта.
 ⚠️ ПРАВИЛО: после завершения audit coverage порядок remediation задаётся `docs/testing/defect_remediation_ladder_v0_2.md`, а не “следующим номером этапа”.
 ⚠️ ПРАВИЛО: если меняется документ из корня, ствола или обзорного контура, `DOCUMENTATION_TREE.md` и `formats/documentation_tree_v0_2.yaml` обязаны быть синхронизированы в том же изменении.
+⚠️ ПРАВИЛО: partner-exposed и REGART integration proof считаются валидными только через pinned external adversarial harness; floating checkout и непомеченный внешний source запрещены.
 
 ---
 

@@ -38,6 +38,7 @@
 - baseline ingress/perimeter защиты: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
 - baseline trust boundary hardening: [trust_boundary_hardening_v0_2.md](docs/source/trust_boundary_hardening_v0_2.md)
 - baseline browser surface hardening: [browser_surface_hardening_v0_2.md](docs/source/browser_surface_hardening_v0_2.md)
+- pinned external adversarial harness for REGART and partner-exposed proof: [regart_adversarial_integration_harness_v0_2.md](docs/source/regart_adversarial_integration_harness_v0_2.md)
 - buyer due diligence triage: [buyer_due_diligence_signal_triage_v0_2.md](docs/testing/buyer_due_diligence_signal_triage_v0_2.md)
 
 ## Что такое Art
@@ -156,6 +157,7 @@ Art и REGART — отдельные кодовые базы с контракт
 
 Ссылки:
 - план интеграции: [docs/INTEGRATION.md](docs/INTEGRATION.md)
+- pinned external adversarial harness: [regart_adversarial_integration_harness_v0_2.md](docs/source/regart_adversarial_integration_harness_v0_2.md)
 - внешний репозиторий REGART: `https://github.com/neo-2022/my_langgraph_agent`
 
 ## Безопасность

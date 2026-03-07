@@ -41,6 +41,16 @@ if [[ "$STRICT_EXTERNAL" -eq 1 ]]; then
   UI_PROXY="$EXT_REPO/agent/src/react_agent/ui_proxy.py"
   ITESTS="$EXT_REPO/agent/tests/integration_tests/test_ui_art_ingest.py"
   ITESTS_ACTIONS="$EXT_REPO/agent/tests/integration_tests/test_ui_proxy_service_actions.py"
+  if ! git -C "$EXT_REPO" rev-parse HEAD >/dev/null 2>&1; then
+    echo "stage06: external REGART source must be a git checkout with pinned commit"
+    exit 1
+  fi
+  EXT_COMMIT="$(git -C "$EXT_REPO" rev-parse HEAD)"
+  if [[ -n "$(git -C "$EXT_REPO" status --porcelain)" ]]; then
+    echo "stage06: external REGART source must be clean; dirty checkout is forbidden"
+    exit 1
+  fi
+  echo "stage06: pinned external source commit $EXT_COMMIT"
 fi
 
 # Local wrapper docs must exist.
@@ -184,5 +194,7 @@ for phrase in \
   do
   grep -qi "$phrase" "$PHRASE_TARGET"
 done
+
+bash "$ROOT/scripts/ci/check_regart_adversarial_harness.sh"
 
 echo "stage06 wrapper gate: OK"

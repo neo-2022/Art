@@ -17,6 +17,7 @@ Pack REGART полностью покрывает события REGART (UI Prox
 - CHECKLIST 06 — REGART→Art Bridge readiness
 - CHECKLIST 19 — Packs framework
 - CHECKLIST 13 — Pipeline (correlation перенос в Incident)
+- `docs/source/regart_adversarial_integration_harness_v0_2.md`
 
 ## Шаги (строго линейно)
 
@@ -86,6 +87,12 @@ Pack REGART полностью покрывает события REGART (UI Prox
     - [ ] install fail
     - [ ] событие `observability_gap.pack_incompatible` видно в snapshot/stream.
 
+- [ ] **5. Сделать:** Пришить Pack REGART к pinned external adversarial harness.
+  - [ ] Harness использует manifest pinned source и не зависит от floating checkout.
+  - [ ] `art-regart-smoke` и `art-regart-long-chain` читают pack fixtures/runtime coverage как обязательный слой.
+  - [ ] Stage20 evidence включает pinned source manifest и хотя бы один runtime harness log.
+  - [ ] **Проверка (pass/fail):** stage20 cannot be proven without harness evidence.
+
 ## Документация (RU)
 - [ ] docs/packs/regart/README.md
 - [ ] docs/packs/regart/receivers_examples.md
@@ -98,6 +105,7 @@ Pack REGART полностью покрывает события REGART (UI Prox
 - [ ] validation: REGART pack coverage claim (`Browser/UI Proxy/LangGraph/systemd/probe`) не содержит пробелов
 - [ ] induced: incompatible pack install → `observability_gap.pack_incompatible` (шаг 4)
 - [ ] runtime API: `scripts/tests/pack_regart_runtime_api.sh` проверяет ingest fixtures из `packs/regart/fixtures` и сохранение correlation в `/api/v1/incidents`
+- [ ] pinned external harness suite `art-regart-smoke` и `art-regart-long-chain` используют Pack REGART как runtime truth layer (шаг 5)
 
 ## CI gate
 - [ ] CI job `pack-regart-tests` существует и запускается на PR в main; job зелёный
@@ -119,6 +127,7 @@ Pack REGART полностью покрывает события REGART (UI Prox
 - [ ] Examples receivers (6 секций) существуют и валидируются тестом.
 - [ ] REGART pack явно покрывает полный source contour (`Browser/UI Proxy/LangGraph/systemd/probes`) и это валидируется.
 - [ ] `observability_gap.pack_incompatible` реализован, зарегистрирован и имеет runbook; induced test зелёный.
+- [ ] pinned external harness evidence существует и привязано к Pack REGART как runtime proof.
 - [ ] CI gate Stage 20 зелёный.
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)

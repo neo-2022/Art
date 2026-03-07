@@ -31,6 +31,9 @@
 9. `browser_surface_hardening_v0_2.md`
    - Тип: спецификация browser surface hardening.
    - Назначение: обязательный CSP/header/frame/integrity baseline для Browser Level0, Panel0, Console и showcase-слоя.
+10. `regart_adversarial_integration_harness_v0_2.md`
+   - Тип: спецификация pinned external adversarial harness.
+   - Назначение: обязательный внешний hostile-полигон для `Art <-> REGART` и partner-exposed integration proof.
 
 ## Корень дерева решений и автосинхронизация
 

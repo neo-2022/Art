@@ -119,6 +119,7 @@
 - audit evidence, что spoofed context не повышает привилегии;
 - gap event evidence для нарушения trust boundary;
 - release blocker policy для internet-exposed и partner-exposed профилей.
+- для REGART и других partner-exposed bridge-контуров — pinned external adversarial harness evidence, где trusted actor context проходит через реальную внешнюю систему.
 
 ## Checklist mapping
 - Stage 15 — RBAC / audit / actor context

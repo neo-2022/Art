@@ -6,6 +6,7 @@
 - `docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
 - `docs/release/versioning.md`
 - `docs/ops/go_no_go_template.md`
+- `docs/source/regart_adversarial_integration_harness_v0_2.md`
 
 ## Политика
 - Релиз только manual через CI; локальный релиз запрещён.
@@ -16,6 +17,9 @@
   - доказанная `trust boundary` для actor context и audit/security paths;
   - доказанный `browser surface` baseline для всех browser-facing routes;
   - ingress/perimeter shield baseline.
+- Для partner-exposed и `REGART` rollout обязателен pinned external adversarial harness:
+  - floating checkout и непомеченный внешний source запрещены;
+  - release без harness evidence считается blocked.
 
 ## GitHub Release Flow
 1. Подготовка release PR с changelog и evidence.
@@ -32,6 +36,7 @@
    - `docs/source/trust_boundary_hardening_v0_2.md`
    - `docs/source/browser_surface_hardening_v0_2.md`
    - `docs/source/ingress_perimeter_protection_v0_2.md`
+   - `docs/source/regart_adversarial_integration_harness_v0_2.md`
 
 ## Блокирующие Условия
 Релиз запрещён, если:
@@ -42,3 +47,4 @@
 - не доказана `trust boundary` для privileged/restricted paths.
 - не доказан `browser surface` baseline для browser-facing routes.
 - internet-exposed профиль не имеет ingress/perimeter shield baseline.
+- partner-exposed или `REGART` профиль не имеет pinned external adversarial harness evidence.

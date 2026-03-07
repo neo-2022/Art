@@ -15,6 +15,8 @@ mappings:
 
   - pattern: "docs/source/checklists/CHECKLIST_*.md"
     checklist: "docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md"
+  - pattern: "docs/source/regart_adversarial_integration_harness_v0_2.md"
+    checklist: "docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md"
   - pattern: "docs/source/*.md"
     checklist: "docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md"
 

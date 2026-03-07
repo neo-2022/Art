@@ -6,6 +6,7 @@
 - [CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md](source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md)
 - [CHECKLIST_06_REGART_ART_BRIDGE.md](source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md)
 - [CHECKLIST_20_PACK_REGART.md](source/checklists/CHECKLIST_20_PACK_REGART.md)
+- [regart_adversarial_integration_harness_v0_2.md](source/regart_adversarial_integration_harness_v0_2.md)
 - [defect_remediation_ladder_v0_2.md](testing/defect_remediation_ladder_v0_2.md)
 - `formats/root_decision_tree_dependencies.yaml`
 
@@ -46,3 +47,14 @@ Art и REGART — это интегрированные системы, а не 
 - runbook моста: [art_bridge_runbook.md](regart/art_bridge_runbook.md)
 - формат upstream-ошибок: [upstream_error_format.md](regart/upstream_error_format.md)
 - parity и platform evidence отслеживаются через stage37 и delivery evidence
+
+## Pinned external adversarial harness
+- Для `Art <-> REGART` readiness запрещено использовать floating `main` или “просто соседний checkout” как единственное доказательство интеграции.
+- Обязательный внешний hostile harness задан в [regart_adversarial_integration_harness_v0_2.md](source/regart_adversarial_integration_harness_v0_2.md).
+- Обязательные suite:
+  - `art-regart-smoke`
+  - `art-regart-hostile-bridge`
+  - `art-regart-replay`
+  - `art-regart-long-chain`
+  - `art-regart-actions-audit`
+- Этот harness усиливает тестовую нагрузку и не заменяет standalone proof самого `Art`.

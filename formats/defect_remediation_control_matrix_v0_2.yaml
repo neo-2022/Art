@@ -248,3 +248,15 @@ defects:
       - docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md
       - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
       - docs/source/checklists/CHECKLIST_40_PRODUCT_SHOWCASE_VISUAL_LANGUAGE.md
+  - id: DEF-021
+    title: Pinned external adversarial harness for REGART integration is missing
+    ladder_level: E
+    execution_order: 21
+    execution_dependencies: ["DEF-018"]
+    affected_stages: ["05", "06", "20", "24", "38"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md
+      - docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md
+      - docs/source/checklists/CHECKLIST_20_PACK_REGART.md
+      - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
+      - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md

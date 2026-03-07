@@ -19,6 +19,7 @@
 - Trust boundary proof: `docs/source/trust_boundary_hardening_v0_2.md`
 - Browser surface baseline: `docs/source/browser_surface_hardening_v0_2.md`
 - Ingress/perimeter baseline: `docs/source/ingress_perimeter_protection_v0_2.md`
+- Pinned external adversarial harness: `docs/source/regart_adversarial_integration_harness_v0_2.md`
 
 ## Mandatory checks
 - [x] `release-regression` green
@@ -29,3 +30,4 @@
 - [ ] `trust boundary` proof attached for privileged or restricted rollout
 - [ ] `browser surface` baseline attached for browser-facing rollout
 - [ ] `ingress/perimeter` baseline attached for internet-exposed rollout
+- [ ] pinned external adversarial harness proof attached for partner-exposed / `REGART` rollout

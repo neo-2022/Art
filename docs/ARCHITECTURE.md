@@ -91,5 +91,6 @@ Art строится как единый продукт с тремя архит
 - границы контрактов, событий и runtime-поведения жёстко определены
 - Console не встраивается в REGART
 - интеграция идёт через transport, events, Level0 и операционные контракты
+- доказательство readiness этой границы допускается только через pinned external adversarial harness, а не через floating local checkout.
 
 Детальный интеграционный слой: [INTEGRATION.md](INTEGRATION.md)

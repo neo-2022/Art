@@ -18,6 +18,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Зависимости
 CHECKLIST 05 — REGART: UI/Graph/Run/Debugger (обёртка)
+- `docs/source/regart_adversarial_integration_harness_v0_2.md`
 
 ## Шаги (строго линейно)
 
@@ -87,6 +88,18 @@ CHECKLIST 05 — REGART: UI/Graph/Run/Debugger (обёртка)
   - [ ] Для agent/service control путь всегда `proposal/preflight/policy/audit`, без silent administrative bypass.
   - [ ] **Проверка (pass/fail):** source-of-truth чек-лист содержит и закрывает этот путь; evidence — action mediation tests/logs.
 
+- [ ] **12. Сделать:** Зафиксировать и включить pinned external adversarial harness как обязательный bridge proof.
+  - [ ] Для stage06 обязательны suite:
+    - [ ] `art-regart-hostile-bridge`
+    - [ ] `art-regart-replay`
+    - [ ] `art-regart-actions-audit`
+  - [ ] Harness использует только pinned source baseline.
+  - [ ] Evidence разделяет:
+    - [ ] ошибка `Art`
+    - [ ] ошибка `REGART`
+    - [ ] ошибка bridge
+  - [ ] **Проверка (pass/fail):** harness document и evidence явно покрывают stage06 bridge path.
+
 ## Документация (RU)
 - [ ] docs/regart/art_bridge_runbook.md
 - [ ] docs/regart/upstream_error_format.md
@@ -101,6 +114,7 @@ CHECKLIST 05 — REGART: UI/Graph/Run/Debugger (обёртка)
 - [ ] integration: Art-first bridge recovery path (`Art unavailable -> backlog -> resend`) зелёный.
 - [ ] integration: correlation suite запрещает эвристический `node_id/run_id` jump.
 - [ ] integration: human/audit-mediated service control path зелёный.
+- [ ] pinned external harness suite `art-regart-hostile-bridge`, `art-regart-replay` и `art-regart-actions-audit` зелёные.
 
 ## CI gate
 - [ ] В CI workflow включён запуск тестов из раздела “Тестирование” через `scripts/ci/check_stage06_wrapper.sh` в двух режимах:
@@ -111,10 +125,11 @@ CHECKLIST 05 — REGART: UI/Graph/Run/Debugger (обёртка)
   - [ ] проверяет, что существуют `docs/regart/art_bridge_runbook.md` и `docs/regart/upstream_error_format.md`
   - [ ] валидирует, что нет противоречий вида parent `[x]` + child `[ ]` в wrapper/source-of-truth чек-листах
   - [ ] завершает работу с exit 1 при нарушении любой проверки
+- [ ] Harness gate `scripts/ci/check_regart_adversarial_harness.sh` зелёный и stage06 не может считаться доказанным без него.
 
 ## DoD
 - [ ] Все шаги 1–8 этого чек-листа отмечены `[x]` после фактической проверки.
-- [ ] Все шаги 1–11 этого чек-листа отмечены `[x]` после фактической проверки.
+- [ ] Все шаги 1–12 этого чек-листа отмечены `[x]` после фактической проверки.
 - [ ] Соответствующие пункты в `CHECKLIST_REGART_ART_INTEGRATION.md` добавлены и отмечены `[x]` с evidence.
 - [ ] Тесты из раздела “Тестирование” зелёные в CI.
 - [ ] CI gate из раздела “CI gate” зелёный в CI (`scripts/ci/check_stage06_wrapper.sh`).

@@ -7,6 +7,7 @@ required_files=(
   "docs/source/analytics_memory_v0_2.md"
   "docs/source/trust_boundary_hardening_v0_2.md"
   "docs/source/browser_surface_hardening_v0_2.md"
+  "docs/source/regart_adversarial_integration_harness_v0_2.md"
   "docs/source/ingress_perimeter_protection_v0_2.md"
   "docs/source/risk_register_v0_2.md"
   "docs/source/console_settings_architecture_v0_2.md"
@@ -15,6 +16,7 @@ required_files=(
   "formats/documentation_tree_v0_2.yaml"
   "scripts/ci/generate_documentation_tree.py"
   "scripts/ci/check_documentation_tree_sync.sh"
+  "scripts/ci/check_regart_adversarial_harness.sh"
   "scripts/tests/test_documentation_tree.py"
   "docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md"
   "docs/source/checklists/CHECKLIST_29_EVENT_DNA_CORE_V2.md"
@@ -154,6 +156,7 @@ bash scripts/ci/check_documentation_tree_sync.sh
 python3 -m unittest scripts.tests.test_documentation_tree -v
 bash scripts/ci/check_defect_remediation_control_matrix.sh
 bash scripts/ci/check_protective_contours.sh
+bash scripts/ci/check_regart_adversarial_harness.sh
 
 grep -q "CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 grep -q "CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md

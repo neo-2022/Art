@@ -21,6 +21,7 @@ CHECKLIST 01 — Governance/SRE
 CHECKLIST 02 — Privacy baseline (global)  
 CHECKLIST 03 — Regional profiles  
 CHECKLIST 04 — Secure SDLC + Supply-chain  
+- `docs/source/regart_adversarial_integration_harness_v0_2.md`
 
 ## Шаги (строго линейно)
 
@@ -93,6 +94,13 @@ CHECKLIST 04 — Secure SDLC + Supply-chain
   - [ ] Правило: события Graph/Tool/Model помечаются корреляционными полями без хардкода.
   - [ ] **Проверка (pass/fail):** source-of-truth чек-лист содержит этот пункт и он закрыт `[x]`; evidence — correlation tests/logs.
 
+- [ ] **8. Сделать:** Встроить pinned external adversarial harness для REGART UI/Debugger как обязательное доказательство stage05.
+  - [ ] В source-of-truth и wrapper зафиксировано, что floating `main` и sibling checkout без commit provenance запрещены.
+  - [ ] Harness имеет pinned source manifest и запускает suite `art-regart-smoke`.
+  - [ ] Harness имеет hostile suite `art-regart-hostile-bridge` для UI/Debugger path.
+  - [ ] Evidence содержит browser plane, backend plane и OS plane для одного integration run.
+  - [ ] **Проверка (pass/fail):** `docs/source/regart_adversarial_integration_harness_v0_2.md` и harness evidence явно покрывают stage05.
+
 ## Тестирование
 - [ ] Автотест подтверждает `subscribe(listener)` и порядок доставки (Шаг 1). Evidence: `ui/tests/debugger_core.spec.js` + `scripts/ci/check_stage05_wrapper.sh` (`npm test -- debugger_core.spec.js`, 2 passed).
 - [ ] Автотест подтверждает генерацию `trace_id` при отсутствии и сохранение при прохождении по слоям (Шаг 2).
@@ -103,6 +111,7 @@ CHECKLIST 04 — Secure SDLC + Supply-chain
 - [ ] Автотест/интеграционный сценарий подтверждает `observability_gap.ui_proxy_unavailable` при недоступности UI Proxy (Шаг 5) (`tests/uiProxyGap.spec.js`).
 - [ ] Автотест/интеграционный сценарий подтверждает bridge `Level0/network -> Art` с backlog/recovery и отдельным gap при недоступном Art (Шаг 6).
 - [ ] Автотест/интеграционный сценарий подтверждает строгую корреляцию `run_id/node_id/trace_id` без эвристического jump (Шаг 7).
+- [ ] pinned external harness suite `art-regart-smoke` и `art-regart-hostile-bridge` зелёные и дают evidence для stage05 (Шаг 8).
 
 ## CI gate
 - [ ] В CI workflow включён запуск тестов из раздела “Тестирование” через `scripts/ci/check_stage05_wrapper.sh` в двух режимах:
@@ -112,10 +121,11 @@ CHECKLIST 04 — Secure SDLC + Supply-chain
   - [ ] проверяет, что в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` присутствуют пункты, добавляемые Шагами 1–5 (по стабильным строкам/паттернам: `multi-tab`, `ui.graph.empty`, `observability_gap.ui_proxy_unavailable`, ссылки на `tests/`), а также на `ui/src/multiTabManager.js` и `ui/src/obs/uiProxyGap.js`.
   - [ ] проверяет, что существуют обязательные артефакты для Шага 5: `docs/runbooks/ui_proxy_unavailable.md` (как target `action_ref`) и запись `observability_gap.ui_proxy_unavailable` в `docs/governance/observability_gap_registry.md`.
   - [ ] завершает работу с exit 1 при нарушении любой проверки
+- [ ] Harness gate `scripts/ci/check_regart_adversarial_harness.sh` зелёный и запускается вместе с документационным контуром stage05.
 
 ## DoD
 - [ ] Все шаги 1–5 этого чек-листа отмечены `[x]` после фактической проверки и упомянуты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` (разделы multi-tab, ui.graph.empty, observability gap).
-- [ ] Все шаги 1–7 этого чек-листа отмечены `[x]` после фактической проверки и упомянуты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` (включая bridge/network/correlation).
+- [ ] Все шаги 1–8 этого чек-листа отмечены `[x]` после фактической проверки и упомянуты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` (включая bridge/network/correlation и pinned hostile harness).
 - [ ] Соответствующие пункты в `CHECKLIST_UI_GRAPH_RUN_DEBUGGER.md` отмечены `[x]` с evidence (тексты + tests + runbook/registry).
 - [ ] Тесты из раздела “Тестирование” зелёные в CI (гарантирует `scripts/ci/check_stage05_wrapper.sh`).
 - [ ] CI gate из раздела “CI gate” зелёный в CI (напр. workflow job `stage05-wrapper-gate`).

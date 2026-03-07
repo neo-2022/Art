@@ -73,6 +73,7 @@ Continuation stages `39..45` не считаются первым местом �
 | Authenticity / copyright-safe baseline | 04, 07, 19, 20, 28, 40 | supply-chain, public repo layer, packs, visual/showcase/audio | machine-readable asset allowlist, legal-safe default media, no third-party runtime assets, provenance-aware pack/demo corpus |
 | Trust boundary / canonical actor context | 15, 24, 33, 37 | actions, release, secure actions, production hardening | trusted-source actor context, spoofed-header negative tests, release blocker for untrusted boundary |
 | Browser surface hardening | 10, 16, 24, 28, 37, 40 | browser, panel0, release, console foundation, linux perimeter, showcase | CSP/frame/integrity baseline, browser hardening negative tests, showcase cannot weaken production browser surface |
+| Pinned external adversarial harness | 05, 06, 20, 24, 38 | REGART integration, pack runtime, release/process truth | pinned source manifest, hostile bridge/replay/long-chain/actions audit evidence, no floating checkout proof |
 
 ## 2C. Сквозная интеграция deployment/transport контура агента
 

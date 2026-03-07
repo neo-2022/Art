@@ -90,6 +90,7 @@
 - negative tests на policy degradation;
 - release evidence, что browser surface baseline включён;
 - runbook и gap event для деградации browser surface.
+- для REGART и partner-exposed browser-plane — pinned external adversarial harness evidence, показывающее browser surface policy под внешней hostile нагрузкой.
 
 ## Checklist mapping
 - Stage 10 — Browser Level0

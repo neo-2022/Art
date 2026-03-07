@@ -75,6 +75,7 @@
 | `DEF-016` | `[ ]` | `E.1` | `DEF-015` | `29..45` | Утверждённые differentiators ещё не materialize в runtime/contracts/tests |
 | `DEF-017` | `[ ]` | `E.2` | `DEF-016` | `10, 11, 17, 18, 28, 35, 37, 39` | Высокорисковые монолитные entrypoint-файлы затрудняют review, hardening и смену владельца |
 | `DEF-018` | `[ ]` | `E.3` | `DEF-017` | `10, 16, 22, 24, 28, 34, 36, 38` | Сила test-corpus неравномерна: console/browser и часть release-path ещё слабее hostile production стандарта |
+| `DEF-021` | `[ ]` | `E.4` | `DEF-018` | `05, 06, 20, 24, 38` | Нет pinned external adversarial harness для REGART-интеграции и partner-exposed hostile proof |
 
 ## Контрольные строки
 
@@ -549,6 +550,32 @@
   - rollback/migration/reconnect evidence;
   - anti-breakage screenshots/logs не placeholder-backed;
   - reduction of weak string-only gate dependence.
+
+### [ ] DEF-021 — Pinned external adversarial harness для REGART и partner-exposed integration
+- Уровень: `E.4`
+- Зависит от: `DEF-018`
+- Затронутые stage-листы:
+  - `CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md`
+  - `CHECKLIST_06_REGART_ART_BRIDGE.md`
+  - `CHECKLIST_20_PACK_REGART.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md`
+- Audit basis:
+  - `docs/source/regart_adversarial_integration_harness_v0_2.md`
+  - `formats/regart_adversarial_harness_v0_2.yaml`
+  - `scripts/ci/check_regart_adversarial_harness.sh`
+  - `docs/INTEGRATION.md`
+  - `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
+- Что нужно сделать:
+  1. зафиксировать pinned source baseline для внешнего hostile harness;
+  2. materialize suite-набор `smoke / hostile-bridge / replay / long-chain / actions-audit`;
+  3. запретить floating `main` и sibling checkout как единственную truth-базу интеграционного доказательства;
+  4. привязать harness evidence к stage 05/06/20/24/38 как обязательное доказательство.
+- Чем доказать закрытие:
+  - machine-readable harness policy и guard;
+  - pinned source manifest;
+  - hostile bridge/replay/long-chain/actions evidence;
+  - release/process gate, который блокирует закрытие stage без harness proof.
 
 ## Правило применения
 1. Работа по remediation начинается с первой строки `[ ]` в порядке ведомости.

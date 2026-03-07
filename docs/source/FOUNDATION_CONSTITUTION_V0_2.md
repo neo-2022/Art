@@ -244,6 +244,23 @@
   - `docs/source/browser_surface_hardening_v0_2.md`
   - `docs/governance/observability_gap_registry.md`
 
+## 14.7. Pinned External Adversarial Harness Law (обязательный)
+- Внешний hostile/adversarial harness разрешён только как дополнительный слой доказательства, а не как замена базовых тестов самого продукта.
+- Для интеграций класса `Art <-> внешняя система` запрещено доказывать readiness через floating `main`, непомеченный sibling checkout или архив без commit provenance.
+- Любой такой harness обязан иметь pinned source baseline:
+  - `pinned git commit`;
+  - или локальный snapshot с явно указанным commit/tag.
+- Для `REGART` и аналогичных partner-exposed интеграций обязательны suite-контуры:
+  - `art-regart-smoke`;
+  - `art-regart-hostile-bridge`;
+  - `art-regart-replay`;
+  - `art-regart-long-chain`;
+  - `art-regart-actions-audit`.
+- Отсутствие pinned external harness proof для stage 05/06/20/24/38 считается integration-gap и блокирует честное закрытие этих этапов.
+- Источники детализации:
+  - `docs/source/regart_adversarial_integration_harness_v0_2.md`
+  - `docs/testing/defect_remediation_control_matrix_v0_2.md`
+
 ## 15. Product Narrative (Console)
 ### 15.1 Категория
 - Art Console является поверхностью Incident OS, а не набором независимых дашбордов.

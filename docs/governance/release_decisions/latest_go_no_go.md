@@ -5,6 +5,7 @@
 - `docs/release/release_process.md`
 - `docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
 - `docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+- `docs/source/regart_adversarial_integration_harness_v0_2.md`
 
 ## 1. General information
 - Release ID: `v0.2.0-rc.2-production-candidate`
@@ -31,6 +32,7 @@
 - [ ] `trust boundary` proof attached for privileged rollout
 - [ ] `browser surface` baseline attached for browser-facing rollout
 - [ ] `ingress/perimeter` baseline attached for internet-exposed rollout
+- [ ] pinned external adversarial harness proof attached for partner-exposed / `REGART` rollout
 
 ## 3. Critical pre-release metrics
 - Error budget: `within allowed budget for production candidate validation`
@@ -43,10 +45,10 @@
 - Last smoke/e2e run: `GitHub Actions PR #20 checks + local execute smoke evidence refresh on merged main baseline`
 
 ## 4. Blockers and risks
-- Open blockers: `missing trust boundary proof, missing browser surface proof, missing ingress/perimeter proof for target rollout profile`
+- Open blockers: `missing trust boundary proof, missing browser surface proof, missing ingress/perimeter proof, missing pinned external adversarial harness proof for target rollout profile`
 - Accepted risks with owner: `natural VM and non-Ubuntu native matrix remain validate-only until dedicated runners are enabled with ENABLE_NATURAL_MATRIX=true; owner neo-2022`
 - Immediate STOP rollout condition: `any required gate fail, any active divergence incident, any Docker/Kubernetes execute smoke regression, any release-blocker in risk register`
-- Additional STOP rollout condition: `missing or degraded trust boundary, missing browser surface baseline, degraded ingress/perimeter shield`
+- Additional STOP rollout condition: `missing or degraded trust boundary, missing browser surface baseline, degraded ingress/perimeter shield, missing pinned external adversarial harness evidence`
 - Is a manual watch window required: `yes, for production rollout`
 
 ## 5. Rollout plan
@@ -56,8 +58,8 @@
 - PASS criteria for step 2: `stage37 and platform runtime compatibility gates remain green with execute smoke evidence`
 - Step 3: `create signed release tag and publish release artifacts through CI`
 - PASS criteria for step 3: `stage24/stage37 gates, release signing verification, and artifact publication remain green`
-- Step 4: `confirm trust boundary, browser surface, and ingress/perimeter protective evidence for target rollout profile`
-- PASS criteria for step 4: `GO/NO-GO references trust boundary, browser surface, ingress/perimeter proof and no protective contour blocker remains`
+- Step 4: `confirm trust boundary, browser surface, ingress/perimeter and pinned external adversarial harness evidence for target rollout profile`
+- PASS criteria for step 4: `GO/NO-GO references trust boundary, browser surface, ingress/perimeter and harness proof and no protective contour blocker remains`
 - Observation timeout per step: `15 minutes`
 
 ## 6. Rollback plan
@@ -77,8 +79,8 @@
 
 ## 8. Decision
 - Decision: `NO-GO`
-- Rationale: `protective contours введены как обязательные release blockers, но доказательства trust boundary, browser surface и ingress/perimeter shield для target rollout profile ещё не приложены`
-- Additional conditions: `после появления этих доказательств решение может быть пересмотрено, но до этого ни stable production tag, ни privileged/internet-exposed rollout недопустимы`
+- Rationale: `protective contours введены как обязательные release blockers, но доказательства trust boundary, browser surface, ingress/perimeter shield и pinned external adversarial harness для target rollout profile ещё не приложены`
+- Additional conditions: `после появления этих доказательств решение может быть пересмотрено, но до этого ни stable production tag, ни privileged/internet-exposed, ни partner-exposed/REGART rollout недопустимы`
 - Next control checkpoint: `после публикации protective evidence и повторного review release sheet`
 
 ## 9. Sign-off

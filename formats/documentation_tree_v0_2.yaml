@@ -1,14 +1,14 @@
 version: '1.1'
 status: ACTIVE
 root: README.md
-total_documents: 73
+total_documents: 74
 total_collection_nodes: 3
-total_markdown_links_scanned: 170
-total_tree_edges: 151
-total_file_links_in_tree: 151
-total_lines_in_tree: 10143
-total_lines_in_collections: 2241
-root_direct_children: 45
+total_markdown_links_scanned: 178
+total_tree_edges: 155
+total_file_links_in_tree: 155
+total_lines_in_tree: 10461
+total_lines_in_collections: 2243
+root_direct_children: 46
 root_influence_documents:
 - docs/INTEGRATION.md
 - docs/README.md
@@ -24,6 +24,7 @@ root_influence_documents:
 - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
 - docs/source/checklists/TRACEABILITY_V0_2.md
 - docs/source/dna_core_determinism_performance_assurance.md
+- docs/source/regart_adversarial_integration_harness_v0_2.md
 - docs/source/risk_register_v0_2.md
 - docs/source/trust_boundary_hardening_v0_2.md
 - docs/testing/defect_remediation_control_matrix_v0_2.md
@@ -46,7 +47,7 @@ nodes:
   missing_index: false
 - path: README.md
   node_type: document
-  lines: 179
+  lines: 181
   files_count: 1
   root_influence: false
   children:
@@ -59,6 +60,7 @@ nodes:
   - docs/source/ingress_perimeter_protection_v0_2.md
   - docs/source/trust_boundary_hardening_v0_2.md
   - docs/source/browser_surface_hardening_v0_2.md
+  - docs/source/regart_adversarial_integration_harness_v0_2.md
   - docs/testing/buyer_due_diligence_signal_triage_v0_2.md
   - docs/source/Art_v1_spec_final.md
   - docs/source/FOUNDATION_CONSTITUTION_V0_2.md
@@ -101,7 +103,7 @@ nodes:
   missing_index: false
 - path: RELEASE_CHECKLIST.md
   node_type: document
-  lines: 31
+  lines: 33
   files_count: 1
   root_influence: false
   children: []
@@ -121,7 +123,7 @@ nodes:
   missing_index: false
 - path: docs/ARCHITECTURE.md
   node_type: document
-  lines: 95
+  lines: 96
   files_count: 1
   root_influence: false
   children:
@@ -140,7 +142,7 @@ nodes:
   missing_index: false
 - path: docs/INTEGRATION.md
   node_type: document
-  lines: 48
+  lines: 60
   files_count: 1
   root_influence: true
   children:
@@ -149,6 +151,7 @@ nodes:
   - docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md
   - docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md
   - docs/source/checklists/CHECKLIST_20_PACK_REGART.md
+  - docs/source/regart_adversarial_integration_harness_v0_2.md
   - docs/testing/defect_remediation_ladder_v0_2.md
   - docs/regart/art_bridge_runbook.md
   - docs/regart/upstream_error_format.md
@@ -161,7 +164,7 @@ nodes:
   missing_index: false
 - path: docs/README.md
   node_type: document
-  lines: 103
+  lines: 105
   files_count: 1
   root_influence: true
   children:
@@ -180,6 +183,7 @@ nodes:
   - docs/foundation/lens_audit_report.md
   - docs/ARCHITECTURE.md
   - docs/INTEGRATION.md
+  - docs/source/regart_adversarial_integration_harness_v0_2.md
   - docs/portal/PRODUCT_GUARANTEES.md
   - docs/portal/SECURITY_POSTURE.md
   - docs/ops/platform-support.md
@@ -284,7 +288,7 @@ nodes:
   missing_index: false
 - path: docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
   node_type: document
-  lines: 886
+  lines: 908
   files_count: 1
   root_influence: true
   children: []
@@ -395,7 +399,7 @@ nodes:
   missing_index: false
 - path: docs/governance/release_decisions
   node_type: collection
-  lines: 112
+  lines: 114
   files_count: 2
   root_influence: false
   children:
@@ -415,7 +419,7 @@ nodes:
   missing_index: false
 - path: docs/governance/release_decisions/latest_go_no_go.md
   node_type: document
-  lines: 89
+  lines: 91
   files_count: 1
   root_influence: false
   children: []
@@ -436,7 +440,7 @@ nodes:
   missing_index: false
 - path: docs/ops/go_no_go_template.md
   node_type: document
-  lines: 133
+  lines: 137
   files_count: 1
   root_influence: false
   children: []
@@ -560,7 +564,7 @@ nodes:
   missing_index: false
 - path: docs/portal/INDEX.md
   node_type: document
-  lines: 65
+  lines: 67
   files_count: 1
   root_influence: false
   children:
@@ -591,6 +595,7 @@ nodes:
   - docs/source/ingress_perimeter_protection_v0_2.md
   - docs/source/trust_boundary_hardening_v0_2.md
   - docs/source/browser_surface_hardening_v0_2.md
+  - docs/source/regart_adversarial_integration_harness_v0_2.md
   - docs/portal/COMPATIBILITY_MATRIX_ART_REGART.md
   - docs/portal/DOC_AUTHORITY.md
   - docs/portal/DOC_STYLE_GUIDE.md
@@ -663,7 +668,7 @@ nodes:
   missing_index: false
 - path: docs/release/release_process.md
   node_type: document
-  lines: 44
+  lines: 50
   files_count: 1
   root_influence: true
   children: []
@@ -753,7 +758,7 @@ nodes:
   missing_index: false
 - path: docs/source/FOUNDATION_CONSTITUTION_V0_2.md
   node_type: document
-  lines: 739
+  lines: 756
   files_count: 1
   root_influence: true
   children: []
@@ -768,7 +773,7 @@ nodes:
   missing_index: false
 - path: docs/source/README.md
   node_type: document
-  lines: 77
+  lines: 80
   files_count: 1
   root_influence: true
   children: []
@@ -791,7 +796,7 @@ nodes:
   missing_index: false
 - path: docs/source/browser_surface_hardening_v0_2.md
   node_type: document
-  lines: 104
+  lines: 105
   files_count: 1
   root_influence: true
   children: []
@@ -803,7 +808,7 @@ nodes:
   missing_index: false
 - path: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   node_type: document
-  lines: 310
+  lines: 312
   files_count: 1
   root_influence: true
   children: []
@@ -817,7 +822,7 @@ nodes:
   missing_index: false
 - path: docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md
   node_type: document
-  lines: 124
+  lines: 134
   files_count: 1
   root_influence: false
   children: []
@@ -827,7 +832,7 @@ nodes:
   missing_index: false
 - path: docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md
   node_type: document
-  lines: 125
+  lines: 140
   files_count: 1
   root_influence: false
   children: []
@@ -837,7 +842,7 @@ nodes:
   missing_index: false
 - path: docs/source/checklists/CHECKLIST_20_PACK_REGART.md
   node_type: document
-  lines: 125
+  lines: 134
   files_count: 1
   root_influence: false
   children: []
@@ -877,7 +882,7 @@ nodes:
   missing_index: false
 - path: docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
   node_type: document
-  lines: 78
+  lines: 82
   files_count: 1
   root_influence: true
   children: []
@@ -919,6 +924,19 @@ nodes:
   - docs/portal/INDEX.md
   index_target: docs/source/ingress_perimeter_protection_v0_2.md
   missing_index: false
+- path: docs/source/regart_adversarial_integration_harness_v0_2.md
+  node_type: document
+  lines: 172
+  files_count: 1
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  - docs/INTEGRATION.md
+  index_target: docs/source/regart_adversarial_integration_harness_v0_2.md
+  missing_index: false
 - path: docs/source/risk_register_v0_2.md
   node_type: document
   lines: 45
@@ -942,7 +960,7 @@ nodes:
   missing_index: false
 - path: docs/source/trust_boundary_hardening_v0_2.md
   node_type: document
-  lines: 131
+  lines: 132
   files_count: 1
   root_influence: true
   children: []
@@ -965,7 +983,7 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_control_matrix_v0_2.md
   node_type: document
-  lines: 567
+  lines: 594
   files_count: 1
   root_influence: true
   children: []
@@ -976,7 +994,7 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_ladder_v0_2.md
   node_type: document
-  lines: 285
+  lines: 287
   files_count: 1
   root_influence: true
   children: []
