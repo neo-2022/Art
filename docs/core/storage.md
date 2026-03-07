@@ -24,7 +24,8 @@
     - при отсутствии валидного backup Core уходит в `read_only` и фиксирует `observability_gap.storage_read_only`;
   - backup cadence больше не привязан к каждой записи: живой `Core` держит фиксированное окно `15 минут`, а force-refresh допускается только на startup/profile-switch;
   - backup/restore/systemd path уже доказан по hostile proof и smoke;
-  - оставшийся blocker `stage11` уже уже не в corruption/read_only contour, а в том, что сценарий `kill -9 Core во время живого ingest` всё ещё подтверждён только helper/smoke-путём, а не полноценным live-process chaos вокруг настоящего `art-core`.
+  - live-process hostile contour `kill -9 Core во время живого ingest` теперь тоже материализован отдельным runtime smoke и evidence `stage11_kill9_runtime.log`;
+  - оставшийся blocker `stage11` теперь уже не в corruption/read_only и не в kill -9 recovery, а в полном `storage pressure / disk exhaustion` contour: watermarks, reserve free space, controlled degradation до фактического `disk full` и recovery без ручной импровизации.
 
 ## Целевой storage-контур `stage11`
 

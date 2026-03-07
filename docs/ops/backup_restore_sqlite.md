@@ -3,7 +3,7 @@
 Текущий статус:
 - документ описывает действующий baseline backup/restore для `stage11`;
 - helper, smoke и live runtime-артефакты для SQLite уже есть;
-- remaining blocker `stage11` относится не к backup/restore itself, а к отдельному live `kill -9` chaos сценарию.
+- remaining blocker `stage11` относится уже не к backup/restore и не к live `kill -9` chaos, а к отдельному `storage pressure / disk exhaustion` contour.
 
 - Частота backup: каждые 15 минут.
 - Частота backup enforced в живом `art-core`: новый backup не создаётся чаще этого окна.

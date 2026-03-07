@@ -123,7 +123,8 @@
   - live `art-core` уже материализует автоматический corruption-handling contour (`503/retry_after_ms`, `storage_corrupted`, restore, `read_only`) end-to-end;
   - backup policy больше не расходится с runtime: cadence `15 минут` enforced внутри `Core`, а не только описан в docs;
   - отдельный evidence `stage11_step2_backup_policy.log` фиксирует cadence-test, полный `art-core`, Python storage-suite и весь стволовой guard-chain для шага `11.2`;
-  - дефект всё ещё открыт, потому что `kill -9 Core во время ingest` пока подтверждён только helper/smoke-путём и не доказан как полноценный live-process chaos contour вокруг настоящего runtime.
+  - live-process contour `kill -9 Core во время ingest` теперь материализован отдельным runtime smoke `scripts/tests/storage_kill9_runtime.sh` и evidence `stage11_kill9_runtime.log`;
+  - дефект всё ещё открыт, потому что следующий корневой blocker уже сместился на `storage pressure / disk exhaustion`: пока не materialize watermarks, reserve free space, controlled degradation и runtime recovery без ручной импровизации.
 
 ### [ ] DEF-002 — Durable spool у `Agent`
 - Уровень: `A.2`

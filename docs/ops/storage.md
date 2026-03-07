@@ -3,7 +3,8 @@
 Текущий статус:
 - chaos helper-сценарии для SQLite уже существуют и проходят;
 - этот документ фиксирует обязательный hostile-path для полного `stage11`;
-- пока живой `art-core` ещё не использует SQLite как полный durable basement, сценарии остаются corrective target для runtime.
+- живой `kill -9` сценарий вокруг настоящего `art-core` теперь подтверждён отдельным runtime smoke и evidence;
+- открытым corrective-блокером `stage11` остаётся не `kill -9`, а `storage pressure / disk exhaustion` contour.
 
 Сценарии:
 - kill -9 во время ingest
@@ -23,6 +24,11 @@
 3. Перезапустить Core.
 4. Выполнить `integrity check`.
 5. Проверить, что ingest снова принимает события.
+6. Проверить, что хотя бы часть принятых до `kill -9` событий сохранилась в snapshot после рестарта.
+
+Доказательство в репозитории:
+- `scripts/tests/storage_kill9_runtime.sh`
+- `docs/governance/evidence/stage11_kill9_runtime.log`
 
 ### 2) disk full
 1. Заполнить storage путь до 0 свободных байт.

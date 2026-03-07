@@ -3,7 +3,8 @@
 Текущий статус:
 - алгоритм ниже уже реализован в живом `art-core`;
 - helper recovery/chaos сценарии и live runtime tests подтверждают этот порядок;
-- оставшийся открытый контур `stage11` относится не к corruption/read_only логике, а к отдельному live-process chaos сценарию `kill -9` во время ingest.
+- live-process chaos сценарий `kill -9` во время ingest теперь тоже доказан отдельно;
+- оставшийся открытый contour `stage11` относится уже к `storage pressure / disk exhaustion`, а не к corruption/read_only или kill -9 recovery.
 
 При corruption (строгий порядок):
 1. ingest -> `HTTP 503`

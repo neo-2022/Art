@@ -13,12 +13,16 @@
 4. Проверить, сработал ли housekeeping / archive / prune.
 
 ## Ремедиация
+`mitigations`
+
 1. Включить controlled degraded mode, если он ещё не включился автоматически.
 2. Освободить место или расширить storage budget по политике.
 3. Проверить и остановить источник, который вызывает runaway growth.
 4. После стабилизации повторно подтвердить writable mode и integrity.
 
 ## Проверка
+`verification`
+
 - `free_bytes` выше reserve threshold
 - `Core` вернулся из degraded mode
 - новых `storage_pressure_high` событий нет на контрольном окне

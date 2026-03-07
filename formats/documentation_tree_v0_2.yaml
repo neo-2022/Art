@@ -6,7 +6,7 @@ total_collection_nodes: 3
 total_markdown_links_scanned: 209
 total_tree_edges: 173
 total_file_links_in_tree: 173
-total_lines_in_tree: 12343
+total_lines_in_tree: 12344
 total_lines_in_collections: 2243
 root_direct_children: 52
 root_influence_documents:
@@ -1080,7 +1080,7 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_control_matrix_v0_2.md
   node_type: document
-  lines: 928
+  lines: 929
   files_count: 1
   root_influence: true
   children: []
