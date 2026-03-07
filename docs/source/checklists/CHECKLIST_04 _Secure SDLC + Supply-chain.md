@@ -43,10 +43,10 @@ A) Полный запрет опциональности:
     - [x] `secrets`
   - [x] **Проверка (pass/fail):** существует `docs/security/branch_tag_policy.md`, содержит все пункты выше явно, включая полный список required status checks с точными именами.
 
-- [ ] **3. Сделать:** Зафиксировать требование подписанных коммитов в `main` и правило проверки.
-  - [ ] каждый коммит в `main` имеет “Verified” подпись в UI GitHub (единый критерий)
-  - [ ] merge в `main` блокируется, если коммит(ы) не “Verified”
-  - [ ] **Проверка (pass/fail):** `docs/security/branch_tag_policy.md` содержит требование “Verified commits only in main” и требование блокировки merge при нарушении.
+- [x] **3. Сделать:** Зафиксировать требование подписанных коммитов в `main` и правило проверки.
+  - [x] каждый коммит в `main` имеет “Verified” подпись в UI GitHub (единый критерий)
+  - [x] merge в `main` блокируется, если коммит(ы) не “Verified”
+  - [x] **Проверка (pass/fail):** `docs/security/branch_tag_policy.md` содержит требование “Verified commits only in main” и требование блокировки merge при нарушении.
 
 - [ ] **4. Сделать:** Зафиксировать политику pinning supply-chain в CI (GitHub Actions и внешние инструменты), включая запрет удалённых composite actions.
   - [ ] GitHub Actions в workflow закреплены на commit SHA (запрещены `@vX`, `@main`, `@master`)

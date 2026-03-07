@@ -21,6 +21,8 @@
 - каждый коммит, попадающий в `main`, обязан отображаться в GitHub UI как `Verified`;
 - merge блокируется, если хотя бы один коммит в merge path не `Verified`;
 - это правило распространяется на merge commit, squash commit и rebase path.
+- enforcement baseline: GitHub branch protection для `main` содержит `required_signatures.enabled=true`;
+- отключение `required_signatures` считается нарушением security baseline и блокирует закрытие Stage 04.
 
 ## Required status checks для `main`
 Точный список required status checks:
