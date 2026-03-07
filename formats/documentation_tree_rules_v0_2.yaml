@@ -1,0 +1,27 @@
+version: "1.0"
+status: "ACTIVE"
+root: "README.md"
+output_markdown: "docs/portal/DOCUMENTATION_TREE.md"
+output_yaml: "formats/documentation_tree_v0_2.yaml"
+allowed_extensions:
+  - ".md"
+  - ".yaml"
+  - ".yml"
+  - ".json"
+root_influence:
+  - "docs/README.md"
+  - "docs/source/FOUNDATION_CONSTITUTION_V0_2.md"
+  - "docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md"
+  - "docs/source/Art_v1_spec_final.md"
+  - "docs/source/REGART -  LangGraph  взаимодействие с Art описание.md"
+  - "docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md"
+  - "docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md"
+  - "docs/source/risk_register_v0_2.md"
+  - "docs/source/dna_core_determinism_performance_assurance.md"
+  - "docs/INTEGRATION.md"
+  - "docs/ops/platform-support.md"
+  - "docs/release/release_process.md"
+
+excluded_from_graph:
+  - "docs/portal/DOCUMENTATION_TREE.md"
+  - "formats/documentation_tree_v0_2.yaml"

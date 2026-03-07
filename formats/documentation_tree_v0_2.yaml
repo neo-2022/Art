@@ -1,0 +1,575 @@
+version: '1.0'
+status: ACTIVE
+root: README.md
+total_documents: 59
+total_markdown_links_scanned: 138
+total_file_links_in_tree: 122
+root_direct_children: 33
+root_influence_documents:
+- docs/INTEGRATION.md
+- docs/README.md
+- docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
+- docs/ops/platform-support.md
+- docs/release/release_process.md
+- docs/source/Art_v1_spec_final.md
+- docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+- docs/source/README.md
+- docs/source/REGART -  LangGraph  взаимодействие с Art описание.md
+- docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
+- docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
+- docs/source/checklists/TRACEABILITY_V0_2.md
+- docs/source/dna_core_determinism_performance_assurance.md
+- docs/source/risk_register_v0_2.md
+- docs/testing/defect_remediation_control_matrix_v0_2.md
+- docs/testing/defect_remediation_ladder_v0_2.md
+- formats/defect_remediation_control_matrix_v0_2.yaml
+excluded_from_graph:
+- docs/portal/DOCUMENTATION_TREE.md
+- formats/documentation_tree_v0_2.yaml
+nodes:
+- path: CHANGELOG.md
+  lines: 15
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+- path: README.md
+  lines: 155
+  root_influence: false
+  children:
+  - docs/governance/release_decisions/latest_go_no_go.md
+  - RELEASE_CHECKLIST.md
+  - CHANGELOG.md
+  - docs/portal/DELIVERY_EVIDENCE.md
+  - docs/source/Art_v1_spec_final.md
+  - docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+  - docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
+  - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
+  - docs/source/risk_register_v0_2.md
+  - docs/source/dna_core_determinism_performance_assurance.md
+  - docs/README.md
+  - docs/api/openapi.yaml
+  - docs/contracts/v2/openapi.yaml
+  - formats/platform_support.yaml
+  - docs/ops/platform-support.md
+  - docs/ops/platform-runtime-compatibility-matrix.md
+  - docs/ops/platform-vm-testing.md
+  - docs/ops/platform-container-k8s-testing.md
+  - docs/security/fstec-certified-profile.md
+  - docs/release/release_process.md
+  - docs/release/versioning.md
+  - docs/release/compat_matrix.md
+  - docs/ops/go_no_go_template.md
+  - docs/governance/evidence/evidence_ledger.yaml
+  - docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
+  - docs/foundation/AI_ENGINEERING_OPERATING_MODEL.md
+  - docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md
+  - docs/portal/ART_VISUAL_LANGUAGE.md
+  - docs/portal/INDEX.md
+  - docs/source/README.md
+  - docs/source/checklists/README.md
+  - docs/INTEGRATION.md
+  - SECURITY.md
+  incoming:
+  - docs/README.md
+- path: RELEASE_CHECKLIST.md
+  lines: 25
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+- path: SECURITY.md
+  lines: 15
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+- path: docs/ARCHITECTURE.md
+  lines: 75
+  root_influence: false
+  children:
+  - docs/source/Art_v1_spec_final.md
+  - docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+  - docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
+  - docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
+  - docs/source/REGART -  LangGraph  взаимодействие с Art описание.md
+  - docs/testing/defect_remediation_control_matrix_v0_2.md
+  - docs/testing/defect_remediation_ladder_v0_2.md
+  - docs/INTEGRATION.md
+  incoming:
+  - docs/README.md
+  - docs/portal/INDEX.md
+- path: docs/INTEGRATION.md
+  lines: 47
+  root_influence: true
+  children:
+  - docs/source/REGART -  LangGraph  взаимодействие с Art описание.md
+  - docs/source/Art_v1_spec_final.md
+  - docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md
+  - docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md
+  - docs/source/checklists/CHECKLIST_20_PACK_REGART.md
+  - docs/testing/defect_remediation_ladder_v0_2.md
+  - docs/regart/art_bridge_runbook.md
+  - docs/regart/upstream_error_format.md
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  - docs/ARCHITECTURE.md
+- path: docs/README.md
+  lines: 100
+  root_influence: true
+  children:
+  - docs/source/Art_v1_spec_final.md
+  - docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+  - docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
+  - docs/source/README.md
+  - README.md
+  - docs/portal/INDEX.md
+  - docs/foundation/AI_ENGINEERING_OPERATING_MODEL.md
+  - docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md
+  - docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
+  - docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
+  - docs/foundation/revolutionary_hypotheses.md
+  - docs/foundation/frontier_tech_radar.md
+  - docs/foundation/lens_audit_report.md
+  - docs/ARCHITECTURE.md
+  - docs/INTEGRATION.md
+  - docs/portal/PRODUCT_GUARANTEES.md
+  - docs/portal/SECURITY_POSTURE.md
+  - docs/ops/platform-support.md
+  - docs/ops/platform-runtime-compatibility-matrix.md
+  - docs/ops/platform-vm-testing.md
+  - docs/ops/platform-container-k8s-testing.md
+  - docs/ops/go_no_go_template.md
+  - docs/ops/github_actions_queue_remediation_plan.md
+  - docs/release/release_process.md
+  - docs/release/versioning.md
+  - docs/release/compat_matrix.md
+  - docs/portal/DELIVERY_EVIDENCE.md
+  - docs/governance/evidence_policy.md
+  - docs/governance/observability_gap_registry.md
+  - docs/governance/evidence/evidence_ledger.yaml
+  - docs/source/checklists/README.md
+  - docs/source/risk_register_v0_2.md
+  - docs/source/dna_core_determinism_performance_assurance.md
+  - docs/testing/production_adversarial_validation_law.md
+  - docs/testing/test_system_audit_v0_2.md
+  incoming:
+  - README.md
+  - docs/portal/INDEX.md
+- path: docs/api/openapi.yaml
+  lines: 82
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/portal/INDEX.md
+- path: docs/contracts/v2/openapi.yaml
+  lines: 199
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/portal/INDEX.md
+- path: docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md
+  lines: 183
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+- path: docs/foundation/AI_ENGINEERING_OPERATING_MODEL.md
+  lines: 174
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+- path: docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
+  lines: 764
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  - docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
+- path: docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
+  lines: 537
+  root_influence: false
+  children:
+  - docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+  - docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
+  - docs/source/Art_v1_spec_final.md
+  - docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
+  incoming:
+  - docs/README.md
+  - docs/ARCHITECTURE.md
+- path: docs/foundation/frontier_tech_radar.md
+  lines: 46
+  root_influence: false
+  children: []
+  incoming:
+  - docs/README.md
+  - docs/portal/INDEX.md
+- path: docs/foundation/lens_audit_report.md
+  lines: 410
+  root_influence: false
+  children: []
+  incoming:
+  - docs/README.md
+- path: docs/foundation/revolutionary_hypotheses.md
+  lines: 173
+  root_influence: false
+  children: []
+  incoming:
+  - docs/README.md
+  - docs/portal/INDEX.md
+- path: docs/governance/evidence/evidence_ledger.yaml
+  lines: 265
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+- path: docs/governance/evidence_policy.md
+  lines: 29
+  root_influence: false
+  children: []
+  incoming:
+  - docs/README.md
+- path: docs/governance/observability_gap_registry.md
+  lines: 68
+  root_influence: false
+  children: []
+  incoming:
+  - docs/README.md
+- path: docs/governance/release_decisions/latest_go_no_go.md
+  lines: 83
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+- path: docs/ops/github_actions_queue_remediation_plan.md
+  lines: 212
+  root_influence: false
+  children: []
+  incoming:
+  - docs/README.md
+  - docs/portal/INDEX.md
+- path: docs/ops/go_no_go_template.md
+  lines: 129
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+- path: docs/ops/platform-container-k8s-testing.md
+  lines: 68
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+- path: docs/ops/platform-runtime-compatibility-matrix.md
+  lines: 43
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/release/compat_matrix.md
+- path: docs/ops/platform-support.md
+  lines: 98
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/release/compat_matrix.md
+  - docs/portal/INDEX.md
+- path: docs/ops/platform-vm-testing.md
+  lines: 54
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+- path: docs/portal/ART_VISUAL_LANGUAGE.md
+  lines: 119
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/portal/INDEX.md
+- path: docs/portal/COMPATIBILITY_MATRIX_ART_REGART.md
+  lines: 13
+  root_influence: false
+  children: []
+  incoming:
+  - docs/portal/INDEX.md
+- path: docs/portal/DELIVERY_EVIDENCE.md
+  lines: 26
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+- path: docs/portal/DOC_AUTHORITY.md
+  lines: 19
+  root_influence: false
+  children: []
+  incoming:
+  - docs/portal/INDEX.md
+- path: docs/portal/DOC_STYLE_GUIDE.md
+  lines: 22
+  root_influence: false
+  children: []
+  incoming:
+  - docs/portal/INDEX.md
+- path: docs/portal/GLOSSARY.md
+  lines: 14
+  root_influence: false
+  children: []
+  incoming:
+  - docs/portal/INDEX.md
+- path: docs/portal/INDEX.md
+  lines: 61
+  root_influence: false
+  children:
+  - docs/README.md
+  - docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+  - docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
+  - docs/INTEGRATION.md
+  - docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
+  - docs/foundation/AI_ENGINEERING_OPERATING_MODEL.md
+  - docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md
+  - docs/foundation/revolutionary_hypotheses.md
+  - docs/foundation/frontier_tech_radar.md
+  - docs/source/Art_v1_spec_final.md
+  - docs/source/REGART -  LangGraph  взаимодействие с Art описание.md
+  - docs/testing/defect_remediation_ladder_v0_2.md
+  - docs/ARCHITECTURE.md
+  - docs/portal/GLOSSARY.md
+  - docs/portal/PRODUCT_GUARANTEES.md
+  - docs/ops/platform-support.md
+  - docs/ops/platform-vm-testing.md
+  - docs/ops/platform-container-k8s-testing.md
+  - docs/ops/go_no_go_template.md
+  - docs/ops/github_actions_queue_remediation_plan.md
+  - docs/portal/ART_VISUAL_LANGUAGE.md
+  - docs/portal/DELIVERY_EVIDENCE.md
+  - docs/portal/SECURITY_POSTURE.md
+  - docs/portal/COMPATIBILITY_MATRIX_ART_REGART.md
+  - docs/portal/DOC_AUTHORITY.md
+  - docs/portal/DOC_STYLE_GUIDE.md
+  - docs/api/openapi.yaml
+  - docs/contracts/v2/openapi.yaml
+  - docs/source/secure_actions_protocol_v2.md
+  - docs/regart/art_bridge_runbook.md
+  incoming:
+  - README.md
+  - docs/README.md
+- path: docs/portal/PRODUCT_GUARANTEES.md
+  lines: 14
+  root_influence: false
+  children: []
+  incoming:
+  - docs/README.md
+  - docs/portal/INDEX.md
+- path: docs/portal/SECURITY_POSTURE.md
+  lines: 14
+  root_influence: false
+  children: []
+  incoming:
+  - docs/README.md
+  - docs/portal/INDEX.md
+- path: docs/regart/art_bridge_runbook.md
+  lines: 19
+  root_influence: false
+  children: []
+  incoming:
+  - docs/portal/INDEX.md
+  - docs/INTEGRATION.md
+- path: docs/regart/upstream_error_format.md
+  lines: 29
+  root_influence: false
+  children: []
+  incoming:
+  - docs/INTEGRATION.md
+- path: docs/release/compat_matrix.md
+  lines: 40
+  root_influence: false
+  children:
+  - docs/release/versioning.md
+  - docs/release/release_process.md
+  - docs/ops/platform-support.md
+  - docs/ops/platform-runtime-compatibility-matrix.md
+  incoming:
+  - README.md
+  - docs/README.md
+- path: docs/release/release_process.md
+  lines: 33
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/release/compat_matrix.md
+- path: docs/release/versioning.md
+  lines: 35
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/release/compat_matrix.md
+- path: docs/security/fstec-certified-profile.md
+  lines: 30
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+- path: docs/source/Art_v1_spec_final.md
+  lines: 614
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  - docs/INTEGRATION.md
+  - docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
+  - docs/ARCHITECTURE.md
+- path: docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+  lines: 693
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  - docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
+  - docs/ARCHITECTURE.md
+- path: docs/source/README.md
+  lines: 57
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+- path: docs/source/REGART -  LangGraph  взаимодействие с Art описание.md
+  lines: 313
+  root_influence: true
+  children: []
+  incoming:
+  - docs/portal/INDEX.md
+  - docs/INTEGRATION.md
+  - docs/ARCHITECTURE.md
+- path: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
+  lines: 290
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  - docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md
+  - docs/ARCHITECTURE.md
+- path: docs/source/checklists/CHECKLIST_05_REGART_UI_GRAPH_RUN_DEBUGGER.md
+  lines: 124
+  root_influence: false
+  children: []
+  incoming:
+  - docs/INTEGRATION.md
+- path: docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md
+  lines: 125
+  root_influence: false
+  children: []
+  incoming:
+  - docs/INTEGRATION.md
+- path: docs/source/checklists/CHECKLIST_20_PACK_REGART.md
+  lines: 125
+  root_influence: false
+  children: []
+  incoming:
+  - docs/INTEGRATION.md
+- path: docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
+  lines: 78
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+- path: docs/source/checklists/README.md
+  lines: 89
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+- path: docs/source/dna_core_determinism_performance_assurance.md
+  lines: 138
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+- path: docs/source/risk_register_v0_2.md
+  lines: 42
+  root_influence: true
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+- path: docs/source/secure_actions_protocol_v2.md
+  lines: 27
+  root_influence: false
+  children: []
+  incoming:
+  - docs/portal/INDEX.md
+- path: docs/testing/defect_remediation_control_matrix_v0_2.md
+  lines: 414
+  root_influence: true
+  children: []
+  incoming:
+  - docs/ARCHITECTURE.md
+- path: docs/testing/defect_remediation_ladder_v0_2.md
+  lines: 258
+  root_influence: true
+  children: []
+  incoming:
+  - docs/portal/INDEX.md
+  - docs/INTEGRATION.md
+  - docs/ARCHITECTURE.md
+- path: docs/testing/production_adversarial_validation_law.md
+  lines: 203
+  root_influence: false
+  children: []
+  incoming:
+  - docs/README.md
+- path: docs/testing/test_system_audit_v0_2.md
+  lines: 97
+  root_influence: false
+  children: []
+  incoming:
+  - docs/README.md
+- path: formats/platform_support.yaml
+  lines: 253
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+omitted_directory_links:
+  README.md:
+  - docs/contracts/v2/schemas
+  - docs/governance/evidence
+  docs/README.md:
+  - docs/governance/release_decisions
+missing_targets: {}

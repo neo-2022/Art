@@ -8,6 +8,10 @@ required_files=(
   "docs/source/risk_register_v0_2.md"
   "docs/source/console_settings_architecture_v0_2.md"
   "docs/source/checklists/TRACEABILITY_V0_2.md"
+  "formats/documentation_tree_rules_v0_2.yaml"
+  "formats/documentation_tree_v0_2.yaml"
+  "scripts/ci/generate_documentation_tree.py"
+  "scripts/ci/check_documentation_tree_sync.sh"
   "docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md"
   "docs/source/checklists/CHECKLIST_29_EVENT_DNA_CORE_V2.md"
   "docs/source/checklists/CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md"
@@ -88,6 +92,7 @@ required_files=(
   "docs/runbooks/checklist_ladder_violation.md"
   "mkdocs.yml"
   "docs/portal/INDEX.md"
+  "docs/portal/DOCUMENTATION_TREE.md"
   "docs/portal/NAVIGATION.md"
   "docs/portal/DOC_STYLE_GUIDE.md"
   "docs/portal/DOC_AUTHORITY.md"
@@ -132,6 +137,7 @@ grep -q "01..27 -> 28..38" docs/source/checklists/TRACEABILITY_V0_2.md
 bash scripts/ci/check_stage28_lens.sh
 bash scripts/ci/check_docs_portal_quality.sh
 bash scripts/ci/check_root_decision_tree_sync.sh
+bash scripts/ci/check_documentation_tree_sync.sh
 bash scripts/ci/check_defect_remediation_control_matrix.sh
 
 grep -q "CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
