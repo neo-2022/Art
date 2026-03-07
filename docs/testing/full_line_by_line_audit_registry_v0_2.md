@@ -56,20 +56,38 @@
 
 | Файл | Статус | Класс | Риски/заметки | Checklist impact |
 |---|---|---|---|---|
+| `docs/contracts/v2/README.md` | REVIEWED | WEAK | Каталог описан слишком узко и уже не отражает полный набор v2 схем (`evidence_lineage`, `tenant_context`, `saas_quota_retention_policy`, access-audit records). | 08, 29, 30, 36 |
 | `docs/contracts/v2/openapi.yaml` | REVIEWED | WEAK | Базовые v2 endpoints уже есть, но утверждённые differentiators из исторического корпуса (`Proof Completeness Score`, `DNA Drift Radar`, `Counterfactual Action Simulator`, `Incident Capsule`, `Deterministic Incident Twin`) в contract surface не материализованы. | 29, 30, 31, 33, 34, 42, 43, 44 |
+| `docs/contracts/v2/contract_fingerprint.sha256` | REVIEWED | OK | Fingerprint corpus полон и помогает удерживать contract drift под контролем. | 08, 29 |
+| `docs/contracts/v2/dna_model/dna_core_clusterization.cfg` | REVIEWED | OK | Конфиг model-checking соответствует formal DNA path; это сильное основание для stage29. | 29 |
 | `docs/contracts/v2/schemas/claim_v2.json` | REVIEWED | WEAK | Truth modes и lineage зафиксированы хорошо, но нет machine-readable поля для `Proof Completeness Score` и related explanation payload. | 30, 42 |
 | `docs/contracts/v2/schemas/dialog_message_v2.json` | REVIEWED | OK | Есть `lineage_hash`, `evidence_refs`, `audit_refs`, truth modes и typed dialog model; это соответствует dialogic baseline. | 30, 31, 33 |
 | `docs/contracts/v2/schemas/dna_cluster.json` | REVIEWED | WEAK | Канонический `dna_id` и truth modes есть, но нет drift/twin hooks, нет machine-readable поля для drift fingerprint или deterministic twin parity metadata. | 29, 34, 42, 44 |
+| `docs/contracts/v2/schemas/dna_signature.json` | REVIEWED | WEAK | Signature фиксирует hash/версии, но не несёт drift/twin parity metadata и не помогает машинно отличать replay/twin assertions. | 29, 42, 44 |
+| `docs/contracts/v2/schemas/evidence_access_audit_record_v2.json` | REVIEWED | WEAK | Есть `actor_role`, но нет явного `actor_id`/subject id; для строгого audit posture запись слишком обобщённая. | 01, 25, 32 |
+| `docs/contracts/v2/schemas/evidence_block.json` | REVIEWED | WEAK | Есть `trust_score` и policy fields, но нет явной provenance/lineage binding и capsule-ready metadata на уровне блока. | 30, 31, 42, 44 |
 | `docs/contracts/v2/schemas/evidence_item.json` | REVIEWED | OK | Union/oneOf evidence model и truth metadata соответствуют evidence-first baseline. | 30, 31, 32 |
+| `docs/contracts/v2/schemas/evidence_lineage_v2.json` | REVIEWED | WEAK | Lineage graph уже есть, но модель ещё линейная и бедная для сложных multi-claim/multi-branch relations; для approved differentiators это пока узкое место. | 30, 31, 42, 44, 45 |
 | `docs/contracts/v2/schemas/gap_event.json` | REVIEWED | OK | Gap event имеет truth metadata; базовый hostile-runtime контур закреплён. | 18, 29, 37 |
 | `docs/contracts/v2/schemas/investigation_doc_v1.json` | REVIEWED | WEAK | Базовый InvestigationDoc есть, но нет capsule/twin-ready machine-readable envelope и формального replay portability contract. | 31, 44 |
 | `docs/contracts/v2/schemas/raw_event_v2.json` | REVIEWED | WEAK | Схема чрезмерно permissive: `additionalProperties: true`, обязателен только `severity`, нет жёстких correlation/source/privacy baseline полей. Для hostile-runtime ingestion это слишком слабое основание. | 09, 12, 18, 29 |
+| `docs/contracts/v2/schemas/saas_quota_retention_policy_v2.json` | REVIEWED | OK | Для SaaS/retention контуров схема уже strong: quotas, retention и compliance export фиксированы жёстко. | 36 |
 | `docs/contracts/v2/schemas/snapshot_v2.json` | REVIEWED | WEAK | Snapshot содержит truth modes, gap/slo arrays, но `incidents` остаётся нетипизированным `object`, а capsule/twin/proof-carrying extensions отсутствуют. | 29, 31, 32, 42, 44 |
 | `docs/contracts/v2/schemas/slo_violation.json` | REVIEWED | OK | Есть truth metadata и evidence linkage; соответствует SLOViolation baseline. | 30, 34 |
+| `docs/contracts/v2/schemas/tenant_context_v2.json` | REVIEWED | WEAK | Tenant context фиксирует базовые IDs, но нет regulatory/profile/runtime placement fields, важных для multi-plane SaaS и RU/regional rules. | 26, 36 |
 | `docs/contracts/v2/migrations_v2.md` | REVIEWED | OK | Dual-write verification, lag normalization и rollback semantics описаны строго; migration path уже ближе к production-grade, чем большинство docs-only контуров. | 29, 24 |
 | `docs/contracts/v2/dna_model/dna_core_clusterization.tla` | REVIEWED | OK | Сам факт formal model и replay/determinism properties соответствует философии проекта; deeper content parity с Rust проверять уже в code-layer аудите. | 29 |
 | `docs/api/openapi.yaml` | REVIEWED | WEAK | v1 API слишком тонкий и partly permissive (`additionalProperties: true`), слабо отражает evidence-first и typed hostile-runtime philosophy. | 08, 14, 24 |
+| `docs/api/errors.md` | REVIEWED | WEAK | Error reference полезен, но узок: отсутствует связь с v2/gap events/hostile diagnostics и richer invalid code taxonomy. | 08, 09, 29 |
+| `docs/api/schemas.md` | REVIEWED | WEAK | Страница по-прежнему живёт в логике только v1 и не отражает реальный dual-surface проекта. | 08, 29, 30 |
+| `docs/api/snapshot.md` | REVIEWED | WEAK | Snapshot reference ограничен v1 и не связывает snapshot path с truth modes, evidence lineage и replay contracts v2. | 14, 29, 31 |
+| `docs/api/stream.md` | REVIEWED | WEAK | Хорошо описывает cursor semantics v1, но не выражает modern v2 stream obligations и hostile/backlog discipline полностью. | 14, 29 |
+| `docs/api/versioning.md` | REVIEWED | WEAK | Политика versioning слишком общая и не связывает schema evolution с fingerprint, migration and generated-clients discipline. | 08, 24, 29 |
 | `docs/api/schema_compliance.md` | REVIEWED | WEAK | Таблица соответствия слишком узкая: покрывает только базовый ingest/v1 и не отслеживает v2 truth-mode / evidence-lineage / dialog / DNA obligations. | 08, 29, 30 |
+| `docs/schemas/README.md` | REVIEWED | WEAK | Допущение `additionalProperties` как общего правила противоречит нынешней философии строгих machine-readable contracts. | 08, 29 |
+| `docs/schemas/v1/incident.json` | REVIEWED | WEAK | Legacy incident schema слишком свободна и бедна для production-grade incident OS baseline. | 08, 14 |
+| `docs/schemas/v1/ingest_envelope.json` | REVIEWED | WEAK | Envelope слишком permissive и не задаёт hostile-ingest discipline. | 08, 12 |
+| `docs/schemas/v1/ingest_response.json` | REVIEWED | WEAK | Response отражает только старый базовый контур и допускает лишнюю свободу структуры. | 08, 12 |
 | `docs/schemas/v1/raw_event.json` | REVIEWED | WEAK | Историческая схема v1 слишком слабая даже как legacy baseline: `additionalProperties: true`, минимум полей, нет ясного hostile-ingest discipline. | 08, 29 |
 | `formats/platform_support.yaml` | REVIEWED | OK | Machine-readable OS/platform matrix сильная, учитывает РФ и международные Linux-дистрибутивы, VM/container surfaces и evidence IDs. | 26, 37 |
 | `formats/ru_regulatory_scope.yaml` | REVIEWED | OK | РФ нормативный контур материализован корректно, включая certified-ready boundary и mandatory controls. | 25, 26, 37 |
