@@ -175,6 +175,24 @@ A) Полный запрет опциональности:
 - `docs/testing/production_adversarial_validation_law.md`
 - `docs/testing/full_line_by_line_audit_program_v0_2.md`
 
+### A14) Authenticity / Copyright-Safe Baseline (обязательный закон всей программы)
+Для всей программы действует правило юридической и артефактной аутентичности:
+- в baseline проекта запрещено включать сущности, которые могут привести к претензиям правообладателей;
+- по умолчанию запрещены сторонние audio assets, fonts, icons, logos, screenshots, datasets, demo-media и фрагменты контента с неясным происхождением;
+- разрешены только project-owned, generated, synthetic или явно allowlisted материалы;
+- user-supplied content не становится частью baseline проекта и не коммитится в репозиторий.
+
+Обязательное исполнение:
+1. все tracked binary/media/font/icon assets проверяются against machine-readable allowlist;
+2. runtime и showcase слой не имеют права ссылаться на внешние CDN/brand/media assets;
+3. packs, fixtures и evidence разделяются по происхождению и правовому основанию;
+4. любой выявленный asset provenance gap блокирует закрытие затронутого этапа.
+
+Источники детализации:
+- `docs/governance/authenticity_copyright_policy.md`
+- `formats/authenticity_assets_allowlist.yaml`
+- `scripts/ci/check_authenticity_assets.sh`
+
 ---
 
 ## B) MASTER: этапы проекта (строго по порядку)

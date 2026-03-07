@@ -1,0 +1,56 @@
+version: 1
+policy_id: authenticity_assets_allowlist.v1
+rules:
+  forbidden_extensions:
+    - .mp3
+    - .wav
+    - .ogg
+    - .flac
+    - .m4a
+    - .aac
+    - .ttf
+    - .otf
+    - .woff
+    - .woff2
+    - .svg
+    - .png
+    - .jpg
+    - .jpeg
+    - .gif
+    - .webp
+    - .ico
+  allowed_entries:
+    - path: core/embedded/panel0/favicon.ico
+      class: runtime_asset
+      provenance: project_original
+      shipped: true
+      legal_basis: project_owned
+      note: Единственный встроенный runtime binary asset для Panel0.
+    - glob: docs/governance/evidence/*.png
+      class: evidence_artifact
+      provenance: generated_internal
+      shipped: false
+      legal_basis: internal_generated_evidence
+      note: Скриншоты доказательств, созданные тестами и CI внутри проекта.
+  forbidden_runtime_reference_patterns:
+    - fonts.googleapis.com
+    - fonts.gstatic.com
+    - fontawesome
+    - material-icons
+    - bootstrap-icons
+    - iconify
+    - soundcloud
+    - spotify
+    - youtube.com
+    - youtu.be
+    - cdn.jsdelivr.net
+    - unpkg.com
+runtime_scan_roots:
+  - apps
+  - browser
+  - core
+  - agent
+  - packages
+  - docs/source
+  - docs/portal
+  - README.md

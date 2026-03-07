@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-for f in docs/security/secure_sdlc_policy.md docs/security/branch_tag_policy.md docs/security/ci_pinning_policy.md docs/security/sast_policy.md docs/security/sca_policy.md docs/security/secrets_policy.md docs/security/sbom_policy.md docs/security/provenance_signing.md docs/security/dependency_update_policy.md docs/security/release_hardening.md .github/workflows/security_stage04.yml .github/workflows/release_stage04.yml .github/dependabot.yml scripts/ci/check_secure_sdlc_stage04.sh; do
+for f in docs/security/secure_sdlc_policy.md docs/security/branch_tag_policy.md docs/security/ci_pinning_policy.md docs/security/sast_policy.md docs/security/sca_policy.md docs/security/secrets_policy.md docs/security/sbom_policy.md docs/security/provenance_signing.md docs/security/dependency_update_policy.md docs/security/release_hardening.md docs/governance/authenticity_copyright_policy.md formats/authenticity_assets_allowlist.yaml scripts/ci/check_authenticity_assets.sh .github/workflows/security_stage04.yml .github/workflows/release_stage04.yml .github/dependabot.yml scripts/ci/check_secure_sdlc_stage04.sh; do
   test -s "$f"
 done
 test -s docs/security/allowlist.gitleaks.toml
@@ -43,6 +43,10 @@ grep -q 'package-ecosystem: "npm"' .github/dependabot.yml
 grep -q 'interval: "weekly"' .github/dependabot.yml
 grep -q 'target-branch: "main"' .github/dependabot.yml
 grep -q "provenance.attestation.json" .github/workflows/release_stage04.yml
+grep -q "formats/authenticity_assets_allowlist.yaml" docs/governance/authenticity_copyright_policy.md
+grep -q "check_authenticity_assets.sh" docs/governance/authenticity_copyright_policy.md
+grep -q "project-owned" docs/governance/authenticity_copyright_policy.md
+grep -q "процедур" docs/governance/authenticity_copyright_policy.md
 grep -q "Verify provenance attestation payload" .github/workflows/release_stage04.yml
 grep -q "gitleaks/gitleaks-action@" .github/workflows/security_stage04.yml
 grep -q "GITLEAKS_CONFIG: docs/security/allowlist.gitleaks.toml" .github/workflows/security_stage04.yml
@@ -89,4 +93,5 @@ if [ -d .github/actions ]; then
     done < <(grep -E '^[[:space:]]*uses:' "$f")
   done < <(find .github/actions -type f -name action.yml)
 fi
+bash scripts/ci/check_authenticity_assets.sh
 echo "stage04 sdlc gate: OK"

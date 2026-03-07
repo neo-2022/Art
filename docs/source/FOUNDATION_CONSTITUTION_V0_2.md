@@ -465,6 +465,20 @@
 - При пользовательской загрузке система обязана явно предупреждать о необходимости прав на контент.
 - Каскадные системные эффекты должны быть мелодическими и нейтральными для длительной операционной работы.
 
+### 23.11 Authenticity and Copyright-Safe Law
+- Проект обязан быть аутентичным: в baseline запрещено включать сущности, которые могут привести к претензиям правообладателей.
+- По умолчанию запрещены сторонние аудиофайлы, шрифты, иконки, иллюстрации, логотипы, screenshots, datasets, demo-media и text fragments с неочевидным происхождением.
+- Разрешены только:
+  - project-owned материалы;
+  - процедурно/программно сгенерированные материалы;
+  - синтетические fixtures;
+  - internal evidence artifacts;
+  - явно разрешённые элементы из `formats/authenticity_assets_allowlist.yaml`.
+- Runtime по умолчанию не имеет права зависеть от внешних CDN со шрифтами, иконками, audio/media assets или brand payload.
+- User-supplied content допускается только как внешний пользовательский контент и не становится частью baseline проекта.
+- Любой tracked media/font/icon/binary asset вне allowlist считается нарушением конституции.
+- Каноническая политика и CI-enforcement фиксируются в `docs/governance/authenticity_copyright_policy.md` и `scripts/ci/check_authenticity_assets.sh`.
+
 ## 24. Settings Information Architecture Law
 - Структура настроек Console должна быть единой иерархией с уровнями scope: `Global -> Organization -> Project -> Environment -> User`.
 - Любая настройка обязана иметь `id`, `scope`, `default`, `owner_component`, `verify`.
