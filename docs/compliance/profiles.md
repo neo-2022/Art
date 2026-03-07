@@ -1,40 +1,104 @@
 # Regional profiles
 
+Этот документ фиксирует региональные профили Art как детерминированные наборы параметров.
+Запрещены сокращения через ссылки на другой профиль, скрытое наследование от `global`
+и любые непрямые значения. Каждый профиль задаётся здесь полным явным набором значений.
+
 ## profile: global
+- profile_id: global
 - storage_class: primary
 - storage_data_residency: any
-- retention_days: 30
+- storage_allowed_regions: ["global"]
+- storage_replication_mode: geo-redundant
+- retention_days_events: 30
+- retention_days_incidents: 90
+- retention_days_audit: 365
+- dsr_mode: supported
 - export_mode: standard
+- export_allowed_targets: ["approved-external", "customer-managed-bucket", "local-file"]
+- export_cross_border: allowed-with-policy
 - egress_policy: controlled
+- egress_allowed_destinations: ["approved-api", "approved-object-store", "approved-alerting"]
+- egress_default_action: deny
 - updates_mode: online
+- updates_source: signed-online-repository
+- packs_install_mode: signed-online
 - telemetry_mode: full
+- telemetry_external_export: allowed
+- logging_mode: full
+- logging_payload_policy: redacted
 
 ## profile: eu
+- profile_id: eu
 - storage_class: primary
 - storage_data_residency: eu-only
-- retention_days: 30
+- storage_allowed_regions: ["eu"]
+- storage_replication_mode: eu-internal-only
+- retention_days_events: 30
+- retention_days_incidents: 90
+- retention_days_audit: 365
+- dsr_mode: mandatory
 - export_mode: restricted
+- export_allowed_targets: ["eu-approved-target", "local-file"]
+- export_cross_border: denied
 - egress_policy: strict
+- egress_allowed_destinations: ["eu-approved-api", "eu-approved-alerting"]
+- egress_default_action: deny
 - updates_mode: controlled
+- updates_source: signed-eu-repository
+- packs_install_mode: signed-controlled
 - telemetry_mode: restricted
+- telemetry_external_export: eu-only
+- logging_mode: restricted
+- logging_payload_policy: redacted
 
 ## profile: ru
+- profile_id: ru
 - storage_class: primary
 - storage_data_residency: ru-only
-- retention_days: 30
+- storage_allowed_regions: ["ru"]
+- storage_replication_mode: ru-internal-only
+- retention_days_events: 30
+- retention_days_incidents: 90
+- retention_days_audit: 365
+- dsr_mode: regulated
 - export_mode: restricted
+- export_allowed_targets: ["ru-approved-target", "local-file"]
+- export_cross_border: denied
 - egress_policy: strict
+- egress_allowed_destinations: ["ru-approved-api", "ru-approved-alerting", "ru-approved-update-gateway"]
+- egress_default_action: deny
 - updates_mode: controlled
+- updates_source: signed-ru-repository
+- packs_install_mode: signed-controlled
 - telemetry_mode: restricted
+- telemetry_external_export: ru-only
+- logging_mode: restricted
+- logging_payload_policy: redacted
 
 ## profile: airgapped
+- profile_id: airgapped
 - storage_class: isolated-local
 - storage_data_residency: local-only
-- retention_days: 30
+- storage_allowed_regions: ["local-segment"]
+- storage_replication_mode: manual-approved-only
+- retention_days_events: 30
+- retention_days_incidents: 90
+- retention_days_audit: 365
+- dsr_mode: manual-controlled
 - export_mode: offline-only
+- export_allowed_targets: ["approved-offline-media"]
+- export_cross_border: denied
 - egress_policy: blocked
+- egress_allowed_destinations: []
+- egress_default_action: deny
 - updates_mode: manual-offline
+- updates_source: signed-offline-bundle
+- packs_install_mode: signed-offline-manual
 - telemetry_mode: local-only
+- telemetry_external_export: denied
+- logging_mode: local-only
+- logging_payload_policy: redacted
 
 ## profile selection
 - Конфиг-поле: `profile_id`

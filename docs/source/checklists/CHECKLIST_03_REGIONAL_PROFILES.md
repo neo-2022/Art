@@ -21,16 +21,16 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Шаги (строго линейно)
 
-- [ ] **1. Сделать:** Определить состав профилей `global`, `eu`, `ru`, `airgapped` как набор детерминированных параметров с фиксированными значениями.
-  - [ ] Каждый параметр профиля задаётся конкретным значением (число/строка/enum/список), например `retention_days = 30`
-  - [ ] Запрещены ссылки вида “как в global/как в другом профиле” и любые непрямые значения
-  - [ ] storage/data-residency constraints
-  - [ ] retention overrides
-  - [ ] export constraints
-  - [ ] network egress constraints
-  - [ ] updates/packs policy
-  - [ ] logging/telemetry constraints
-  - [ ] **Проверка (pass/fail):** существует `docs/compliance/profiles.md`, содержит разделы `profile: global/eu/ru/airgapped`, и для каждого профиля перечислены параметры из списка выше в явном виде с конкретными значениями (без ссылок на другие профили).
+- [x] **1. Сделать:** Определить состав профилей `global`, `eu`, `ru`, `airgapped` как набор детерминированных параметров с фиксированными значениями.
+  - [x] Каждый параметр профиля задаётся конкретным значением (число/строка/enum/список), например `retention_days = 30`
+  - [x] Запрещены ссылки вида “как в global/как в другом профиле” и любые непрямые значения
+  - [x] storage/data-residency constraints
+  - [x] retention overrides
+  - [x] export constraints
+  - [x] network egress constraints
+  - [x] updates/packs policy
+  - [x] logging/telemetry constraints
+  - [x] **Проверка (pass/fail):** существует `docs/compliance/profiles.md`, содержит разделы `profile: global/eu/ru/airgapped`, и для каждого профиля перечислены параметры из списка выше в явном виде с конкретными значениями (без ссылок на другие профили).
 
 - [ ] **2. Сделать:** Зафиксировать единый идентификатор профиля и способ выбора профиля при запуске.
   - [ ] `profile_id` выбирается только через конфиг (имя ключа фиксировано)
