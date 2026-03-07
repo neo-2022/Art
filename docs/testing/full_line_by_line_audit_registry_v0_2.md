@@ -177,3 +177,56 @@
 | `docs/compliance/profile_guards.md` | REVIEWED | OK | Profile guardrails выражены достаточно жёстко и согласованы с fail-closed подходом. | 03, 26 |
 | `docs/compliance/profiles.md` | REVIEWED | MISMATCH | Профили сильны по структуре, но конфликтуют с privacy retention baseline (`incidents=90` против `180`) и поэтому сами создают policy drift. | 03, 26 |
 | `docs/compliance/test_matrix.md` | REVIEWED | WEAK | Хорошая stage03 matrix, но она не покрывает hostile/compliance-adversarial сценарии и не ловит policy drift вроде уже найденного retention mismatch. | 03, 38 |
+
+## Слой 8 — Ops / Governance operational basis
+
+| Файл | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `docs/ops/agent_multisite_deploy.md` | REVIEWED | OK | Multi-site/relay/WAN модель изложена жёстко и согласована с transport philosophy. | 18, 23, 37 |
+| `docs/ops/alerts.md` | REVIEWED | WEAK | Пороговые алерты перечислены, но нет owner mapping, evidence contract и hostile false-positive/false-negative discipline. | 21, 37 |
+| `docs/ops/art_regart_contract_parity.md` | REVIEWED | WEAK | Контур parity полезен, но завязан на внешний repo и артефакт-репорт; при недоступности внешнего source-of-truth proof path остаётся уязвим. | 05, 06, 37 |
+| `docs/ops/backup_restore.md` | REVIEWED | MISMATCH | Фактически placeholder-runbook: слишком тонкий контур и фиктивное `pass/fail: pass` без критериев hostile восстановления. | 23, 37 |
+| `docs/ops/backup_restore_sqlite.md` | REVIEWED | WEAK | Частота backup и базовые пути есть, но нет restore drill discipline, custody/evidence и negative-path criteria. | 11, 23, 37 |
+| `docs/ops/console_linux_prod_readiness.md` | REVIEWED | WEAK | Документ задаёт правильную планку, но уже расходится с текущим runtime состоянием RU/i18n и поэтому не может считаться полностью доказанным operational baseline. | 16, 28, 37 |
+| `docs/ops/db_migration_runbook.md` | REVIEWED | WEAK | Слишком тонкий migration runbook: нет explicit rollback decision tree, evidence contract и multi-failure path. | 23, 24 |
+| `docs/ops/deploy_k8s.md` | REVIEWED | WEAK | Есть cert-manager baseline, но deployment contour слишком тонок для production-grade k8s path: нет StatefulSet/storage/RBAC/rollback detail. | 23, 37 |
+| `docs/ops/deploy_systemd.md` | REVIEWED | WEAK | Plain HTTP fallback при отсутствии TLS env остаётся слишком мягким operational baseline для production-hardening контура. | 23, 37 |
+| `docs/ops/dr_drill.md` | REVIEWED | MISMATCH | Как и backup_runbook, документ остаётся placeholder-like: `pass/fail: pass` без строгих доказательных критериев. | 23, 37 |
+| `docs/ops/github_actions_queue_remediation_plan.md` | REVIEWED | OK | План честно фиксирует root cause CI queue issue и уже использовался как рабочий remediation artifact. | 04, 07, 38 |
+| `docs/ops/go_no_go_template.md` | REVIEWED | OK | Шаблон строгий и соответствует production gate discipline. | 24, 37, 38 |
+| `docs/ops/ingest_chaos.md` | REVIEWED | OK | Chaos-контур для ingest выражен достаточно жёстко и без явных placeholder-path. | 12, 22, 23 |
+| `docs/ops/metrics.md` | REVIEWED | WEAK | Слишком тонкое описание: перечислены только ключевые метрики без cardinality/retention/owner/alert semantics. | 21, 37 |
+| `docs/ops/operational_debt_register.md` | REVIEWED | MISMATCH | Реестр до сих пор содержит `Stage37 template debt placeholder` вместо реального operational debt corpus. | 37, 38 |
+| `docs/ops/panel0_linux_prod_readiness.md` | REVIEWED | WEAK | Требования корректны, но документ уже опережает фактическое bilingual/runtime состояние Panel0. | 16, 37 |
+| `docs/ops/platform-container-k8s-testing.md` | REVIEWED | OK | Container/K8s runtime testing выражен честно и лучше большинства ops-документов. | 37 |
+| `docs/ops/platform-runtime-compatibility-matrix.md` | REVIEWED | WEAK | Матрица сильная, но связывает release blockers с VM evidence при том, что VM execute-path остаётся placeholder-backed. | 37, 38 |
+| `docs/ops/platform-support.md` | REVIEWED | WEAK | Общая матрица хорошая, но production scope всё ещё опирается на частично validate-only поверхности; декларации нужно синхронизировать с runtime truth после VM remediation. | 26, 37 |
+| `docs/ops/platform-vm-testing.md` | REVIEWED | MISMATCH | Описывает execute-mode как рабочий путь, тогда как `tests/platform/vm/run_vm_smoke.sh` всё ещё содержит placeholder execute path. | 37, 38 |
+| `docs/ops/runtime_incident_status.json` | REVIEWED | WEAK | Используется как gate input, но пока выглядит как вручную поддерживаемое состояние с note про automation; автоматический update path нужно доказать сильнее. | 29, 38 |
+| `docs/ops/self_observability.md` | REVIEWED | WEAK | Internal incidents перечислены, но coverage остаётся уже реального registry/alerting breadth проекта. | 21, 37 |
+| `docs/ops/stage_ladder_enforcement.md` | REVIEWED | OK | Лестничный process law выражен жёстко и связан с runtime incident state. | 38 |
+| `docs/ops/storage.md` | REVIEWED | OK | Storage chaos описан достаточно строго и связан с `observability_gap.*`. | 11, 22, 23 |
+| `docs/ops/storage_corruption_runbook.md` | REVIEWED | OK | Recovery path и failover/read_only semantics заданы достаточно жёстко. | 11, 23 |
+| `docs/ops/tls_rotation.md` | REVIEWED | WEAK | Документ полезен, но снова слишком тонок и опирается на smoke `pass/fail: pass`, не выражая hostile rotation/revocation scenarios. | 23, 37 |
+| `docs/ops/vacuum_schedule.md` | REVIEWED | OK | VACUUM baseline и gap semantics определены достаточно строго. | 11, 23 |
+| `docs/governance/audit_policy.md` | REVIEWED | WEAK | Для append-only audit policy документ слишком тонкий: не хватает actor identity contract, verify path и hostile misuse semantics. | 01, 15, 32 |
+| `docs/governance/change_policy.md` | REVIEWED | OK | Change governance сильный и согласован с evidence/review discipline. | 01 |
+| `docs/governance/docs_traceability_matrix.yaml` | REVIEWED | WEAK | Матрица полезна, но отдельные mappings слишком грубы и скрывают multi-checklist ownership (`docs/compliance/*` привязан только к stage25). | 00, 25, 26, 38 |
+| `docs/governance/error_budget_policy.md` | REVIEWED | OK | Freeze policy выражена достаточно чётко. | 01 |
+| `docs/governance/evidence_policy.md` | REVIEWED | OK | Evidence policy краткая, но достаточно жёсткая как блокирующий закон. | 01, 38 |
+| `docs/governance/incident_process.md` | REVIEWED | OK | Incident lifecycle хорошо материализован и уже несёт registry-driven escalation. | 01 |
+| `docs/governance/mcp_modes.md` | REVIEWED | OK | Governance-level MCP policy после усиления достаточна, allowlist теперь задан явно. | 01, 33 |
+| `docs/governance/observability_gap_registry.md` | REVIEWED | WEAK | Реестр силён по breadth, но сам breadth уже опережает runtime materialization части событий; нужен later parity audit code-vs-registry. | 01, 18, 21, 29, 37 |
+| `docs/governance/oncall.md` | REVIEWED | OK | On-call contour после hardening достаточно конкретен и operational. | 01 |
+| `docs/governance/postmortem_policy.md` | REVIEWED | OK | Policy сильная, root cause and blameless baseline зафиксированы явно. | 01 |
+| `docs/governance/postmortem_template.md` | REVIEWED | WEAK | Шаблон слишком тонкий для зрелого postmortem corpus: не хватает явных секций owner, due dates, evidence refs, corrective validation. | 01 |
+| `docs/governance/release_decisions/README.md` | REVIEWED | OK | Каталог решений оформлен достаточно жёстко. | 24, 37 |
+| `docs/governance/release_decisions/latest_go_no_go.md` | REVIEWED | WEAK | `latest` решение относится к старому production-candidate baseline и рискует стать stale относительно текущего HEAD/runtime состояния. | 24, 37, 38 |
+| `docs/governance/repo_protection_evidence.md` | REVIEWED | OK | Evidence branch protection сильный и после owner-level API проверки стал честным. | 01, 04 |
+| `docs/governance/roles_raci.md` | REVIEWED | OK | RACI после усиления достаточно конкретен и operational. | 01 |
+| `docs/governance/runbook_policy.md` | REVIEWED | WEAK | Слишком краткий policy: нет требований к evidence, hostile checks, versioning и lifecycle runbook’ов. | 01, 23 |
+| `docs/governance/severity.md` | REVIEWED | OK | Severity taxonomy выражена строго и предметно. | 01 |
+| `docs/governance/slo_sli.md` | REVIEWED | OK | SLO/SLI baseline чёткий и operationally useful. | 01, 21 |
+| `docs/governance/tabletop_exercise.md` | REVIEWED | WEAK | Есть полезные сценарии, но как corpus слишком статичен и не задаёт строгую методику hostile tabletop validation. | 01, 38 |
+| `docs/governance/vulnerability_process.md` | REVIEWED | OK | Vulnerability process достаточно чёткий для governance baseline. | 01, 04, 25 |
+| `docs/governance/release_process.md` | REVIEWED | MISMATCH | Release process остаётся слишком тонким и уже не соответствует усложнившемуся release/security/provenance/go-no-go контуру проекта. | 01, 24, 37 |
