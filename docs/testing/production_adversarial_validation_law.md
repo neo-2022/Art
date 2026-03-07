@@ -29,6 +29,21 @@
 - одному симптоматическому улучшению;
 - одному зелёному check без анализа альтернативных причин.
 
+## Закон многоуровневого спуска к корню проблемы
+Art рассматривается как многоуровневая система. Поэтому любой найденный дефект обязан анализироваться не только на уровне его проявления, но и на уровнях ниже.
+
+Обязательное правило:
+1. Если дефект найден на верхнем уровне (`UI`, `workflow`, `alert`, `check`, `test`, `report`), перед исправлением требуется аудит нижнего связанного уровня.
+2. Если на нижнем уровне найден дефект основания (`contract`, `runtime`, `transport`, `storage`, `config`, `policy`, `integration`, `code path`), спуск продолжается дальше.
+3. Исправление считается честным только после устранения корневой причины и повторной проверки верхних уровней.
+4. Исправление симптома без спуска вниз считается неполным.
+
+Примеры допустимого спуска:
+- `UI defect -> API/contract -> runtime model -> storage/provenance source`
+- `CI queue/problem -> workflow topology -> job duplication -> trigger design -> branch protection expectations`
+- `receiver failure -> transport -> spool/outbox -> filesystem/runtime state`
+- `policy violation -> rendered state -> contract -> redaction/access-control source`
+
 ## Обязательный цикл validation
 Для любого важного изменения обязателен цикл:
 
