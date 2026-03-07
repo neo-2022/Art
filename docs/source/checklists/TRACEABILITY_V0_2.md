@@ -12,6 +12,7 @@ Continuation expansion marker: `01..27 -> 28..45`.
 - Новый этап может переиспользовать артефакты старых этапов только при явном указании reuse.
 - Для всей программы действует `Production-Adversarial Validation Law`: критичные проверки не могут оставаться только формальными, если затрагивают runtime, security, release, platform, UI, agent, integration или operational path.
 - Корневые документы проекта и их обязательная синхронизация задаются в `formats/root_decision_tree_dependencies.yaml`; ствол (`аудит -> дефектовочная контрольная ведомость -> дефектовочная лестница -> MASTER`) и обзорные документы обязаны обновляться синхронно с изменением корня.
+- Ingress/perimeter anti-DDoS contour проходит сквозным защитным слоем через Stage 12, 24, 36, 37 и 45; app-level backpressure не имеет права подменять perimeter defense.
 - Для обзорного документного контура действует дополнительный защитный слой:
   `docs/portal/DOCUMENTATION_TREE.md` и `formats/documentation_tree_v0_2.yaml` обязаны
   пересчитываться при изменении корня, ствола и связанных обзорных страниц, чтобы документный

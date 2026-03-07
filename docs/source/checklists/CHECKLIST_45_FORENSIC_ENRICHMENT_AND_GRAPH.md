@@ -40,6 +40,11 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   - [ ] action_ref: `docs/runbooks/forensic_enrichment_degraded.md`.
   - [ ] Проверка (pass/fail): registry запись + runbook файл.
   - [ ] Артефакт результата: registry/runbook diff.
+- [ ] 6. Сделать: связать forensic contour с hostile ingress attribution.
+  - [ ] graph/evidence layer умеет различать ordinary burst и hostile ingress pattern
+  - [ ] DDoS / abusive traffic evidence может быть explainably связано с `endpoint`, `source_key`, `tenant_id`, policy action и audit trail
+  - [ ] Проверка (pass/fail): hostile ingress attribution scenario PASS.
+  - [ ] Артефакт результата: hostile ingress attribution report.
 
 ## Документация (RU)
 - [ ] docs/foundation/ADVANCED_AUTOMATION_BACKLOG.md
@@ -54,6 +59,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] security: privacy/policy enforcement on forensic capture.
 - [ ] perf: graph exploration budget.
 - [ ] chaos: capture unavailable -> graceful degraded mode.
+- [ ] hostile: ingress attribution and abusive traffic evidence correlation.
 
 ## CI gate
 - [ ] `stage45-forensic-graph-gate`
@@ -62,6 +68,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] eBPF enrichment и graph-backed exploration стали controlled product capability.
 - [ ] privacy/policy ограничения сохраняются.
 - [ ] observability-gap событие этапа 45 зарегистрировано и имеет runbook.
+- [ ] Forensic contour поддерживает объяснимую hostile ingress attribution и не смешивает её с обычной нагрузкой.
 
 ## Метаданные
 - Ответственный: @neo-2022

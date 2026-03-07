@@ -198,7 +198,11 @@
 2. `07` Repo CI/docs
 3. `08` Contracts/OpenAPI/codegen
 4. `24` Release / upgrade / regression
-5. `38` Stage ladder enforcement
+5. `12` Ingest / backpressure / hostile ingress boundary
+6. `36` SaaS abusive traffic isolation
+7. `37` Linux production perimeter hardening
+8. `45` Forensic hostile ingress attribution
+9. `38` Stage ladder enforcement
 
 Почему это не первый уровень:
 - пока runtime basement врёт, security/release/CI могут быть зелёными на ложном основании;
@@ -207,6 +211,7 @@
 Что считается успехом уровня:
 - gates доказывают behaviour, а не только structure;
 - release/provenance/CI не дают false-green;
+- internet-exposed профиль не имеет права существовать без edge/perimeter shield и hostile ingress evidence;
 - stage order снова становится честным.
 
 ### Уровень E — Product differentiators and advanced tracks

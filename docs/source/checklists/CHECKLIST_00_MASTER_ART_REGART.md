@@ -21,6 +21,7 @@ A) Полный запрет опциональности:
 - REGART Bridge source-of-truth (внешний репозиторий): `my_langgraph_agent/CHECKLIST_REGART_ART_INTEGRATION.md`  
   GitHub: `https://github.com/neo-2022/my_langgraph_agent/blob/main/CHECKLIST_REGART_ART_INTEGRATION.md`
 - Risk register v0.2: `docs/source/risk_register_v0_2.md`
+- Ingress / perimeter protection baseline: `docs/source/ingress_perimeter_protection_v0_2.md`
 
 ⚠️ ПРАВИЛО: переход к следующему этапу возможен только после полного закрытия предыдущего.  
 ⚠️ ПРАВИЛО: запрещено удалять пункты из чек-листов без согласования с владельцем проекта.  

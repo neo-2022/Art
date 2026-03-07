@@ -66,6 +66,12 @@ Art строится как единый продукт с тремя архит
 - порядок remediation определяется корневым деревом решений, дефектовочной контрольной ведомостью и дефектовочной лестницей, а не “следующим номером этапа”
 - архитектурные решения принимаются только по пути `корень -> ствол -> крона`
 - hardcoding запрещён как архитектурный anti-pattern и допускается только как явно оформленный test fixture вне production baseline
+- internet-exposed deployment без ingress/perimeter shield запрещён как архитектурный anti-pattern
+
+## Ingress / perimeter boundary
+- app-level backpressure внутри `art-core` обязателен, но не считается полноценной DDoS-защитой;
+- для internet-exposed и partner-exposed deployment-профилей обязателен front-door / edge / ingress shield;
+- hostile ingress scenarios должны материализоваться не только в release/docs, но и в runbooks, observability gaps и validate-path.
 
 ## Граница с REGART
 - Art и REGART остаются отдельными репозиториями

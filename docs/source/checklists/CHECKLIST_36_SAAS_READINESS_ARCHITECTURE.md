@@ -45,6 +45,12 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] 7. Сделать: ввести tenant isolation proof suite с обязательными негативными cross-tenant тестами.
   - [ ] Проверка (pass/fail): proof suite PASS и покрывает deny + audit trail assertions.
   - [ ] Артефакт результата: isolation proof report.
+- [ ] 8. Сделать: ввести abusive traffic / noisy-neighbor isolation для SaaS ingress.
+  - [ ] per-tenant rate policy определена
+  - [ ] suspicious burst одного tenant не валит соседние tenants
+  - [ ] tenant abusive traffic порождает perimeter/security signal, а не маскируется под обычную нагрузку
+  - [ ] Проверка (pass/fail): hostile multi-tenant burst test PASS.
+  - [ ] Артефакт результата: abusive traffic isolation report.
 
 ## Документация (RU)
 - [ ] docs/source/saas_readiness_v0_2.md
@@ -60,6 +66,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] integration: tenant isolation proof suite (deny matrix + audit assertions).
 - [ ] compliance: anonymization/removal request workflow.
 - [ ] load: quota enforcement under burst.
+- [ ] hostile: noisy-neighbor / abusive tenant burst.
 - [ ] soak: retention window lifecycle.
 
 ## CI gate
@@ -71,6 +78,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Console parity для self-hosted/SaaS подтверждён.
 - [ ] observability-gap событие этапа 36 зарегистрировано и имеет runbook.
 - [ ] Риск R9 из risk register закрыт privacy workflows и audit контролями.
+- [ ] Internet-facing SaaS profile имеет per-tenant abusive traffic isolation и не опирается только на app-level 429/503.
 
 ## Метаданные
 - Ответственный: @neo-2022

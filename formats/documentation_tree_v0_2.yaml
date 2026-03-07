@@ -1,14 +1,14 @@
 version: '1.1'
 status: ACTIVE
 root: README.md
-total_documents: 65
+total_documents: 68
 total_collection_nodes: 3
-total_markdown_links_scanned: 145
-total_tree_edges: 135
-total_file_links_in_tree: 135
-total_lines_in_tree: 9099
+total_markdown_links_scanned: 153
+total_tree_edges: 141
+total_file_links_in_tree: 141
+total_lines_in_tree: 9457
 total_lines_in_collections: 2235
-root_direct_children: 36
+root_direct_children: 40
 root_influence_documents:
 - docs/INTEGRATION.md
 - docs/README.md
@@ -44,7 +44,7 @@ nodes:
   missing_index: false
 - path: README.md
   node_type: document
-  lines: 157
+  lines: 165
   files_count: 1
   root_influence: false
   children:
@@ -53,6 +53,8 @@ nodes:
   - CHANGELOG.md
   - docs/portal/DELIVERY_EVIDENCE.md
   - docs/testing/defect_remediation_control_matrix_v0_2.md
+  - docs/testing/defect_remediation_ladder_v0_2.md
+  - docs/source/ingress_perimeter_protection_v0_2.md
   - docs/source/Art_v1_spec_final.md
   - docs/source/FOUNDATION_CONSTITUTION_V0_2.md
   - docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
@@ -84,6 +86,8 @@ nodes:
   - docs/source/checklists/README.md
   - docs/INTEGRATION.md
   - SECURITY.md
+  - docs/runbooks/ddos_suspected.md
+  - docs/runbooks/ingress_shield_degraded.md
   incoming:
   - docs/README.md
   index_target: README.md
@@ -110,7 +114,7 @@ nodes:
   missing_index: false
 - path: docs/ARCHITECTURE.md
   node_type: document
-  lines: 76
+  lines: 82
   files_count: 1
   root_influence: false
   children:
@@ -150,7 +154,7 @@ nodes:
   missing_index: false
 - path: docs/README.md
   node_type: document
-  lines: 100
+  lines: 101
   files_count: 1
   root_influence: true
   children:
@@ -188,6 +192,7 @@ nodes:
   - docs/source/checklists/README.md
   - docs/source/risk_register_v0_2.md
   - docs/source/dna_core_determinism_performance_assurance.md
+  - docs/source/ingress_perimeter_protection_v0_2.md
   - docs/testing/production_adversarial_validation_law.md
   - docs/testing/test_system_audit_v0_2.md
   incoming:
@@ -270,7 +275,7 @@ nodes:
   missing_index: false
 - path: docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
   node_type: document
-  lines: 803
+  lines: 819
   files_count: 1
   root_influence: true
   children: []
@@ -371,7 +376,7 @@ nodes:
   missing_index: false
 - path: docs/governance/observability_gap_registry.md
   node_type: document
-  lines: 68
+  lines: 70
   files_count: 1
   root_influence: false
   children: []
@@ -546,7 +551,7 @@ nodes:
   missing_index: false
 - path: docs/portal/INDEX.md
   node_type: document
-  lines: 61
+  lines: 62
   files_count: 1
   root_influence: false
   children:
@@ -573,6 +578,7 @@ nodes:
   - docs/portal/ART_VISUAL_LANGUAGE.md
   - docs/portal/DELIVERY_EVIDENCE.md
   - docs/portal/SECURITY_POSTURE.md
+  - docs/source/ingress_perimeter_protection_v0_2.md
   - docs/portal/COMPATIBILITY_MATRIX_ART_REGART.md
   - docs/portal/DOC_AUTHORITY.md
   - docs/portal/DOC_STYLE_GUIDE.md
@@ -598,7 +604,7 @@ nodes:
   missing_index: false
 - path: docs/portal/SECURITY_POSTURE.md
   node_type: document
-  lines: 14
+  lines: 54
   files_count: 1
   root_influence: false
   children: []
@@ -667,6 +673,26 @@ nodes:
   - docs/release/compat_matrix.md
   index_target: docs/release/versioning.md
   missing_index: false
+- path: docs/runbooks/ddos_suspected.md
+  node_type: document
+  lines: 40
+  files_count: 1
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  index_target: docs/runbooks/ddos_suspected.md
+  missing_index: false
+- path: docs/runbooks/ingress_shield_degraded.md
+  node_type: document
+  lines: 41
+  files_count: 1
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  index_target: docs/runbooks/ingress_shield_degraded.md
+  missing_index: false
 - path: docs/security/fstec-certified-profile.md
   node_type: document
   lines: 30
@@ -695,7 +721,7 @@ nodes:
   missing_index: false
 - path: docs/source/FOUNDATION_CONSTITUTION_V0_2.md
   node_type: document
-  lines: 693
+  lines: 710
   files_count: 1
   root_influence: true
   children: []
@@ -710,7 +736,7 @@ nodes:
   missing_index: false
 - path: docs/source/README.md
   node_type: document
-  lines: 68
+  lines: 71
   files_count: 1
   root_influence: true
   children: []
@@ -733,7 +759,7 @@ nodes:
   missing_index: false
 - path: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
   node_type: document
-  lines: 307
+  lines: 308
   files_count: 1
   root_influence: true
   children: []
@@ -837,9 +863,21 @@ nodes:
   - docs/README.md
   index_target: docs/source/dna_core_determinism_performance_assurance.md
   missing_index: false
+- path: docs/source/ingress_perimeter_protection_v0_2.md
+  node_type: document
+  lines: 149
+  files_count: 1
+  root_influence: false
+  children: []
+  incoming:
+  - README.md
+  - docs/README.md
+  - docs/portal/INDEX.md
+  index_target: docs/source/ingress_perimeter_protection_v0_2.md
+  missing_index: false
 - path: docs/source/risk_register_v0_2.md
   node_type: document
-  lines: 42
+  lines: 43
   files_count: 1
   root_influence: true
   children: []
@@ -860,7 +898,7 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_control_matrix_v0_2.md
   node_type: document
-  lines: 426
+  lines: 453
   files_count: 1
   root_influence: true
   children: []
@@ -871,11 +909,12 @@ nodes:
   missing_index: false
 - path: docs/testing/defect_remediation_ladder_v0_2.md
   node_type: document
-  lines: 271
+  lines: 276
   files_count: 1
   root_influence: true
   children: []
   incoming:
+  - README.md
   - docs/portal/INDEX.md
   - docs/INTEGRATION.md
   - docs/ARCHITECTURE.md

@@ -161,10 +161,22 @@ defects:
       - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
       - docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md
   - id: DEF-015
-    title: Approved differentiators are still not materialized end to end
-    ladder_level: E
+    title: Internet-exposed ingress perimeter and anti-DDoS contour missing
+    ladder_level: D
     execution_order: 15
     execution_dependencies: ["DEF-014"]
+    affected_stages: ["12", "24", "36", "37", "45"]
+    target_checklists:
+      - docs/source/checklists/CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md
+      - docs/source/checklists/CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md
+      - docs/source/checklists/CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md
+      - docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md
+      - docs/source/checklists/CHECKLIST_45_FORENSIC_ENRICHMENT_AND_GRAPH.md
+  - id: DEF-016
+    title: Approved differentiators are still not materialized end to end
+    ladder_level: E
+    execution_order: 16
+    execution_dependencies: ["DEF-015"]
     affected_stages: ["29", "30", "31", "32", "33", "34", "35", "36", "39", "40", "41", "42", "43", "44", "45"]
     target_checklists:
       - docs/source/checklists/CHECKLIST_29_EVENT_DNA_CORE_V2.md

@@ -33,6 +33,8 @@
 - changelog: [CHANGELOG.md](CHANGELOG.md)
 - лента доказательств прогресса: [DELIVERY_EVIDENCE.md](docs/portal/DELIVERY_EVIDENCE.md)
 - активная дефектовочная контрольная строка: [defect_remediation_control_matrix_v0_2.md](docs/testing/defect_remediation_control_matrix_v0_2.md)
+- дефектовочная лестница: [defect_remediation_ladder_v0_2.md](docs/testing/defect_remediation_ladder_v0_2.md)
+- baseline ingress/perimeter защиты: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
 
 ## Что такое Art
 
@@ -87,6 +89,7 @@ Art проектируется как `Incident OS`, где:
 - stage ladder: [CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md](docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md)
 - risk register: [risk_register_v0_2.md](docs/source/risk_register_v0_2.md)
 - DNA assurance standard: [dna_core_determinism_performance_assurance.md](docs/source/dna_core_determinism_performance_assurance.md)
+- ingress/perimeter protection standard: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
 - корневой индекс документации: [docs/README.md](docs/README.md)
 
 ## Контракты и API
@@ -148,6 +151,11 @@ Art и REGART — отдельные кодовые базы с контракт
 ## Безопасность
 
 Политика безопасности: [SECURITY.md](SECURITY.md)
+
+Дополнительно:
+- ingress/perimeter baseline: [ingress_perimeter_protection_v0_2.md](docs/source/ingress_perimeter_protection_v0_2.md)
+- runtime runbook при подозрении на DDoS: [ddos_suspected.md](docs/runbooks/ddos_suspected.md)
+- runbook деградации ingress shield: [ingress_shield_degraded.md](docs/runbooks/ingress_shield_degraded.md)
 
 ## Лицензия
 

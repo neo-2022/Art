@@ -69,7 +69,8 @@
 | `DEF-012` | `[ ]` | `C.2` | `DEF-011` | `28, 30, 31, 33, 40` | Console/i18n/agent interaction contour недоматериализован |
 | `DEF-013` | `[ ]` | `C.3` | `DEF-012` | `28, 34, 35, 41` | `local-stores`/`worker-runtime`/spatial basement всё ещё слаб |
 | `DEF-014` | `[ ]` | `D.1` | `DEF-013` | `04, 07, 08, 24, 38` | Contracts/CI/release/gates ещё дают false-green и weak proof |
-| `DEF-015` | `[ ]` | `E.1` | `DEF-014` | `29..45` | Утверждённые differentiators ещё не materialize в runtime/contracts/tests |
+| `DEF-015` | `[ ]` | `D.2` | `DEF-014` | `12, 24, 36, 37, 45` | Нет полноценного ingress/perimeter anti-DDoS контура для hostile production среды |
+| `DEF-016` | `[ ]` | `E.1` | `DEF-015` | `29..45` | Утверждённые differentiators ещё не materialize в runtime/contracts/tests |
 
 ## Контрольные строки
 
@@ -378,9 +379,35 @@
   - contract/codegen parity checks;
   - release evidence current and non-stale.
 
-### [ ] DEF-015 — Materialization of approved differentiators
-- Уровень: `E.1`
+### [ ] DEF-015 — Ingress / perimeter anti-DDoS contour
+- Уровень: `D.2`
 - Зависит от: `DEF-014`
+- Затронутые stage-листы:
+  - `CHECKLIST_12_ART_CORE_INGEST_ACK_SEQ.md`
+  - `CHECKLIST_24_RELEASE_UPGRADE_REGRESSION.md`
+  - `CHECKLIST_36_SAAS_READINESS_ARCHITECTURE.md`
+  - `CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md`
+  - `CHECKLIST_45_FORENSIC_ENRICHMENT_AND_GRAPH.md`
+- Audit basis:
+  - `core/src/main.rs`
+  - `docs/source/ingress_perimeter_protection_v0_2.md`
+  - `docs/portal/SECURITY_POSTURE.md`
+  - `docs/governance/observability_gap_registry.md`
+- Что нужно сделать:
+  1. отделить app-level backpressure от полноценной DDoS/perimeter защиты;
+  2. materialize release/runtime policy для internet-exposed ingress;
+  3. ввести `ddos_suspected` и `ingress_shield_degraded` как обязательные gap-события;
+  4. довести SaaS и Linux production profiles до per-tenant/per-source ingress abuse isolation;
+  5. доказать hostile ingress path тестами и release blockers.
+- Чем доказать закрытие:
+  - hostile ingress tests;
+  - release blocker evidence;
+  - runbooks и registry entries;
+  - runtime perimeter proof for internet-exposed profile.
+
+### [ ] DEF-016 — Materialization of approved differentiators
+- Уровень: `E.1`
+- Зависит от: `DEF-015`
 - Затронутые stage-листы:
   - `CHECKLIST_29_EVENT_DNA_CORE_V2.md`
   - `CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md`

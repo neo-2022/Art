@@ -117,6 +117,19 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - [ ] Linux-ready команды проверки backlog/health/replay
   - [ ] Проверка (pass/fail): `docs/ops/agent_multisite_deploy.md` и `docs/source/agent_deployment_transport_v0_2.md` согласованы с `formats/platform_support.yaml`.
   - [ ] Артефакт результата: multi-site Linux deployment report.
+- [ ] 24. Сделать: зафиксировать и проверить Linux ingress/perimeter shield baseline для internet-exposed deployments.
+  - [ ] reference architecture определяет front-door / reverse-proxy / ingress shield до `art-core`
+  - [ ] Linux production profile содержит:
+    - [ ] per-IP/per-source rate policy
+    - [ ] connection limits
+    - [ ] burst limits
+    - [ ] controlled degraded mode при деградации shield
+  - [ ] hostile ingress validate-path фиксирует:
+    - [ ] `observability_gap.ddos_suspected`
+    - [ ] `observability_gap.ingress_shield_degraded`
+  - [ ] internet-exposed Linux rollout без shield baseline считается release blocker
+  - [ ] **Проверка (pass/fail):** docs, registry, runbooks и Linux hostile-ingress validate log согласованы.
+  - [ ] Артефакт результата: perimeter hardening report + hostile ingress validate log.
 
 ## Документация (RU)
 - [ ] docs/ops/panel0_linux_prod_readiness.md
@@ -140,6 +153,9 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/source/console_agent_interaction_model_v0_2.md
 - [ ] docs/source/agent_deployment_transport_v0_2.md
 - [ ] docs/ops/agent_multisite_deploy.md
+- [ ] docs/source/ingress_perimeter_protection_v0_2.md
+- [ ] docs/runbooks/ddos_suspected.md
+- [ ] docs/runbooks/ingress_shield_degraded.md
 
 ## Тестирование
 - [ ] e2e: Linux headless сценарии Panel0 + Console.
@@ -185,6 +201,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Linux-ready контур agent/bridge interaction подтверждён как production-safe.
 - [ ] Linux policy boundary для будущих `eBPF`/`Wasm sandbox` возможностей зафиксирован до их финального внедрения.
 - [ ] Linux multi-site/WAN/segmented deployment boundary Art Agent зафиксирован и согласован с platform matrix.
+- [ ] Internet-exposed Linux production profile имеет perimeter shield baseline и hostile ingress validate-path.
 
 ## Метаданные
 - Ответственный: @neo-2022

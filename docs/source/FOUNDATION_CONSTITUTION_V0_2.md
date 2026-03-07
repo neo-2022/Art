@@ -198,6 +198,23 @@
   - `formats/root_decision_tree_dependencies.yaml`
   - `scripts/ci/check_root_decision_tree_sync.sh`
 
+## 14.4. Ingress Abuse And DDoS Defense Law (обязательный)
+- App-level backpressure (`413/429/503 + retry_after_ms`) обязателен, но он не считается полноценной защитой от DDoS, abusive burst и connection exhaustion.
+- Любой internet-exposed или partner-exposed deployment обязан иметь front-door / edge / ingress shield слой до `art-core`.
+- Обязательные свойства shield-слоя:
+  - per-IP / per-source / per-tenant limiting;
+  - connection limit;
+  - burst control;
+  - early reject мусорного и заведомо враждебного трафика;
+  - observability и runbooks при атаке и деградации shield.
+- Отсутствие ingress shield в internet-exposed профиле считается release blocker.
+- Обязательные gap-события:
+  - `observability_gap.ddos_suspected`
+  - `observability_gap.ingress_shield_degraded`
+- Источники детализации:
+  - `docs/source/ingress_perimeter_protection_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
 ## 15. Product Narrative (Console)
 ### 15.1 Категория
 - Art Console является поверхностью Incident OS, а не набором независимых дашбордов.

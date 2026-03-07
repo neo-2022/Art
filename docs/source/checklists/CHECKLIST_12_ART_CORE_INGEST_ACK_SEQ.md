@@ -91,6 +91,18 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
     - [ ] после освобождения места ingest возвращается в нормальный режим без ручной правки данных
   - [ ] **Проверка (pass/fail):** существует документ `docs/ops/ingest_chaos.md` с точными шагами воспроизведения и критериями pass/fail; smoke chaos прогоняется в CI.
 
+- [ ] **8. Сделать:** Зафиксировать и проверить anti-DDoS / perimeter boundary для internet-exposed ingress.
+  - [ ] app-level backpressure (`413/429/503 + retry_after_ms`) прямо отделён от edge/perimeter DDoS defense
+  - [ ] `docs/source/ingress_perimeter_protection_v0_2.md` существует и ссылается на Stage 12
+  - [ ] зарегистрированы:
+    - [ ] `observability_gap.ddos_suspected`
+    - [ ] `observability_gap.ingress_shield_degraded`
+  - [ ] существуют runbooks:
+    - [ ] `docs/runbooks/ddos_suspected.md`
+    - [ ] `docs/runbooks/ingress_shield_degraded.md`
+  - [ ] hostile ingress smoke доказывает, что suspicious burst фиксируется как отдельный security/perimeter signal, а не только как обычный overload
+  - [ ] **Проверка (pass/fail):** docs+registry+runbooks существуют, hostile ingress smoke лог подтверждает появление хотя бы одного из двух событий.
+
 ## Документация (RU)
 - [ ] docs/core/ingest_protocol.md
 - [ ] docs/api/errors.md
@@ -99,6 +111,8 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] docs/runbooks/ingest_overloaded.md
 - [ ] docs/runbooks/ingest_payload_too_large.md
 - [ ] docs/runbooks/ingest_unavailable.md
+- [ ] docs/runbooks/ddos_suspected.md
+- [ ] docs/runbooks/ingress_shield_degraded.md
 
 ## Тестирование
 - [ ] integration: invalid_details + partial accept + ack.upto_seq (шаг 2)
@@ -106,11 +120,13 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] integration: 413 + retry_after_ms + gap event (шаг 4)
 - [ ] integration: storage error → ingest_dropped_total (шаг 5)
 - [ ] chaos: kill -9 + disk full + recovery (шаг 7)
+- [ ] hostile ingress smoke: suspicious burst / degraded shield path (шаг 8)
 
 ## CI gate
 - [ ] CI job `ingest-integration` существует и зелёный (шага 2/4/5/6)
 - [ ] CI job `ingest-load-smoke` существует и зелёный (шага 3)
 - [ ] CI job `ingest-chaos-smoke` существует и зелёный (шага 7)
+- [ ] hostile ingress smoke входит в `ingest-chaos-smoke` или в отдельный ingress/perimeter gate и зелёный (шага 8)
 - [ ] CI job `stage12-docs-gate` существует и запускает `scripts/ci/check_ingest_stage12_docs.sh`, который:
   - [ ] проверяет существование файлов из раздела “Документация (RU)”
   - [ ] проверяет минимальный контент (grep):
@@ -123,6 +139,7 @@ Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 - [ ] Ingest соответствует контрактам v1: `invalid_details` всегда, `ack.upto_seq` всегда, backpressure реализован (503/413 + retry_after_ms).
 - [ ] Метрики ingest присутствуют и проверены тестами.
 - [ ] `observability_gap.ingest_overloaded` и `observability_gap.ingest_unavailable` определены, зарегистрированы и имеют runbook.
+- [ ] Ingest stage не путает app-level backpressure с perimeter/DDoS defense; `ddos_suspected` и `ingress_shield_degraded` определены, зарегистрированы и имеют runbook.
 - [ ] Chaos сценарии воспроизводимы и smoke прогоняются в CI.
 - [ ] CI gate Stage 12 зелёный.
 

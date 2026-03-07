@@ -5,6 +5,7 @@ required_files=(
   "docs/source/FOUNDATION_CONSTITUTION_V0_2.md"
   "docs/source/dna_core_determinism_performance_assurance.md"
   "docs/source/analytics_memory_v0_2.md"
+  "docs/source/ingress_perimeter_protection_v0_2.md"
   "docs/source/risk_register_v0_2.md"
   "docs/source/console_settings_architecture_v0_2.md"
   "docs/source/checklists/TRACEABILITY_V0_2.md"
@@ -91,6 +92,8 @@ required_files=(
   "docs/runbooks/spatial_index_degraded.md"
   "docs/runbooks/saas_tenant_isolation_failed.md"
   "docs/runbooks/console_linux_readiness_failed.md"
+  "docs/runbooks/ddos_suspected.md"
+  "docs/runbooks/ingress_shield_degraded.md"
   "docs/runbooks/checklist_ladder_violation.md"
   "mkdocs.yml"
   "docs/portal/INDEX.md"
@@ -134,6 +137,7 @@ grep -q "No checklist skipping" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "Observability Gap Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "DNA Engine Safety Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "Settings Information Architecture Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+grep -q "Ingress Abuse And DDoS Defense Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "stage38-ladder-gate" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "01..27 -> 28..38" docs/source/checklists/TRACEABILITY_V0_2.md
 

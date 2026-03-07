@@ -45,6 +45,7 @@
 - Visual language: [ART_VISUAL_LANGUAGE.md](./ART_VISUAL_LANGUAGE.md)
 - Delivery evidence: [DELIVERY_EVIDENCE.md](./DELIVERY_EVIDENCE.md)
 - Security posture: [SECURITY_POSTURE.md](./SECURITY_POSTURE.md)
+- Ingress / perimeter protection baseline: [ingress_perimeter_protection_v0_2.md](../source/ingress_perimeter_protection_v0_2.md)
 - Матрица совместимости Art↔REGART: [COMPATIBILITY_MATRIX_ART_REGART.md](./COMPATIBILITY_MATRIX_ART_REGART.md)
 - Модель авторитета документов: [DOC_AUTHORITY.md](./DOC_AUTHORITY.md)
 - Стиль документации: [DOC_STYLE_GUIDE.md](./DOC_STYLE_GUIDE.md)

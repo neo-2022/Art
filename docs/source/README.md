@@ -22,6 +22,9 @@
 6. `analytics_memory_v0_2.md`
    - Тип: спецификация operational analytics памяти.
    - Назначение: chart-ready данные + авто-инструкции по статистике инцидентов.
+7. `ingress_perimeter_protection_v0_2.md`
+   - Тип: спецификация защитного ingress/perimeter контура.
+   - Назначение: обязательный anti-DDoS / hostile-ingress baseline для internet-exposed и межсегментных deployment-профилей.
 
 ## Корень дерева решений и автосинхронизация
 
