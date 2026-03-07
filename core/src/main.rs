@@ -1,10 +1,12 @@
 use std::collections::{HashMap, VecDeque};
 use std::convert::Infallible;
 use std::env;
+use std::ffi::CString;
 use std::fs;
 use std::net::SocketAddr;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -17,13 +19,21 @@ use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use serde::{Deserialize, Serialize};
+use rusqlite::{params, Connection, OptionalExtension};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use tokio::sync::RwLock;
 use tokio::time::Duration;
 use tower_http::compression::CompressionLayer;
 use tracing::{info, warn};
+
+mod bootstrap_runtime;
+
+use bootstrap_runtime::{
+    install_runtime_signal_handlers, load_tls_config_from_env, load_tls_server_config,
+    replay_startup_backlog, startup_backlog_path,
+};
 
 const OTLP_ENDPOINT: &str = "/otlp/v1/logs";
 const OTLP_MAX_EVENTS_PER_SEC: f64 = 200.0;
@@ -45,6 +55,23 @@ const PANEL0_FAVICON: &[u8] = include_bytes!("../embedded/panel0/favicon.ico");
 const DNA_SCHEMA_VERSION: &str = "2.0.0";
 const DEFAULT_ANALYTICS_MAX_BUCKETS: usize = 1_440;
 const DEFAULT_ANALYTICS_STATE_PATH: &str = "/tmp/art_core_analytics_state.json";
+const DEFAULT_CORE_DB_PATH: &str = "data/art/core.sqlite3";
+const DEFAULT_STORAGE_BACKUP_ROOT: &str = "/var/lib/art/backups";
+const DEFAULT_STORAGE_RECOVERY_RETRY_AFTER_MS: u64 = 1_000;
+const DEFAULT_STORAGE_READ_ONLY_RETRY_AFTER_MS: u64 = 2_000;
+const DEFAULT_STORAGE_BACKUP_RETENTION: usize = 96;
+const DEFAULT_STORAGE_BACKUP_INTERVAL_MS: u64 = 15 * 60 * 1000;
+const DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT: u8 = 85;
+const DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT: u8 = 95;
+const DEFAULT_STORAGE_RESERVED_FREE_SPACE_MB: u64 = 512;
+const DEFAULT_STORAGE_PRESSURE_HIGH_RETRY_AFTER_MS: u64 = 1_000;
+const DEFAULT_STORAGE_PRESSURE_CRITICAL_RETRY_AFTER_MS: u64 = 1_500;
+const DEFAULT_STORAGE_DISK_FULL_RETRY_AFTER_MS: u64 = 1_500;
+const DEFAULT_STORAGE_PRESSURE_WARNING_MARGIN_BYTES: u64 = 16 * 1024 * 1024;
+const DEFAULT_STORAGE_PRESSURE_HIGH_BACKUP_RETENTION: usize = 8;
+const DEFAULT_STORAGE_PRESSURE_CRITICAL_BACKUP_RETENTION: usize = 2;
+const ANALYTICS_STATE_ROW_ID: i64 = 1;
+static STORAGE_BACKUP_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct StoredEvent {
@@ -90,7 +117,7 @@ struct DnaClusterRecord {
     evidence_refs: Vec<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct DnaClusterState {
     signature: DnaSignature,
     event_count: u64,
@@ -111,7 +138,7 @@ struct Incident {
     span_id: Option<String>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 struct Counters {
     ingest_accepted_total: u64,
     ingest_invalid_total: u64,
@@ -162,6 +189,58 @@ impl AnalyticsState {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum StoragePressureState {
+    Normal,
+    High,
+    Critical,
+}
+
+impl StoragePressureState {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Normal => "normal",
+            Self::High => "high",
+            Self::Critical => "critical",
+        }
+    }
+
+    fn severity_rank(self) -> u8 {
+        match self {
+            Self::Normal => 0,
+            Self::High => 1,
+            Self::Critical => 2,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct StoragePressureConfig {
+    high_watermark_percent: u8,
+    critical_watermark_percent: u8,
+    reserved_free_space_bytes: u64,
+    hard_db_size_limit_bytes: Option<u64>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct StoragePressureSnapshot {
+    db_used_bytes: u64,
+    wal_used_bytes: u64,
+    used_bytes: u64,
+    free_bytes: u64,
+    storage_total_bytes: u64,
+    effective_used_percent: u8,
+    pressure_state: StoragePressureState,
+    hard_limit_reached: bool,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum StorageWritePressure {
+    Light,
+    Heavy,
+}
+
 #[derive(Debug)]
 struct CoreState {
     next_seq: u64,
@@ -186,6 +265,14 @@ struct CoreState {
     otlp_last_refill_ms: u64,
     analytics: AnalyticsState,
     analytics_state_path: PathBuf,
+    db_path: PathBuf,
+    storage_backup_dir: PathBuf,
+    last_ok_backup_id: Option<String>,
+    last_backup_refresh_ms: u64,
+    storage_pressure_config: StoragePressureConfig,
+    storage_pressure_state: StoragePressureState,
+    storage_read_only: bool,
+    storage_fault_handling: bool,
 }
 
 impl CoreState {
@@ -197,32 +284,1337 @@ impl CoreState {
         limited_actions_allowlist: Vec<String>,
         analytics: AnalyticsState,
         analytics_state_path: PathBuf,
-    ) -> Self {
-        Self {
-            next_seq: 1,
-            events: VecDeque::new(),
-            next_seq_v2: 1,
-            events_v2: VecDeque::new(),
-            dna_clusters: HashMap::new(),
-            evidence_blocks: HashMap::new(),
-            incidents: Vec::new(),
-            fingerprint_index: HashMap::new(),
-            source_last_seen: HashMap::new(),
-            counters: Counters::default(),
+        db_path: PathBuf,
+        storage_pressure_config: StoragePressureConfig,
+    ) -> anyhow::Result<Self> {
+        let storage = load_storage_state(&db_path, queue_depth_limit)?;
+        let fallback_max_buckets = analytics.max_buckets;
+        let mut analytics = storage.analytics.unwrap_or(analytics);
+        analytics.max_buckets = fallback_max_buckets;
+        while analytics.buckets.len() > analytics.max_buckets {
+            analytics.buckets.pop_front();
+        }
+        let backup_dir = storage_backup_dir(&effective_profile_id, &db_path);
+        let (last_ok_backup_id, last_backup_refresh_ms) =
+            refresh_storage_backup(&effective_profile_id, &db_path)
+                .map(|backup_id| (Some(backup_id), now_ms()))
+                .or_else(|error| -> anyhow::Result<(Option<String>, u64)> {
+                    warn!(
+                        "failed to create initial sqlite backup for {}: {}",
+                        db_path.display(),
+                        error
+                    );
+                    Ok((
+                        latest_storage_backup_id(&backup_dir),
+                        latest_storage_backup_created_ts_ms(&backup_dir).unwrap_or(0),
+                    ))
+                })?;
+        Ok(Self {
+            next_seq: storage.next_seq,
+            events: storage.events,
+            next_seq_v2: storage.next_seq_v2,
+            events_v2: storage.events_v2,
+            dna_clusters: storage.dna_clusters,
+            evidence_blocks: storage.evidence_blocks,
+            incidents: storage.incidents,
+            fingerprint_index: storage.fingerprint_index,
+            source_last_seen: storage.source_last_seen,
+            counters: storage.counters.unwrap_or_default(),
             effective_profile_id,
             queue_depth_limit,
             max_batch_events,
             max_payload_bytes,
-            audits: Vec::new(),
-            next_audit_id: 1,
-            audit_chain_head: "genesis".to_string(),
+            audits: storage.audits,
+            next_audit_id: storage.next_audit_id,
+            audit_chain_head: storage.audit_chain_head,
             limited_actions_allowlist,
             otlp_tokens: OTLP_BURST,
             otlp_last_refill_ms: 0,
             analytics,
             analytics_state_path,
+            db_path,
+            storage_backup_dir: backup_dir,
+            last_ok_backup_id,
+            last_backup_refresh_ms,
+            storage_pressure_config,
+            storage_pressure_state: StoragePressureState::Normal,
+            storage_read_only: false,
+            storage_fault_handling: false,
+        })
+    }
+}
+
+fn sqlite_path_literal(path: &std::path::Path) -> String {
+    path.to_string_lossy().replace('\'', "''")
+}
+
+fn sqlite_integrity_status(db_path: &std::path::Path) -> Result<String, String> {
+    let conn = Connection::open(db_path).map_err(|err| err.to_string())?;
+    conn.query_row("PRAGMA integrity_check;", [], |row| row.get::<_, String>(0))
+        .map_err(|err| err.to_string())
+}
+
+fn sqlite_wal_path(db_path: &PathBuf) -> PathBuf {
+    db_path.with_file_name(format!(
+        "{}-wal",
+        db_path.file_name().expect("db file name").to_string_lossy()
+    ))
+}
+
+fn file_size_or_zero(path: &std::path::Path) -> u64 {
+    fs::metadata(path).map(|meta| meta.len()).unwrap_or(0)
+}
+
+fn filesystem_usage_for_path(path: &std::path::Path) -> anyhow::Result<(u64, u64)> {
+    let probe_path = if path.is_dir() {
+        path.to_path_buf()
+    } else {
+        path.parent().unwrap_or(path).to_path_buf()
+    };
+    let c_path = CString::new(probe_path.to_string_lossy().as_bytes())
+        .context("failed to encode filesystem path for statvfs")?;
+    let mut stats = std::mem::MaybeUninit::<libc::statvfs>::uninit();
+    let rc = unsafe { libc::statvfs(c_path.as_ptr(), stats.as_mut_ptr()) };
+    if rc != 0 {
+        return Err(anyhow::anyhow!(
+            "statvfs failed for {}",
+            probe_path.display()
+        ));
+    }
+    let stats = unsafe { stats.assume_init() };
+    let total_bytes = (stats.f_blocks as u128)
+        .saturating_mul(stats.f_frsize as u128)
+        .min(u64::MAX as u128) as u64;
+    let free_bytes = (stats.f_bavail as u128)
+        .saturating_mul(stats.f_frsize as u128)
+        .min(u64::MAX as u128) as u64;
+    Ok((total_bytes, free_bytes))
+}
+
+fn evaluate_storage_pressure(
+    db_path: &PathBuf,
+    config: StoragePressureConfig,
+) -> anyhow::Result<StoragePressureSnapshot> {
+    let db_used_bytes = file_size_or_zero(db_path);
+    let wal_used_bytes = file_size_or_zero(&sqlite_wal_path(db_path));
+    let used_bytes = db_used_bytes.saturating_add(wal_used_bytes);
+    let (storage_total_bytes, free_bytes) = filesystem_usage_for_path(db_path)?;
+    let effective_free_bytes = free_bytes.saturating_sub(config.reserved_free_space_bytes);
+    let effective_budget_bytes = used_bytes.saturating_add(effective_free_bytes);
+    let hard_limit_reached = config
+        .hard_db_size_limit_bytes
+        .map(|limit| used_bytes >= limit)
+        .unwrap_or(false);
+    let effective_used_percent = if effective_budget_bytes == 0 {
+        0
+    } else {
+        (((used_bytes as f64) / (effective_budget_bytes as f64)) * 100.0)
+            .round()
+            .clamp(0.0, 100.0) as u8
+    };
+    let reserve_band_state = if free_bytes <= config.reserved_free_space_bytes {
+        StoragePressureState::Critical
+    } else if free_bytes
+        <= config
+            .reserved_free_space_bytes
+            .saturating_add(DEFAULT_STORAGE_PRESSURE_WARNING_MARGIN_BYTES)
+    {
+        StoragePressureState::High
+    } else {
+        StoragePressureState::Normal
+    };
+    let percent_state = if effective_used_percent >= config.critical_watermark_percent {
+        StoragePressureState::Critical
+    } else if effective_used_percent >= config.high_watermark_percent {
+        StoragePressureState::High
+    } else {
+        StoragePressureState::Normal
+    };
+    let pressure_state = if reserve_band_state.severity_rank() >= percent_state.severity_rank() {
+        reserve_band_state
+    } else {
+        percent_state
+    };
+    Ok(StoragePressureSnapshot {
+        db_used_bytes,
+        wal_used_bytes,
+        used_bytes,
+        free_bytes,
+        storage_total_bytes,
+        effective_used_percent,
+        pressure_state,
+        hard_limit_reached,
+    })
+}
+
+#[derive(Debug)]
+struct StorageBootstrap {
+    next_seq: u64,
+    events: VecDeque<StoredEvent>,
+    next_seq_v2: u64,
+    events_v2: VecDeque<StoredEventV2>,
+    dna_clusters: HashMap<String, DnaClusterState>,
+    evidence_blocks: HashMap<String, EvidenceBlock>,
+    incidents: Vec<Incident>,
+    fingerprint_index: HashMap<String, String>,
+    source_last_seen: HashMap<String, u64>,
+    analytics: Option<AnalyticsState>,
+    counters: Option<Counters>,
+    audits: Vec<AuditEntry>,
+    next_audit_id: u64,
+    audit_chain_head: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct StorageBackupMetadata {
+    backup_id: String,
+    profile_id: String,
+    db_path: String,
+    created_ts_ms: u64,
+    format: String,
+}
+
+#[derive(Debug, Clone)]
+struct StorageFaultOutcome {
+    error: String,
+    retry_after_ms: u64,
+}
+
+fn open_storage_connection(db_path: &PathBuf) -> anyhow::Result<Connection> {
+    if let Some(parent) = db_path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("failed to create storage directory {}", parent.display()))?;
+    }
+    let conn = Connection::open(db_path)
+        .with_context(|| format!("failed to open sqlite db {}", db_path.display()))?;
+    conn.pragma_update(None, "journal_mode", "WAL")
+        .context("failed to enable WAL mode")?;
+    conn.pragma_update(None, "busy_timeout", 5000i64)
+        .context("failed to configure busy_timeout")?;
+    apply_storage_capacity_limit_from_env(&conn)
+        .context("failed to apply optional sqlite capacity limit")?;
+    conn.execute_batch(
+        r#"
+        CREATE TABLE IF NOT EXISTS events_v1 (
+            seq INTEGER PRIMARY KEY,
+            ts_ms INTEGER NOT NULL,
+            event_json TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS events_v2 (
+            seq INTEGER PRIMARY KEY,
+            ts_ms INTEGER NOT NULL,
+            raw_event_json TEXT NOT NULL,
+            dna_signature_json TEXT NOT NULL,
+            evidence_refs_json TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS incidents_v1 (
+            id TEXT PRIMARY KEY,
+            updated_ts_ms INTEGER NOT NULL,
+            incident_json TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS audits_v1 (
+            id INTEGER PRIMARY KEY,
+            timestamp INTEGER NOT NULL,
+            audit_json TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS fingerprint_index_v1 (
+            fingerprint TEXT PRIMARY KEY,
+            canonical_json TEXT NOT NULL,
+            updated_ts_ms INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS source_last_seen_v1 (
+            source_id TEXT PRIMARY KEY,
+            last_seen_ts_ms INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS dna_clusters_v2 (
+            dna_id TEXT PRIMARY KEY,
+            cluster_json TEXT NOT NULL,
+            updated_ts_ms INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS evidence_blocks_v2 (
+            evidence_id TEXT PRIMARY KEY,
+            evidence_json TEXT NOT NULL,
+            updated_ts_ms INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS analytics_state_v1 (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            analytics_json TEXT NOT NULL,
+            counters_json TEXT NOT NULL,
+            updated_ts_ms INTEGER NOT NULL
+        );
+        "#,
+    )
+    .context("failed to ensure sqlite storage schema")?;
+    Ok(conn)
+}
+
+fn configured_storage_max_db_bytes() -> Option<u64> {
+    env::var("CORE_STORAGE_MAX_DB_BYTES")
+        .ok()
+        .and_then(|value| value.trim().parse::<u64>().ok())
+        .filter(|value| *value > 0)
+}
+
+fn apply_storage_capacity_limit_from_env(conn: &Connection) -> anyhow::Result<()> {
+    if let Some(max_bytes) = configured_storage_max_db_bytes() {
+        set_sqlite_max_db_bytes(conn, max_bytes)?;
+    }
+    Ok(())
+}
+
+fn set_sqlite_max_db_bytes(conn: &Connection, max_bytes: u64) -> anyhow::Result<u64> {
+    let page_size = conn
+        .pragma_query_value(None, "page_size", |row| row.get::<_, u64>(0))
+        .context("failed to query sqlite page_size")?;
+    anyhow::ensure!(page_size > 0, "sqlite page_size must be positive");
+    let current_page_count = conn
+        .pragma_query_value(None, "page_count", |row| row.get::<_, u64>(0))
+        .context("failed to query sqlite page_count")?;
+    let requested_page_count = max_bytes
+        .saturating_add(page_size.saturating_sub(1))
+        .checked_div(page_size)
+        .unwrap_or(0)
+        .max(current_page_count.max(1));
+    conn.pragma_update(None, "max_page_count", requested_page_count as i64)
+        .context("failed to set sqlite max_page_count")?;
+    let applied_page_count = conn
+        .pragma_query_value(None, "max_page_count", |row| row.get::<_, u64>(0))
+        .context("failed to query sqlite max_page_count after update")?;
+    Ok(applied_page_count.saturating_mul(page_size))
+}
+
+fn load_runtime_json<T: DeserializeOwned>(
+    conn: &Connection,
+    query: &str,
+    params: impl rusqlite::Params,
+    field_name: &str,
+) -> anyhow::Result<Option<T>> {
+    let raw = conn
+        .query_row(query, params, |row| row.get::<_, String>(0))
+        .optional()
+        .with_context(|| format!("failed to query runtime json field {}", field_name))?;
+    raw.map(|value| {
+        serde_json::from_str::<T>(&value)
+            .with_context(|| format!("failed to parse runtime json field {}", field_name))
+    })
+    .transpose()
+}
+
+fn persist_fingerprint_entry_with_conn(
+    conn: &Connection,
+    fingerprint: &str,
+    canonical_json: &str,
+    updated_ts_ms: u64,
+) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO fingerprint_index_v1(fingerprint, canonical_json, updated_ts_ms)
+         VALUES (?1, ?2, ?3)",
+        params![fingerprint, canonical_json, updated_ts_ms],
+    )
+    .context("failed to persist fingerprint_index_v1 row")?;
+    Ok(())
+}
+
+fn persist_source_last_seen_entry_with_conn(
+    conn: &Connection,
+    source_id: &str,
+    last_seen_ts_ms: u64,
+) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO source_last_seen_v1(source_id, last_seen_ts_ms)
+         VALUES (?1, ?2)",
+        params![source_id, last_seen_ts_ms],
+    )
+    .context("failed to persist source_last_seen_v1 row")?;
+    Ok(())
+}
+
+fn persist_dna_cluster_with_conn(
+    conn: &Connection,
+    cluster: &DnaClusterState,
+    updated_ts_ms: u64,
+) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO dna_clusters_v2(dna_id, cluster_json, updated_ts_ms)
+         VALUES (?1, ?2, ?3)",
+        params![
+            cluster.signature.dna_id,
+            serde_json::to_string(cluster)?,
+            updated_ts_ms
+        ],
+    )
+    .context("failed to persist dna_clusters_v2 row")?;
+    Ok(())
+}
+
+fn persist_evidence_block_with_conn(
+    conn: &Connection,
+    block: &EvidenceBlock,
+    updated_ts_ms: u64,
+) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO evidence_blocks_v2(evidence_id, evidence_json, updated_ts_ms)
+         VALUES (?1, ?2, ?3)",
+        params![
+            block.evidence_id,
+            serde_json::to_string(block)?,
+            updated_ts_ms
+        ],
+    )
+    .context("failed to persist evidence_blocks_v2 row")?;
+    Ok(())
+}
+
+fn persist_analytics_state_with_conn(
+    conn: &Connection,
+    analytics: &AnalyticsState,
+    counters: &Counters,
+    updated_ts_ms: u64,
+) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO analytics_state_v1(id, analytics_json, counters_json, updated_ts_ms)
+         VALUES (?1, ?2, ?3, ?4)",
+        params![
+            ANALYTICS_STATE_ROW_ID,
+            serde_json::to_string(analytics)?,
+            serde_json::to_string(counters)?,
+            updated_ts_ms
+        ],
+    )
+    .context("failed to persist analytics_state_v1 row")?;
+    Ok(())
+}
+
+fn begin_storage_transaction(conn: &Connection) -> anyhow::Result<()> {
+    conn.execute_batch("BEGIN IMMEDIATE TRANSACTION")
+        .context("failed to begin storage transaction")?;
+    Ok(())
+}
+
+fn commit_storage_transaction(conn: &Connection) -> anyhow::Result<()> {
+    conn.execute_batch("COMMIT")
+        .context("failed to commit storage transaction")?;
+    Ok(())
+}
+
+fn rollback_storage_transaction(conn: &Connection) {
+    if let Err(error) = conn.execute_batch("ROLLBACK") {
+        warn!("failed to rollback storage transaction: {}", error);
+    }
+}
+
+fn storage_backup_dir(profile_id: &str, db_path: &PathBuf) -> PathBuf {
+    let db_scope_id = sha256_hex(&db_path.display().to_string())[..16].to_string();
+    if let Ok(root) = env::var("CORE_BACKUP_DIR") {
+        let root = PathBuf::from(root);
+        return root.join(profile_id).join(db_scope_id);
+    }
+    let temp_dir = env::temp_dir();
+    if db_path.starts_with(&temp_dir) {
+        return db_path
+            .parent()
+            .unwrap_or(temp_dir.as_path())
+            .join("backups")
+            .join(profile_id)
+            .join(db_scope_id);
+    }
+    PathBuf::from(DEFAULT_STORAGE_BACKUP_ROOT)
+        .join(profile_id)
+        .join(db_scope_id)
+}
+
+fn next_storage_backup_id() -> String {
+    format!(
+        "core-{:020}-{:06}",
+        now_ms(),
+        STORAGE_BACKUP_COUNTER.fetch_add(1, Ordering::Relaxed)
+    )
+}
+
+fn latest_storage_backup_id(backup_dir: &PathBuf) -> Option<String> {
+    let mut items = fs::read_dir(backup_dir)
+        .ok()?
+        .filter_map(Result::ok)
+        .filter_map(|entry| {
+            let path = entry.path();
+            let name = path.file_name()?.to_string_lossy().to_string();
+            if !name.starts_with("core-") || !name.ends_with(".sqlite3") {
+                return None;
+            }
+            Some(name.trim_end_matches(".sqlite3").to_string())
+        })
+        .collect::<Vec<_>>();
+    items.sort();
+    items.pop()
+}
+
+fn latest_storage_backup_created_ts_ms(backup_dir: &PathBuf) -> Option<u64> {
+    let backup_id = latest_storage_backup_id(backup_dir)?;
+    let metadata_path = backup_dir.join(format!("{}.metadata.json", backup_id));
+    let raw = fs::read_to_string(metadata_path).ok()?;
+    let metadata: StorageBackupMetadata = serde_json::from_str(&raw).ok()?;
+    Some(metadata.created_ts_ms)
+}
+
+fn prune_storage_backups_to_limit(
+    backup_dir: &PathBuf,
+    retention_limit: usize,
+) -> anyhow::Result<(usize, u64)> {
+    let mut ids = fs::read_dir(backup_dir)?
+        .filter_map(Result::ok)
+        .filter_map(|entry| {
+            let path = entry.path();
+            let name = path.file_name()?.to_string_lossy().to_string();
+            if !name.starts_with("core-") || !name.ends_with(".sqlite3") {
+                return None;
+            }
+            Some(name.trim_end_matches(".sqlite3").to_string())
+        })
+        .collect::<Vec<_>>();
+    ids.sort();
+    let total = ids.len();
+    if total <= retention_limit {
+        return Ok((0, 0));
+    }
+    let mut removed_files = 0usize;
+    let mut reclaimed_bytes = 0u64;
+    for backup_id in ids.into_iter().take(total.saturating_sub(retention_limit)) {
+        for suffix in [".sqlite3", ".sqlite3-wal", ".metadata.json"] {
+            let path = backup_dir.join(format!("{}{}", backup_id, suffix));
+            if path.exists() {
+                reclaimed_bytes = reclaimed_bytes.saturating_add(file_size_or_zero(&path));
+                fs::remove_file(path)?;
+                removed_files = removed_files.saturating_add(1);
+            }
         }
     }
+    Ok((removed_files, reclaimed_bytes))
+}
+
+fn prune_storage_backups(backup_dir: &PathBuf) -> anyhow::Result<()> {
+    prune_storage_backups_to_limit(backup_dir, DEFAULT_STORAGE_BACKUP_RETENTION)?;
+    Ok(())
+}
+
+fn refresh_storage_backup(profile_id: &str, db_path: &PathBuf) -> anyhow::Result<String> {
+    let backup_dir = storage_backup_dir(profile_id, db_path);
+    fs::create_dir_all(&backup_dir)
+        .with_context(|| format!("failed to create backup directory {}", backup_dir.display()))?;
+    let backup_id = next_storage_backup_id();
+    let sqlite_path = backup_dir.join(format!("{}.sqlite3", backup_id));
+    let wal_path = backup_dir.join(format!("{}.sqlite3-wal", backup_id));
+    let metadata_path = backup_dir.join(format!("{}.metadata.json", backup_id));
+
+    let conn = Connection::open(db_path)
+        .with_context(|| format!("failed to open sqlite db {} for backup", db_path.display()))?;
+    let backup_sql = format!("VACUUM INTO '{}';", sqlite_path_literal(&sqlite_path));
+    conn.execute_batch(&backup_sql)
+        .with_context(|| format!("failed to create sqlite backup {}", sqlite_path.display()))?;
+
+    let source_wal = db_path.with_file_name(format!(
+        "{}-wal",
+        db_path.file_name().expect("db file name").to_string_lossy()
+    ));
+    if source_wal.exists() {
+        fs::copy(&source_wal, &wal_path).with_context(|| {
+            format!(
+                "failed to copy sqlite wal from {} to {}",
+                source_wal.display(),
+                wal_path.display()
+            )
+        })?;
+    }
+
+    let metadata = StorageBackupMetadata {
+        backup_id: backup_id.clone(),
+        profile_id: profile_id.to_string(),
+        db_path: db_path.display().to_string(),
+        created_ts_ms: now_ms(),
+        format: "sqlite-vacuum-into-v1".to_string(),
+    };
+    fs::write(&metadata_path, serde_json::to_string_pretty(&metadata)?).with_context(|| {
+        format!(
+            "failed to write backup metadata {}",
+            metadata_path.display()
+        )
+    })?;
+    prune_storage_backups(&backup_dir)?;
+    Ok(backup_id)
+}
+
+fn restore_storage_backup(
+    backup_dir: &PathBuf,
+    backup_id: &str,
+    db_path: &PathBuf,
+) -> anyhow::Result<()> {
+    let sqlite_path = backup_dir.join(format!("{}.sqlite3", backup_id));
+    anyhow::ensure!(
+        sqlite_path.exists(),
+        "backup sqlite snapshot missing: {}",
+        sqlite_path.display()
+    );
+    for path in [
+        db_path.to_path_buf(),
+        db_path.with_file_name(format!(
+            "{}-wal",
+            db_path.file_name().expect("db file name").to_string_lossy()
+        )),
+        db_path.with_file_name(format!(
+            "{}-shm",
+            db_path.file_name().expect("db file name").to_string_lossy()
+        )),
+    ] {
+        if path.exists() {
+            fs::remove_file(&path).with_context(|| {
+                format!("failed to remove stale sqlite artifact {}", path.display())
+            })?;
+        }
+    }
+    fs::copy(&sqlite_path, db_path).with_context(|| {
+        format!(
+            "failed to restore sqlite backup {} -> {}",
+            sqlite_path.display(),
+            db_path.display()
+        )
+    })?;
+    let integrity = sqlite_integrity_status(db_path)
+        .map_err(anyhow::Error::msg)
+        .context("restored sqlite integrity check failed")?;
+    anyhow::ensure!(
+        integrity == "ok",
+        "restored sqlite integrity status: {}",
+        integrity
+    );
+    Ok(())
+}
+
+fn is_storage_corruption_error(error: &anyhow::Error) -> bool {
+    error.chain().any(|cause| {
+        let msg = cause.to_string().to_ascii_lowercase();
+        msg.contains("database disk image is malformed")
+            || msg.contains("file is not a database")
+            || msg.contains("sqlite")
+                && (msg.contains("malformed")
+                    || msg.contains("corrupt")
+                    || msg.contains("not a database")
+                    || msg.contains("integrity"))
+    })
+}
+
+fn storage_corruption_type(error: &anyhow::Error) -> &'static str {
+    let joined = error
+        .chain()
+        .map(|cause| cause.to_string().to_ascii_lowercase())
+        .collect::<Vec<_>>()
+        .join(" | ");
+    if joined.contains("wal") {
+        "wal_corruption"
+    } else {
+        "sqlite_corruption"
+    }
+}
+
+fn refresh_storage_backup_state_force(s: &mut CoreState) {
+    match refresh_storage_backup(&s.effective_profile_id, &s.db_path) {
+        Ok(backup_id) => {
+            s.last_ok_backup_id = Some(backup_id);
+            s.last_backup_refresh_ms = now_ms();
+        }
+        Err(error) => warn!(
+            "failed to refresh sqlite backup for {}: {}",
+            s.db_path.display(),
+            error
+        ),
+    }
+}
+
+fn refresh_storage_backup_state_if_due(s: &mut CoreState) {
+    let now = now_ms();
+    if s.last_backup_refresh_ms
+        .checked_add(DEFAULT_STORAGE_BACKUP_INTERVAL_MS)
+        .map(|deadline| deadline > now)
+        .unwrap_or(false)
+    {
+        return;
+    }
+    refresh_storage_backup_state_force(s);
+}
+
+fn validate_storage_pressure_config(config: StoragePressureConfig) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        config.high_watermark_percent > 0 && config.high_watermark_percent < 100,
+        "invalid storage high watermark percent: {}",
+        config.high_watermark_percent
+    );
+    anyhow::ensure!(
+        config.critical_watermark_percent > 0 && config.critical_watermark_percent <= 100,
+        "invalid storage critical watermark percent: {}",
+        config.critical_watermark_percent
+    );
+    anyhow::ensure!(
+        config.high_watermark_percent < config.critical_watermark_percent,
+        "storage high watermark must be lower than critical watermark"
+    );
+    if let Some(hard_limit_bytes) = config.hard_db_size_limit_bytes {
+        anyhow::ensure!(
+            hard_limit_bytes > 0,
+            "storage hard db size limit must be positive"
+        );
+    }
+    Ok(())
+}
+
+fn replace_runtime_state_from_storage(s: &mut CoreState, storage: StorageBootstrap) {
+    let fallback_max_buckets = s.analytics.max_buckets;
+    let mut analytics = storage.analytics.unwrap_or_else(|| s.analytics.clone());
+    analytics.max_buckets = fallback_max_buckets;
+    while analytics.buckets.len() > analytics.max_buckets {
+        analytics.buckets.pop_front();
+    }
+    s.next_seq = storage.next_seq;
+    s.events = storage.events;
+    s.next_seq_v2 = storage.next_seq_v2;
+    s.events_v2 = storage.events_v2;
+    s.dna_clusters = storage.dna_clusters;
+    s.evidence_blocks = storage.evidence_blocks;
+    s.incidents = storage.incidents;
+    s.fingerprint_index = storage.fingerprint_index;
+    s.source_last_seen = storage.source_last_seen;
+    s.analytics = analytics;
+    s.counters = storage.counters.unwrap_or_default();
+    s.audits = storage.audits;
+    s.next_audit_id = storage.next_audit_id;
+    s.audit_chain_head = storage.audit_chain_head;
+}
+
+fn storage_fault_response(error: &str, retry_after_ms: u64) -> Response {
+    (
+        StatusCode::SERVICE_UNAVAILABLE,
+        Json(json!(BackpressureError {
+            error: error.to_string(),
+            retry_after_ms,
+        })),
+    )
+        .into_response()
+}
+
+fn storage_pressure_response(state: StoragePressureState, retry_after_ms: u64) -> Response {
+    (
+        StatusCode::SERVICE_UNAVAILABLE,
+        Json(json!(BackpressureError {
+            error: format!("storage_pressure_{}", state.as_str()),
+            retry_after_ms,
+        })),
+    )
+        .into_response()
+}
+
+fn handle_storage_corruption_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    error: &anyhow::Error,
+) -> StorageFaultOutcome {
+    let sqlite_error = error.to_string();
+    let corruption_type = storage_corruption_type(error);
+    let last_ok_backup_id = s
+        .last_ok_backup_id
+        .clone()
+        .or_else(|| latest_storage_backup_id(&s.storage_backup_dir))
+        .unwrap_or_else(|| "none".to_string());
+
+    let restore_result = if last_ok_backup_id != "none" {
+        restore_storage_backup(&s.storage_backup_dir, &last_ok_backup_id, &s.db_path)
+            .and_then(|_| load_storage_state(&s.db_path, s.queue_depth_limit))
+    } else {
+        Err(anyhow::anyhow!("no valid backup available"))
+    };
+
+    s.storage_fault_handling = true;
+    match restore_result {
+        Ok(storage) => {
+            replace_runtime_state_from_storage(s, storage);
+            s.storage_read_only = false;
+            s.last_backup_refresh_ms =
+                latest_storage_backup_created_ts_ms(&s.storage_backup_dir).unwrap_or_else(now_ms);
+            push_gap_event_memory_only_locked(
+                s,
+                "observability_gap.storage_corrupted",
+                json!({
+                    "db_path": s.db_path.display().to_string(),
+                    "corruption_type": corruption_type,
+                    "sqlite_error": sqlite_error,
+                    "last_ok_backup_id": last_ok_backup_id,
+                    "trace_id": trace_id
+                }),
+            );
+            refresh_storage_backup_state_if_due(s);
+            s.storage_fault_handling = false;
+            StorageFaultOutcome {
+                error: "storage_recovering".to_string(),
+                retry_after_ms: DEFAULT_STORAGE_RECOVERY_RETRY_AFTER_MS,
+            }
+        }
+        Err(restore_error) => {
+            s.storage_read_only = true;
+            push_gap_event_memory_only_locked(
+                s,
+                "observability_gap.storage_corrupted",
+                json!({
+                    "db_path": s.db_path.display().to_string(),
+                    "corruption_type": corruption_type,
+                    "sqlite_error": sqlite_error,
+                    "last_ok_backup_id": last_ok_backup_id,
+                    "trace_id": trace_id
+                }),
+            );
+            push_gap_event_memory_only_locked(
+                s,
+                "observability_gap.storage_read_only",
+                json!({
+                    "db_path": s.db_path.display().to_string(),
+                    "error": restore_error.to_string(),
+                    "trace_id": trace_id
+                }),
+            );
+            s.storage_fault_handling = false;
+            StorageFaultOutcome {
+                error: "storage_read_only".to_string(),
+                retry_after_ms: DEFAULT_STORAGE_READ_ONLY_RETRY_AFTER_MS,
+            }
+        }
+    }
+}
+
+fn is_storage_disk_full_error(error: &anyhow::Error) -> bool {
+    error.chain().any(|cause| {
+        let msg = cause.to_string().to_ascii_lowercase();
+        msg.contains("database or disk is full")
+            || msg.contains("no space left on device")
+            || msg.contains("sqlite_full")
+            || msg.contains("disk is full")
+    })
+}
+
+fn emit_storage_pressure_gap_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    snapshot: StoragePressureSnapshot,
+    retry_after_ms: u64,
+) {
+    push_gap_event_locked(
+        s,
+        "observability_gap.storage_pressure_high",
+        json!({
+            "db_path": s.db_path.display().to_string(),
+            "used_bytes": snapshot.used_bytes,
+            "db_used_bytes": snapshot.db_used_bytes,
+            "wal_used_bytes": snapshot.wal_used_bytes,
+            "free_bytes": snapshot.free_bytes,
+            "storage_total_bytes": snapshot.storage_total_bytes,
+            "effective_used_percent": snapshot.effective_used_percent,
+            "watermark": snapshot.pressure_state.as_str(),
+            "pressure_state": snapshot.pressure_state.as_str(),
+            "retry_after_ms": retry_after_ms,
+            "trace_id": trace_id
+        }),
+    );
+}
+
+fn emit_storage_disk_full_gap_locked(s: &mut CoreState, trace_id: &str, retry_after_ms: u64) {
+    let free_bytes = filesystem_usage_for_path(&s.db_path)
+        .map(|(_, free)| free)
+        .unwrap_or(0);
+    push_gap_event_memory_only_locked(
+        s,
+        "observability_gap.storage_disk_full",
+        json!({
+            "path": s.db_path.display().to_string(),
+            "free_bytes": free_bytes,
+            "retry_after_ms": retry_after_ms,
+            "trace_id": trace_id
+        }),
+    );
+}
+
+fn emit_storage_archive_prune_gap_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    pressure_state: StoragePressureState,
+    removed_files: usize,
+    reclaimed_bytes: u64,
+    retention_limit: usize,
+) {
+    push_gap_event_locked(
+        s,
+        "observability_gap.storage_archive_prune_activated",
+        json!({
+            "db_path": s.db_path.display().to_string(),
+            "pressure_state": pressure_state.as_str(),
+            "removed_files": removed_files,
+            "reclaimed_bytes": reclaimed_bytes,
+            "retention_limit": retention_limit,
+            "trace_id": trace_id
+        }),
+    );
+}
+
+fn apply_storage_pressure_housekeeping_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    pressure_state: StoragePressureState,
+) {
+    let retention_limit = match pressure_state {
+        StoragePressureState::Normal => return,
+        StoragePressureState::High => DEFAULT_STORAGE_PRESSURE_HIGH_BACKUP_RETENTION,
+        StoragePressureState::Critical => DEFAULT_STORAGE_PRESSURE_CRITICAL_BACKUP_RETENTION,
+    };
+    match prune_storage_backups_to_limit(&s.storage_backup_dir, retention_limit) {
+        Ok((removed_files, reclaimed_bytes)) if removed_files > 0 => {
+            emit_storage_archive_prune_gap_locked(
+                s,
+                trace_id,
+                pressure_state,
+                removed_files,
+                reclaimed_bytes,
+                retention_limit,
+            );
+        }
+        Ok(_) => {}
+        Err(error) => warn!(
+            "failed to apply emergency storage prune for {}: {}",
+            s.db_path.display(),
+            error
+        ),
+    }
+}
+
+fn evaluate_storage_pressure_locked(s: &CoreState) -> anyhow::Result<StoragePressureSnapshot> {
+    evaluate_storage_pressure(&s.db_path, s.storage_pressure_config)
+}
+
+fn maybe_emit_storage_pressure_transition_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    snapshot: StoragePressureSnapshot,
+    retry_after_ms: u64,
+) {
+    let previous = s.storage_pressure_state;
+    s.storage_pressure_state = snapshot.pressure_state;
+    if snapshot.pressure_state == StoragePressureState::Normal {
+        return;
+    }
+    if snapshot.pressure_state == previous {
+        return;
+    }
+    emit_storage_pressure_gap_locked(s, trace_id, snapshot, retry_after_ms);
+}
+
+fn guard_storage_pressure_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    write_pressure: StorageWritePressure,
+) -> Option<Response> {
+    let snapshot = match evaluate_storage_pressure_locked(s) {
+        Ok(snapshot) => snapshot,
+        Err(error) => {
+            warn!(
+                "failed to evaluate storage pressure for {}: {}",
+                s.db_path.display(),
+                error
+            );
+            return None;
+        }
+    };
+    if snapshot.hard_limit_reached {
+        s.storage_pressure_state = StoragePressureState::Critical;
+        apply_storage_pressure_housekeeping_locked(s, trace_id, StoragePressureState::Critical);
+        emit_storage_disk_full_gap_locked(s, trace_id, DEFAULT_STORAGE_DISK_FULL_RETRY_AFTER_MS);
+        return Some(storage_fault_response(
+            "storage_disk_full",
+            DEFAULT_STORAGE_DISK_FULL_RETRY_AFTER_MS,
+        ));
+    }
+    match snapshot.pressure_state {
+        StoragePressureState::Normal => {
+            s.storage_pressure_state = StoragePressureState::Normal;
+            None
+        }
+        StoragePressureState::High => {
+            apply_storage_pressure_housekeeping_locked(s, trace_id, StoragePressureState::High);
+            maybe_emit_storage_pressure_transition_locked(
+                s,
+                trace_id,
+                snapshot,
+                DEFAULT_STORAGE_PRESSURE_HIGH_RETRY_AFTER_MS,
+            );
+            refresh_storage_backup_state_force(s);
+            if matches!(write_pressure, StorageWritePressure::Heavy) {
+                Some(storage_pressure_response(
+                    StoragePressureState::High,
+                    DEFAULT_STORAGE_PRESSURE_HIGH_RETRY_AFTER_MS,
+                ))
+            } else {
+                None
+            }
+        }
+        StoragePressureState::Critical => {
+            apply_storage_pressure_housekeeping_locked(s, trace_id, StoragePressureState::Critical);
+            maybe_emit_storage_pressure_transition_locked(
+                s,
+                trace_id,
+                snapshot,
+                DEFAULT_STORAGE_PRESSURE_CRITICAL_RETRY_AFTER_MS,
+            );
+            Some(storage_pressure_response(
+                StoragePressureState::Critical,
+                DEFAULT_STORAGE_PRESSURE_CRITICAL_RETRY_AFTER_MS,
+            ))
+        }
+    }
+}
+
+fn handle_storage_runtime_error_locked(
+    s: &mut CoreState,
+    trace_id: &str,
+    reason: &str,
+    error: anyhow::Error,
+) -> StorageFaultOutcome {
+    if is_storage_corruption_error(&error) {
+        return handle_storage_corruption_locked(s, trace_id, &error);
+    }
+    if is_storage_disk_full_error(&error) {
+        s.storage_pressure_state = StoragePressureState::Critical;
+        apply_storage_pressure_housekeeping_locked(s, trace_id, StoragePressureState::Critical);
+        emit_storage_disk_full_gap_locked(s, trace_id, DEFAULT_STORAGE_DISK_FULL_RETRY_AFTER_MS);
+        return StorageFaultOutcome {
+            error: "storage_disk_full".to_string(),
+            retry_after_ms: DEFAULT_STORAGE_DISK_FULL_RETRY_AFTER_MS,
+        };
+    }
+    let queue_depth = s.events.len();
+    s.counters.ingest_dropped_total = s.counters.ingest_dropped_total.saturating_add(1);
+    push_gap_event_memory_only_locked(
+        s,
+        "observability_gap.ingest_unavailable",
+        json!({
+            "reason": reason,
+            "error": error.to_string(),
+            "queue_depth": queue_depth,
+            "inflight": 0,
+            "retry_after_ms": 1_200,
+            "trace_id": trace_id
+        }),
+    );
+    StorageFaultOutcome {
+        error: "ingest_unavailable".to_string(),
+        retry_after_ms: 1_200,
+    }
+}
+
+fn guard_storage_read_only_locked(s: &CoreState) -> Option<Response> {
+    if s.storage_read_only {
+        return Some(storage_fault_response(
+            "storage_read_only",
+            DEFAULT_STORAGE_READ_ONLY_RETRY_AFTER_MS,
+        ));
+    }
+    None
+}
+
+fn load_storage_state(
+    db_path: &PathBuf,
+    queue_depth_limit: usize,
+) -> anyhow::Result<StorageBootstrap> {
+    let conn = open_storage_connection(db_path)?;
+    let next_seq = conn
+        .query_row(
+            "SELECT COALESCE(MAX(seq), 0) + 1 FROM events_v1",
+            [],
+            |row| row.get::<_, u64>(0),
+        )
+        .context("failed to query next_seq for events_v1")?;
+    let next_seq_v2 = conn
+        .query_row(
+            "SELECT COALESCE(MAX(seq), 0) + 1 FROM events_v2",
+            [],
+            |row| row.get::<_, u64>(0),
+        )
+        .context("failed to query next_seq_v2 for events_v2")?;
+
+    let mut stmt_v1 = conn
+        .prepare("SELECT seq, ts_ms, event_json FROM events_v1 ORDER BY seq DESC LIMIT ?1")
+        .context("failed to prepare events_v1 bootstrap query")?;
+    let mut loaded_v1 = stmt_v1
+        .query_map(params![queue_depth_limit as i64], |row| {
+            let event_json: String = row.get(2)?;
+            let event: Value = serde_json::from_str(&event_json).map_err(|err| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    event_json.len(),
+                    rusqlite::types::Type::Text,
+                    Box::new(err),
+                )
+            })?;
+            Ok(StoredEvent {
+                seq: row.get(0)?,
+                ts_ms: row.get(1)?,
+                event,
+            })
+        })
+        .context("failed to iterate events_v1 bootstrap rows")?
+        .collect::<Result<Vec<_>, _>>()
+        .context("failed to collect events_v1 bootstrap rows")?;
+    loaded_v1.reverse();
+
+    let mut stmt_v2 = conn
+        .prepare(
+            "SELECT seq, ts_ms, raw_event_json, dna_signature_json, evidence_refs_json
+             FROM events_v2 ORDER BY seq DESC LIMIT ?1",
+        )
+        .context("failed to prepare events_v2 bootstrap query")?;
+    let mut loaded_v2 = stmt_v2
+        .query_map(params![queue_depth_limit as i64], |row| {
+            let raw_event_json: String = row.get(2)?;
+            let dna_signature_json: String = row.get(3)?;
+            let evidence_refs_json: String = row.get(4)?;
+            let raw_event: Value = serde_json::from_str(&raw_event_json).map_err(|err| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    raw_event_json.len(),
+                    rusqlite::types::Type::Text,
+                    Box::new(err),
+                )
+            })?;
+            let dna_signature: DnaSignature =
+                serde_json::from_str(&dna_signature_json).map_err(|err| {
+                    rusqlite::Error::FromSqlConversionFailure(
+                        dna_signature_json.len(),
+                        rusqlite::types::Type::Text,
+                        Box::new(err),
+                    )
+                })?;
+            let evidence_refs: Vec<String> =
+                serde_json::from_str(&evidence_refs_json).map_err(|err| {
+                    rusqlite::Error::FromSqlConversionFailure(
+                        evidence_refs_json.len(),
+                        rusqlite::types::Type::Text,
+                        Box::new(err),
+                    )
+                })?;
+            Ok(StoredEventV2 {
+                seq: row.get(0)?,
+                ts_ms: row.get(1)?,
+                raw_event,
+                dna_signature,
+                evidence_refs,
+            })
+        })
+        .context("failed to iterate events_v2 bootstrap rows")?
+        .collect::<Result<Vec<_>, _>>()
+        .context("failed to collect events_v2 bootstrap rows")?;
+    loaded_v2.reverse();
+
+    let mut stmt_incidents = conn
+        .prepare("SELECT incident_json FROM incidents_v1 ORDER BY updated_ts_ms ASC, id ASC")
+        .context("failed to prepare incidents bootstrap query")?;
+    let loaded_incidents = stmt_incidents
+        .query_map([], |row| {
+            let incident_json: String = row.get(0)?;
+            serde_json::from_str::<Incident>(&incident_json).map_err(|err| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    incident_json.len(),
+                    rusqlite::types::Type::Text,
+                    Box::new(err),
+                )
+            })
+        })
+        .context("failed to iterate incidents bootstrap rows")?
+        .collect::<Result<Vec<_>, _>>()
+        .context("failed to collect incidents bootstrap rows")?;
+
+    let mut stmt_audits = conn
+        .prepare("SELECT audit_json FROM audits_v1 ORDER BY id ASC")
+        .context("failed to prepare audits bootstrap query")?;
+    let loaded_audits = stmt_audits
+        .query_map([], |row| {
+            let audit_json: String = row.get(0)?;
+            serde_json::from_str::<AuditEntry>(&audit_json).map_err(|err| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    audit_json.len(),
+                    rusqlite::types::Type::Text,
+                    Box::new(err),
+                )
+            })
+        })
+        .context("failed to iterate audits bootstrap rows")?
+        .collect::<Result<Vec<_>, _>>()
+        .context("failed to collect audits bootstrap rows")?;
+    let next_audit_id = conn
+        .query_row(
+            "SELECT COALESCE(MAX(id), 0) + 1 FROM audits_v1",
+            [],
+            |row| row.get::<_, u64>(0),
+        )
+        .context("failed to query next_audit_id for audits_v1")?;
+    let mut stmt_fingerprints = conn
+        .prepare(
+            "SELECT fingerprint, canonical_json FROM fingerprint_index_v1 ORDER BY fingerprint ASC",
+        )
+        .context("failed to prepare fingerprint bootstrap query")?;
+    let loaded_fingerprints = stmt_fingerprints
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })
+        .context("failed to iterate fingerprint bootstrap rows")?
+        .collect::<Result<HashMap<_, _>, _>>()
+        .context("failed to collect fingerprint bootstrap rows")?;
+
+    let mut stmt_sources = conn
+        .prepare(
+            "SELECT source_id, last_seen_ts_ms FROM source_last_seen_v1 ORDER BY source_id ASC",
+        )
+        .context("failed to prepare source_last_seen bootstrap query")?;
+    let loaded_sources = stmt_sources
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, u64>(1)?))
+        })
+        .context("failed to iterate source_last_seen bootstrap rows")?
+        .collect::<Result<HashMap<_, _>, _>>()
+        .context("failed to collect source_last_seen bootstrap rows")?;
+
+    let mut stmt_dna = conn
+        .prepare("SELECT cluster_json FROM dna_clusters_v2 ORDER BY dna_id ASC")
+        .context("failed to prepare dna_clusters bootstrap query")?;
+    let loaded_dna_clusters_vec = stmt_dna
+        .query_map([], |row| {
+            let cluster_json: String = row.get(0)?;
+            serde_json::from_str::<DnaClusterState>(&cluster_json).map_err(|err| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    cluster_json.len(),
+                    rusqlite::types::Type::Text,
+                    Box::new(err),
+                )
+            })
+        })
+        .context("failed to iterate dna_clusters bootstrap rows")?
+        .collect::<Result<Vec<_>, _>>()
+        .context("failed to collect dna_clusters bootstrap rows")?;
+    let loaded_dna_clusters = loaded_dna_clusters_vec
+        .into_iter()
+        .map(|cluster| (cluster.signature.dna_id.clone(), cluster))
+        .collect::<HashMap<_, _>>();
+
+    let mut stmt_evidence = conn
+        .prepare("SELECT evidence_json FROM evidence_blocks_v2 ORDER BY evidence_id ASC")
+        .context("failed to prepare evidence_blocks bootstrap query")?;
+    let loaded_evidence_vec = stmt_evidence
+        .query_map([], |row| {
+            let evidence_json: String = row.get(0)?;
+            serde_json::from_str::<EvidenceBlock>(&evidence_json).map_err(|err| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    evidence_json.len(),
+                    rusqlite::types::Type::Text,
+                    Box::new(err),
+                )
+            })
+        })
+        .context("failed to iterate evidence_blocks bootstrap rows")?
+        .collect::<Result<Vec<_>, _>>()
+        .context("failed to collect evidence_blocks bootstrap rows")?;
+    let loaded_evidence_blocks = loaded_evidence_vec
+        .into_iter()
+        .map(|block| (block.evidence_id.clone(), block))
+        .collect::<HashMap<_, _>>();
+
+    let loaded_analytics = load_runtime_json::<AnalyticsState>(
+        &conn,
+        "SELECT analytics_json FROM analytics_state_v1 WHERE id = ?1",
+        params![ANALYTICS_STATE_ROW_ID],
+        "analytics_state_v1.analytics_json",
+    )?;
+    let loaded_counters = load_runtime_json::<Counters>(
+        &conn,
+        "SELECT counters_json FROM analytics_state_v1 WHERE id = ?1",
+        params![ANALYTICS_STATE_ROW_ID],
+        "analytics_state_v1.counters_json",
+    )?;
+    let audit_chain_head = loaded_audits
+        .last()
+        .map(|entry| entry.entry_hash.clone())
+        .unwrap_or_else(|| "genesis".to_string());
+
+    Ok(StorageBootstrap {
+        next_seq,
+        events: VecDeque::from(loaded_v1),
+        next_seq_v2,
+        events_v2: VecDeque::from(loaded_v2),
+        dna_clusters: loaded_dna_clusters,
+        evidence_blocks: loaded_evidence_blocks,
+        incidents: loaded_incidents,
+        fingerprint_index: loaded_fingerprints,
+        source_last_seen: loaded_sources,
+        analytics: loaded_analytics,
+        counters: loaded_counters,
+        audits: loaded_audits,
+        next_audit_id,
+        audit_chain_head,
+    })
+}
+
+fn persist_event_v1_with_conn(conn: &Connection, event: &StoredEvent) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO events_v1(seq, ts_ms, event_json) VALUES (?1, ?2, ?3)",
+        params![event.seq, event.ts_ms, serde_json::to_string(&event.event)?],
+    )
+    .context("failed to persist events_v1 row")?;
+    Ok(())
+}
+
+fn persist_event_v1(db_path: &PathBuf, event: &StoredEvent) -> anyhow::Result<()> {
+    let conn = open_storage_connection(db_path)?;
+    persist_event_v1_with_conn(&conn, event)
+}
+
+fn persist_event_v2_with_conn(conn: &Connection, event: &StoredEventV2) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO events_v2(seq, ts_ms, raw_event_json, dna_signature_json, evidence_refs_json)
+         VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![
+            event.seq,
+            event.ts_ms,
+            serde_json::to_string(&event.raw_event)?,
+            serde_json::to_string(&event.dna_signature)?,
+            serde_json::to_string(&event.evidence_refs)?,
+        ],
+    )
+    .context("failed to persist events_v2 row")?;
+    Ok(())
+}
+
+fn persist_incident_with_conn(conn: &Connection, incident: &Incident) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO incidents_v1(id, updated_ts_ms, incident_json) VALUES (?1, ?2, ?3)",
+        params![incident.id, now_ms(), serde_json::to_string(incident)?,],
+    )
+    .context("failed to persist incidents_v1 row")?;
+    Ok(())
+}
+
+fn persist_incident(db_path: &PathBuf, incident: &Incident) -> anyhow::Result<()> {
+    let conn = open_storage_connection(db_path)?;
+    persist_incident_with_conn(&conn, incident)
+}
+
+fn persist_audit_entry_with_conn(conn: &Connection, entry: &AuditEntry) -> anyhow::Result<()> {
+    conn.execute(
+        "INSERT OR REPLACE INTO audits_v1(id, timestamp, audit_json) VALUES (?1, ?2, ?3)",
+        params![entry.id, entry.timestamp, serde_json::to_string(entry)?],
+    )
+    .context("failed to persist audits_v1 row")?;
+    Ok(())
+}
+
+fn persist_audit_entry(db_path: &PathBuf, entry: &AuditEntry) -> anyhow::Result<()> {
+    let conn = open_storage_connection(db_path)?;
+    persist_audit_entry_with_conn(&conn, entry)
 }
 
 type Shared = Arc<RwLock<CoreState>>;
@@ -543,7 +1935,32 @@ async fn main() -> anyhow::Result<()> {
         .ok()
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(DEFAULT_ANALYTICS_STATE_PATH));
+    let db_path = env::var("CORE_DB_PATH")
+        .ok()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(DEFAULT_CORE_DB_PATH));
+    let storage_pressure_config = StoragePressureConfig {
+        high_watermark_percent: env::var("CORE_STORAGE_HIGH_WATERMARK_PERCENT")
+            .ok()
+            .and_then(|v| v.parse::<u8>().ok())
+            .unwrap_or(DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT),
+        critical_watermark_percent: env::var("CORE_STORAGE_CRITICAL_WATERMARK_PERCENT")
+            .ok()
+            .and_then(|v| v.parse::<u8>().ok())
+            .unwrap_or(DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT),
+        reserved_free_space_bytes: env::var("CORE_STORAGE_RESERVED_FREE_SPACE_MB")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .unwrap_or(DEFAULT_STORAGE_RESERVED_FREE_SPACE_MB)
+            .saturating_mul(1024 * 1024),
+        hard_db_size_limit_bytes: env::var("CORE_STORAGE_MAX_DB_BYTES")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .filter(|value| *value > 0),
+    };
+    validate_storage_pressure_config(storage_pressure_config)?;
     let analytics = load_analytics_state(&analytics_state_path, analytics_max_buckets);
+    let startup_backlog = startup_backlog_path(&db_path);
 
     let state = Arc::new(RwLock::new(CoreState::new(
         effective_profile_id,
@@ -553,7 +1970,22 @@ async fn main() -> anyhow::Result<()> {
         limited_actions_allowlist,
         analytics,
         analytics_state_path,
-    )));
+        db_path,
+        storage_pressure_config,
+    )?));
+    {
+        let mut s = state.write().await;
+        let replayed = replay_startup_backlog(&startup_backlog, |kind, details| {
+            push_gap_event_locked(&mut s, kind, details);
+        });
+        if replayed > 0 {
+            info!(
+                "replayed {} startup backlog event(s) from {}",
+                replayed,
+                startup_backlog.display()
+            );
+        }
+    }
 
     install_runtime_signal_handlers();
 
@@ -572,15 +2004,7 @@ async fn main() -> anyhow::Result<()> {
             cert_path.display(),
             key_path.display()
         );
-        let tls = axum_server::tls_rustls::RustlsConfig::from_pem_file(&cert_path, &key_path)
-            .await
-            .with_context(|| {
-                format!(
-                    "failed to load TLS cert/key (cert={}, key={})",
-                    cert_path.display(),
-                    key_path.display()
-                )
-            })?;
+        let tls = load_tls_server_config(&cert_path, &key_path, &startup_backlog).await?;
         axum_server::bind_rustls(addr, tls)
             .serve(app.into_make_service())
             .await
@@ -595,36 +2019,6 @@ async fn main() -> anyhow::Result<()> {
             .context("core server failed")?;
     }
     Ok(())
-}
-
-fn load_tls_config_from_env() -> Option<(PathBuf, PathBuf)> {
-    let cert = env::var("CORE_TLS_CERT_PATH")
-        .ok()
-        .map(|v| v.trim().to_string());
-    let key = env::var("CORE_TLS_KEY_PATH")
-        .ok()
-        .map(|v| v.trim().to_string());
-    match (cert, key) {
-        (Some(cert_path), Some(key_path)) if !cert_path.is_empty() && !key_path.is_empty() => {
-            Some((PathBuf::from(cert_path), PathBuf::from(key_path)))
-        }
-        _ => None,
-    }
-}
-
-fn install_runtime_signal_handlers() {
-    #[cfg(unix)]
-    {
-        use tokio::signal::unix::{signal, SignalKind};
-
-        if let Ok(mut hup) = signal(SignalKind::hangup()) {
-            tokio::spawn(async move {
-                while hup.recv().await.is_some() {
-                    info!("received SIGHUP: runtime reload hook executed");
-                }
-            });
-        }
-    }
 }
 
 fn load_analytics_state(path: &PathBuf, max_buckets: usize) -> AnalyticsState {
@@ -686,6 +2080,34 @@ fn persist_analytics_state(path: &PathBuf, state: &AnalyticsState) {
     }
 }
 
+fn persist_analytics_recovery_contour(
+    db_path: &PathBuf,
+    analytics_state_path: &PathBuf,
+    analytics: &AnalyticsState,
+    counters: &Counters,
+    updated_ts_ms: u64,
+) {
+    match open_storage_connection(db_path) {
+        Ok(conn) => {
+            if let Err(error) =
+                persist_analytics_state_with_conn(&conn, analytics, counters, updated_ts_ms)
+            {
+                warn!(
+                    "failed to persist analytics recovery contour into {}: {}",
+                    db_path.display(),
+                    error
+                );
+            }
+        }
+        Err(error) => warn!(
+            "failed to open storage for analytics recovery contour {}: {}",
+            db_path.display(),
+            error
+        ),
+    }
+    persist_analytics_state(analytics_state_path, analytics);
+}
+
 fn increment_count(map: &mut HashMap<String, u64>, key: &str) {
     let entry = map.entry(key.to_string()).or_insert(0);
     *entry = entry.saturating_add(1);
@@ -717,8 +2139,8 @@ fn analytics_bucket_for_minute_mut(
         .expect("bucket appended for minute")
 }
 
-fn record_analytics_event_locked(
-    s: &mut CoreState,
+fn record_analytics_event(
+    analytics: &mut AnalyticsState,
     ts_ms: u64,
     event: &Value,
     dna_id: Option<&str>,
@@ -734,7 +2156,7 @@ fn record_analytics_event_locked(
         .unwrap_or("unknown");
     let is_gap = kind.starts_with("observability_gap.");
 
-    let bucket = analytics_bucket_for_minute_mut(&mut s.analytics, minute_ts_ms);
+    let bucket = analytics_bucket_for_minute_mut(analytics, minute_ts_ms);
     bucket.total_events = bucket.total_events.saturating_add(1);
     increment_count(&mut bucket.kind_counts, kind);
     increment_count(&mut bucket.severity_counts, severity);
@@ -743,10 +2165,19 @@ fn record_analytics_event_locked(
     }
     if is_gap {
         bucket.gap_events = bucket.gap_events.saturating_add(1);
-        s.analytics.total_gap_events = s.analytics.total_gap_events.saturating_add(1);
+        analytics.total_gap_events = analytics.total_gap_events.saturating_add(1);
     }
-    s.analytics.total_events = s.analytics.total_events.saturating_add(1);
-    s.analytics.last_updated_ms = ts_ms;
+    analytics.total_events = analytics.total_events.saturating_add(1);
+    analytics.last_updated_ms = ts_ms;
+}
+
+fn record_analytics_event_locked(
+    s: &mut CoreState,
+    ts_ms: u64,
+    event: &Value,
+    dna_id: Option<&str>,
+) {
+    record_analytics_event(&mut s.analytics, ts_ms, event, dna_id);
 }
 
 fn build_app(state: Shared) -> Router {
@@ -904,10 +2335,44 @@ async fn panel0_favicon() -> impl IntoResponse {
     ([(CONTENT_TYPE, "image/x-icon")], PANEL0_FAVICON)
 }
 
-async fn health() -> impl IntoResponse {
+async fn health(State(state): State<Shared>) -> impl IntoResponse {
+    let mut s = state.write().await;
+    let snapshot = evaluate_storage_pressure_locked(&s).ok();
+    if let Some(snapshot) = snapshot {
+        s.storage_pressure_state = snapshot.pressure_state;
+    }
+    let mode = if s.storage_read_only {
+        "read_only"
+    } else {
+        "healthy"
+    };
+    let status = if s.storage_read_only {
+        "degraded"
+    } else {
+        "ok"
+    };
+    let code = if s.storage_read_only {
+        StatusCode::SERVICE_UNAVAILABLE
+    } else {
+        StatusCode::OK
+    };
     (
-        StatusCode::OK,
-        Json(json!({"status":"ok","service":"art-core"})),
+        code,
+        Json(json!({
+            "status": status,
+            "service": "art-core",
+            "storage_mode": mode,
+            "storage_pressure_state": s.storage_pressure_state.as_str(),
+            "storage_pressure": snapshot.map(|details| json!({
+                "used_bytes": details.used_bytes,
+                "db_used_bytes": details.db_used_bytes,
+                "wal_used_bytes": details.wal_used_bytes,
+                "free_bytes": details.free_bytes,
+                "storage_total_bytes": details.storage_total_bytes,
+                "effective_used_percent": details.effective_used_percent
+            })),
+            "last_ok_backup_id": s.last_ok_backup_id,
+        })),
     )
 }
 
@@ -928,7 +2393,18 @@ async fn apply_profile(
     match validate_profile_guardrails(&req) {
         Ok(effective_profile_id) => {
             let mut s = state.write().await;
+            if let Some(resp) = guard_storage_read_only_locked(&s) {
+                return resp;
+            }
+            let trace_id = format!("profile-apply-{}", now_ms());
+            if let Some(resp) =
+                guard_storage_pressure_locked(&mut s, &trace_id, StorageWritePressure::Light)
+            {
+                return resp;
+            }
             s.effective_profile_id = effective_profile_id.clone();
+            s.storage_backup_dir = storage_backup_dir(&s.effective_profile_id, &s.db_path);
+            refresh_storage_backup_state_force(&mut s);
             (
                 StatusCode::OK,
                 Json(ApplyProfileResponse {
@@ -940,6 +2416,15 @@ async fn apply_profile(
         }
         Err(err) => {
             let mut s = state.write().await;
+            if let Some(resp) = guard_storage_read_only_locked(&s) {
+                return resp;
+            }
+            let trace_id = format!("profile-violation-{}", now_ms());
+            if let Some(resp) =
+                guard_storage_pressure_locked(&mut s, &trace_id, StorageWritePressure::Light)
+            {
+                return resp;
+            }
             let now_ms = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map(|d| d.as_millis() as u64)
@@ -959,15 +2444,16 @@ async fn apply_profile(
             });
             let seq = s.next_seq;
             s.next_seq += 1;
-            s.events.push_back(StoredEvent {
+            let stored_event = StoredEvent {
                 seq,
                 ts_ms: now_ms,
                 event,
-            });
+            };
+            s.events.push_back(stored_event.clone());
             if s.events.len() > s.queue_depth_limit {
                 s.events.pop_front();
             }
-            s.incidents.push(Incident {
+            let incident = Incident {
                 id: format!("profile-violation-{}", seq),
                 status: "open".to_string(),
                 kind: "profile_violation".to_string(),
@@ -976,7 +2462,44 @@ async fn apply_profile(
                 run_id: None,
                 trace_id: None,
                 span_id: None,
-            });
+            };
+            s.incidents.push(incident.clone());
+            match open_storage_connection(&s.db_path) {
+                Ok(conn) => {
+                    if let Err(error) = persist_event_v1_with_conn(&conn, &stored_event) {
+                        warn!("failed to persist profile violation event: {}", error);
+                        if is_storage_corruption_error(&error) {
+                            let outcome = handle_storage_corruption_locked(
+                                &mut s,
+                                &format!("profile-violation-{}", seq),
+                                &error,
+                            );
+                            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
+                        }
+                    }
+                    if let Err(error) = persist_incident_with_conn(&conn, &incident) {
+                        warn!("failed to persist profile violation incident: {}", error);
+                        if is_storage_corruption_error(&error) {
+                            let outcome = handle_storage_corruption_locked(
+                                &mut s,
+                                &format!("profile-violation-{}", seq),
+                                &error,
+                            );
+                            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
+                        }
+                    }
+                    refresh_storage_backup_state_if_due(&mut s);
+                }
+                Err(error) => {
+                    let outcome = handle_storage_runtime_error_locked(
+                        &mut s,
+                        &format!("profile-violation-{}", seq),
+                        "storage_init_failed",
+                        error,
+                    );
+                    return storage_fault_response(&outcome.error, outcome.retry_after_ms);
+                }
+            }
             (
                 StatusCode::BAD_REQUEST,
                 Json(json!({
@@ -1032,8 +2555,19 @@ async fn ingest(
     Json(payload): Json<IngestEnvelope>,
 ) -> impl IntoResponse {
     let mut s = state.write().await;
+    if let Some(resp) = guard_storage_read_only_locked(&s) {
+        return resp;
+    }
     let now = ingest_now_ms(&headers);
     let trace_id = format!("ingest-{}", now);
+    let write_pressure = if payload.events.len() > 1 {
+        StorageWritePressure::Heavy
+    } else {
+        StorageWritePressure::Light
+    };
+    if let Some(resp) = guard_storage_pressure_locked(&mut s, &trace_id, write_pressure) {
+        return resp;
+    }
     if let Some(len) = content_length(&headers) {
         if len > s.max_payload_bytes {
             let max_payload_bytes = s.max_payload_bytes;
@@ -1104,6 +2638,19 @@ async fn ingest(
         .and_then(|h| h.to_str().ok())
         .and_then(|v| v.parse::<u64>().ok());
 
+    let storage_conn = match open_storage_connection(&s.db_path) {
+        Ok(conn) => conn,
+        Err(error) => {
+            let outcome = handle_storage_runtime_error_locked(
+                &mut s,
+                &trace_id,
+                "storage_init_failed",
+                error,
+            );
+            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
+        }
+    };
+
     for (idx, event) in payload.events.into_iter().enumerate() {
         match validate_event(&event) {
             Some(invalid) => {
@@ -1169,7 +2716,6 @@ async fn ingest(
                     .and_then(Value::as_str)
                     .unwrap_or("unknown")
                     .to_string();
-                s.source_last_seen.insert(source_id.clone(), now);
                 let stale_threshold_ms = 600_000u64;
                 let stale_sources: Vec<(String, u64)> = s
                     .source_last_seen
@@ -1229,47 +2775,84 @@ async fn ingest(
                             }),
                         );
                     }
-                } else {
-                    s.fingerprint_index.insert(fingerprint, canonical);
                 }
 
                 let seq = s.next_seq;
-                s.next_seq += 1;
-                upto_seq = seq;
-                s.events.push_back(StoredEvent {
+                let stored_event = StoredEvent {
                     seq,
                     ts_ms: now,
                     event: processed_event.clone(),
-                });
-                if s.events.len() > s.queue_depth_limit {
-                    s.events.pop_front();
-                }
-
+                };
                 let incident_policy = incident_policy_for_event(&processed_event);
-                let incident_kind = incident_policy
-                    .map(|x| x.0.to_string())
-                    .unwrap_or_else(|| "event.ingested".to_string());
-                let incident_severity =
+                let incident = build_incident(
+                    format!("incident-{}", seq + 1),
+                    incident_policy
+                        .map(|x| x.0.to_string())
+                        .unwrap_or_else(|| "event.ingested".to_string()),
                     incident_policy.map(|x| x.1.to_string()).unwrap_or_else(|| {
                         processed_event
                             .get("severity")
                             .and_then(Value::as_str)
                             .unwrap_or("info")
                             .to_uppercase()
-                    });
-                let incident_action_ref = incident_policy.map(|x| x.2.to_string());
-                push_incident_locked(
-                    &mut s,
-                    incident_kind,
-                    incident_severity,
-                    incident_action_ref,
+                    }),
+                    incident_policy.map(|x| x.2.to_string()),
                     string_field(&processed_event, "run_id"),
                     string_field(&processed_event, "trace_id"),
                     string_field(&processed_event, "span_id"),
                 );
-                record_analytics_event_locked(&mut s, now, &processed_event, None);
+                let mut next_analytics = s.analytics.clone();
+                record_analytics_event(&mut next_analytics, now, &processed_event, None);
+                let mut next_counters = s.counters.clone();
+                next_counters.ingest_accepted_total =
+                    next_counters.ingest_accepted_total.saturating_add(1);
+
+                let persist_result = (|| -> anyhow::Result<()> {
+                    begin_storage_transaction(&storage_conn)?;
+                    persist_event_v1_with_conn(&storage_conn, &stored_event)?;
+                    persist_incident_with_conn(&storage_conn, &incident)?;
+                    persist_source_last_seen_entry_with_conn(&storage_conn, &source_id, now)?;
+                    if !s.fingerprint_index.contains_key(&fingerprint) {
+                        persist_fingerprint_entry_with_conn(
+                            &storage_conn,
+                            &fingerprint,
+                            &canonical,
+                            now,
+                        )?;
+                    }
+                    persist_analytics_state_with_conn(
+                        &storage_conn,
+                        &next_analytics,
+                        &next_counters,
+                        now,
+                    )?;
+                    commit_storage_transaction(&storage_conn)?;
+                    Ok(())
+                })();
+                if let Err(error) = persist_result {
+                    rollback_storage_transaction(&storage_conn);
+                    let outcome = handle_storage_runtime_error_locked(
+                        &mut s,
+                        &trace_id,
+                        "storage_write_failed",
+                        error,
+                    );
+                    return storage_fault_response(&outcome.error, outcome.retry_after_ms);
+                }
+                if !s.fingerprint_index.contains_key(&fingerprint) {
+                    s.fingerprint_index.insert(fingerprint, canonical);
+                }
+                s.source_last_seen.insert(source_id, now);
+                s.analytics = next_analytics;
+                s.counters = next_counters;
+                s.next_seq += 1;
+                upto_seq = seq;
+                s.events.push_back(stored_event);
+                if s.events.len() > s.queue_depth_limit {
+                    s.events.pop_front();
+                }
+                s.incidents.push(incident);
                 accepted += 1;
-                s.counters.ingest_accepted_total += 1;
             }
         }
     }
@@ -1293,7 +2876,14 @@ async fn ingest(
         invalid: invalid_details.len(),
         invalid_details,
     };
-    persist_analytics_state(&s.analytics_state_path, &s.analytics);
+    refresh_storage_backup_state_if_due(&mut s);
+    persist_analytics_recovery_contour(
+        &s.db_path,
+        &s.analytics_state_path,
+        &s.analytics,
+        &s.counters,
+        now,
+    );
     (StatusCode::OK, Json(response)).into_response()
 }
 
@@ -1340,12 +2930,35 @@ async fn ingest_v2(
     let events = payload.events;
     let accepted = events.len();
     let mut s = state.write().await;
+    if let Some(resp) = guard_storage_read_only_locked(&s) {
+        return resp;
+    }
     let mut upto_seq = s.next_seq_v2.saturating_sub(1);
+    let trace_id = format!("v2-ingest-{}", now);
+    let write_pressure = if accepted > 1 {
+        StorageWritePressure::Heavy
+    } else {
+        StorageWritePressure::Light
+    };
+    if let Some(resp) = guard_storage_pressure_locked(&mut s, &trace_id, write_pressure) {
+        return resp;
+    }
+
+    let storage_conn = match open_storage_connection(&s.db_path) {
+        Ok(conn) => conn,
+        Err(error) => {
+            let outcome = handle_storage_runtime_error_locked(
+                &mut s,
+                &trace_id,
+                "storage_init_failed",
+                error,
+            );
+            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
+        }
+    };
 
     for event in events {
         let seq = s.next_seq_v2;
-        s.next_seq_v2 += 1;
-        upto_seq = seq;
 
         let dna_signature = build_dna_signature(&event);
         let evidence_blocks = parse_evidence_blocks(&event, seq, now);
@@ -1353,35 +2966,97 @@ async fn ingest_v2(
             .iter()
             .map(|block| block.evidence_id.clone())
             .collect();
-        for block in evidence_blocks {
-            s.evidence_blocks.insert(block.evidence_id.clone(), block);
+        let mut next_cluster = s
+            .dna_clusters
+            .get(&dna_signature.dna_id)
+            .cloned()
+            .unwrap_or_else(|| DnaClusterState {
+                signature: dna_signature.clone(),
+                event_count: 0,
+                last_seen_ts_ms: now,
+                sample_event_seq: seq,
+                evidence_refs: Vec::new(),
+            });
+        next_cluster.event_count = next_cluster.event_count.saturating_add(1);
+        next_cluster.last_seen_ts_ms = now;
+        if next_cluster.sample_event_seq == 0 {
+            next_cluster.sample_event_seq = seq;
         }
-        upsert_dna_cluster_locked(&mut s, &dna_signature, seq, now, &evidence_refs);
-        record_analytics_event_locked(&mut s, now, &event, Some(&dna_signature.dna_id));
+        for evidence_id in &evidence_refs {
+            if !next_cluster
+                .evidence_refs
+                .iter()
+                .any(|existing| existing == evidence_id)
+            {
+                next_cluster.evidence_refs.push(evidence_id.clone());
+            }
+        }
+        let mut next_analytics = s.analytics.clone();
+        record_analytics_event(
+            &mut next_analytics,
+            now,
+            &event,
+            Some(&dna_signature.dna_id),
+        );
+        let mut next_counters = s.counters.clone();
+        next_counters.ingest_accepted_total = next_counters.ingest_accepted_total.saturating_add(1);
 
-        s.events_v2.push_back(StoredEventV2 {
+        let stored_event = StoredEventV2 {
             seq,
             ts_ms: now,
             raw_event: event,
             dna_signature,
             evidence_refs,
-        });
+        };
+        let persist_result = (|| -> anyhow::Result<()> {
+            begin_storage_transaction(&storage_conn)?;
+            persist_event_v2_with_conn(&storage_conn, &stored_event)?;
+            for block in &evidence_blocks {
+                persist_evidence_block_with_conn(&storage_conn, block, now)?;
+            }
+            persist_dna_cluster_with_conn(&storage_conn, &next_cluster, now)?;
+            persist_analytics_state_with_conn(&storage_conn, &next_analytics, &next_counters, now)?;
+            commit_storage_transaction(&storage_conn)?;
+            Ok(())
+        })();
+        if let Err(error) = persist_result {
+            rollback_storage_transaction(&storage_conn);
+            let outcome = handle_storage_runtime_error_locked(
+                &mut s,
+                &trace_id,
+                "storage_write_failed",
+                error,
+            );
+            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
+        }
+        for block in evidence_blocks {
+            s.evidence_blocks.insert(block.evidence_id.clone(), block);
+        }
+        s.dna_clusters
+            .insert(next_cluster.signature.dna_id.clone(), next_cluster);
+        s.analytics = next_analytics;
+        s.counters = next_counters;
+        s.next_seq_v2 += 1;
+        upto_seq = seq;
+        s.events_v2.push_back(stored_event);
         if s.events_v2.len() > s.queue_depth_limit {
             s.events_v2.pop_front();
         }
     }
-
-    s.counters.ingest_accepted_total = s
-        .counters
-        .ingest_accepted_total
-        .saturating_add(accepted as u64);
     let response = IngestResponse {
         ack: Ack { upto_seq },
         accepted,
         invalid: 0,
         invalid_details: Vec::new(),
     };
-    persist_analytics_state(&s.analytics_state_path, &s.analytics);
+    refresh_storage_backup_state_if_due(&mut s);
+    persist_analytics_recovery_contour(
+        &s.db_path,
+        &s.analytics_state_path,
+        &s.analytics,
+        &s.counters,
+        now,
+    );
     (StatusCode::OK, Json(response)).into_response()
 }
 
@@ -1505,39 +3180,6 @@ fn evidence_block_from_value(value: &Value, seq: u64, idx: usize, ts_ms: u64) ->
         freshness_ms,
         redaction_policy_id,
         access_scope,
-    }
-}
-
-fn upsert_dna_cluster_locked(
-    state: &mut CoreState,
-    signature: &DnaSignature,
-    seq: u64,
-    ts_ms: u64,
-    evidence_refs: &[String],
-) {
-    let entry = state
-        .dna_clusters
-        .entry(signature.dna_id.clone())
-        .or_insert_with(|| DnaClusterState {
-            signature: signature.clone(),
-            event_count: 0,
-            last_seen_ts_ms: ts_ms,
-            sample_event_seq: seq,
-            evidence_refs: Vec::new(),
-        });
-    entry.event_count = entry.event_count.saturating_add(1);
-    entry.last_seen_ts_ms = ts_ms;
-    if entry.sample_event_seq == 0 {
-        entry.sample_event_seq = seq;
-    }
-    for evidence_id in evidence_refs {
-        if !entry
-            .evidence_refs
-            .iter()
-            .any(|existing| existing == evidence_id)
-        {
-            entry.evidence_refs.push(evidence_id.clone());
-        }
     }
 }
 
@@ -2317,7 +3959,7 @@ fn extract_otlp_body(body: Option<&Value>) -> Option<String> {
     }
 }
 
-fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
+fn push_gap_event_memory_only_locked(s: &mut CoreState, kind: &str, details: Value) {
     let trace_id = details
         .get("trace_id")
         .and_then(Value::as_str)
@@ -2350,7 +3992,40 @@ fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
             None,
         );
     }
-    persist_analytics_state(&s.analytics_state_path, &s.analytics);
+    persist_analytics_recovery_contour(
+        &s.db_path,
+        &s.analytics_state_path,
+        &s.analytics,
+        &s.counters,
+        ts_ms,
+    );
+}
+
+fn push_gap_event_locked(s: &mut CoreState, kind: &str, details: Value) {
+    push_gap_event_memory_only_locked(s, kind, details);
+    if s.storage_fault_handling {
+        return;
+    }
+    let persisted = s.events.back().cloned();
+    if let Some(stored) = persisted {
+        if let Err(error) = persist_event_v1(&s.db_path, &stored) {
+            warn!(
+                "failed to persist gap event seq={} to {}: {}",
+                stored.seq,
+                s.db_path.display(),
+                error
+            );
+            let trace_id = stored
+                .event
+                .get("details")
+                .and_then(|value| value.get("trace_id"))
+                .and_then(Value::as_str)
+                .unwrap_or("storage-gap");
+            let _ = handle_storage_runtime_error_locked(s, trace_id, "storage_write_failed", error);
+        } else {
+            refresh_storage_backup_state_if_due(s);
+        }
+    }
 }
 
 fn validate_event(event: &Value) -> Option<(String, String, String)> {
@@ -2451,12 +4126,51 @@ fn incident_policy_for_gap(kind: &str) -> Option<(&'static str, &'static str, &'
             "SEV2",
             "docs/runbooks/metrics_unavailable.md",
         )),
+        "observability_gap.storage_corrupted" => Some((
+            "storage_corrupted",
+            "SEV1",
+            "docs/ops/storage_corruption_runbook.md",
+        )),
+        "observability_gap.storage_read_only" => Some((
+            "storage_read_only",
+            "SEV1",
+            "docs/ops/storage_corruption_runbook.md",
+        )),
+        "observability_gap.storage_disk_full" => {
+            Some(("storage_disk_full", "SEV1", "docs/ops/storage.md"))
+        }
+        "observability_gap.storage_pressure_high" => Some((
+            "storage_pressure_high",
+            "SEV2",
+            "docs/runbooks/storage_pressure_high.md",
+        )),
         "observability_gap.otlp_rate_limited" => Some((
             "otlp_rate_limited",
             "SEV2",
             "docs/runbooks/otlp_rate_limited.md",
         )),
         _ => None,
+    }
+}
+
+fn build_incident(
+    incident_id: String,
+    kind: String,
+    severity: String,
+    action_ref: Option<String>,
+    run_id: Option<String>,
+    trace_id: Option<String>,
+    span_id: Option<String>,
+) -> Incident {
+    Incident {
+        id: incident_id,
+        status: "open".to_string(),
+        kind,
+        severity,
+        action_ref,
+        run_id,
+        trace_id,
+        span_id,
     }
 }
 
@@ -2470,16 +4184,29 @@ fn push_incident_locked(
     span_id: Option<String>,
 ) {
     let incident_id = format!("incident-{}", s.next_seq);
-    s.incidents.push(Incident {
-        id: incident_id,
-        status: "open".to_string(),
+    let incident = build_incident(
+        incident_id,
         kind,
         severity,
         action_ref,
         run_id,
         trace_id,
         span_id,
-    });
+    );
+    s.incidents.push(incident.clone());
+    if s.storage_fault_handling {
+        return;
+    }
+    if let Err(error) = persist_incident(&s.db_path, &incident) {
+        warn!("failed to persist incident {}: {}", incident.id, error);
+        let trace_id = incident
+            .trace_id
+            .clone()
+            .unwrap_or_else(|| "storage-incident".to_string());
+        let _ = handle_storage_runtime_error_locked(s, &trace_id, "storage_write_failed", error);
+    } else {
+        refresh_storage_backup_state_if_due(s);
+    }
 }
 
 fn contains_injection_pattern(value: &str) -> bool {
@@ -3110,7 +4837,21 @@ fn append_audit_entry(state: &mut CoreState, mut entry: AuditEntry) {
     entry.merkle_proof = build_merkle_proof(&entry.prev_hash, &entry.entry_hash);
     state.next_audit_id += 1;
     state.audit_chain_head = entry.entry_hash.clone();
-    state.audits.push(entry);
+    state.audits.push(entry.clone());
+    if state.storage_fault_handling {
+        return;
+    }
+    if let Err(error) = persist_audit_entry(&state.db_path, &entry) {
+        warn!("failed to persist audit entry {}: {}", entry.id, error);
+        let _ = handle_storage_runtime_error_locked(
+            state,
+            &entry.trace_id,
+            "storage_write_failed",
+            error,
+        );
+    } else {
+        refresh_storage_backup_state_if_due(state);
+    }
 }
 
 fn append_audit_entry_and_get(state: &mut CoreState, mut entry: AuditEntry) -> AuditEntry {
@@ -3121,6 +4862,20 @@ fn append_audit_entry_and_get(state: &mut CoreState, mut entry: AuditEntry) -> A
     state.next_audit_id += 1;
     state.audit_chain_head = entry.entry_hash.clone();
     state.audits.push(entry.clone());
+    if state.storage_fault_handling {
+        return entry;
+    }
+    if let Err(error) = persist_audit_entry(&state.db_path, &entry) {
+        warn!("failed to persist audit entry {}: {}", entry.id, error);
+        let _ = handle_storage_runtime_error_locked(
+            state,
+            &entry.trace_id,
+            "storage_write_failed",
+            error,
+        );
+    } else {
+        refresh_storage_backup_state_if_due(state);
+    }
     entry
 }
 
@@ -3249,6 +5004,15 @@ async fn incident_ack(
     .await
     .err();
     let mut s = state.write().await;
+    if let Some(resp) = guard_storage_read_only_locked(&s) {
+        return resp;
+    }
+    let trace_id = format!("incident-ack-{}", now_ms());
+    if let Some(resp) =
+        guard_storage_pressure_locked(&mut s, &trace_id, StorageWritePressure::Light)
+    {
+        return resp;
+    }
     if let Some(resp) = deny {
         append_audit_entry(
             &mut s,
@@ -3262,8 +5026,23 @@ async fn incident_ack(
         );
         return resp;
     }
-    if let Some(item) = s.incidents.iter_mut().find(|x| x.id == id) {
-        item.status = "acknowledged".to_string();
+    if let Some(index) = s.incidents.iter().position(|x| x.id == id) {
+        let previous_status = s.incidents[index].status.clone();
+        s.incidents[index].status = "acknowledged".to_string();
+        let incident = s.incidents[index].clone();
+        if let Err(error) = persist_incident(&s.db_path, &incident) {
+            warn!("failed to persist incident ack {}: {}", incident.id, error);
+            s.incidents[index].status = previous_status;
+            let outcome = handle_storage_runtime_error_locked(
+                &mut s,
+                &trace_id,
+                "storage_write_failed",
+                error,
+            );
+            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
+        } else {
+            refresh_storage_backup_state_if_due(&mut s);
+        }
         append_audit_entry(
             &mut s,
             build_audit_entry(&headers, "incident.ack", &id, "success", "none"),
@@ -3297,6 +5076,15 @@ async fn incident_resolve(
     .await
     .err();
     let mut s = state.write().await;
+    if let Some(resp) = guard_storage_read_only_locked(&s) {
+        return resp;
+    }
+    let trace_id = format!("incident-resolve-{}", now_ms());
+    if let Some(resp) =
+        guard_storage_pressure_locked(&mut s, &trace_id, StorageWritePressure::Light)
+    {
+        return resp;
+    }
     if let Some(resp) = deny {
         append_audit_entry(
             &mut s,
@@ -3310,8 +5098,26 @@ async fn incident_resolve(
         );
         return resp;
     }
-    if let Some(item) = s.incidents.iter_mut().find(|x| x.id == id) {
-        item.status = "resolved".to_string();
+    if let Some(index) = s.incidents.iter().position(|x| x.id == id) {
+        let previous_status = s.incidents[index].status.clone();
+        s.incidents[index].status = "resolved".to_string();
+        let incident = s.incidents[index].clone();
+        if let Err(error) = persist_incident(&s.db_path, &incident) {
+            warn!(
+                "failed to persist incident resolve {}: {}",
+                incident.id, error
+            );
+            s.incidents[index].status = previous_status;
+            let outcome = handle_storage_runtime_error_locked(
+                &mut s,
+                &trace_id,
+                "storage_write_failed",
+                error,
+            );
+            return storage_fault_response(&outcome.error, outcome.retry_after_ms);
+        } else {
+            refresh_storage_backup_state_if_due(&mut s);
+        }
         append_audit_entry(
             &mut s,
             build_audit_entry(&headers, "incident.resolve", &id, "success", "none"),
@@ -3370,6 +5176,16 @@ async fn actions_execute(
         .err()
     };
     let mut s = state.write().await;
+    if let Some(resp) = guard_storage_read_only_locked(&s) {
+        return resp;
+    }
+    if let Some(resp) = guard_storage_pressure_locked(
+        &mut s,
+        &trace_id_from_headers(&headers),
+        StorageWritePressure::Light,
+    ) {
+        return resp;
+    }
     let (sanitized_params, redacted) =
         sanitize_sensitive(&req.params.clone().unwrap_or(Value::Null));
     if preflight_id.is_empty() {
@@ -3730,19 +5546,237 @@ mod tests {
     use http_body_util::BodyExt;
     use proptest::prelude::*;
     use std::collections::HashSet;
-    use std::io::Read;
+    use std::fs::{self, OpenOptions};
+    use std::io::{Read, Seek, SeekFrom, Write};
+    use std::sync::atomic::{AtomicU64, Ordering};
     use tower::ServiceExt;
 
+    static TEST_DB_COUNTER: AtomicU64 = AtomicU64::new(1);
+
+    fn next_test_db_path() -> PathBuf {
+        let nonce = TEST_DB_COUNTER.fetch_add(1, Ordering::Relaxed);
+        std::env::temp_dir().join(format!(
+            "art_core_state_test_{}_{}_{}.sqlite3",
+            std::process::id(),
+            now_ms(),
+            nonce
+        ))
+    }
+
+    fn test_state_with_db(db_path: PathBuf) -> Shared {
+        let analytics_state_path = db_path.with_extension("analytics.json");
+        Arc::new(RwLock::new(
+            CoreState::new(
+                "global".to_string(),
+                10_000,
+                200,
+                524_288,
+                vec!["service.restart".to_string(), "service.status".to_string()],
+                AnalyticsState::new(1_440),
+                analytics_state_path,
+                db_path,
+                StoragePressureConfig {
+                    high_watermark_percent: DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT,
+                    critical_watermark_percent: DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT,
+                    reserved_free_space_bytes: DEFAULT_STORAGE_RESERVED_FREE_SPACE_MB * 1024 * 1024,
+                    hard_db_size_limit_bytes: None,
+                },
+            )
+            .expect("test core state"),
+        ))
+    }
+
     fn test_state() -> Shared {
-        Arc::new(RwLock::new(CoreState::new(
+        test_state_with_db(next_test_db_path())
+    }
+
+    fn sqlite_path_literal(path: &std::path::Path) -> String {
+        path.to_string_lossy().replace('\'', "''")
+    }
+
+    fn sqlite_backup_vacuum_into(db_path: &std::path::Path, backup_path: &std::path::Path) {
+        if backup_path.exists() {
+            fs::remove_file(backup_path).expect("remove stale backup");
+        }
+        let conn = Connection::open(db_path).expect("open db for backup");
+        let backup_sql = format!("VACUUM INTO '{}';", sqlite_path_literal(backup_path));
+        conn.execute_batch(&backup_sql).expect("vacuum into backup");
+    }
+
+    fn sqlite_integrity_status(db_path: &std::path::Path) -> Result<String, String> {
+        let conn = Connection::open(db_path).map_err(|err| err.to_string())?;
+        conn.query_row("PRAGMA integrity_check;", [], |row| row.get::<_, String>(0))
+            .map_err(|err| err.to_string())
+    }
+
+    #[test]
+    fn storage_backup_dir_is_unique_per_db_instance_even_with_same_profile() {
+        let db_a = next_test_db_path();
+        let db_b = next_test_db_path();
+        let dir_a = storage_backup_dir("global", &db_a);
+        let dir_b = storage_backup_dir("global", &db_b);
+        assert_ne!(dir_a, dir_b);
+        assert!(dir_a.starts_with(std::env::temp_dir()));
+        assert!(dir_b.starts_with(std::env::temp_dir()));
+    }
+
+    #[test]
+    fn storage_backup_refresh_obeys_fixed_interval_policy() {
+        let db_path = next_test_db_path();
+        let analytics_state_path = db_path.with_extension("analytics.json");
+        let mut state = CoreState::new(
             "global".to_string(),
             10_000,
             200,
             524_288,
             vec!["service.restart".to_string(), "service.status".to_string()],
             AnalyticsState::new(1_440),
-            PathBuf::from("/tmp/art_core_analytics_state_test.json"),
-        )))
+            analytics_state_path,
+            db_path,
+            StoragePressureConfig {
+                high_watermark_percent: DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT,
+                critical_watermark_percent: DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT,
+                reserved_free_space_bytes: DEFAULT_STORAGE_RESERVED_FREE_SPACE_MB * 1024 * 1024,
+                hard_db_size_limit_bytes: None,
+            },
+        )
+        .expect("core state");
+
+        let backup_count_before = fs::read_dir(&state.storage_backup_dir)
+            .expect("backup dir")
+            .filter_map(Result::ok)
+            .filter(|entry| {
+                entry
+                    .path()
+                    .extension()
+                    .map(|ext| ext == "json")
+                    .unwrap_or(false)
+            })
+            .count();
+        let backup_id_before = state.last_ok_backup_id.clone();
+        let refresh_ts_before = state.last_backup_refresh_ms;
+
+        refresh_storage_backup_state_if_due(&mut state);
+
+        let backup_count_after_skip = fs::read_dir(&state.storage_backup_dir)
+            .expect("backup dir")
+            .filter_map(Result::ok)
+            .filter(|entry| {
+                entry
+                    .path()
+                    .extension()
+                    .map(|ext| ext == "json")
+                    .unwrap_or(false)
+            })
+            .count();
+        assert_eq!(backup_count_after_skip, backup_count_before);
+        assert_eq!(state.last_ok_backup_id, backup_id_before);
+        assert_eq!(state.last_backup_refresh_ms, refresh_ts_before);
+
+        state.last_backup_refresh_ms = 0;
+        refresh_storage_backup_state_if_due(&mut state);
+
+        let backup_count_after_due = fs::read_dir(&state.storage_backup_dir)
+            .expect("backup dir")
+            .filter_map(Result::ok)
+            .filter(|entry| {
+                entry
+                    .path()
+                    .extension()
+                    .map(|ext| ext == "json")
+                    .unwrap_or(false)
+            })
+            .count();
+        assert!(backup_count_after_due > backup_count_after_skip);
+        assert_ne!(state.last_ok_backup_id, backup_id_before);
+        assert!(state.last_backup_refresh_ms > refresh_ts_before);
+    }
+
+    fn corrupt_sqlite_header(db_path: &std::path::Path) {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .open(db_path)
+            .expect("open sqlite db for corruption");
+        file.seek(SeekFrom::Start(0)).expect("seek sqlite header");
+        file.write_all(b"not-a-valid-sqlite-header")
+            .expect("write corrupted header");
+        file.flush().expect("flush corrupted header");
+
+        for suffix in ["-wal", "-shm"] {
+            let sidecar = db_path.with_file_name(format!(
+                "{}{}",
+                db_path.file_name().expect("db file name").to_string_lossy(),
+                suffix
+            ));
+            if sidecar.exists() {
+                fs::remove_file(sidecar).expect("remove sqlite sidecar");
+            }
+        }
+    }
+
+    fn restore_sqlite_backup_file(backup_path: &std::path::Path, db_path: &std::path::Path) {
+        for path in [
+            db_path.to_path_buf(),
+            db_path.with_file_name(format!(
+                "{}-wal",
+                db_path.file_name().expect("db file name").to_string_lossy()
+            )),
+            db_path.with_file_name(format!(
+                "{}-shm",
+                db_path.file_name().expect("db file name").to_string_lossy()
+            )),
+        ] {
+            if path.exists() {
+                fs::remove_file(&path).expect("remove previous sqlite artifact");
+            }
+        }
+        fs::copy(backup_path, db_path).expect("restore sqlite backup file");
+    }
+
+    fn write_non_sparse_file(path: &std::path::Path, target_bytes: u64) {
+        let mut file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(path)
+            .expect("open filler file");
+        let chunk = vec![0x5a_u8; 1024 * 1024];
+        let mut written = 0_u64;
+        while written < target_bytes {
+            let remaining = target_bytes.saturating_sub(written);
+            let chunk_len = remaining.min(chunk.len() as u64) as usize;
+            file.write_all(&chunk[..chunk_len])
+                .expect("write filler chunk");
+            written = written.saturating_add(chunk_len as u64);
+        }
+        file.sync_all().expect("sync filler file");
+    }
+
+    fn remove_file_if_exists(path: &std::path::Path) {
+        if path.exists() {
+            fs::remove_file(path).expect("remove file");
+        }
+    }
+
+    fn test_state_with_db_and_pressure(
+        db_path: PathBuf,
+        storage_pressure_config: StoragePressureConfig,
+    ) -> Shared {
+        let analytics_state_path = db_path.with_extension("analytics.json");
+        Arc::new(RwLock::new(
+            CoreState::new(
+                "global".to_string(),
+                10_000,
+                200,
+                524_288,
+                vec!["service.restart".to_string(), "service.status".to_string()],
+                AnalyticsState::new(1_440),
+                analytics_state_path,
+                db_path,
+                storage_pressure_config,
+            )
+            .expect("test core state"),
+        ))
     }
 
     async fn ingest_info_events(app: &Router, count: usize) {
@@ -3763,6 +5797,1133 @@ mod tests {
             assert_eq!(resp.status(), StatusCode::OK);
             left -= chunk;
         }
+    }
+
+    async fn snapshot_json(app: &Router) -> Value {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        serde_json::from_slice(&body).expect("snapshot json")
+    }
+
+    async fn health_json(app: &Router) -> (StatusCode, Value) {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/health")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        let status = resp.status();
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        (status, serde_json::from_slice(&body).expect("health json"))
+    }
+
+    async fn snapshot_v2_json(app: &Router) -> Value {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/snapshot")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        serde_json::from_slice(&body).expect("snapshot json")
+    }
+
+    async fn analytics_summary_json(app: &Router) -> Value {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/analytics/summary?window_minutes=120&top=5")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        serde_json::from_slice(&body).expect("analytics json")
+    }
+
+    async fn metrics_text(app: &Router) -> String {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/metrics")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        String::from_utf8(body.to_vec()).expect("metrics utf8")
+    }
+
+    fn metric_value(metrics: &str, metric_name: &str) -> Option<u64> {
+        metrics
+            .lines()
+            .find_map(|line| line.strip_prefix(metric_name))
+            .and_then(|tail| tail.trim().parse::<u64>().ok())
+    }
+
+    async fn incidents_json(app: &Router) -> Value {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/incidents")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        serde_json::from_slice(&body).expect("incidents json")
+    }
+
+    async fn audit_verify_json(app: &Router) -> Value {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit/verify")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        serde_json::from_slice(&body).expect("audit verify json")
+    }
+
+    #[tokio::test]
+    async fn storage_reloads_v1_events_from_sqlite_after_restart() {
+        let db_path = next_test_db_path();
+        let app1 = build_app(test_state_with_db(db_path.clone()));
+        ingest_info_events(&app1, 3).await;
+
+        let app2 = build_app(test_state_with_db(db_path));
+        let snapshot = snapshot_json(&app2).await;
+        let events = snapshot["events"].as_array().expect("events");
+        assert_eq!(events.len(), 3);
+        assert_eq!(events[0]["event"]["msg"], "event-2");
+        assert_eq!(events[1]["event"]["msg"], "event-1");
+        assert_eq!(events[2]["event"]["msg"], "event-0");
+        assert_eq!(snapshot["cursor"], 3);
+    }
+
+    #[tokio::test]
+    async fn storage_reloads_v2_events_from_sqlite_after_restart() {
+        let db_path = next_test_db_path();
+        let app1 = build_app(test_state_with_db(db_path.clone()));
+        let payload = json!({
+            "events": [
+                {
+                    "severity": "info",
+                    "kind": "demo.kind",
+                    "message": "v2-event-1",
+                    "service": "svc-a",
+                    "evidence": [{"source_type":"log","source_ref":"svc-a.log","trust_score":0.9}]
+                },
+                {
+                    "severity": "warn",
+                    "kind": "demo.kind",
+                    "message": "v2-event-2",
+                    "service": "svc-a",
+                    "evidence": [{"source_type":"log","source_ref":"svc-a.log","trust_score":0.8}]
+                }
+            ]
+        });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let resp = app1.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let app2 = build_app(test_state_with_db(db_path));
+        let snapshot = snapshot_v2_json(&app2).await;
+        let events = snapshot["events"].as_array().expect("events");
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0]["raw_event"]["message"], "v2-event-2");
+        assert_eq!(events[1]["raw_event"]["message"], "v2-event-1");
+        assert_eq!(snapshot["cursor"], 2);
+    }
+
+    #[tokio::test]
+    async fn storage_reloads_incidents_from_sqlite_after_restart_and_status_update() {
+        let db_path = next_test_db_path();
+        let app1 = build_app(test_state_with_db(db_path.clone()));
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/profile/apply")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "profile_id": "ru",
+                    "retention_days": 30,
+                    "export_mode": "on",
+                    "egress_policy": "allow",
+                    "residency": "global",
+                    "updates_mode": "online",
+                })
+                .to_string(),
+            ))
+            .expect("request");
+        let resp = app1.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+        let app2 = build_app(test_state_with_db(db_path.clone()));
+        let incidents_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/incidents")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let incidents_resp = app2.clone().oneshot(incidents_req).await.expect("response");
+        assert_eq!(incidents_resp.status(), StatusCode::OK);
+        let incidents_body = incidents_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let incidents_json: Value = serde_json::from_slice(&incidents_body).expect("json");
+        let items = incidents_json["items"].as_array().expect("items");
+        assert_eq!(items.len(), 1);
+        let incident_id = items[0]["id"].as_str().expect("incident id").to_string();
+        assert_eq!(items[0]["status"], "open");
+        assert_eq!(items[0]["kind"], "profile_violation");
+
+        let ack_req = Request::builder()
+            .method("POST")
+            .uri(format!("/api/v1/incidents/{incident_id}/ack"))
+            .header("x-actor-role", "operator")
+            .body(Body::empty())
+            .expect("request");
+        let ack_resp = app2.clone().oneshot(ack_req).await.expect("response");
+        assert_eq!(ack_resp.status(), StatusCode::OK);
+
+        let app3 = build_app(test_state_with_db(db_path));
+        let incidents_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/incidents")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let incidents_resp = app3.oneshot(incidents_req).await.expect("response");
+        assert_eq!(incidents_resp.status(), StatusCode::OK);
+        let incidents_body = incidents_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let incidents_json: Value = serde_json::from_slice(&incidents_body).expect("json");
+        let items = incidents_json["items"].as_array().expect("items");
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0]["id"], incident_id);
+        assert_eq!(items[0]["status"], "acknowledged");
+    }
+
+    #[tokio::test]
+    async fn storage_reloads_audits_from_sqlite_after_restart_and_keeps_chain_valid() {
+        let db_path = next_test_db_path();
+        let app1 = build_app(test_state_with_db(db_path.clone()));
+        let exec_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-stage11")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .body(Body::from(
+                r#"{"action":"service.restart","target":"core"}"#,
+            ))
+            .expect("request");
+        let exec_resp = app1.clone().oneshot(exec_req).await.expect("response");
+        assert_eq!(exec_resp.status(), StatusCode::OK);
+
+        let app2 = build_app(test_state_with_db(db_path.clone()));
+        let verify_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit/verify")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let verify_resp = app2.clone().oneshot(verify_req).await.expect("response");
+        assert_eq!(verify_resp.status(), StatusCode::OK);
+        let verify_body = verify_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let verify_json: Value = serde_json::from_slice(&verify_body).expect("json");
+        assert_eq!(verify_json["status"], "verified");
+        assert_eq!(verify_json["count"], 2);
+
+        let exec_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-stage11-restart")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .body(Body::from(r#"{"action":"service.status","target":"core"}"#))
+            .expect("request");
+        let exec_resp = app2.clone().oneshot(exec_req).await.expect("response");
+        assert_eq!(exec_resp.status(), StatusCode::OK);
+
+        let app3 = build_app(test_state_with_db(db_path));
+        let audit_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let audit_resp = app3.clone().oneshot(audit_req).await.expect("response");
+        assert_eq!(audit_resp.status(), StatusCode::OK);
+        let audit_body = audit_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let audit_json: Value = serde_json::from_slice(&audit_body).expect("json");
+        let items = audit_json["items"].as_array().expect("items");
+        assert_eq!(items.len(), 4);
+        assert_eq!(items[0]["id"], 1);
+        assert_eq!(items[3]["id"], 4);
+
+        let verify_req = Request::builder()
+            .method("GET")
+            .uri("/api/v1/audit/verify")
+            .header("x-actor-role", "admin")
+            .body(Body::empty())
+            .expect("request");
+        let verify_resp = app3.oneshot(verify_req).await.expect("response");
+        assert_eq!(verify_resp.status(), StatusCode::OK);
+        let verify_body = verify_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("body")
+            .to_bytes();
+        let verify_json: Value = serde_json::from_slice(&verify_body).expect("json");
+        assert_eq!(verify_json["status"], "verified");
+        assert_eq!(verify_json["count"], 4);
+    }
+
+    #[tokio::test]
+    async fn storage_reloads_fingerprint_source_indexes_and_metrics_after_restart() {
+        let db_path = next_test_db_path();
+        let state1 = test_state_with_db(db_path.clone());
+        let app1 = build_app(state1.clone());
+        let payload = json!({
+            "events": [
+                {
+                    "severity": "error",
+                    "kind": "db.timeout",
+                    "msg": "fingerprint-source-check",
+                    "source_id": "agent-alpha"
+                }
+            ]
+        });
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let resp = app1.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let state2 = test_state_with_db(db_path);
+        let app2 = build_app(state2.clone());
+        let s = state2.read().await;
+        assert_eq!(
+            s.source_last_seen.get("agent-alpha").copied(),
+            Some(s.events.back().expect("stored event").ts_ms)
+        );
+        assert_eq!(s.fingerprint_index.len(), 1);
+        drop(s);
+
+        let metrics = metrics_text(&app2).await;
+        assert!(metrics.contains("ingest_accepted_total 1"));
+        assert!(metrics.contains("ingest_invalid_total 0"));
+        assert!(metrics.contains("ingest_dropped_total 0"));
+    }
+
+    #[tokio::test]
+    async fn storage_reloads_v2_dna_clusters_and_evidence_blocks_after_restart() {
+        let db_path = next_test_db_path();
+        let app1 = build_app(test_state_with_db(db_path.clone()));
+        let payload = json!({
+            "events": [
+                {
+                    "severity":"error",
+                    "kind":"db.timeout",
+                    "msg":"database timeout",
+                    "payload":{"service":"orders","region":"eu"},
+                    "evidence_blocks":[
+                        {
+                            "evidence_id":"ev-v2-restart-1",
+                            "source_type":"log",
+                            "source_ref":"log://db/1",
+                            "trust_score":0.9,
+                            "freshness_ms":1200,
+                            "redaction_policy_id":"default",
+                            "access_scope":"public"
+                        }
+                    ]
+                }
+            ]
+        });
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let ingest_resp = app1.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::OK);
+
+        let state2 = test_state_with_db(db_path.clone());
+        let app2 = build_app(state2.clone());
+        let snapshot = snapshot_v2_json(&app2).await;
+        let dna_id = snapshot["dna_clusters"][0]["dna_signature"]["dna_id"]
+            .as_str()
+            .expect("dna id")
+            .to_string();
+        {
+            let s = state2.read().await;
+            assert!(s.dna_clusters.contains_key(&dna_id));
+            assert!(s.evidence_blocks.contains_key("ev-v2-restart-1"));
+        }
+
+        let evidence_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/evidence/ev-v2-restart-1")
+            .body(Body::empty())
+            .expect("request");
+        let evidence_resp = app2.clone().oneshot(evidence_req).await.expect("response");
+        assert_eq!(evidence_resp.status(), StatusCode::OK);
+
+        let cluster_req = Request::builder()
+            .method("GET")
+            .uri(format!("/api/v2/dna/{dna_id}"))
+            .body(Body::empty())
+            .expect("request");
+        let cluster_resp = app2.oneshot(cluster_req).await.expect("response");
+        assert_eq!(cluster_resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn storage_reloads_analytics_summary_after_restart() {
+        let db_path = next_test_db_path();
+        let app1 = build_app(test_state_with_db(db_path.clone()));
+        let payload = json!({
+            "events": [
+                {"severity":"error","kind":"db.timeout","payload":{"service":"orders","region":"eu"}}
+            ]
+        });
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .expect("request");
+        let ingest_resp = app1.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::OK);
+
+        let metrics_req = Request::builder()
+            .method("GET")
+            .uri("/metrics")
+            .header("x-core-metrics-force-unavailable", "1")
+            .body(Body::empty())
+            .expect("request");
+        let metrics_resp = app1.clone().oneshot(metrics_req).await.expect("response");
+        assert_eq!(metrics_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+
+        let app2 = build_app(test_state_with_db(db_path));
+        let analytics = analytics_summary_json(&app2).await;
+        assert!(analytics["totals"]["total_events"]
+            .as_u64()
+            .map(|value| value >= 2)
+            .unwrap_or(false));
+        assert!(analytics["totals"]["gap_events"]
+            .as_u64()
+            .map(|value| value >= 1)
+            .unwrap_or(false));
+        let metrics = metrics_text(&app2).await;
+        assert!(metrics.contains("ingest_accepted_total 1"));
+        assert!(metrics.contains("ingest_dropped_total 0"));
+    }
+
+    #[tokio::test]
+    async fn storage_backup_restore_recovers_full_runtime_state_after_corruption() {
+        let db_path = next_test_db_path();
+        let backup_path = db_path.with_extension("backup.sqlite3");
+        let app1 = build_app(test_state_with_db(db_path.clone()));
+
+        let v1_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "events": [
+                        {
+                            "severity":"error",
+                            "kind":"storage.runtime",
+                            "msg":"stage11 full recovery",
+                            "source_id":"agent-stage11"
+                        }
+                    ]
+                })
+                .to_string(),
+            ))
+            .expect("request");
+        let v1_resp = app1.clone().oneshot(v1_req).await.expect("response");
+        assert_eq!(v1_resp.status(), StatusCode::OK);
+
+        let profile_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/profile/apply")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "profile_id": "ru",
+                    "retention_days": 30,
+                    "export_mode": "on",
+                    "egress_policy": "allow",
+                    "residency": "global",
+                    "updates_mode": "online",
+                })
+                .to_string(),
+            ))
+            .expect("request");
+        let profile_resp = app1.clone().oneshot(profile_req).await.expect("response");
+        assert_eq!(profile_resp.status(), StatusCode::BAD_REQUEST);
+
+        let action_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("x-action-preflight-id", "pf-stage11-backup-restore")
+            .header("content-type", "application/json")
+            .header("x-actor-role", "operator")
+            .body(Body::from(r#"{"action":"service.status","target":"core"}"#))
+            .expect("request");
+        let action_resp = app1.clone().oneshot(action_req).await.expect("response");
+        assert_eq!(action_resp.status(), StatusCode::OK);
+
+        let v2_req = Request::builder()
+            .method("POST")
+            .uri("/api/v2/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "events": [
+                        {
+                            "severity":"error",
+                            "kind":"db.timeout",
+                            "msg":"database timeout",
+                            "payload":{"service":"orders","region":"eu"},
+                            "evidence_blocks":[
+                                {
+                                    "evidence_id":"ev-stage11-full-1",
+                                    "source_type":"log",
+                                    "source_ref":"log://db/full-1",
+                                    "trust_score":0.95,
+                                    "freshness_ms":700,
+                                    "redaction_policy_id":"default",
+                                    "access_scope":"public"
+                                }
+                            ]
+                        }
+                    ]
+                })
+                .to_string(),
+            ))
+            .expect("request");
+        let v2_resp = app1.clone().oneshot(v2_req).await.expect("response");
+        assert_eq!(v2_resp.status(), StatusCode::OK);
+
+        let metrics_req = Request::builder()
+            .method("GET")
+            .uri("/metrics")
+            .header("x-core-metrics-force-unavailable", "1")
+            .body(Body::empty())
+            .expect("request");
+        let metrics_resp = app1.clone().oneshot(metrics_req).await.expect("response");
+        assert_eq!(metrics_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+
+        let incidents_before = incidents_json(&app1).await;
+        let audit_before = audit_verify_json(&app1).await;
+        let snapshot_v2_before = snapshot_v2_json(&app1).await;
+        let analytics_before = analytics_summary_json(&app1).await;
+        let metrics_before = metrics_text(&app1).await;
+        let dna_id = snapshot_v2_before["dna_clusters"][0]["dna_signature"]["dna_id"]
+            .as_str()
+            .expect("dna id")
+            .to_string();
+
+        sqlite_backup_vacuum_into(&db_path, &backup_path);
+        assert_eq!(
+            sqlite_integrity_status(&backup_path).expect("backup integrity"),
+            "ok"
+        );
+
+        corrupt_sqlite_header(&db_path);
+        let corrupted_integrity = sqlite_integrity_status(&db_path);
+        assert!(
+            corrupted_integrity
+                .as_ref()
+                .map(|value| value != "ok")
+                .unwrap_or(true),
+            "corrupted sqlite unexpectedly remained healthy: {:?}",
+            corrupted_integrity
+        );
+
+        restore_sqlite_backup_file(&backup_path, &db_path);
+        assert_eq!(
+            sqlite_integrity_status(&db_path).expect("restored integrity"),
+            "ok"
+        );
+
+        let state2 = test_state_with_db(db_path);
+        let app2 = build_app(state2.clone());
+        let incidents_after = incidents_json(&app2).await;
+        let audit_after = audit_verify_json(&app2).await;
+        let snapshot_after = snapshot_json(&app2).await;
+        let snapshot_v2_after = snapshot_v2_json(&app2).await;
+        let analytics_after = analytics_summary_json(&app2).await;
+        let metrics_after = metrics_text(&app2).await;
+
+        assert!(snapshot_after["events"]
+            .as_array()
+            .expect("v1 events")
+            .iter()
+            .any(|item| item["event"]["source_id"] == "agent-stage11"));
+        assert_eq!(
+            incidents_before["items"].as_array().map(|rows| rows.len()),
+            incidents_after["items"].as_array().map(|rows| rows.len())
+        );
+        assert!(incidents_after["items"]
+            .as_array()
+            .expect("incidents")
+            .iter()
+            .any(|item| item["kind"] == "profile_violation"));
+        assert_eq!(audit_before["status"], "verified");
+        assert_eq!(audit_after["status"], "verified");
+        assert_eq!(audit_before["count"], audit_after["count"]);
+        assert!(snapshot_v2_after["events"]
+            .as_array()
+            .expect("v2 events")
+            .iter()
+            .any(|item| item["raw_event"]["kind"] == "db.timeout"));
+        assert!(snapshot_v2_after["dna_clusters"]
+            .as_array()
+            .expect("dna clusters")
+            .iter()
+            .any(|item| item["dna_signature"]["dna_id"] == dna_id));
+        {
+            let s = state2.read().await;
+            assert!(s.evidence_blocks.contains_key("ev-stage11-full-1"));
+        }
+        let evidence_req = Request::builder()
+            .method("GET")
+            .uri("/api/v2/evidence/ev-stage11-full-1")
+            .body(Body::empty())
+            .expect("request");
+        let evidence_resp = app2.clone().oneshot(evidence_req).await.expect("response");
+        assert_eq!(evidence_resp.status(), StatusCode::OK);
+        assert_eq!(
+            analytics_before["totals"]["total_events"],
+            analytics_after["totals"]["total_events"]
+        );
+        assert_eq!(
+            analytics_before["totals"]["gap_events"],
+            analytics_after["totals"]["gap_events"]
+        );
+        assert_eq!(
+            metric_value(&metrics_before, "ingest_accepted_total"),
+            metric_value(&metrics_after, "ingest_accepted_total")
+        );
+        assert_eq!(
+            metric_value(&metrics_before, "ingest_dropped_total"),
+            metric_value(&metrics_after, "ingest_dropped_total")
+        );
+    }
+
+    #[tokio::test]
+    async fn live_ingest_corruption_auto_restores_and_next_retry_succeeds() {
+        let db_path = next_test_db_path();
+        let state = test_state_with_db(db_path.clone());
+        let app = build_app(state.clone());
+
+        ingest_info_events(&app, 2).await;
+        corrupt_sqlite_header(&db_path);
+
+        let req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"after-corruption"}]}).to_string(),
+            ))
+            .expect("request");
+        let resp = app.clone().oneshot(req).await.expect("response");
+        assert_eq!(resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let body = resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["error"], "storage_recovering");
+        assert_eq!(
+            json["retry_after_ms"].as_u64(),
+            Some(DEFAULT_STORAGE_RECOVERY_RETRY_AFTER_MS)
+        );
+
+        let snapshot = snapshot_json(&app).await;
+        assert!(snapshot["events"]
+            .as_array()
+            .expect("events")
+            .iter()
+            .any(|row| row["event"]["kind"] == "observability_gap.storage_corrupted"));
+        let incidents = incidents_json(&app).await;
+        assert!(incidents["items"]
+            .as_array()
+            .expect("incidents")
+            .iter()
+            .any(|row| row["kind"] == "storage_corrupted"));
+
+        let health_req = Request::builder()
+            .method("GET")
+            .uri("/health")
+            .body(Body::empty())
+            .expect("request");
+        let health_resp = app.clone().oneshot(health_req).await.expect("response");
+        assert_eq!(health_resp.status(), StatusCode::OK);
+        let health_body = health_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let health_json: Value = serde_json::from_slice(&health_body).expect("health json");
+        assert_eq!(health_json["storage_mode"], "healthy");
+        assert!(health_json["last_ok_backup_id"].is_string());
+
+        let retry_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"retry-after-restore"}]}).to_string(),
+            ))
+            .expect("request");
+        let retry_resp = app.clone().oneshot(retry_req).await.expect("response");
+        assert_eq!(retry_resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn live_ingest_corruption_without_backup_forces_read_only_and_blocks_writes() {
+        let db_path = next_test_db_path();
+        let state = test_state_with_db(db_path.clone());
+        let app = build_app(state.clone());
+
+        ingest_info_events(&app, 1).await;
+        {
+            let mut s = state.write().await;
+            if s.storage_backup_dir.exists() {
+                fs::remove_dir_all(&s.storage_backup_dir).expect("remove backup dir");
+            }
+            s.last_ok_backup_id = None;
+        }
+        corrupt_sqlite_header(&db_path);
+
+        let ingest_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"read-only-trigger"}]}).to_string(),
+            ))
+            .expect("request");
+        let ingest_resp = app.clone().oneshot(ingest_req).await.expect("response");
+        assert_eq!(ingest_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let body = ingest_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let json: Value = serde_json::from_slice(&body).expect("json");
+        assert_eq!(json["error"], "storage_read_only");
+        assert_eq!(
+            json["retry_after_ms"].as_u64(),
+            Some(DEFAULT_STORAGE_READ_ONLY_RETRY_AFTER_MS)
+        );
+
+        let snapshot = snapshot_json(&app).await;
+        let events = snapshot["events"].as_array().expect("events");
+        assert!(events
+            .iter()
+            .any(|row| row["event"]["kind"] == "observability_gap.storage_corrupted"));
+        assert!(events
+            .iter()
+            .any(|row| row["event"]["kind"] == "observability_gap.storage_read_only"));
+
+        let health_req = Request::builder()
+            .method("GET")
+            .uri("/health")
+            .body(Body::empty())
+            .expect("request");
+        let health_resp = app.clone().oneshot(health_req).await.expect("response");
+        assert_eq!(health_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let health_body = health_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let health_json: Value = serde_json::from_slice(&health_body).expect("health json");
+        assert_eq!(health_json["storage_mode"], "read_only");
+
+        let action_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/actions/execute")
+            .header("content-type", "application/json")
+            .header("x-action-preflight-id", "pf-read-only")
+            .header("x-actor-role", "operator")
+            .body(Body::from(r#"{"action":"service.status","target":"core"}"#))
+            .expect("request");
+        let action_resp = app.clone().oneshot(action_req).await.expect("response");
+        assert_eq!(action_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let action_body = action_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let action_json: Value = serde_json::from_slice(&action_body).expect("action json");
+        assert_eq!(action_json["error"], "storage_read_only");
+    }
+
+    #[tokio::test]
+    async fn live_storage_pressure_transitions_shed_heavy_then_block_and_recover() {
+        let db_path = next_test_db_path();
+        let filler_path = db_path.with_extension("pressure.bin");
+        let free_bytes = filesystem_usage_for_path(&db_path)
+            .expect("filesystem usage")
+            .1;
+        assert!(
+            free_bytes > 96 * 1024 * 1024,
+            "not enough free space for storage pressure test: {}",
+            free_bytes
+        );
+        let reserve_bytes = free_bytes.saturating_sub(64 * 1024 * 1024);
+        let state = test_state_with_db_and_pressure(
+            db_path.clone(),
+            StoragePressureConfig {
+                high_watermark_percent: DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT,
+                critical_watermark_percent: DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT,
+                reserved_free_space_bytes: reserve_bytes,
+                hard_db_size_limit_bytes: None,
+            },
+        );
+        let app = build_app(state.clone());
+
+        let (health_status_normal, health_normal) = health_json(&app).await;
+        assert_eq!(health_status_normal, StatusCode::OK);
+        assert_eq!(health_normal["storage_mode"], "healthy");
+        assert_eq!(health_normal["storage_pressure_state"], "normal");
+
+        write_non_sparse_file(&filler_path, 52 * 1024 * 1024);
+
+        let heavy_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[
+                    {"severity":"info","msg":"pressure-heavy-1"},
+                    {"severity":"info","msg":"pressure-heavy-2"}
+                ]})
+                .to_string(),
+            ))
+            .expect("request");
+        let heavy_resp = app.clone().oneshot(heavy_req).await.expect("response");
+        assert_eq!(heavy_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let heavy_body = heavy_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let heavy_json: Value = serde_json::from_slice(&heavy_body).expect("json");
+        assert_eq!(heavy_json["error"], "storage_pressure_high");
+        assert_eq!(
+            heavy_json["retry_after_ms"].as_u64(),
+            Some(DEFAULT_STORAGE_PRESSURE_HIGH_RETRY_AFTER_MS)
+        );
+
+        let (health_status_high, health_high) = health_json(&app).await;
+        assert_eq!(health_status_high, StatusCode::OK);
+        assert_eq!(health_high["storage_mode"], "healthy");
+        assert_eq!(health_high["storage_pressure_state"], "high");
+
+        let light_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"pressure-light-ok"}]}).to_string(),
+            ))
+            .expect("request");
+        let light_resp = app.clone().oneshot(light_req).await.expect("response");
+        assert_eq!(light_resp.status(), StatusCode::OK);
+
+        let high_snapshot = snapshot_json(&app).await;
+        assert!(high_snapshot["events"]
+            .as_array()
+            .expect("events")
+            .iter()
+            .any(|row| {
+                row["event"]["kind"] == "observability_gap.storage_pressure_high"
+                    && row["event"]["details"]["pressure_state"] == "high"
+            }));
+
+        write_non_sparse_file(&filler_path, 72 * 1024 * 1024);
+
+        let critical_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"pressure-critical-blocked"}]})
+                    .to_string(),
+            ))
+            .expect("request");
+        let critical_resp = app.clone().oneshot(critical_req).await.expect("response");
+        assert_eq!(critical_resp.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let critical_body = critical_resp
+            .into_body()
+            .collect()
+            .await
+            .expect("collect")
+            .to_bytes();
+        let critical_json: Value = serde_json::from_slice(&critical_body).expect("json");
+        assert_eq!(critical_json["error"], "storage_pressure_critical");
+        assert_eq!(
+            critical_json["retry_after_ms"].as_u64(),
+            Some(DEFAULT_STORAGE_PRESSURE_CRITICAL_RETRY_AFTER_MS)
+        );
+
+        let (health_status_critical, health_critical) = health_json(&app).await;
+        assert_eq!(health_status_critical, StatusCode::OK);
+        assert_eq!(health_critical["storage_pressure_state"], "critical");
+
+        let critical_snapshot = snapshot_json(&app).await;
+        assert!(critical_snapshot["events"]
+            .as_array()
+            .expect("events")
+            .iter()
+            .any(|row| {
+                row["event"]["kind"] == "observability_gap.storage_pressure_high"
+                    && row["event"]["details"]["pressure_state"] == "critical"
+            }));
+
+        remove_file_if_exists(&filler_path);
+        for _ in 0..20 {
+            let (_status, health_json) = health_json(&app).await;
+            if health_json["storage_pressure_state"] == "normal" {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        }
+
+        let (health_status_recovered, health_recovered) = health_json(&app).await;
+        assert_eq!(health_status_recovered, StatusCode::OK);
+        assert_eq!(health_recovered["storage_mode"], "healthy");
+        assert_eq!(health_recovered["storage_pressure_state"], "normal");
+
+        let recovered_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"pressure-recovered"}]}).to_string(),
+            ))
+            .expect("request");
+        let recovered_resp = app.clone().oneshot(recovered_req).await.expect("response");
+        assert_eq!(recovered_resp.status(), StatusCode::OK);
+
+        remove_file_if_exists(&filler_path);
+    }
+
+    #[tokio::test]
+    async fn live_storage_disk_full_emits_gap_and_recovers_after_capacity_increase() {
+        let db_path = next_test_db_path();
+        let state = test_state_with_db_and_pressure(
+            db_path.clone(),
+            StoragePressureConfig {
+                high_watermark_percent: DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT,
+                critical_watermark_percent: DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT,
+                reserved_free_space_bytes: DEFAULT_STORAGE_RESERVED_FREE_SPACE_MB * 1024 * 1024,
+                hard_db_size_limit_bytes: Some(256 * 1024),
+            },
+        );
+        let app = build_app(state.clone());
+
+        let large_message = "x".repeat(64 * 1024);
+        let mut saw_disk_full = false;
+        for idx in 0..64 {
+            let req = Request::builder()
+                .method("POST")
+                .uri("/api/v1/ingest")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({"events":[{"severity":"info","msg":format!("disk-full-{idx}-{large_message}")}]})
+                        .to_string(),
+                ))
+                .expect("request");
+            let resp = app.clone().oneshot(req).await.expect("response");
+            if resp.status() == StatusCode::SERVICE_UNAVAILABLE {
+                let body = resp
+                    .into_body()
+                    .collect()
+                    .await
+                    .expect("collect")
+                    .to_bytes();
+                let json: Value = serde_json::from_slice(&body).expect("json");
+                assert_eq!(json["error"], "storage_disk_full");
+                assert_eq!(
+                    json["retry_after_ms"].as_u64(),
+                    Some(DEFAULT_STORAGE_DISK_FULL_RETRY_AFTER_MS)
+                );
+                saw_disk_full = true;
+                break;
+            }
+            assert_eq!(resp.status(), StatusCode::OK);
+        }
+        assert!(saw_disk_full, "disk full response was not reached");
+
+        let snapshot = snapshot_json(&app).await;
+        assert!(snapshot["events"]
+            .as_array()
+            .expect("events")
+            .iter()
+            .any(|row| row["event"]["kind"] == "observability_gap.storage_disk_full"));
+
+        {
+            let mut locked = state.write().await;
+            locked.storage_pressure_config.hard_db_size_limit_bytes = Some(8 * 1024 * 1024);
+            locked.storage_pressure_state = StoragePressureState::Normal;
+        }
+        let recovered_req = Request::builder()
+            .method("POST")
+            .uri("/api/v1/ingest")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"events":[{"severity":"info","msg":"disk-full-recovered"}]}).to_string(),
+            ))
+            .expect("request");
+        let recovered_resp = app.clone().oneshot(recovered_req).await.expect("response");
+        assert_eq!(recovered_resp.status(), StatusCode::OK);
+    }
+
+    #[test]
+    fn storage_pressure_housekeeping_prunes_old_backups_under_critical_state() {
+        let db_path = next_test_db_path();
+        let analytics_state_path = db_path.with_extension("analytics.json");
+        let mut state = CoreState::new(
+            "global".to_string(),
+            10_000,
+            200,
+            524_288,
+            vec!["service.restart".to_string(), "service.status".to_string()],
+            AnalyticsState::new(1_440),
+            analytics_state_path,
+            db_path,
+            StoragePressureConfig {
+                high_watermark_percent: DEFAULT_STORAGE_HIGH_WATERMARK_PERCENT,
+                critical_watermark_percent: DEFAULT_STORAGE_CRITICAL_WATERMARK_PERCENT,
+                reserved_free_space_bytes: DEFAULT_STORAGE_RESERVED_FREE_SPACE_MB * 1024 * 1024,
+                hard_db_size_limit_bytes: None,
+            },
+        )
+        .expect("core state");
+        for _ in 0..6 {
+            state.last_backup_refresh_ms = 0;
+            refresh_storage_backup_state_if_due(&mut state);
+        }
+        let before = fs::read_dir(&state.storage_backup_dir)
+            .expect("backup dir")
+            .filter_map(Result::ok)
+            .filter(|entry| entry.file_name().to_string_lossy().ends_with(".sqlite3"))
+            .count();
+        assert!(
+            before >= 6,
+            "expected multiple sqlite backups, got {before}"
+        );
+
+        apply_storage_pressure_housekeeping_locked(
+            &mut state,
+            "trace-storage-prune",
+            StoragePressureState::Critical,
+        );
+
+        let after = fs::read_dir(&state.storage_backup_dir)
+            .expect("backup dir")
+            .filter_map(Result::ok)
+            .filter(|entry| entry.file_name().to_string_lossy().ends_with(".sqlite3"))
+            .count();
+        assert!(
+            after <= DEFAULT_STORAGE_PRESSURE_CRITICAL_BACKUP_RETENTION,
+            "expected critical retention to prune backups down to <= {}, got {}",
+            DEFAULT_STORAGE_PRESSURE_CRITICAL_BACKUP_RETENTION,
+            after
+        );
+        assert!(state.events.iter().any(|row| {
+            row.event["kind"] == "observability_gap.storage_archive_prune_activated"
+        }));
     }
 
     fn otlp_payload_with_count(count: usize, severity_text: &str) -> Value {
@@ -3959,6 +7120,7 @@ mod tests {
         assert!(bootstrap.contains("const EVENT_KIND = \"observability_gap.console_boot_failed\";"));
         assert!(bootstrap.contains("const CONSOLE_BASE_PATH = \"/console\";"));
         assert!(bootstrap.contains("const PANEL0_BUILD_ID = \"build-42\";"));
+        assert!(bootstrap.contains("void flushBacklog();"));
         assert!(!bootstrap.contains("__CONSOLE_BASE_PATH_JSON__"));
         assert!(!bootstrap.contains("__PANEL0_BUILD_ID_JSON__"));
         assert!(!bootstrap.contains("__BOOT_TIMEOUT_MS__"));
@@ -4027,6 +7189,7 @@ mod tests {
         assert!(html.contains("const BOOT_TIMEOUT_MS = 5000;"));
         assert!(html.contains("const EVENT_KIND = \"observability_gap.console_boot_failed\";"));
         assert!(html.contains("Ctrl+Shift+P"));
+        assert!(html.contains("void flushBacklog();"));
         assert!(html.contains("globalThis.location.replace(\"/panel0/\")"));
         assert!(!html.contains("__CONSOLE_BASE_PATH_JSON__"));
     }

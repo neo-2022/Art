@@ -1,0 +1,14 @@
+[stage11-vacuum] verify systemd units
+[stage11-vacuum] prepare WAL-enabled sqlite db
+[stage11-vacuum] run success path
+[stage11-vacuum] run safe-skip path
+[stage11-vacuum] run missing-db failure path
+{
+  "verify": "ok",
+  "success_path": "ok",
+  "safe_skip": "ok",
+  "missing_db_gap": "ok",
+  "timer_schedule": "Sun 03:30",
+  "unit": "art-vacuum.service",
+  "timer": "art-vacuum.timer"
+}

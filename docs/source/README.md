@@ -22,6 +22,64 @@
 6. `analytics_memory_v0_2.md`
    - Тип: спецификация operational analytics памяти.
    - Назначение: chart-ready данные + авто-инструкции по статистике инцидентов.
+7. `ingress_perimeter_protection_v0_2.md`
+   - Тип: спецификация защитного ingress/perimeter контура.
+   - Назначение: обязательный anti-DDoS / hostile-ingress baseline для internet-exposed и межсегментных deployment-профилей.
+8. `trust_boundary_hardening_v0_2.md`
+   - Тип: спецификация границы доверия.
+   - Назначение: запрет на использование недоверенного actor-context как security/audit истины.
+9. `browser_surface_hardening_v0_2.md`
+   - Тип: спецификация browser surface hardening.
+   - Назначение: обязательный CSP/header/frame/integrity baseline для Browser Level0, Panel0, Console и showcase-слоя.
+10. `regart_adversarial_integration_harness_v0_2.md`
+   - Тип: спецификация pinned external adversarial harness.
+   - Назначение: обязательный внешний hostile-полигон для `Art <-> REGART` и partner-exposed integration proof.
+11. `connected_system_visibility_v0_2.md`
+   - Тип: спецификация Connected System View.
+   - Назначение: обязательный контур видимости подключённых внешних систем, их статуса, типов данных и declared-vs-observed покрытия.
+12. `protective_safeguards_catalog_v0_2.md`
+   - Тип: каталог обязательных предохранителей.
+   - Назначение: единый список защитных механизмов проекта, чтобы предохранители не терялись между корнем, аудитом, remediation и stage-листами.
+13. `storage_pressure_protection_v0_2.md`
+   - Тип: защитная спецификация storage.
+   - Назначение: правила controlled degraded mode, watermarks и реакции на медленное переполнение SQLite/WAL/disk.
+14. `startup_config_safety_validator_v0_2.md`
+   - Тип: защитная спецификация fail-closed запуска.
+   - Назначение: обязательный валидатор unsafe-конфигурации до перехода системы в `ready` state.
+15. `queue_integrity_protection_v0_2.md`
+   - Тип: защитная спецификация очередей.
+   - Назначение: правила budget, anti-loop, duplicate protection и controlled degradation для backlog/spool/replay путей.
+16. `guard_self_observability_v0_2.md`
+   - Тип: защитная спецификация самонаблюдаемости guard-механизмов.
+   - Назначение: запрет на “молчаливую смерть” защитных контуров без self-test, heartbeat и blocker-механики.
+17. `../foundation/PROJECT_HISTORY_AND_CONCEPTS.md`
+   - Тип: исторический и концептуальный корневой документ.
+   - Назначение: содержит не только историю и differentiators, но и канонический `Threat Model Appendix` с честной зрелостью угроз, защит и missing-контуров.
+
+## Корень дерева решений и автосинхронизация
+
+Корневые документы проекта, в порядке приоритета:
+1. `FOUNDATION_CONSTITUTION_V0_2.md`
+2. `../foundation/PROJECT_HISTORY_AND_CONCEPTS.md`
+3. `Art_v1_spec_final.md`
+4. `REGART -  LangGraph  взаимодействие с Art описание.md`
+
+Правило:
+- изменение любого корневого документа требует синхронного обновления зависимых документов;
+- список зависимостей задаётся в `../../formats/root_decision_tree_dependencies.yaml`;
+- CI-gate `scripts/ci/check_root_decision_tree_sync.sh` блокирует merge при рассинхроне.
+- Ствол дерева решений: полный аудит -> дефектовочная контрольная ведомость -> дефектовочная лестница remediation -> `MASTER`.
+- `MASTER` завершает ствол и управляет кроной, но corrective-порядок получает от предыдущего слоя ствола.
+- Дефектовочная контрольная ведомость задаёт поштучный контроль устранения недостатков, а дефектовочная лестница задаёт порядок corrective-движения снизу вверх.
+- Для обзорной навигации и контроля документного дрейфа используется
+  `../portal/DOCUMENTATION_TREE.md` вместе с machine-readable снимком
+  `../../formats/documentation_tree_v0_2.yaml`.
+- Этот контур показывает:
+  - все документные связи от корня `README.md`;
+  - количество документов и суммарное число строк в дереве;
+  - число строк у конкретного документа;
+  - каталоговые узлы с суммой строк по содержимому;
+  - документы, которые влияют на корневой `README.md`.
 
 ## Чек-листы
 
@@ -34,6 +92,12 @@
 ## Политика изменений
 
 - Файлы в `docs/source/` считаются каноном и не редактируются "по месту", кроме случаев явной синхронизации с внешним источником.
+- Корневые документы дерева решений не имеют права меняться без синхронного обновления зависимого контура.
+- Канон обязан оставаться человекочитаемым: даже нормативный документ должен объяснять смысл решения, а не только фиксировать правило.
+- Сложные термины, сокращения и англоязычные слова в каноне должны иметь пояснение, перевод или явную ссылку на раскрывающий документ.
+- Threat Model для проекта не выносится в отдельный “висящий” канонический файл: его исторический и презентационный source-of-truth живёт внутри `../foundation/PROJECT_HISTORY_AND_CONCEPTS.md`.
+- Если меняется документ, который попадает в граф документации, его строковые счётчики и связи в
+  `DOCUMENTATION_TREE.md` обязаны быть пересчитаны автоматически и пройти соответствующий CI-gate.
 - Нормализация структуры и навигации делается в:
   - `docs/README.md`
   - `docs/ARCHITECTURE.md`

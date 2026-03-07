@@ -1,0 +1,33 @@
+# stage11 storage-integration
+2026-03-07T23:16:42+03:00
+{
+  "writers": 8,
+  "readers": 4,
+  "ops_target": 10000,
+  "elapsed_seconds": 35.402,
+  "accepted": 10000,
+  "committed": 10000,
+  "db_count": 10000,
+  "write_errors": [],
+  "read_errors": [],
+  "database_locked_fatal": false
+}
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.136s
+
+OK
+[stage11-vacuum] verify systemd units
+[stage11-vacuum] prepare WAL-enabled sqlite db
+[stage11-vacuum] run success path
+[stage11-vacuum] run safe-skip path
+[stage11-vacuum] run missing-db failure path
+{
+  "verify": "ok",
+  "success_path": "ok",
+  "safe_skip": "ok",
+  "missing_db_gap": "ok",
+  "timer_schedule": "Sun 03:30",
+  "unit": "art-vacuum.service",
+  "timer": "art-vacuum.timer"
+}

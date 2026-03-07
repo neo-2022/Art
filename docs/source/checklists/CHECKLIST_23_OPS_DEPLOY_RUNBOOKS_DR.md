@@ -16,39 +16,40 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
 - CHECKLIST 22 — E2E/Stress/Chaos/Soak/Perf
 - CHECKLIST 14 — Stream/Snapshot v1 (TLS для API)
 - CHECKLIST 15 — Actions/Audit/RBAC/PII (TLS для Actions/Audit)
+- CHECKLIST 18 — Art Agent Receivers v1
 
 ## Шаги (строго линейно)
 
-- [x] **1. Сделать:** k8s TLS: cert-manager обязателен и описан как единственный способ выдачи/ротации сертификатов в k8s.
-  - [x] Используется cert-manager (ровно этот компонент)
-  - [x] Issuer фиксирован: `ClusterIssuer`
-  - [x] Secret с TLS ключом/сертом называется `art-tls`
-  - [x] Ingress (или Gateway) использует secret `art-tls`
-  - [x] Описана ротация cert-manager без простоя (сертификат обновляется автоматически)
-  - [x] **Проверка (pass/fail):** `docs/ops/deploy_k8s.md` содержит раздел `cert-manager` и включает:
-    - [x] манифесты/фрагменты для ClusterIssuer и Certificate с именем secret `art-tls`
-    - [x] описание ротации.
+- [ ] **1. Сделать:** k8s TLS: cert-manager обязателен и описан как единственный способ выдачи/ротации сертификатов в k8s.
+  - [ ] Используется cert-manager (ровно этот компонент)
+  - [ ] Issuer фиксирован: `ClusterIssuer`
+  - [ ] Secret с TLS ключом/сертом называется `art-tls`
+  - [ ] Ingress (или Gateway) использует secret `art-tls`
+  - [ ] Описана ротация cert-manager без простоя (сертификат обновляется автоматически)
+  - [ ] **Проверка (pass/fail):** `docs/ops/deploy_k8s.md` содержит раздел `cert-manager` и включает:
+    - [ ] манифесты/фрагменты для ClusterIssuer и Certificate с именем secret `art-tls`
+    - [ ] описание ротации.
 
-- [x] **2. Сделать:** systemd TLS rotation: reload через SIGHUP без простоя (фиксированная процедура).
-  - [x] Core запущен как systemd service `art-core.service`
-  - [x] Reload выполняется сигналом `SIGHUP`
-  - [x] Reload не прерывает активные SSE соединения (stream продолжает работать)
-  - [x] Smoke проверка фиксирована:
-    - [x] держим SSE `/api/v1/stream` подключённым
-    - [x] выполняем TLS rotation (замена файлов cert/key)
-    - [x] отправляем SIGHUP
-    - [x] SSE соединение остаётся активным
-  - [x] **Проверка (pass/fail):** `docs/ops/tls_rotation.md` описывает процедуру + smoke сценарий и критерии pass/fail.
+- [ ] **2. Сделать:** systemd TLS rotation: reload через SIGHUP без простоя (фиксированная процедура).
+  - [ ] Core запущен как systemd service `art-core.service`
+  - [ ] Reload выполняется сигналом `SIGHUP`
+  - [ ] Reload не прерывает активные SSE соединения (stream продолжает работать)
+  - [ ] Smoke проверка фиксирована:
+    - [ ] держим SSE `/api/v1/stream` подключённым
+    - [ ] выполняем TLS rotation (замена файлов cert/key)
+    - [ ] отправляем SIGHUP
+    - [ ] SSE соединение остаётся активным
+  - [ ] **Проверка (pass/fail):** `docs/ops/tls_rotation.md` описывает процедуру + smoke сценарий и критерии pass/fail.
 
-- [x] **3. Сделать:** DB migration runbook: обновление Core с миграцией SQLite + integrity check (фиксированная процедура).
-  - [x] Процедура обновления фиксирована:
-    - [x] stop Core
-    - [x] backup перед миграцией (ссылка на шаг 4)
-    - [x] применить миграции (фиксированная команда/скрипт)
-    - [x] выполнить integrity check (фиксированная команда/скрипт)
-    - [x] start Core
-  - [x] При провале integrity check выполняется rollback на backup (фиксированный порядок)
-  - [x] **Проверка (pass/fail):** существует `docs/ops/db_migration_runbook.md`, содержит все шаги выше в указанном порядке и содержит точные команды.
+- [ ] **3. Сделать:** DB migration runbook: обновление Core с миграцией SQLite + integrity check (фиксированная процедура).
+  - [ ] Процедура обновления фиксирована:
+    - [ ] stop Core
+    - [ ] backup перед миграцией (ссылка на шаг 4)
+    - [ ] применить миграции (фиксированная команда/скрипт)
+    - [ ] выполнить integrity check (фиксированная команда/скрипт)
+    - [ ] start Core
+  - [ ] При провале integrity check выполняется rollback на backup (фиксированный порядок)
+  - [ ] **Проверка (pass/fail):** существует `docs/ops/db_migration_runbook.md`, содержит все шаги выше в указанном порядке и содержит точные команды.
 
 - [x] **4. Сделать:** WAL-aware backup: фиксированный способ бэкапа SQLite.
   - [x] Единственный разрешённый способ backup: `sqlite3 .backup`
@@ -100,17 +101,34 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
     - [x] подтверждает отказ старта Core
     - [x] после исправления TLS и перезапуска Core ожидает и подтверждает появление `observability_gap.tls_config_invalid` в `/api/v1/snapshot` (startup backlog опубликован)
 
+- [ ] **7. Сделать:** Зафиксировать multi-site deployment и transport runbook для Art Agent.
+  - [ ] существует `docs/ops/agent_multisite_deploy.md`
+  - [ ] документ содержит сценарии:
+    - [ ] `single-site`
+    - [ ] `multi-site / WAN`
+    - [ ] `segmented network`
+    - [ ] `air-gapped relay/export`
+  - [ ] для каждого сценария описаны:
+    - [ ] способ установки агента
+    - [ ] путь доставки в Core/relay
+    - [ ] локальный spool/outbox boundary
+    - [ ] retry/replay поведение
+    - [ ] команды проверки health и backlog
+    - [ ] rollback / isolate процедура
+  - [ ] **Проверка (pass/fail):** документ существует и содержит все сценарии и обязательные подпункты.
+
 ## Документация (RU)
-- [x] docs/ops/deploy_systemd.md
-- [x] docs/ops/deploy_k8s.md
-- [x] docs/ops/tls_rotation.md
-- [x] docs/ops/db_migration_runbook.md
-- [x] docs/ops/backup_restore.md
-- [x] docs/ops/dr_drill.md
-- [x] docs/runbooks/tls_config_invalid.md
+- [ ] docs/ops/deploy_systemd.md
+- [ ] docs/ops/deploy_k8s.md
+- [ ] docs/ops/tls_rotation.md
+- [ ] docs/ops/db_migration_runbook.md
+- [ ] docs/ops/backup_restore.md
+- [ ] docs/ops/dr_drill.md
+- [ ] docs/ops/agent_multisite_deploy.md
+- [ ] docs/runbooks/tls_config_invalid.md
 
 ## Тестирование
-- [x] integration: TLS reload smoke (SSE держится, шаг 2)
+- [ ] integration: TLS reload smoke (SSE держится, шаг 2)
 - [x] integration: DR drill smoke (restore + integrity + ingest→snapshot, шаг 5)
 - [x] induced: tls_config_invalid (fail closed + startup backlog публикация, шаг 6)
 - [x] runtime smoke: `scripts/tests/ops_stage23_smoke.sh` (backup/restore + ingest→snapshot + SIGHUP stream survival)
@@ -131,13 +149,14 @@ Ops/Deploy/Runbooks/DR (systemd + k8s). Не включает разработк
   - [x] exit 1 при нарушении любой проверки
 
 ## DoD
-- [x] k8s deploy описан и использует cert-manager как единственный TLS механизм.
-- [x] systemd TLS rotation через SIGHUP без простоя описан и проверен smoke тестом.
-- [x] DB migration runbook описан и содержит integrity check + rollback.
-- [x] WAL-aware backup зафиксирован как `sqlite3 .backup` при остановленном Core.
-- [x] DR drill выполнен и зафиксирован отчётом с pass/fail.
+- [ ] k8s deploy описан и использует cert-manager как единственный TLS механизм.
+- [ ] systemd TLS rotation через SIGHUP без простоя описан и проверен smoke тестом.
+- [ ] DB migration runbook описан и содержит integrity check + rollback.
+- [ ] WAL-aware backup зафиксирован как `sqlite3 .backup` при остановленном Core.
+- [ ] DR drill выполнен и зафиксирован отчётом с pass/fail.
 - [x] `observability_gap.tls_config_invalid` реализован, зарегистрирован и покрыт induced test (включая публикацию startup backlog в snapshot/stream).
-- [x] CI gate Stage 23 зелёный.
+- [ ] Multi-site deployment/transport runbook Art Agent зафиксирован для single-site, WAN, segmented и air-gapped контуров.
+- [ ] CI gate Stage 23 зелёный.
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)
-- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.
+- [ ] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

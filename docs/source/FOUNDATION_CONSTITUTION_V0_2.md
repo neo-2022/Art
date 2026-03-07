@@ -142,6 +142,272 @@
 - фикс обязателен;
 - повторная проверка обязательна.
 
+## 14.1. Production-Adversarial Validation Law (обязательный)
+- Art проектируется как система, которая должна выживать в агрессивной production-среде, где конфигурация, сеть, зависимости, входные данные, операторы и интеграции могут ломать систему одновременно.
+- Для любого критичного изменения запрещён only-happy-path подход.
+- Изменение считается завершённым только после доказанного эксплуатационного эффекта, подтверждённого разносторонним дебаггингом.
+- Разносторонний дебаггинг обязателен по минимуму в четырёх измерениях:
+  - основная гипотеза;
+  - альтернативные причины;
+  - negative-path;
+  - regression containment.
+- Формальный docs/file/grep gate не считается достаточным доказательством production-ready поведения.
+- Для runtime/security/release/platform/agent/UI-law контуров обязателен минимум один adversarial или hostile-environment сценарий.
+- Источники детализации:
+  - `docs/testing/production_adversarial_validation_law.md`
+  - `docs/testing/test_system_audit_v0_2.md`
+
+## 14.2. Multi-layer Root-Cause Descent Law (обязательный)
+- Art рассматривается как многоуровневая система; дефект на верхнем уровне может быть только симптомом более глубокого основания.
+- Если недостаток найден на любом уровне (`UI`, `workflow`, `test`, `CI`, `contract`, `runtime`, `transport`, `storage`, `agent`, `core`, `policy`), перед исправлением обязателен спуск на уровень ниже.
+- На нижнем уровне выполняется полный аудит связанного основания; если там найден следующий дефект, спуск продолжается ещё ниже.
+- Исправление считается завершённым только после устранения корневой причины и повторной проверки затронутых верхних уровней.
+- Запрещено:
+  - чинить только симптом;
+  - закрывать пункт по локальному улучшению на верхнем уровне;
+  - не проверять, из какого нижнего контура дефект питается;
+  - завершать remediation без доказательства, что нижний слой стабилен.
+- Источники детализации:
+  - `docs/testing/production_adversarial_validation_law.md`
+  - `docs/testing/full_line_by_line_audit_program_v0_2.md`
+
+## 14.3. Root Decision Tree And Dependent Sync Law (обязательный)
+- Корень дерева решений проекта задаётся только следующими документами, в порядке приоритета:
+  1. `docs/source/FOUNDATION_CONSTITUTION_V0_2.md`
+  2. `docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md`
+  3. `docs/source/Art_v1_spec_final.md`
+  4. `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
+- Ствол дерева решений состоит из трёх обязательных несущих слоёв:
+  1. полный аудит;
+  2. дефектовочная контрольная ведомость;
+  3. дефектовочная лестница remediation;
+  4. `MASTER`
+- Крона дерева решений состоит из всех stage checklist и всех производных артефактов проекта: код, тесты, contracts, runbooks, ops/security/privacy/docs слои.
+- Дефектовочная контрольная ведомость располагается в стволе до `MASTER` и задаёт поштучный defect-to-stage контроль исполнения.
+- Дефектовочная лестница remediation располагается в стволе после контрольной ведомости и задаёт corrective-порядок `MASTER`, потому что именно она переводит audit findings в обязательную лестницу исправления.
+- После завершения полного аудита remediation запрещён без defect-to-stage контрольной ведомости: одной лестницы и одного `MASTER` недостаточно для гарантии, что каждый найденный дефект будет реально отработан.
+- `MASTER` завершает ствол и является последней управляющей точкой перед кроной: он исполняет corrective-порядок, который уже материализован предыдущим слоем ствола.
+- Эти документы определяют законы, смысл, базовую предметную модель и интеграционную рамку Art.
+- При конфликте источников приоритет имеет более высокий уровень корня; для v0.2 закон и порядок remediation определяются этой конституцией и `docs/testing/defect_remediation_ladder_v0_2.md`.
+- Изменение любого документа из корня запрещено без синхронного обновления зависимых документов в том же изменении.
+- Machine-readable карта зависимостей корня задаётся в `formats/root_decision_tree_dependencies.yaml`.
+- CI обязан блокировать merge, если root-документ изменён без обновления зависимых файлов согласно этой карте.
+- Автоматизация не имеет права подменять смысловую синхронизацию косметическим touch-изменением: зависимый документ должен быть реально приведён в актуальное состояние.
+- Источники детализации:
+  - `docs/testing/defect_remediation_ladder_v0_2.md`
+  - `formats/root_decision_tree_dependencies.yaml`
+  - `scripts/ci/check_root_decision_tree_sync.sh`
+
+## 14.3A. Human-Readable Documentation Law (обязательный)
+- Документация проекта не имеет права писаться только для автора, узкого эксперта или носителя локального контекста.
+- Почти вся документация, кроме узкоспециализированных reference-схем и машинно-генерируемых артефактов, обязана читаться человеком без глубокого входного знания проекта.
+- Каждый важный документ обязан отвечать простым языком минимум на четыре вопроса:
+  - что это;
+  - зачем это нужно;
+  - как это работает;
+  - чем это ограничено или чем это опасно.
+- Сложные термины, англоязычные слова, сокращения, внутренние обозначения и специальные режимы обязаны:
+  - либо объясняться в тексте сразу;
+  - либо иметь русский перевод или пояснение в скобках;
+  - либо вести на glossary/reference-документ, где смысл раскрыт явно.
+- Документ считается дефектным по качеству, если:
+  - он требует "догадаться", что имел в виду автор;
+  - он объясняет только happy-path и не объясняет ограничения;
+  - он использует внутренний жаргон без расшифровки;
+  - он понятен только человеку, который уже знает код.
+- Документирование обязано быть достаточно подробным для сопровождения:
+  - чтобы новый инженер мог восстановить ход мысли;
+  - чтобы оператор понял, что именно сломалось и что делать;
+  - чтобы reviewer мог увидеть границы решения;
+  - чтобы buyer, аудитор или не specialist не потерялся в структуре.
+- Подробность не означает воду: запрещено раздувать текст без смысловой нагрузки. Разрешается и поощряется подробность, если она снижает риск неправильного понимания, эксплуатации или изменения системы.
+- Если документ затрагивает поведение системы, он обязан объяснять не только "что мы сделали", но и "почему именно так" и "что произойдёт, если это нарушить".
+- При изменении проекта человекочитаемость документации должна обновляться вместе с технической частью; запрещено считать документ "актуальным", если смысл решения изменился, а объяснение осталось старым.
+- Источники детализации:
+  - `docs/portal/DOC_STYLE_GUIDE.md`
+  - `docs/foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md`
+  - `docs/README.md`
+
+## 14.4. Ingress Abuse And DDoS Defense Law (обязательный)
+- App-level backpressure (`413/429/503 + retry_after_ms`) обязателен, но он не считается полноценной защитой от DDoS, abusive burst и connection exhaustion.
+- Любой internet-exposed или partner-exposed deployment обязан иметь front-door / edge / ingress shield слой до `art-core`.
+- Обязательные свойства shield-слоя:
+  - per-IP / per-source / per-tenant limiting;
+  - connection limit;
+  - burst control;
+  - early reject мусорного и заведомо враждебного трафика;
+  - observability и runbooks при атаке и деградации shield.
+- Отсутствие ingress shield в internet-exposed профиле считается release blocker.
+- Обязательные gap-события:
+  - `observability_gap.ddos_suspected`
+  - `observability_gap.ingress_shield_degraded`
+- Источники детализации:
+  - `docs/source/ingress_perimeter_protection_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
+## 14.5. Trust Boundary And Canonical Actor Context Law (обязательный)
+- Система не имеет права доверять привилегированному actor-context, если он пришёл из недоверенного клиента, браузера, proxy-цепочки или partner ingress без доказанного trusted source.
+- Поля `actor_role`, `mcp_mode`, `access_scope`, `tenant_id`, `approval_actor` и `trusted_client_ip` считаются security-critical и не могут определяться прямыми входящими заголовками пользователя.
+- Заголовки вида `x-actor-role`, `x-mcp-mode`, `x-access-scope` и `x-forwarded-for` допускаются только после trusted edge / auth / relay validation.
+- При недоказанной trust boundary система обязана работать по fail-closed логике:
+  - не повышать привилегии;
+  - не принимать недоверенный actor context как audit truth;
+  - отклонять security-sensitive action path;
+  - генерировать `observability_gap.trust_boundary_violation`.
+- Любой internet-exposed или partner-exposed профиль без materialized trust-boundary baseline считается release blocker.
+- Источники детализации:
+  - `docs/source/trust_boundary_hardening_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
+## 14.6. Browser Surface Hardening Law (обязательный)
+- Browser Level0, Panel0, Console и showcase/demo слой обязаны иметь единый browser security baseline.
+- Showcase/demo режим не имеет права ослаблять browser hardening ради презентации, motion/audio или визуального эффекта.
+- Обязательный baseline включает:
+  - CSP;
+  - frame / embedding restrictions;
+  - browser security headers;
+  - asset integrity / provenance control;
+  - safe fallback presentation при деградации policy.
+- Отсутствие browser surface hardening baseline для internet-exposed профиля считается release blocker.
+- Любая деградация browser security policy фиксируется как `observability_gap.browser_surface_policy_degraded`.
+- Источники детализации:
+  - `docs/source/browser_surface_hardening_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
+## 14.7. Pinned External Adversarial Harness Law (обязательный)
+- Внешний hostile/adversarial harness разрешён только как дополнительный слой доказательства, а не как замена базовых тестов самого продукта.
+- Для интеграций класса `Art <-> внешняя система` запрещено доказывать readiness через floating `main`, непомеченный sibling checkout или архив без commit provenance.
+- Любой такой harness обязан иметь pinned source baseline:
+  - `pinned git commit`;
+  - или локальный snapshot с явно указанным commit/tag.
+- Для `REGART` и аналогичных partner-exposed интеграций обязательны suite-контуры:
+  - `art-regart-smoke`;
+  - `art-regart-hostile-bridge`;
+  - `art-regart-replay`;
+  - `art-regart-long-chain`;
+  - `art-regart-actions-audit`.
+- Отсутствие pinned external harness proof для stage 05/06/20/24/38 считается integration-gap и блокирует честное закрытие этих этапов.
+- Источники детализации:
+  - `docs/source/regart_adversarial_integration_harness_v0_2.md`
+  - `docs/testing/defect_remediation_control_matrix_v0_2.md`
+
+## 14.8. Connected System Visibility Law (обязательный)
+- Art не имеет права считать внешнюю систему подключённой, если оператор не видит саму систему как отдельную сущность со статусом, покрытием и evidence.
+- Успешное подключение не доказывается по факту наличия pack, конфига или установленного bridge. Нужны одновременно:
+  - declared coverage;
+  - observed signals в окне свежести;
+  - понятная оператору карточка системы;
+  - активные gap-события этой системы;
+  - evidence, на котором основан статус.
+- Для каждой подключённой внешней системы обязателен `Connected System View`, в котором минимум видны:
+  - `system_id`;
+  - `display_name`;
+  - `integration_kind`;
+  - `connection_status`;
+  - `declared_data_kinds`;
+  - `observed_data_kinds`;
+  - `receiver_kinds`;
+  - `telemetry_endpoints`;
+  - `active_gap_events`;
+  - `evidence_refs`.
+- Pack и receiver контуры обязаны materialize declared-vs-observed truth:
+  - pack manifest обязан описывать `service_inventory` и `connected_system_projection`;
+  - receiver/source coverage обязан показывать, какие типы данных реально производятся и как они проецируются в Connected System View.
+- Console обязан показывать не только факт подключения, но и:
+  - какие типы данных реально приходят;
+  - какие только заявлены;
+  - какие gap-события делают систему `degraded` или `declared_only`.
+- Отсутствие Connected System View для partner-exposed, pack-based или agent-based интеграции считается release blocker.
+- Обязательные gap-события:
+  - `observability_gap.connected_system_not_visible`
+  - `observability_gap.connected_system_coverage_drift`
+- Источники детализации:
+  - `docs/source/connected_system_visibility_v0_2.md`
+  - `formats/connected_system_visibility_v0_2.yaml`
+  - `docs/governance/observability_gap_registry.md`
+
+## 14.9. Storage Pressure Protection Law (обязательный)
+- Art не имеет права ждать фактического `disk full`, чтобы начать защищать SQLite/WAL/storage path.
+- Для storage-контуров обязательны:
+  - `high watermark`;
+  - `critical watermark`;
+  - резерв свободного места (`reserve free space`);
+  - controlled degraded mode до `SQLITE_FULL`.
+- При достижении pressure-порогов система обязана:
+  - генерировать `observability_gap.storage_pressure_high`;
+  - снижать write pressure;
+  - включать controlled housekeeping/archive/prune policy;
+  - переводить ingest/write-heavy paths в `503 + retry_after_ms`, если pressure достигает критического уровня.
+- Отсутствие materialized storage-pressure contour считается production blocker для storage/release/Linux stages.
+- Источники детализации:
+  - `docs/source/storage_pressure_protection_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
+## 14.10. Startup Configuration Fail-Closed Law (обязательный)
+- Система не имеет права стартовать в заведомо небезопасной конфигурации и рассчитывать на то, что проблема “всплывёт позже”.
+- Если startup validator не может подтвердить безопасность конфигурации, компонент обязан:
+  - отказаться от старта или `ready` state;
+  - зафиксировать причину;
+  - поднять `observability_gap.unsafe_startup_config_refused`.
+- К unsafe-конфигурациям относятся минимум:
+  - internet-facing `plain HTTP`, если профиль требует TLS;
+  - пустой или некорректный storage/spool/backup path;
+  - опасно завышенные queue/batch/timeout лимиты;
+  - отключённый audit/trust-boundary/release blocker bypass в production-profile.
+- Отсутствие fail-closed startup validator считается production blocker для ingest/agent/release/Linux stages.
+- Источники детализации:
+  - `docs/source/startup_config_safety_validator_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
+## 14.11. Queue Integrity And Anti-Loop Law (обязательный)
+- Ни одна очередь, backlog, spool или replay path не имеет права бесконтрольно расти, дублироваться или зацикливаться.
+- Для queue-контуров обязательны:
+  - budget/quota;
+  - duplicate detector;
+  - monotonic seq guard;
+  - anti-loop detector;
+  - quarantine/dead-letter path для неисправимого потока.
+- Любое нарушение queue integrity обязано materialize как:
+  - `observability_gap.queue_integrity_violation`
+  - с evidence и runbook.
+- Запрещено считать duplicate flood, runaway backlog или replay loop “обычным шумом”.
+- Источники детализации:
+  - `docs/source/queue_integrity_protection_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
+## 14.12. Guard Self-Observability Law (обязательный)
+- Предохранитель, который не умеет сигнализировать о собственной деградации, не считается полноценной защитой.
+- Каждый критичный guard обязан иметь:
+  - self-test или self-check;
+  - heartbeat/health signal;
+  - gap/event при отказе;
+  - runbook восстановления.
+- Отказ guard-а обязан materialize как:
+  - `observability_gap.guard_self_test_failed`
+- Release/stage closure запрещены, если критичный guard сам неисправен и это не зафиксировано как blocker.
+- Источники детализации:
+  - `docs/source/guard_self_observability_v0_2.md`
+  - `docs/governance/observability_gap_registry.md`
+
+## 14.13. Expanded Protective Safeguards Register (обязательный)
+- Базовый набор предохранителей проекта не заканчивается ingress, storage, startup, queue и self-observability.
+- Следующие защитные контуры являются обязательной частью канона и не могут считаться "второстепенными улучшениями":
+  - `docs/source/action_execution_safety_guard_v0_2.md`
+  - `docs/source/agent_identity_enrollment_trust_v0_2.md`
+  - `docs/source/release_truth_enforcement_v0_2.md`
+  - `docs/source/authenticity_baseline_v0_2.md`
+  - `docs/source/regulatory_claims_drift_control_v0_2.md`
+  - `docs/source/monolith_budget_guard_v0_2.md`
+  - `docs/source/test_strength_guard_v0_2.md`
+  - `docs/source/documentation_drift_control_v0_2.md`
+- Смысл этого регистра:
+  - проект защищается не только от одной "атаки", а от классов деградации, которые делают систему опасной, дорогой в сопровождении или лживой по claims;
+  - каждый новый контур обязан быть связан с `observability_gap`, runbook, defect-строкой и stage-binding;
+  - предохранитель не считается существующим, если он не встроен в ствол и не проверяется CI/тестами.
+- Каталог всех таких контуров хранится в:
+  - `docs/source/protective_safeguards_catalog_v0_2.md`
+  - `formats/protective_safeguards_catalog_v0_2.yaml`
+
 ## 15. Product Narrative (Console)
 ### 15.1 Категория
 - Art Console является поверхностью Incident OS, а не набором независимых дашбордов.
@@ -436,6 +702,20 @@
 - При пользовательской загрузке система обязана явно предупреждать о необходимости прав на контент.
 - Каскадные системные эффекты должны быть мелодическими и нейтральными для длительной операционной работы.
 
+### 23.11 Authenticity and Copyright-Safe Law
+- Проект обязан быть аутентичным: в baseline запрещено включать сущности, которые могут привести к претензиям правообладателей.
+- По умолчанию запрещены сторонние аудиофайлы, шрифты, иконки, иллюстрации, логотипы, screenshots, datasets, demo-media и text fragments с неочевидным происхождением.
+- Разрешены только:
+  - project-owned материалы;
+  - процедурно/программно сгенерированные материалы;
+  - синтетические fixtures;
+  - internal evidence artifacts;
+  - явно разрешённые элементы из `formats/authenticity_assets_allowlist.yaml`.
+- Runtime по умолчанию не имеет права зависеть от внешних CDN со шрифтами, иконками, audio/media assets или brand payload.
+- User-supplied content допускается только как внешний пользовательский контент и не становится частью baseline проекта.
+- Любой tracked media/font/icon/binary asset вне allowlist считается нарушением конституции.
+- Каноническая политика и CI-enforcement фиксируются в `docs/governance/authenticity_copyright_policy.md` и `scripts/ci/check_authenticity_assets.sh`.
+
 ## 24. Settings Information Architecture Law
 - Структура настроек Console должна быть единой иерархией с уровнями scope: `Global -> Organization -> Project -> Environment -> User`.
 - Любая настройка обязана иметь `id`, `scope`, `default`, `owner_component`, `verify`.
@@ -501,6 +781,7 @@
 
 #### Anti-pattern (запрещено как стиль работы)
 - Code-and-Fix / Big-bang
+- Hardcoding / жёстко вшитые значения, адреса, строки, правила, credentials-like placeholders и поведение вне канонических конфигов, контрактов и словарей
 - RAD в трактовке "ускорить за счёт упрощений" (запрещено)
 - Любой AI-first без evidence
 

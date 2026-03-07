@@ -1,6 +1,7 @@
 # Source of truth: docs/security/certified_dependency_allowlist.txt
 # Generated from cargo metadata for workspace lock-state.
 adler2
+ahash
 aho-corasick
 anyhow
 arc-swap
@@ -33,6 +34,8 @@ crypto-common
 digest
 dunce
 equivalent
+fallible-iterator
+fallible-streaming-iterator
 errno
 fastrand
 find-msvc-tools
@@ -50,6 +53,7 @@ generic-array
 getrandom
 h2
 hashbrown
+hashlink
 http
 http-body
 http-body-util
@@ -61,6 +65,7 @@ indexmap
 itoa
 jobserver
 lazy_static
+libsqlite3-sys
 libc
 linux-raw-sys
 log
@@ -74,6 +79,7 @@ nu-ansi-term
 num-traits
 once_cell
 percent-encoding
+pkg-config
 pin-project-lite
 pin-utils
 ppv-lite86
@@ -90,6 +96,7 @@ regex-automata
 regex-syntax
 ring
 rustix
+rusqlite
 rustls
 rustls-pemfile
 rustls-pki-types
@@ -141,6 +148,7 @@ unicode-ident
 untrusted
 valuable
 version_check
+vcpkg
 wait-timeout
 wasi
 wasip2

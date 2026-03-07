@@ -1,9 +1,13 @@
 name: required-gates
 
 on:
-  pull_request:
+  push:
     branches: ["main"]
   workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -15,11 +19,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 0
       - name: Run SDLC gates
         run: |
           set -euo pipefail
           bash scripts/ci/check_governance_stage01.sh
           bash scripts/ci/check_privacy_stage02.sh
+          bash scripts/ci/check_monolith_budget_guard.sh
           bash scripts/ci/check_stage05_wrapper.sh
           bash scripts/ci/check_stage06_wrapper.sh
           bash scripts/ci/check_master_checklist_binding.sh

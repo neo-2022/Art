@@ -1,0 +1,133 @@
+# Stage11 Step2 Backup Policy Evidence
+date_utc=2026-03-07T17:01:56Z
+
+## cargo test -p art-core storage_backup_refresh_obeys_fixed_interval_policy -- --nocapture
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running unittests src/main.rs (target/debug/deps/art_core-a7679bcddd987b4c)
+
+running 1 test
+test tests::storage_backup_refresh_obeys_fixed_interval_policy ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 76 filtered out; finished in 0.06s
+
+
+## cargo test -p art-core --quiet
+
+running 77 tests
+.i.........................iiii...........i..................................
+test result: ok. 71 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 31.75s
+
+
+## python3 -m unittest scripts.tests.test_storage_stage11 -v
+test_chaos_smoke_scenarios (scripts.tests.test_storage_stage11.StorageStage11Tests.test_chaos_smoke_scenarios) ... ok
+test_concurrency_writers_readers_10000_ops (scripts.tests.test_storage_stage11.StorageStage11Tests.test_concurrency_writers_readers_10000_ops) ... ok
+test_corruption_recovery_restore_fail_goes_read_only (scripts.tests.test_storage_stage11.StorageStage11Tests.test_corruption_recovery_restore_fail_goes_read_only) ... ok
+test_corruption_recovery_restore_success (scripts.tests.test_storage_stage11.StorageStage11Tests.test_corruption_recovery_restore_success) ... ok
+test_vacuum_safe_runs_when_ingest_inactive (scripts.tests.test_storage_stage11.StorageStage11Tests.test_vacuum_safe_runs_when_ingest_inactive) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 25.757s
+
+OK
+
+## python3 -m unittest scripts.tests.test_stage11_systemd_vacuum -v
+test_systemd_unit_and_timer_verify (scripts.tests.test_stage11_systemd_vacuum.Stage11SystemdVacuumTests.test_systemd_unit_and_timer_verify) ... ok
+test_vacuum_service_emits_gap_event_on_missing_db (scripts.tests.test_stage11_systemd_vacuum.Stage11SystemdVacuumTests.test_vacuum_service_emits_gap_event_on_missing_db) ... ok
+test_vacuum_service_skips_when_ingest_active (scripts.tests.test_stage11_systemd_vacuum.Stage11SystemdVacuumTests.test_vacuum_service_skips_when_ingest_active) ... ok
+test_vacuum_service_smoke_success (scripts.tests.test_stage11_systemd_vacuum.Stage11SystemdVacuumTests.test_vacuum_service_smoke_success) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.112s
+
+OK
+
+## bash scripts/ci/check_storage_stage11_docs.sh
+stage11 docs gate: OK
+
+## bash scripts/ci/check_documentation_tree_sync.sh
+documentation tree sync check: OK
+
+## bash scripts/ci/check_stage28_docs.sh
+stage28 lens gate: OK
+docs portal quality gate: OK
+root decision tree sync gate: OK (root docs unchanged in range)
+documentation tree sync check: OK
+test_collection_drift_changes_aggregated_line_count (scripts.tests.test_documentation_tree.DocumentationTreeCollectionTests.test_collection_drift_changes_aggregated_line_count) ... ok
+test_collection_without_index_is_detected (scripts.tests.test_documentation_tree.DocumentationTreeCollectionTests.test_collection_without_index_is_detected) ... ok
+test_existing_collection_nodes_have_correct_counts (scripts.tests.test_documentation_tree.DocumentationTreeCollectionTests.test_existing_collection_nodes_have_correct_counts) ... ok
+test_generation_is_deterministic (scripts.tests.test_documentation_tree.DocumentationTreeCollectionTests.test_generation_is_deterministic) ... ok
+test_missing_file_link_is_detected (scripts.tests.test_documentation_tree.DocumentationTreeCollectionTests.test_missing_file_link_is_detected) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.133s
+
+OK
+defect remediation control matrix gate: OK
+protective contours gate: OK
+regart adversarial harness gate: OK
+test_checklists_carry_connected_system_requirements (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_checklists_carry_connected_system_requirements) ... ok
+test_manifest_signature_matches_current_manifest (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_manifest_signature_matches_current_manifest) ... ok
+test_regart_manifest_carries_connected_system_projection (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_regart_manifest_carries_connected_system_projection) ... ok
+test_runbook_and_registry_are_aligned (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_runbook_and_registry_are_aligned) ... ok
+test_source_coverage_docs_explain_all_regart_systems (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_source_coverage_docs_explain_all_regart_systems) ... ok
+test_visibility_yaml_has_required_sections (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_visibility_yaml_has_required_sections) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.006s
+
+OK
+connected system visibility gate: OK
+v0.2 checklists quality: OK
+dna assurance program gate: OK
+v0.2 risk register gate: OK
+stage28 docs gate: OK
+
+## bash scripts/ci/check_docs_master_traceability.sh
+docs master traceability gate: OK
+root decision tree sync gate: OK (root docs unchanged in range)
+documentation tree sync check: OK
+defect remediation control matrix gate: OK
+protective contours gate: OK
+regart adversarial harness gate: OK
+test_checklists_carry_connected_system_requirements (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_checklists_carry_connected_system_requirements) ... ok
+test_manifest_signature_matches_current_manifest (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_manifest_signature_matches_current_manifest) ... ok
+test_regart_manifest_carries_connected_system_projection (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_regart_manifest_carries_connected_system_projection) ... ok
+test_runbook_and_registry_are_aligned (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_runbook_and_registry_are_aligned) ... ok
+test_source_coverage_docs_explain_all_regart_systems (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_source_coverage_docs_explain_all_regart_systems) ... ok
+test_visibility_yaml_has_required_sections (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_visibility_yaml_has_required_sections) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.007s
+
+OK
+connected system visibility gate: OK
+
+## bash scripts/ci/check_checklist_status_integrity.sh
+checklist status integrity gate: OK
+
+## bash scripts/ci/check_master_checklist_binding.sh
+master checklist binding gate: OK
+
+## bash scripts/ci/check_stage_ladder_enforcement.sh
+master checklist binding gate: OK
+checklist status integrity gate: OK
+docs master traceability gate: OK
+root decision tree sync gate: OK (root docs unchanged in range)
+documentation tree sync check: OK
+defect remediation control matrix gate: OK
+protective contours gate: OK
+regart adversarial harness gate: OK
+test_checklists_carry_connected_system_requirements (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_checklists_carry_connected_system_requirements) ... ok
+test_manifest_signature_matches_current_manifest (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_manifest_signature_matches_current_manifest) ... ok
+test_regart_manifest_carries_connected_system_projection (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_regart_manifest_carries_connected_system_projection) ... ok
+test_runbook_and_registry_are_aligned (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_runbook_and_registry_are_aligned) ... ok
+test_source_coverage_docs_explain_all_regart_systems (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_source_coverage_docs_explain_all_regart_systems) ... ok
+test_visibility_yaml_has_required_sections (scripts.tests.test_connected_system_visibility.ConnectedSystemVisibilityTests.test_visibility_yaml_has_required_sections) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.008s
+
+OK
+connected system visibility gate: OK
+evidence ledger gate: OK
+stage ladder enforcement: OK

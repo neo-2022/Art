@@ -1,4 +1,29 @@
-* @neo-2022
-.github/workflows/* @neo-2022
-docs/** @neo-2022
-scripts/ci/** @neo-2022
+* @neo-2022 @2art260679-rgb
+
+# CI / release / enforcement
+.github/workflows/* @neo-2022 @2art260679-rgb
+scripts/ci/** @neo-2022 @2art260679-rgb
+scripts/tests/** @neo-2022 @2art260679-rgb
+scripts/generate/** @neo-2022 @2art260679-rgb
+
+# Runtime basement
+core/** @neo-2022 @2art260679-rgb
+agent/** @neo-2022 @2art260679-rgb
+browser/** @neo-2022 @2art260679-rgb
+docker/** @neo-2022 @2art260679-rgb
+systemd/** @neo-2022 @2art260679-rgb
+tests/** @neo-2022 @2art260679-rgb
+
+# Console / packages
+apps/** @neo-2022 @2art260679-rgb
+packages/** @neo-2022 @2art260679-rgb
+
+# Contracts / formats / compliance
+docs/contracts/** @neo-2022 @2art260679-rgb
+docs/source/** @neo-2022 @2art260679-rgb
+docs/testing/** @neo-2022 @2art260679-rgb
+docs/governance/** @neo-2022 @2art260679-rgb
+formats/** @neo-2022 @2art260679-rgb
+
+# Packs / integration
+packs/** @neo-2022 @2art260679-rgb

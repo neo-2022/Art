@@ -6,8 +6,8 @@
 - `docs/source/checklists/CHECKLIST_06_REGART_ART_BRIDGE.md`
 - `docs/source/checklists/CHECKLIST_20_PACK_REGART.md`
 
-| Art | REGART | Compatibility | Notes |
+| Art | REGART | Совместимость | Примечание |
 |---|---|---|---|
-| v0.2 program (stages 28..38) | current main | Planned/validated by checklist gates | Use contract parity checks |
-| API v1 | REGART bridge stable | Supported | sunset criteria defined in v2 migration docs |
-| API v2 | REGART bridge v2 adapters | In rollout | dual-write verification required |
+| программа v0.2 (этапы 28..38) | текущий `main` | подтверждается checklist gates | использовать contract parity checks |
+| API v1 | стабильный REGART bridge | поддерживается | критерии sunset описаны в документах миграции v2 |
+| API v2 | REGART bridge v2 adapters | в rollout | обязательна dual-write verification |

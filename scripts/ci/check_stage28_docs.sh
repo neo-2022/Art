@@ -5,9 +5,25 @@ required_files=(
   "docs/source/FOUNDATION_CONSTITUTION_V0_2.md"
   "docs/source/dna_core_determinism_performance_assurance.md"
   "docs/source/analytics_memory_v0_2.md"
+  "docs/source/trust_boundary_hardening_v0_2.md"
+  "docs/source/browser_surface_hardening_v0_2.md"
+  "docs/source/protective_safeguards_catalog_v0_2.md"
+  "docs/source/storage_pressure_protection_v0_2.md"
+  "docs/source/startup_config_safety_validator_v0_2.md"
+  "docs/source/queue_integrity_protection_v0_2.md"
+  "docs/source/guard_self_observability_v0_2.md"
+  "docs/source/regart_adversarial_integration_harness_v0_2.md"
+  "docs/source/connected_system_visibility_v0_2.md"
+  "docs/source/ingress_perimeter_protection_v0_2.md"
   "docs/source/risk_register_v0_2.md"
   "docs/source/console_settings_architecture_v0_2.md"
   "docs/source/checklists/TRACEABILITY_V0_2.md"
+  "formats/documentation_tree_rules_v0_2.yaml"
+  "formats/documentation_tree_v0_2.yaml"
+  "scripts/ci/generate_documentation_tree.py"
+  "scripts/ci/check_documentation_tree_sync.sh"
+  "scripts/ci/check_regart_adversarial_harness.sh"
+  "scripts/tests/test_documentation_tree.py"
   "docs/source/checklists/CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md"
   "docs/source/checklists/CHECKLIST_29_EVENT_DNA_CORE_V2.md"
   "docs/source/checklists/CHECKLIST_30_EVIDENCE_CLAIMS_DIALOGIC_V2.md"
@@ -20,6 +36,7 @@ required_files=(
   "docs/source/checklists/CHECKLIST_37_LINUX_PROD_HARDENING_TIER_A_B.md"
   "docs/source/checklists/CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md"
   "docs/contracts/v2/openapi.yaml"
+  "docs/contracts/v2/schemas/README.md"
   "docs/contracts/v2/schemas/raw_event_v2.json"
   "docs/contracts/v2/schemas/dna_signature.json"
   "docs/contracts/v2/schemas/evidence_block.json"
@@ -85,9 +102,18 @@ required_files=(
   "docs/runbooks/spatial_index_degraded.md"
   "docs/runbooks/saas_tenant_isolation_failed.md"
   "docs/runbooks/console_linux_readiness_failed.md"
+  "docs/runbooks/ddos_suspected.md"
+  "docs/runbooks/ingress_shield_degraded.md"
+  "docs/runbooks/trust_boundary_violation.md"
+  "docs/runbooks/browser_surface_policy_degraded.md"
+  "docs/runbooks/storage_pressure_high.md"
+  "docs/runbooks/unsafe_startup_config_refused.md"
+  "docs/runbooks/queue_integrity_violation.md"
+  "docs/runbooks/guard_self_test_failed.md"
   "docs/runbooks/checklist_ladder_violation.md"
   "mkdocs.yml"
   "docs/portal/INDEX.md"
+  "docs/portal/DOCUMENTATION_TREE.md"
   "docs/portal/NAVIGATION.md"
   "docs/portal/DOC_STYLE_GUIDE.md"
   "docs/portal/DOC_AUTHORITY.md"
@@ -103,6 +129,7 @@ required_files=(
   "docs/en/ARCHITECTURE.md"
   "docs/en/INTEGRATION.md"
   "docs/en/portal/INDEX.md"
+  "docs/en/portal/DOCUMENTATION_TREE.md"
   "docs/en/portal/NAVIGATION.md"
   "docs/en/portal/DOC_STYLE_GUIDE.md"
   "docs/en/portal/DOC_AUTHORITY.md"
@@ -126,11 +153,27 @@ grep -q "No checklist skipping" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "Observability Gap Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "DNA Engine Safety Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "Settings Information Architecture Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+grep -q "Ingress Abuse And DDoS Defense Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+grep -q "Trust Boundary And Canonical Actor Context Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+grep -q "Browser Surface Hardening Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+grep -q "Storage Pressure Protection Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+grep -q "Startup Configuration Fail-Closed Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+grep -q "Queue Integrity And Anti-Loop Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+grep -q "Guard Self-Observability Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+grep -q "Connected System Visibility Law" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "stage38-ladder-gate" docs/source/FOUNDATION_CONSTITUTION_V0_2.md
 grep -q "01..27 -> 28..38" docs/source/checklists/TRACEABILITY_V0_2.md
 
 bash scripts/ci/check_stage28_lens.sh
 bash scripts/ci/check_docs_portal_quality.sh
+bash scripts/ci/check_root_decision_tree_sync.sh
+bash scripts/ci/check_documentation_tree_sync.sh
+python3 -m unittest scripts.tests.test_documentation_tree -v
+bash scripts/ci/check_defect_remediation_control_matrix.sh
+bash scripts/ci/check_protective_contours.sh
+bash scripts/ci/check_protective_safeguards_catalog.sh
+bash scripts/ci/check_regart_adversarial_harness.sh
+bash scripts/ci/check_connected_system_visibility.sh
 
 grep -q "CHECKLIST_28_CONSOLE_FOUNDATION_MONOREPO.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 grep -q "CHECKLIST_38_STAGE_LADDER_ENFORCEMENT.md" docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md

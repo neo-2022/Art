@@ -1,12 +1,14 @@
 [Unit]
 Description=Art Core SQLite VACUUM (safe mode)
 After=network.target
+ConditionPathExists=/var/lib/art/core.sqlite3
 
 [Service]
 Type=oneshot
-User=%i
-Environment=ART_CORE_DB_PATH=%h/.local/share/art/core.sqlite3
-Environment=ART_INGEST_ACTIVE_FILE=%h/.local/share/art/ingest_active.flag
-ExecStart=/usr/bin/env bash -lc 'if [ -f "$ART_INGEST_ACTIVE_FILE" ]; then echo "ingest_active=1, skip vacuum"; exit 0; fi; sqlite3 "$ART_CORE_DB_PATH" "PRAGMA wal_checkpoint(TRUNCATE); VACUUM;"'
+User=root
+Environment=ART_CORE_DB_PATH=/var/lib/art/core.sqlite3
+Environment=ART_INGEST_ACTIVE_FILE=/var/lib/art/ingest_active.flag
+Environment=ART_VACUUM_SCHEDULE=Sunday_03:30
+ExecStart=/usr/bin/env bash -c 'set -euo pipefail; trace_id="$(cat /proc/sys/kernel/random/uuid)"; if [ -f "$ART_INGEST_ACTIVE_FILE" ]; then echo "vacuum_status=skipped reason=ingest_active db_path=$ART_CORE_DB_PATH schedule=$ART_VACUUM_SCHEDULE"; exit 0; fi; if [ ! -f "$ART_CORE_DB_PATH" ]; then printf "{\"kind\":\"observability_gap.storage_vacuum_failed\",\"what\":\"VACUUM failed\",\"where\":\"core/storage\",\"why\":\"missing_db_file\",\"evidence\":{\"db_path\":\"%s\",\"error\":\"missing_db_file\",\"schedule\":\"%s\",\"trace_id\":\"%s\"}}\n" "$ART_CORE_DB_PATH" "$ART_VACUUM_SCHEDULE" "$trace_id" >&2; exit 3; fi; if sqlite3 "$ART_CORE_DB_PATH" "PRAGMA wal_checkpoint(TRUNCATE); VACUUM;"; then echo "vacuum_status=ok db_path=$ART_CORE_DB_PATH schedule=$ART_VACUUM_SCHEDULE"; else rc=$?; printf "{\"kind\":\"observability_gap.storage_vacuum_failed\",\"what\":\"VACUUM failed\",\"where\":\"core/storage\",\"why\":\"vacuum_error\",\"evidence\":{\"db_path\":\"%s\",\"error\":\"sqlite3_exit_%s\",\"schedule\":\"%s\",\"trace_id\":\"%s\"}}\n" "$ART_CORE_DB_PATH" "$rc" "$ART_VACUUM_SCHEDULE" "$trace_id" >&2; exit "$rc"; fi'
 StandardOutput=journal
 StandardError=journal

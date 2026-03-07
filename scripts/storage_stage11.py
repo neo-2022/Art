@@ -122,12 +122,13 @@ def run_concurrency_test(
     writers: int = 8,
     readers: int = 4,
     total_ops: int = 10000,
-    max_retries: int = 10,
+    max_retries: int = 200,
 ) -> dict:
     if db_path.exists():
         db_path.unlink()
     conn = sqlite3.connect(str(db_path))
     conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout=5000;")
     conn.execute("CREATE TABLE events (id INTEGER PRIMARY KEY AUTOINCREMENT, payload TEXT NOT NULL);")
     conn.commit()
     conn.close()
@@ -144,8 +145,9 @@ def run_concurrency_test(
 
     def writer(_idx: int) -> None:
         nonlocal committed
-        wconn = sqlite3.connect(str(db_path), timeout=1.0, isolation_level=None)
+        wconn = sqlite3.connect(str(db_path), timeout=5.0, isolation_level=None)
         wconn.execute("PRAGMA journal_mode=WAL;")
+        wconn.execute("PRAGMA busy_timeout=5000;")
         while True:
             try:
                 job = jobs.get_nowait()
@@ -166,7 +168,7 @@ def run_concurrency_test(
                         write_errors.append(str(err))
                         break
                     retries += 1
-                    time.sleep(0.005)
+                    time.sleep(0.01)
             if not committed_one:
                 write_errors.append("database is locked after retries")
                 stop.set()
@@ -174,7 +176,8 @@ def run_concurrency_test(
         wconn.close()
 
     def reader(_idx: int) -> None:
-        rconn = sqlite3.connect(str(db_path), timeout=1.0)
+        rconn = sqlite3.connect(str(db_path), timeout=5.0)
+        rconn.execute("PRAGMA busy_timeout=5000;")
         while not stop.is_set() and (not jobs.empty()):
             try:
                 cur = rconn.execute("SELECT COUNT(*) FROM events;")

@@ -7,7 +7,7 @@ A) Полный запрет опциональности:
 Master checklist: docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
 
 ## Цель
-Pack REGART полностью покрывает события REGART (UI Proxy/graph/tools/models/network/ui.graph.empty/upstream_error), сохраняет correlation, содержит фиксированные примеры конфигов receivers, и имеет детерминированные тесты совместимости/контрактов.
+Pack REGART полностью покрывает события REGART (UI Proxy/graph/tools/models/network/ui.graph.empty/upstream_error), Linux/systemd/network bridge-контур REGART, сохраняет correlation, содержит фиксированные примеры конфигов receivers, и имеет детерминированные тесты совместимости/контрактов.
 
 ## Границы
 Только Pack REGART: fixtures, rules/enrich, docs, тесты pack.  
@@ -17,91 +17,124 @@ Pack REGART полностью покрывает события REGART (UI Prox
 - CHECKLIST 06 — REGART→Art Bridge readiness
 - CHECKLIST 19 — Packs framework
 - CHECKLIST 13 — Pipeline (correlation перенос в Incident)
+- `docs/source/regart_adversarial_integration_harness_v0_2.md`
 
 ## Шаги (строго линейно)
 
-- [x] **1. Сделать:** Создать fixtures полного набора событий REGART (включая `ui.graph.empty` и `upstream_error`) и использовать их в тестах.
-  - [x] существует каталог fixtures: `packs/regart/fixtures/`
-  - [x] fixtures включают минимальный полный набор (каждый — отдельный файл):
-    - [x] `ui_proxy_unavailable.json` (или эквивалент)
-    - [x] `upstream_error.json`
-    - [x] `ui.graph.empty.json`
-    - [x] `network_error.json`
-    - [x] `tools_event.json`
-    - [x] `models_event.json`
-    - [x] `graph_event.json`
-  - [x] каждый fixture содержит обязательные поля correlation:
-    - [x] `run_id`
-    - [x] `trace_id`
-    - [x] `span_id`
-  - [x] каждый fixture содержит `source_id` и `source_seq` (для реалистичности pipeline)
-  - [x] **Проверка (pass/fail):** тесты pack реально читают fixtures из `packs/regart/fixtures/` и падают при удалении любого fixture файла.
+- [ ] **1. Сделать:** Создать fixtures полного набора событий REGART (включая `ui.graph.empty` и `upstream_error`) и использовать их в тестах.
+  - [ ] существует каталог fixtures: `packs/regart/fixtures/`
+  - [ ] fixtures включают минимальный полный набор (каждый — отдельный файл):
+    - [ ] `ui_proxy_unavailable.json` (или эквивалент)
+    - [ ] `upstream_error.json`
+    - [ ] `ui.graph.empty.json`
+    - [ ] `network_error.json`
+    - [ ] `tools_event.json`
+    - [ ] `models_event.json`
+    - [ ] `graph_event.json`
+    - [ ] `browser_level0_error.json`
+    - [ ] `service_unit_failed.json`
+    - [ ] `bridge_backlog_recovered.json`
+    - [ ] `langgraph_run_event.json`
+  - [ ] каждый fixture содержит обязательные поля correlation:
+    - [ ] `run_id`
+    - [ ] `trace_id`
+    - [ ] `span_id`
+  - [ ] каждый fixture содержит `source_id` и `source_seq` (для реалистичности pipeline)
+  - [ ] **Проверка (pass/fail):** тесты pack реально читают fixtures из `packs/regart/fixtures/` и падают при удалении любого fixture файла.
 
-- [x] **2. Сделать:** Реализовать rules/enrich pack так, чтобы Incident сохранял correlation (`run_id/trace_id/span_id`) без изменения значений.
-  - [x] в pack есть rules/enrich, которые:
-    - [x] не перезаписывают `run_id/trace_id/span_id`, если они присутствуют
-    - [x] при отсутствии correlation поле в Incident становится `null` (одно фиксированное решение)
-  - [x] **Проверка (pass/fail):** pack tests сравнивают значения correlation в RawEvent fixture и в сформированном Incident (identity match) для всех fixtures шага 1.
+- [ ] **2. Сделать:** Реализовать rules/enrich pack так, чтобы Incident сохранял correlation (`run_id/trace_id/span_id`) без изменения значений.
+  - [ ] в pack есть rules/enrich, которые:
+    - [ ] не перезаписывают `run_id/trace_id/span_id`, если они присутствуют
+    - [ ] при отсутствии correlation поле в Incident становится `null` (одно фиксированное решение)
+  - [ ] **Проверка (pass/fail):** pack tests сравнивают значения correlation в RawEvent fixture и в сформированном Incident (identity match) для всех fixtures шага 1.
 
-- [x] **3. Сделать:** Добавить фиксированные examples конфигов receivers для REGART (без двусмысленностей).
-  - [x] существует файл `packs/regart/examples/receivers.toml`
-  - [x] файл содержит примеры для ровно следующих receivers (каждый с уникальным `source_id` шаблоном):
-    - [x] `journald` (UNIT=ui-proxy.service)
-    - [x] `file_tail` (абсолютный путь: `/var/log/regart/ui-proxy.log`)
-    - [x] `stdout_stderr` (command_id: `regart-ui-proxy`)
-    - [x] `net_probe` (endpoint: `http://127.0.0.1:8090/health`)
-  - [x] **Проверка (pass/fail):** `receivers.toml` валиден (парсится), и pack test `pack_regart_examples_validate` проверяет наличие всех четырёх секций.
+- [ ] **3. Сделать:** Добавить фиксированные examples конфигов receivers для REGART (без двусмысленностей).
+  - [ ] существует файл `packs/regart/examples/receivers.toml`
+  - [ ] файл содержит примеры для ровно следующих receivers (каждый с уникальным `source_id` шаблоном):
+    - [ ] `journald` (UNIT=ui-proxy.service)
+    - [ ] `systemd_unit` (unit=`ui-proxy.service`)
+    - [ ] `file_tail` (абсолютный путь: `/var/log/regart/ui-proxy.log`)
+    - [ ] `stdout_stderr` (command_id: `regart-ui-proxy`)
+    - [ ] `proc_probe` (target=`langgraph`)
+    - [ ] `net_probe` (endpoint: `http://127.0.0.1:8090/health`)
+  - [ ] **Проверка (pass/fail):** `receivers.toml` валиден (парсится), и pack test `pack_regart_examples_validate` проверяет наличие всех шести секций.
 
-- [x] **4. Сделать:** Реализовать gap при несовместимости pack с Core: `observability_gap.pack_incompatible`.
-  - [x] pack manifest фиксирует `core_version_range` (строка semver range)
-  - [x] при несовместимости (core_version не удовлетворяет range):
-    - [x] install fail (pack не активирован)
-    - [x] генерируется `observability_gap.pack_incompatible` (snapshot/stream)
-  - [x] `observability_gap.pack_incompatible` содержит evidence_min:
-    - [x] pack_name
-    - [x] pack_version
-    - [x] core_version
-    - [x] core_version_range
-    - [x] trace_id
-  - [x] событие зарегистрировано в `docs/governance/observability_gap_registry.md` с:
-    - [x] `incident_rule=create_incident_min_sev2`
-    - [x] `action_ref=docs/runbooks/pack_incompatible.md`
-  - [x] **Проверка (pass/fail):** induced test поднимает Core с версией вне диапазона и проверяет:
-    - [x] install fail
-    - [x] событие `observability_gap.pack_incompatible` видно в snapshot/stream.
+- [ ] **3A. Сделать:** Зафиксировать source coverage claim REGART pack для полного контура сбора сигналов.
+  - [ ] manifest/README pack явно перечисляет покрытия:
+    - [ ] `Browser Level0 runtime`
+    - [ ] `UI Proxy upstream/network`
+    - [ ] `LangGraph run/graph/tool/model`
+    - [ ] `systemd/journald`
+    - [ ] `proc_probe/net_probe`
+  - [ ] Для каждого покрытия указан механизм доставки в Art (`receiver`, `bridge`, `fixture`, `runtime harness`)
+  - [ ] manifest pack содержит `connected_system_projection` для:
+    - [ ] `regart-browser-level0`
+    - [ ] `regart-ui-proxy`
+    - [ ] `regart-langgraph-runtime`
+  - [ ] каждая проекция содержит `declared_data_kinds` и видимый оператору `display_name`
+  - [ ] **Проверка (pass/fail):** `docs/packs/regart/README.md` и pack manifest содержат coverage matrix без пропусков указанных источников.
+
+- [ ] **4. Сделать:** Реализовать gap при несовместимости pack с Core: `observability_gap.pack_incompatible`.
+  - [ ] pack manifest фиксирует `core_version_range` (строка semver range)
+  - [ ] при несовместимости (core_version не удовлетворяет range):
+    - [ ] install fail (pack не активирован)
+    - [ ] генерируется `observability_gap.pack_incompatible` (snapshot/stream)
+  - [ ] `observability_gap.pack_incompatible` содержит evidence_min:
+    - [ ] pack_name
+    - [ ] pack_version
+    - [ ] core_version
+    - [ ] core_version_range
+    - [ ] trace_id
+  - [ ] событие зарегистрировано в `docs/governance/observability_gap_registry.md` с:
+    - [ ] `incident_rule=create_incident_min_sev2`
+    - [ ] `action_ref=docs/runbooks/pack_incompatible.md`
+  - [ ] **Проверка (pass/fail):** induced test поднимает Core с версией вне диапазона и проверяет:
+    - [ ] install fail
+    - [ ] событие `observability_gap.pack_incompatible` видно в snapshot/stream.
+
+- [ ] **5. Сделать:** Пришить Pack REGART к pinned external adversarial harness.
+  - [ ] Harness использует manifest pinned source и не зависит от floating checkout.
+  - [ ] `art-regart-smoke` и `art-regart-long-chain` читают pack fixtures/runtime coverage как обязательный слой.
+  - [ ] Stage20 evidence включает pinned source manifest и хотя бы один runtime harness log.
+  - [ ] **Проверка (pass/fail):** stage20 cannot be proven without harness evidence.
 
 ## Документация (RU)
-- [x] docs/packs/regart/README.md
-- [x] docs/packs/regart/receivers_examples.md
-- [x] docs/packs/regart/troubleshooting.md
-- [x] docs/runbooks/pack_incompatible.md
+- [ ] docs/packs/regart/README.md
+- [ ] docs/packs/regart/receivers_examples.md
+- [ ] docs/packs/regart/troubleshooting.md
+- [ ] docs/runbooks/pack_incompatible.md
+- [ ] docs/source/connected_system_visibility_v0_2.md
 
 ## Тестирование
-- [x] unit/integration: fixtures → pipeline → incident (покрывает шаги 1–2)
-- [x] unit: validate examples `receivers.toml` (шаг 3)
-- [x] induced: incompatible pack install → `observability_gap.pack_incompatible` (шаг 4)
-- [x] runtime API: `scripts/tests/pack_regart_runtime_api.sh` проверяет ingest fixtures из `packs/regart/fixtures` и сохранение correlation в `/api/v1/incidents`
+- [ ] unit/integration: fixtures → pipeline → incident (покрывает шаги 1–2)
+- [ ] unit: validate examples `receivers.toml` (шаг 3)
+- [ ] validation: REGART pack coverage claim (`Browser/UI Proxy/LangGraph/systemd/probe`) не содержит пробелов
+- [ ] induced: incompatible pack install → `observability_gap.pack_incompatible` (шаг 4)
+- [ ] runtime API: `scripts/tests/pack_regart_runtime_api.sh` проверяет ingest fixtures из `packs/regart/fixtures` и сохранение correlation в `/api/v1/incidents`
+- [ ] pinned external harness suite `art-regart-smoke` и `art-regart-long-chain` используют Pack REGART как runtime truth layer (шаг 5)
 
 ## CI gate
-- [x] CI job `pack-regart-tests` существует и запускается на PR в main; job зелёный
-- [x] CI job `pack-regart-runtime-api` существует и запускается на PR в main; job зелёный
-- [x] CI job `stage20-docs-gate` существует и запускается на PR в main
-- [x] `stage20-docs-gate` запускает `scripts/ci/check_pack_regart_stage20_docs.sh`, который:
-  - [x] проверяет существование файлов из раздела “Документация (RU)”
-  - [x] проверяет наличие runtime harness `scripts/tests/pack_regart_runtime_api.sh`
-  - [x] проверяет минимальный контент (grep):
-    - [x] `docs/packs/regart/README.md` содержит `fixtures` и `correlation`
-    - [x] `docs/packs/regart/receivers_examples.md` содержит `journald` и `file_tail` и `stdout_stderr` и `net_probe`
-    - [x] `docs/packs/regart/troubleshooting.md` содержит `ui.graph.empty` и `upstream_error`
-    - [x] `docs/runbooks/pack_incompatible.md` содержит `mitigations` и `verification`
-  - [x] exit 1 при нарушении любой проверки
+- [ ] CI job `pack-regart-tests` существует и запускается на PR в main; job зелёный
+- [ ] CI job `pack-regart-runtime-api` существует и запускается на PR в main; job зелёный
+- [ ] CI job `stage20-docs-gate` существует и запускается на PR в main
+- [ ] `stage20-docs-gate` запускает `scripts/ci/check_pack_regart_stage20_docs.sh`, который:
+  - [ ] проверяет существование файлов из раздела “Документация (RU)”
+  - [ ] проверяет наличие runtime harness `scripts/tests/pack_regart_runtime_api.sh`
+  - [ ] проверяет минимальный контент (grep):
+    - [ ] `docs/packs/regart/README.md` содержит `fixtures` и `correlation` и `Browser Level0` и `systemd` и `LangGraph`
+    - [ ] `docs/packs/regart/receivers_examples.md` содержит `journald` и `systemd_unit` и `file_tail` и `stdout_stderr` и `proc_probe` и `net_probe`
+    - [ ] `docs/packs/regart/troubleshooting.md` содержит `ui.graph.empty` и `upstream_error` и `bridge_backlog_recovered`
+    - [ ] `docs/runbooks/pack_incompatible.md` содержит `mitigations` и `verification`
+  - [ ] exit 1 при нарушении любой проверки
 
 ## DoD
-- [x] Fixtures полного набора REGART событий существуют и реально используются тестами.
-- [x] Correlation (`run_id/trace_id/span_id`) сохраняется в Incident по всем fixtures и подтверждена тестами.
-- [x] Examples receivers (4 секции) существуют и валидируются тестом.
-- [x] `observability_gap.pack_incompatible` реализован, зарегистрирован и имеет runbook; induced test зелёный.
-- [x] CI gate Stage 20 зелёный.
+- [ ] Fixtures полного набора REGART событий существуют и реально используются тестами.
+- [ ] Correlation (`run_id/trace_id/span_id`) сохраняется в Incident по всем fixtures и подтверждена тестами.
+- [ ] Examples receivers (6 секций) существуют и валидируются тестом.
+- [ ] REGART pack явно покрывает полный source contour (`Browser/UI Proxy/LangGraph/systemd/probes`) и это валидируется.
+- [ ] `observability_gap.pack_incompatible` реализован, зарегистрирован и имеет runbook; induced test зелёный.
+- [ ] pinned external harness evidence существует и привязано к Pack REGART как runtime proof.
+- [ ] CI gate Stage 20 зелёный.
 
 ## Финальный блокирующий чекбокс (единое жёсткое правило)
-- [x] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.
+- [ ] Этап/лист закрывается только после фактического прохождения всех пунктов этого листа: каждый пункт имеет PASS-проверку и подтверждённый артефакт (тест/лог/команда/файл/CI), и только после этого ставится финальная отметка закрытия.

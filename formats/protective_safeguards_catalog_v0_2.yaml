@@ -1,0 +1,176 @@
+version: "1.0"
+status: "ACTIVE"
+last_updated: "2026-03-07"
+
+safeguards:
+  - id: SG-001
+    name: ingress_perimeter_ddos
+    doc: docs/source/ingress_perimeter_protection_v0_2.md
+    defects: ["DEF-015"]
+    risks: ["R14"]
+    runbooks:
+      - docs/runbooks/ddos_suspected.md
+      - docs/runbooks/ingress_shield_degraded.md
+    gaps:
+      - observability_gap.ddos_suspected
+      - observability_gap.ingress_shield_degraded
+    stages: ["12", "24", "36", "37", "45"]
+  - id: SG-002
+    name: trust_boundary
+    doc: docs/source/trust_boundary_hardening_v0_2.md
+    defects: ["DEF-019"]
+    risks: ["R15"]
+    runbooks:
+      - docs/runbooks/trust_boundary_violation.md
+    gaps:
+      - observability_gap.trust_boundary_violation
+    stages: ["15", "24", "33", "37"]
+  - id: SG-003
+    name: browser_surface_hardening
+    doc: docs/source/browser_surface_hardening_v0_2.md
+    defects: ["DEF-020"]
+    risks: ["R16"]
+    runbooks:
+      - docs/runbooks/browser_surface_policy_degraded.md
+    gaps:
+      - observability_gap.browser_surface_policy_degraded
+    stages: ["10", "16", "24", "28", "37", "40"]
+  - id: SG-004
+    name: connected_system_visibility
+    doc: docs/source/connected_system_visibility_v0_2.md
+    defects: ["DEF-022"]
+    risks: ["R30"]
+    runbooks:
+      - docs/runbooks/connected_system_not_visible.md
+    gaps:
+      - observability_gap.connected_system_not_visible
+      - observability_gap.connected_system_coverage_drift
+    stages: ["18", "19", "20", "28"]
+  - id: SG-005
+    name: pinned_external_adversarial_harness
+    doc: docs/source/regart_adversarial_integration_harness_v0_2.md
+    defects: ["DEF-021"]
+    risks: ["R29"]
+    runbooks: []
+    gaps: []
+    stages: ["05", "06", "20", "24", "38"]
+  - id: SG-006
+    name: storage_pressure_protection
+    doc: docs/source/storage_pressure_protection_v0_2.md
+    defects: ["DEF-023"]
+    risks: ["R17"]
+    runbooks:
+      - docs/runbooks/storage_pressure_high.md
+    gaps:
+      - observability_gap.storage_pressure_high
+    stages: ["11", "12", "24", "37"]
+  - id: SG-007
+    name: startup_config_safety_validator
+    doc: docs/source/startup_config_safety_validator_v0_2.md
+    defects: ["DEF-024"]
+    risks: ["R18"]
+    runbooks:
+      - docs/runbooks/unsafe_startup_config_refused.md
+    gaps:
+      - observability_gap.unsafe_startup_config_refused
+    stages: ["12", "18", "24", "37"]
+  - id: SG-008
+    name: queue_integrity_protection
+    doc: docs/source/queue_integrity_protection_v0_2.md
+    defects: ["DEF-025"]
+    risks: ["R19"]
+    runbooks:
+      - docs/runbooks/queue_integrity_violation.md
+    gaps:
+      - observability_gap.queue_integrity_violation
+    stages: ["12", "17", "18", "24", "37"]
+  - id: SG-009
+    name: guard_self_observability
+    doc: docs/source/guard_self_observability_v0_2.md
+    defects: ["DEF-026"]
+    risks: ["R20"]
+    runbooks:
+      - docs/runbooks/guard_self_test_failed.md
+    gaps:
+      - observability_gap.guard_self_test_failed
+    stages: ["24", "37", "38"]
+  - id: SG-010
+    name: action_execution_safety_guard
+    doc: docs/source/action_execution_safety_guard_v0_2.md
+    defects: ["DEF-027"]
+    risks: ["R21"]
+    runbooks:
+      - docs/runbooks/action_safety_guard_blocked.md
+    gaps:
+      - observability_gap.action_safety_guard_blocked
+    stages: ["15", "24", "33", "37", "43"]
+  - id: SG-011
+    name: agent_identity_enrollment_trust
+    doc: docs/source/agent_identity_enrollment_trust_v0_2.md
+    defects: ["DEF-028"]
+    risks: ["R22"]
+    runbooks:
+      - docs/runbooks/agent_identity_untrusted.md
+    gaps:
+      - observability_gap.agent_identity_untrusted
+    stages: ["18", "23", "37"]
+  - id: SG-012
+    name: release_truth_enforcement
+    doc: docs/source/release_truth_enforcement_v0_2.md
+    defects: ["DEF-029"]
+    risks: ["R23"]
+    runbooks:
+      - docs/runbooks/release_truth_mismatch.md
+    gaps:
+      - observability_gap.release_truth_mismatch
+    stages: ["04", "07", "24", "38"]
+  - id: SG-013
+    name: authenticity_baseline
+    doc: docs/source/authenticity_baseline_v0_2.md
+    defects: ["DEF-030"]
+    risks: ["R24"]
+    runbooks:
+      - docs/runbooks/authenticity_policy_violation.md
+    gaps:
+      - observability_gap.authenticity_policy_violation
+    stages: ["04", "07", "19", "20", "28", "37", "40"]
+  - id: SG-014
+    name: regulatory_claims_drift_control
+    doc: docs/source/regulatory_claims_drift_control_v0_2.md
+    defects: ["DEF-031"]
+    risks: ["R25"]
+    runbooks:
+      - docs/runbooks/regulatory_claim_drift.md
+    gaps:
+      - observability_gap.regulatory_claim_drift
+    stages: ["25", "26", "37", "38"]
+  - id: SG-015
+    name: monolith_budget_guard
+    doc: docs/source/monolith_budget_guard_v0_2.md
+    defects: ["DEF-017", "DEF-032"]
+    risks: ["R26"]
+    runbooks:
+      - docs/runbooks/monolith_budget_exceeded.md
+    gaps:
+      - observability_gap.monolith_budget_exceeded
+    stages: ["10", "11", "17", "18", "28", "35", "37", "39"]
+  - id: SG-016
+    name: test_strength_guard
+    doc: docs/source/test_strength_guard_v0_2.md
+    defects: ["DEF-018", "DEF-033"]
+    risks: ["R27"]
+    runbooks:
+      - docs/runbooks/test_strength_guard_failed.md
+    gaps:
+      - observability_gap.test_strength_guard_failed
+    stages: ["10", "16", "22", "24", "28", "34", "36", "38"]
+  - id: SG-017
+    name: documentation_drift_control
+    doc: docs/source/documentation_drift_control_v0_2.md
+    defects: ["DEF-034"]
+    risks: ["R28"]
+    runbooks:
+      - docs/runbooks/documentation_drift_detected.md
+    gaps:
+      - observability_gap.documentation_drift_detected
+    stages: ["07", "24", "28", "38"]

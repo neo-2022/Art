@@ -6,6 +6,10 @@ on:
   push:
     branches: [ "main" ]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -16,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 0
 
       - name: Basic docs presence
         shell: bash
@@ -60,8 +66,69 @@ jobs:
           set -euo pipefail
           bash scripts/ci/check_docs_master_traceability.sh
 
+  change-scope:
+    name: change-scope
+    runs-on: ubuntu-latest
+    outputs:
+      run_heavy: ${{ steps.scope.outputs.run_heavy }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 0
+      - name: Detect lightweight-only changes
+        id: scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'INNER'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
+          if os.environ['GITHUB_EVENT_NAME'] == 'pull_request':
+              base = event['pull_request']['base']['sha']
+              head = event['pull_request']['head']['sha']
+          else:
+              base = event.get('before') or 'HEAD^'
+              head = os.environ['GITHUB_SHA']
+
+          diff = subprocess.check_output(['git', 'diff', '--name-only', base, head], text=True)
+          files = [line.strip() for line in diff.splitlines() if line.strip()]
+          lightweight_prefixes = (
+              'docs/',
+              '.github/workflows/',
+              'scripts/ci/',
+              '.github/ISSUE_TEMPLATE/',
+          )
+          lightweight_files = {
+              'README.md',
+              'SECURITY.md',
+              'CHANGELOG.md',
+              'RELEASE_CHECKLIST.md',
+              '.github/CODEOWNERS',
+              '.github/pull_request_template.md',
+          }
+          run_heavy = 'false'
+          if not files:
+              run_heavy = 'false'
+          else:
+              for f in files:
+                  if f in lightweight_files or f.startswith(lightweight_prefixes):
+                      continue
+                  run_heavy = 'true'
+                  break
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as fh:
+              fh.write(f'run_heavy={run_heavy}\\n')
+          print('changed files:', files)
+          print('run_heavy=', run_heavy)
+          INNER
+
   stage03-docs-gate:
     name: stage03-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -72,6 +139,8 @@ jobs:
   stage03-profile-tests:
     name: stage03-profile-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -81,6 +150,8 @@ jobs:
   stage03-profile-switch-integration:
     name: stage03-profile-switch-integration
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -90,6 +161,8 @@ jobs:
   stage03-airgapped-update-integration:
     name: stage03-airgapped-update-integration
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -99,6 +172,8 @@ jobs:
   stage03-profile-negative-integration:
     name: stage03-profile-negative-integration
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -107,6 +182,7 @@ jobs:
 
   stage05-wrapper-gate:
     name: stage05-wrapper-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -116,6 +192,7 @@ jobs:
 
   stage06-wrapper-gate:
     name: stage06-wrapper-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -125,6 +202,7 @@ jobs:
 
   stage07-docs-gate:
     name: stage07-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -135,6 +213,8 @@ jobs:
   stage07-rust:
     name: stage07-rust
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -153,6 +233,8 @@ jobs:
   stage07-browser:
     name: stage07-browser
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     defaults:
       run:
         working-directory: browser
@@ -180,6 +262,7 @@ jobs:
 
   gitleaks:
     name: gitleaks
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -194,6 +277,8 @@ jobs:
   stage07-license-checks:
     name: stage07-license-checks
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -216,6 +301,8 @@ jobs:
   openapi-validate:
     name: openapi-validate
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -225,6 +312,8 @@ jobs:
   test-contracts:
     name: test-contracts
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -234,6 +323,8 @@ jobs:
   codegen-diff-clean:
     name: codegen-diff-clean
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -245,6 +336,8 @@ jobs:
   schemas-md-diff-clean:
     name: schemas-md-diff-clean
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -256,6 +349,8 @@ jobs:
   test-telemetry:
     name: test-telemetry
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -268,6 +363,7 @@ jobs:
 
   telemetry-docs-gate:
     name: telemetry-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -277,6 +373,7 @@ jobs:
 
   stage10-docs-gate:
     name: stage10-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -284,9 +381,22 @@ jobs:
       - name: Stage 10 docs gate
         run: bash scripts/ci/check_browser_level0_stage10_docs.sh
 
+  monolith-budget-guard:
+    name: monolith-budget-guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Monolith budget guard
+        run: |
+          python3 -m unittest scripts.tests.test_monolith_budget_guard -v
+          bash scripts/ci/check_monolith_budget_guard.sh
+
   stage10-chaos-e2e:
     name: stage10-chaos-e2e
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -309,25 +419,35 @@ jobs:
   storage-integration:
     name: storage-integration
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Storage integration
         run: |
-          python3 scripts/tests/test_storage_stage11.py -k test_concurrency_writers_readers_10000_ops
+          python3 scripts/tests/storage_concurrency_runtime.py
           python3 scripts/tests/test_storage_stage11.py -k test_vacuum_safe_runs_when_ingest_inactive
+          python3 -m unittest scripts.tests.test_stage11_systemd_vacuum
+          bash scripts/tests/storage_vacuum_runtime.sh
 
   storage-chaos-smoke:
     name: storage-chaos-smoke
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Storage chaos smoke
         run: |
+          cargo test --package art-core storage_backup_restore_recovers_full_runtime_state_after_corruption
+          cargo test --package art-core live_storage_pressure_transitions_shed_heavy_then_block_and_recover
           python3 scripts/tests/test_storage_stage11.py -k test_corruption_recovery_restore_success
           python3 scripts/tests/test_storage_stage11.py -k test_corruption_recovery_restore_fail_goes_read_only
           python3 scripts/tests/test_storage_stage11.py -k test_chaos_smoke_scenarios
+          bash scripts/tests/storage_kill9_runtime.sh
+          bash scripts/tests/storage_pressure_runtime.sh
 
   stage11-docs-gate:
     name: stage11-docs-gate
@@ -341,6 +461,8 @@ jobs:
   ingest-integration:
     name: ingest-integration
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -353,6 +475,8 @@ jobs:
   ingest-load-smoke:
     name: ingest-load-smoke
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -363,6 +487,8 @@ jobs:
   ingest-chaos-smoke:
     name: ingest-chaos-smoke
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -372,6 +498,7 @@ jobs:
 
   stage12-docs-gate:
     name: stage12-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -382,6 +509,8 @@ jobs:
   pipeline-tests:
     name: pipeline-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -395,6 +524,8 @@ jobs:
   pipeline-security-tests:
     name: pipeline-security-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -404,6 +535,7 @@ jobs:
 
   stage13-docs-gate:
     name: stage13-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -414,6 +546,8 @@ jobs:
   stream-integration:
     name: stream-integration
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -428,6 +562,8 @@ jobs:
   stream-load-smoke:
     name: stream-load-smoke
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -436,6 +572,7 @@ jobs:
 
   stage14-docs-gate:
     name: stage14-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -446,6 +583,8 @@ jobs:
   actions-audit-tests:
     name: actions-audit-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -462,6 +601,7 @@ jobs:
 
   stage15-docs-gate:
     name: stage15-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -472,6 +612,8 @@ jobs:
   panel0-e2e:
     name: panel0-e2e
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -494,6 +636,7 @@ jobs:
 
   stage16-docs-gate:
     name: stage16-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -504,6 +647,8 @@ jobs:
   stage16-runtime-gate:
     name: stage16-runtime-gate
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -513,6 +658,8 @@ jobs:
   agent-spool-tests:
     name: agent-spool-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -522,6 +669,8 @@ jobs:
   agent-spool-chaos-smoke:
     name: agent-spool-chaos-smoke
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -530,6 +679,7 @@ jobs:
 
   stage17-docs-gate:
     name: stage17-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -540,6 +690,8 @@ jobs:
   agent-receivers-tests:
     name: agent-receivers-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -549,6 +701,8 @@ jobs:
   agent-receivers-chaos-runtime:
     name: agent-receivers-chaos-runtime
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -557,6 +711,7 @@ jobs:
 
   stage18-docs-gate:
     name: stage18-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -567,6 +722,8 @@ jobs:
   packs-tests:
     name: packs-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -576,6 +733,8 @@ jobs:
   packs-runtime-install:
     name: packs-runtime-install
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -584,6 +743,7 @@ jobs:
 
   stage19-docs-gate:
     name: stage19-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -594,6 +754,8 @@ jobs:
   pack-regart-tests:
     name: pack-regart-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -603,6 +765,8 @@ jobs:
   pack-regart-runtime-api:
     name: pack-regart-runtime-api
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -611,6 +775,7 @@ jobs:
 
   stage20-docs-gate:
     name: stage20-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -621,6 +786,8 @@ jobs:
   self-obs-tests:
     name: self-obs-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -629,6 +796,7 @@ jobs:
 
   stage21-docs-gate:
     name: stage21-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -639,6 +807,8 @@ jobs:
   e2e-smoke:
     name: e2e-smoke
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -648,6 +818,8 @@ jobs:
   e2e-chaos:
     name: e2e-chaos
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -656,6 +828,7 @@ jobs:
 
   stage22-docs-gate:
     name: stage22-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -666,14 +839,19 @@ jobs:
   ops-smoke:
     name: ops-smoke
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Stage 23 ops smoke
-        run: bash scripts/tests/ops_stage23_smoke.sh
+        run: |
+          bash scripts/tests/ops_stage23_smoke.sh
+          bash scripts/tests/tls_config_invalid_runtime.sh
 
   ops-docs-gate:
     name: ops-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -684,6 +862,8 @@ jobs:
   release-regression:
     name: release-regression
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -693,6 +873,8 @@ jobs:
   release-signing-verify:
     name: release-signing-verify
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -701,6 +883,7 @@ jobs:
 
   stage24-docs-gate:
     name: stage24-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -711,6 +894,8 @@ jobs:
   compliance-export:
     name: compliance-export
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -719,6 +904,7 @@ jobs:
 
   stage25-docs-gate:
     name: stage25-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -729,6 +915,8 @@ jobs:
   ru-profile-tests:
     name: ru-profile-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -737,6 +925,7 @@ jobs:
 
   stage26-docs-gate:
     name: stage26-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -746,6 +935,7 @@ jobs:
 
   stage28-docs-gate:
     name: stage28-docs-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -755,6 +945,7 @@ jobs:
 
   stage28-risk-gate:
     name: stage28-risk-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -764,6 +955,7 @@ jobs:
 
   stage28-lens-gate:
     name: stage28-lens-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -774,6 +966,8 @@ jobs:
   stage28-audio-settings-e2e:
     name: stage28-audio-settings-e2e
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -794,6 +988,7 @@ jobs:
 
   docs-portal-gate:
     name: docs-portal-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -804,6 +999,8 @@ jobs:
   console-workspace-install:
     name: console-workspace-install
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -823,6 +1020,8 @@ jobs:
   console-lint:
     name: console-lint
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -844,6 +1043,8 @@ jobs:
   console-test:
     name: console-test
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -865,6 +1066,8 @@ jobs:
   console-build:
     name: console-build
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -886,6 +1089,8 @@ jobs:
   workspace-boundary-check:
     name: workspace-boundary-check
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -895,6 +1100,8 @@ jobs:
   workspace-boundary-negative-smoke:
     name: workspace-boundary-negative-smoke
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -904,6 +1111,8 @@ jobs:
   panel0-i18n-law-tests:
     name: panel0-i18n-law-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -923,6 +1132,8 @@ jobs:
   stage29-dna-assurance-gate:
     name: stage29-dna-assurance-gate
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -932,6 +1143,8 @@ jobs:
   stage29-dna-tests:
     name: stage29-dna-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -941,6 +1154,8 @@ jobs:
   stage29-dna-property-million:
     name: stage29-dna-property-million
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -950,6 +1165,8 @@ jobs:
   stage29-contract-fingerprint:
     name: stage29-contract-fingerprint
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -959,6 +1176,8 @@ jobs:
   stage29-nightly-replay-determinism:
     name: stage29-nightly-replay-determinism
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -968,6 +1187,8 @@ jobs:
   stage30-evidence-claims-tests:
     name: stage30-evidence-claims-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -993,6 +1214,8 @@ jobs:
   stage30-truth-modes-tests:
     name: stage30-truth-modes-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1014,6 +1237,8 @@ jobs:
   stage31-investigation-doc-tests:
     name: stage31-investigation-doc-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1035,6 +1260,8 @@ jobs:
   stage31-investigation-library-tests:
     name: stage31-investigation-library-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1056,6 +1283,8 @@ jobs:
   stage32-audit-merkle-tests:
     name: stage32-audit-merkle-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1065,6 +1294,8 @@ jobs:
   stage32-audit-ux-anti-breakage:
     name: stage32-audit-ux-anti-breakage
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1086,6 +1317,8 @@ jobs:
   stage33-secure-actions-tests:
     name: stage33-secure-actions-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1095,6 +1328,8 @@ jobs:
   stage33-action-ux-anti-breakage:
     name: stage33-action-ux-anti-breakage
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1116,6 +1351,8 @@ jobs:
   coverage-ratchet-gate:
     name: coverage-ratchet-gate
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1125,6 +1362,8 @@ jobs:
   stage34-perf-load-tests:
     name: stage34-perf-load-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1134,6 +1373,8 @@ jobs:
   stage35-spatial-readiness-tests:
     name: stage35-spatial-readiness-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1155,6 +1396,8 @@ jobs:
   stage35-flow-perf-2d-gate:
     name: stage35-flow-perf-2d-gate
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1164,6 +1407,8 @@ jobs:
   stage35-flow-inspectability-tests:
     name: stage35-flow-inspectability-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1185,6 +1430,8 @@ jobs:
   stage35-flow-snapshot-replay-tests:
     name: stage35-flow-snapshot-replay-tests
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1206,6 +1453,8 @@ jobs:
   stage36-saas-architecture-gate:
     name: stage36-saas-architecture-gate
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1215,6 +1464,8 @@ jobs:
   stage37-linux-hardening-gate:
     name: stage37-linux-hardening-gate
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1224,6 +1475,8 @@ jobs:
   platform-matrix-contract-gate:
     name: platform-matrix-contract-gate
     runs-on: ubuntu-latest
+    needs: change-scope
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1249,7 +1502,8 @@ jobs:
   ubuntu-smoke:
     name: ubuntu-smoke
     runs-on: ubuntu-latest
-    needs: platform-matrix-contract-gate
+    needs: [change-scope, platform-matrix-contract-gate]
+    if: needs.change-scope.outputs.run_heavy == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -1265,6 +1519,7 @@ jobs:
 
   stage38-ladder-gate:
     name: stage38-ladder-gate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

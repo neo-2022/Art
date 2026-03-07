@@ -1,5 +1,9 @@
 # Runbook: ui_proxy_unavailable
 
+## Source of truth
+- `docs/governance/runbook_policy.md`
+- `docs/source/checklists/CHECKLIST_01_GOVERNANCE_SRE.md`
+
 ## symptoms
 - индикатор UI Proxy в панели “Сервисы” помечен как OFF/задёрган, `/ui/art/stream` возвращает 502/502, `/ui/art/ingest` проседает с `Bad Gateway`.
 - `observability_gap.ui_proxy_unavailable` появляется в Level0 (payload содержит endpoint/status/retry_count/backoff). Следим за 4 золотыми сигналами (latency/error/traffic/saturation) — рост latency или ошибки подчёркивают деградацию.
@@ -27,3 +31,16 @@
 ## escalation
 - если restart не помогает в течение 15 минут, передайте On-call engineer (devops@) с ссылкой на последние `journalctl` и `observability_gap` (trace_id, retry_count).
 - если сервис не стартует (Exit code ≠ 0) — откройте incident ticket `obs-gap` и задокументируйте на Slack/Teams с tag `#art-ops`.
+
+## evidence
+- Сохранить event payload, `trace_id`/`request_id`/`audit_id`, affected component, version/build, config diff и relevant log excerpts.
+- Для UI/runtime проблем приложить screenshot/video reproduction и browser/runtime context.
+- Для release/config проблем приложить commit/tag/PR и rollback decision.
+
+## owner
+- Основной владелец: дежурный инженер и компонент-владелец по RACI/реестру событий.
+- Ответственный за эскалацию: Incident Commander для SEV1+ или затяжного инцидента.
+
+## degraded mode
+- Если полное восстановление недоступно, включить документированный degraded/read-only mode для затронутой поверхности.
+- Зафиксировать scope деградации, срок действия и условие выхода из degraded mode.

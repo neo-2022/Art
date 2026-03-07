@@ -224,6 +224,16 @@
           }
         };
 
+        const scheduleBacklogFlush = () => {
+          try {
+            globalThis.setTimeout(() => {
+              void flushBacklog();
+            }, 0);
+          } catch {
+            // ignore scheduler failures; Panel0 must still open immediately
+          }
+        };
+
         const fallbackToPanel0 = async (reasonType, details) => {
           if (finished) {
             return;
@@ -246,7 +256,7 @@
             metaEl.textContent = JSON.stringify(evidence);
           }
           try {
-            await flushBacklog();
+            scheduleBacklogFlush();
           } finally {
             globalThis.location.replace("/panel0/");
           }

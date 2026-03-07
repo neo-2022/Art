@@ -23,11 +23,13 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Resolve tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
         shell: bash
         run: |
           set -euo pipefail
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            echo "RELEASE_TAG=${{ inputs.tag }}" >> "$GITHUB_ENV"
+            echo "RELEASE_TAG=${INPUT_TAG}" >> "$GITHUB_ENV"
           else
             echo "RELEASE_TAG=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
           fi
@@ -36,6 +38,13 @@ jobs:
         uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9
         with:
           toolchain: stable
+
+      - name: Install console workspace dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
 
       - name: Build Linux static artifacts
         shell: bash
@@ -48,20 +57,25 @@ jobs:
           VERSION="${RELEASE_TAG#v}"
           CORE_NAME="artcore-${VERSION}-linux-x86_64-static"
           AGENT_NAME="artagent-${VERSION}-linux-x86_64-static"
+          UI_NAME="artui-${VERSION}-web-static"
 
           cargo build -p art-core --profile general --target x86_64-unknown-linux-musl --locked
           cargo build -p art-agent --profile general --target x86_64-unknown-linux-musl --locked
+          corepack pnpm --filter ./apps/console-web run build
 
-          mkdir -p "dist/${CORE_NAME}" "dist/${AGENT_NAME}"
-          cp target/x86_64-unknown-linux-musl/general/art-core "dist/${CORE_NAME}/art-core"
-          cp target/x86_64-unknown-linux-musl/general/art-agent "dist/${AGENT_NAME}/art-agent"
-          chmod 0755 "dist/${CORE_NAME}/art-core" "dist/${AGENT_NAME}/art-agent"
+          mkdir -p "core/dist/${CORE_NAME}" "agent/dist/${AGENT_NAME}" "ui/dist/${UI_NAME}"
+          cp target/x86_64-unknown-linux-musl/general/art-core "core/dist/${CORE_NAME}/art-core"
+          cp target/x86_64-unknown-linux-musl/general/art-agent "agent/dist/${AGENT_NAME}/art-agent"
+          cp -R apps/console-web/dist/. "ui/dist/${UI_NAME}/"
+          chmod 0755 "core/dist/${CORE_NAME}/art-core" "agent/dist/${AGENT_NAME}/art-agent"
 
-          tar -C dist -czf "dist/${CORE_NAME}.tar.gz" "${CORE_NAME}"
-          tar -C dist -czf "dist/${AGENT_NAME}.tar.gz" "${AGENT_NAME}"
+          tar -C core/dist -czf "core/dist/${CORE_NAME}.tar.gz" "${CORE_NAME}"
+          tar -C agent/dist -czf "agent/dist/${AGENT_NAME}.tar.gz" "${AGENT_NAME}"
+          tar -C ui/dist -czf "ui/dist/${UI_NAME}.tar.gz" "${UI_NAME}"
 
-          echo "CORE_ARTIFACT=dist/${CORE_NAME}.tar.gz" >> "$GITHUB_ENV"
-          echo "AGENT_ARTIFACT=dist/${AGENT_NAME}.tar.gz" >> "$GITHUB_ENV"
+          echo "CORE_ARTIFACT=core/dist/${CORE_NAME}.tar.gz" >> "$GITHUB_ENV"
+          echo "AGENT_ARTIFACT=agent/dist/${AGENT_NAME}.tar.gz" >> "$GITHUB_ENV"
+          echo "UI_ARTIFACT=ui/dist/${UI_NAME}.tar.gz" >> "$GITHUB_ENV"
 
       - name: Install syft
         shell: bash
@@ -83,7 +97,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sha256sum "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" sbom.spdx.json > SHA256SUMS
+          sha256sum "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" "${UI_ARTIFACT}" sbom.spdx.json > checksums.txt
 
       - name: Generate provenance attestation payload
         shell: bash
@@ -103,8 +117,9 @@ jobs:
           artifacts = [
               pathlib.Path(os.environ["CORE_ARTIFACT"]),
               pathlib.Path(os.environ["AGENT_ARTIFACT"]),
+              pathlib.Path(os.environ["UI_ARTIFACT"]),
               pathlib.Path("sbom.spdx.json"),
-              pathlib.Path("SHA256SUMS"),
+              pathlib.Path("checksums.txt"),
           ]
           payload = {
               "type": "stage04.provenance",
@@ -138,7 +153,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for f in "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" sbom.spdx.json SHA256SUMS provenance.attestation.json; do
+          for f in "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" "${UI_ARTIFACT}" sbom.spdx.json checksums.txt provenance.attestation.json; do
             cosign sign-blob --yes \
               --output-signature "${f}.sig" \
               --output-certificate "${f}.pem" \
@@ -150,7 +165,7 @@ jobs:
         run: |
           set -euo pipefail
           ID_RE="https://github.com/neo-2022/Art/.github/workflows/release_stage04.yml@.*"
-          for f in "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" sbom.spdx.json SHA256SUMS provenance.attestation.json; do
+          for f in "${CORE_ARTIFACT}" "${AGENT_ARTIFACT}" "${UI_ARTIFACT}" sbom.spdx.json checksums.txt provenance.attestation.json; do
             cosign verify-blob \
               --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
               --certificate-identity-regexp "$ID_RE" \
@@ -173,12 +188,13 @@ jobs:
           assert payload["workflow"] == "release-stage04"
           assert payload["sha"] == os.environ["GITHUB_SHA"]
           subjects = payload.get("subjects", [])
-          assert len(subjects) == 4
+          assert len(subjects) == 5
           names = {s["name"] for s in subjects}
           assert os.environ["CORE_ARTIFACT"] in names
           assert os.environ["AGENT_ARTIFACT"] in names
+          assert os.environ["UI_ARTIFACT"] in names
           assert "sbom.spdx.json" in names
-          assert "SHA256SUMS" in names
+          assert "checksums.txt" in names
           PY
 
       - name: Publish release assets
@@ -190,17 +206,20 @@ jobs:
           ASSETS=(
             "${CORE_ARTIFACT}"
             "${AGENT_ARTIFACT}"
+            "${UI_ARTIFACT}"
             sbom.spdx.json
-            SHA256SUMS
+            checksums.txt
             provenance.attestation.json
             "${CORE_ARTIFACT}.sig"
             "${CORE_ARTIFACT}.pem"
             "${AGENT_ARTIFACT}.sig"
             "${AGENT_ARTIFACT}.pem"
+            "${UI_ARTIFACT}.sig"
+            "${UI_ARTIFACT}.pem"
             sbom.spdx.json.sig
             sbom.spdx.json.pem
-            SHA256SUMS.sig
-            SHA256SUMS.pem
+            checksums.txt.sig
+            checksums.txt.pem
             provenance.attestation.json.sig
             provenance.attestation.json.pem
           )

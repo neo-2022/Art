@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-for f in docs/browser/level0_api.md docs/browser/outbox_limits.md docs/browser/cors_gap.md docs/browser/compression.md docs/browser/dlq.md docs/browser/chaos_e2e_matrix.md docs/runbooks/cors_blocked.md docs/runbooks/outbox_decompress_failed.md docs/runbooks/outbox_event_expired.md docs/runbooks/worker_unavailable.md docs/runbooks/outbox_full.md docs/runbooks/lossy_mode_active.md; do test -s "$f"; done
+for f in docs/browser/level0_api.md docs/browser/outbox_limits.md docs/browser/cors_gap.md docs/browser/compression.md docs/browser/dlq.md docs/browser/chaos_e2e_matrix.md docs/source/browser_surface_hardening_v0_2.md docs/runbooks/cors_blocked.md docs/runbooks/outbox_decompress_failed.md docs/runbooks/outbox_event_expired.md docs/runbooks/worker_unavailable.md docs/runbooks/outbox_full.md docs/runbooks/lossy_mode_active.md docs/runbooks/browser_surface_policy_degraded.md; do test -s "$f"; done
 grep -q "1024" docs/browser/compression.md
 grep -q "gzip" docs/browser/compression.md
 grep -q "7 суток" docs/browser/dlq.md
@@ -10,7 +10,9 @@ grep -q "never_drop_unacked" docs/browser/outbox_limits.md
 grep -q "drop_oldest_when_full" docs/browser/outbox_limits.md
 grep -q "browser_level0_chaos_e2e.sh" docs/browser/chaos_e2e_matrix.md
 grep -q "Outbox flush retry" docs/browser/chaos_e2e_matrix.md
-for f in docs/runbooks/cors_blocked.md docs/runbooks/outbox_decompress_failed.md docs/runbooks/outbox_event_expired.md docs/runbooks/worker_unavailable.md docs/runbooks/outbox_full.md docs/runbooks/lossy_mode_active.md; do
+grep -q "CSP" docs/source/browser_surface_hardening_v0_2.md
+grep -q "frame-ancestors" docs/source/browser_surface_hardening_v0_2.md
+for f in docs/runbooks/cors_blocked.md docs/runbooks/outbox_decompress_failed.md docs/runbooks/outbox_event_expired.md docs/runbooks/worker_unavailable.md docs/runbooks/outbox_full.md docs/runbooks/lossy_mode_active.md docs/runbooks/browser_surface_policy_degraded.md; do
   grep -q "mitigations" "$f"
   grep -q "verification" "$f"
 done

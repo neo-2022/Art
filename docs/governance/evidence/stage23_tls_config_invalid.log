@@ -1,0 +1,7 @@
+tls-config-invalid-startup-backlog: persisted
+tls-config-invalid-startup-backlog: published
+{
+  "events_after_start": 1,
+  "tls_config_invalid_present": true
+}
+tls-config-invalid-runtime-smoke: OK

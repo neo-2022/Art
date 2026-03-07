@@ -7,8 +7,11 @@
 
 ## Реализация
 1. Core накапливает minute-buckets по событиям (`total`, `gap`, `severity`, `kind`, `dna`).
-2. Состояние аналитики сохраняется в файл (`CORE_ANALYTICS_STATE_PATH`, default `/tmp/art_core_analytics_state.json`).
-3. Endpoint `GET /api/v2/analytics/summary` возвращает:
+2. Основное состояние аналитики сохраняется в SQLite вместе с durable storage-контуром Core.
+3. Путь `CORE_ANALYTICS_STATE_PATH` сохраняется как legacy mirror/import path:
+   - может использоваться для одноразового импорта или внешней диагностики;
+   - не считается primary source of truth для восстановления после рестарта.
+4. Endpoint `GET /api/v2/analytics/summary` возвращает:
    - totals,
    - chart-ready series,
    - top kinds/DNA,
@@ -24,3 +27,12 @@ curl -s "http://127.0.0.1:7070/api/v2/analytics/summary?window_minutes=120&top=5
 - высокий invalid payload -> проверка producer schema;
 - доминирующий kind -> выделенный план remediation;
 - доминирующий DNA -> приоритизация Investigation-as-Code.
+
+## Текущее corrective-ограничение
+- durable analytics recovery уже переведён в SQLite;
+- hostile backup/restore доказательство на полном `Core state` уже есть;
+- live runtime-контур `corruption -> 503/retry_after_ms -> restore -> read_only fallback` уже доказан;
+- live-process chaos сценарий `kill -9` во время ingest уже доказан отдельным smoke;
+- concurrency proof для долгой многопоточной нагрузки теперь тоже зафиксирован отдельным stage-level evidence на `8 writer / 4 reader / 10000 ops`;
+- `stage11` по storage-basement теперь закрыт полностью.
+- downstream continuation для durable analytics/storage contour остаётся уже в `stage23` и `stage37`.

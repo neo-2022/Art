@@ -1,4 +1,4 @@
-# Go/No-Go Decision Template
+# Шаблон Решения Go/No-Go
 
 ## Source of truth
 - `docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md`
@@ -13,19 +13,21 @@
 ## Назначение
 Шаблон фиксирует единое решение перед rollout: релиз допускается только после явного `GO`, подтверждённого обязательными gates, артефактами и rollback-планом.
 
-## Когда использовать
+## Когда Использовать
 - production rollout;
 - canary expansion;
 - major upgrade / migration;
 - rollout после security/performance remediation;
 - восстановление после incident-driven freeze.
 
-## Жёсткие правила
+## Жёсткие Правила
 1. Решение `GO` запрещено, если есть хотя бы один красный required check.
 2. Решение `GO` запрещено, если есть открытый release-blocker в risk register или checklist gates.
 3. Решение `GO` запрещено, если dual-write mismatch rate после grace window больше `0`.
 4. Решение `GO` запрещено, если отсутствует rollback plan с проверяемой точкой возврата.
 5. Решение `GO` запрещено, если evidence artifacts не приложены или не трассируются к MASTER/checklists.
+6. Решение `GO` запрещено, если не доказаны `trust boundary`, `browser surface` baseline или ingress/perimeter shield для целевого профиля.
+7. Решение `GO` запрещено, если для partner-exposed или `REGART` rollout отсутствует pinned external adversarial harness proof.
 
 ## Шаблон
 
@@ -54,6 +56,10 @@
 - [ ] Evidence ledger и delivery artifacts обновлены
 - [ ] Rollback plan проверен
 - [ ] Alerting / observability gates включены
+- [ ] `Trust boundary` доказана для privileged/restricted paths
+- [ ] `Browser surface` baseline доказан для browser-facing routes
+- [ ] `Ingress/perimeter` shield baseline доказан для internet-exposed rollout
+- [ ] Pinned external adversarial harness proof приложен для partner-exposed / `REGART` rollout
 
 ## 3. Критические метрики перед релизом
 - Error budget:
@@ -69,6 +75,7 @@
 - Открытые blockers:
 - Допустимые риски с owner:
 - Условие немедленного STOP rollout:
+- `missing pinned external adversarial harness evidence for partner-exposed / REGART rollout`
 - Требуется ли manual watch window:
 
 ## 5. План выката
@@ -109,21 +116,22 @@
 - Product Owner (если требуется):
 ```
 
-## Минимальный порядок заполнения
+## Минимальный Порядок Заполнения
 1. Сначала фиксируются commit/tag и CI run.
 2. Затем отмечаются только реально пройденные gates.
 3. Затем заносятся метрики и blockers.
 4. Только после этого принимается решение `GO` или `NO-GO`.
 5. Заполненный sheet прикладывается к release evidence / change record.
 
-## Что считается PASS
+## Что Считается PASS
 - обязательные проверки зелёные;
 - все ссылки на evidence открываются и соответствуют текущему release candidate;
 - rollback можно выполнить без ручной импровизации;
 - решение подписано ответственными ролями.
 
-## Что считается NO-GO
+## Что Считается NO-GO
 - хотя бы один required gate в `pending` или `fail`;
 - есть расхождение между runtime state и documented state;
 - отсутствует часть release artifacts;
 - нет подтверждения по Linux prod readiness или platform compatibility.
+- отсутствует pinned external adversarial harness proof для partner-exposed / `REGART` rollout.

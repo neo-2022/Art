@@ -27,6 +27,8 @@ This template defines the single operational decision record before rollout. A r
 3. `GO` is forbidden if dual-write mismatch rate after the grace window is greater than `0`.
 4. `GO` is forbidden if no rollback plan with a verified return point exists.
 5. `GO` is forbidden if evidence artifacts are missing or not traceable to MASTER/checklists.
+6. `GO` is forbidden if `trust boundary`, `browser surface` baseline, or ingress/perimeter shield are not proven for the target rollout profile.
+7. `GO` is forbidden if pinned external adversarial harness proof is missing for partner-exposed or `REGART` rollout.
 
 ## Template
 
@@ -55,6 +57,10 @@ This template defines the single operational decision record before rollout. A r
 - [ ] Evidence ledger and delivery artifacts updated
 - [ ] Rollback plan verified
 - [ ] Alerting / observability gates enabled
+- [ ] `Trust boundary` proven for privileged or restricted paths
+- [ ] `Browser surface` baseline proven for browser-facing routes
+- [ ] `Ingress/perimeter` shield baseline proven for internet-exposed rollout
+- [ ] Pinned external adversarial harness proof attached for partner-exposed / `REGART` rollout
 
 ## 3. Critical pre-release metrics
 - Error budget:
@@ -70,6 +76,7 @@ This template defines the single operational decision record before rollout. A r
 - Open blockers:
 - Accepted risks with owner:
 - Immediate STOP rollout condition:
+- `missing pinned external adversarial harness evidence for partner-exposed / REGART rollout`
 - Is a manual watch window required:
 
 ## 5. Rollout plan
@@ -128,3 +135,4 @@ This template defines the single operational decision record before rollout. A r
 - runtime state and documented state diverge;
 - mandatory release artifacts are missing;
 - Linux production readiness or platform compatibility is not confirmed.
+- pinned external adversarial harness proof is missing for partner-exposed / `REGART` rollout.

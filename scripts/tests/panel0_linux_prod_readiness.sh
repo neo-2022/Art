@@ -13,6 +13,18 @@ TMP_DIR="$(mktemp -d)"
 export CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 export PWCLI="$CODEX_HOME/skills/playwright/scripts/playwright_cli.sh"
 
+dump_logs() {
+  echo "--- panel0-linux core.log ---"
+  [[ -f "$TMP_DIR/core.log" ]] && cat "$TMP_DIR/core.log" || true
+  echo "--- panel0-linux proxy.log ---"
+  [[ -f "$TMP_DIR/proxy.log" ]] && cat "$TMP_DIR/proxy.log" || true
+}
+
+on_error() {
+  dump_logs
+}
+trap on_error ERR
+
 cleanup() {
   if [[ -x "$PWCLI" ]]; then
     "$PWCLI" close-all >/dev/null 2>&1 || true
@@ -61,6 +73,38 @@ assert_contains() {
   fi
 }
 
+fetch_proxy_snapshot() {
+  for _ in $(seq 1 20); do
+    if out="$(curl -fsS "http://127.0.0.1:${PROXY_PORT}/api/v1/snapshot" 2>/dev/null)"; then
+      printf '%s\n' "$out"
+      return 0
+    fi
+    sleep 0.2
+  done
+  echo "ASSERT FAIL: unable to fetch proxy snapshot from :${PROXY_PORT}"
+  return 1
+}
+
+wait_panel0_state() {
+  local expected_core_down="$1"
+  local expected_path="$2"
+  local timeout_secs="${3:-15}"
+  local last=""
+  local deadline=$((SECONDS + timeout_secs))
+  while (( SECONDS < deadline )); do
+    if out="$("$PWCLI" eval '() => ({ core_down: !document.querySelector("#core-down")?.classList.contains("hidden"), path: location.pathname })' 2>/dev/null)"; then
+      last="$out"
+      if grep -Fq "\"core_down\": ${expected_core_down}" <<<"$out" && grep -Fq "\"path\": \"${expected_path}\"" <<<"$out"; then
+        printf '%s\n' "$out"
+        return 0
+      fi
+    fi
+    sleep 0.5
+  done
+  printf '%s\n' "$last"
+  return 1
+}
+
 set_modes() {
   local console_mode="$1"
   local ingest_mode="$2"
@@ -72,7 +116,7 @@ set_modes() {
 }
 
 boot_count() {
-  curl -fsS "http://127.0.0.1:${PROXY_PORT}/api/v1/snapshot" | python3 -c '
+  fetch_proxy_snapshot | python3 -c '
 import json, sys
 obj = json.load(sys.stdin)
 count = 0
@@ -85,7 +129,7 @@ print(count)
 }
 
 latest_reason() {
-  curl -fsS "http://127.0.0.1:${PROXY_PORT}/api/v1/snapshot" | python3 -c '
+  fetch_proxy_snapshot | python3 -c '
 import json, sys
 obj = json.load(sys.stdin)
 latest_seq = -1
@@ -295,16 +339,16 @@ set_modes "http_error" "pass"
 stop_core
 out="$("$PWCLI" reload)"
 assert_contains "$out" "Page URL: http://127.0.0.1:${PROXY_PORT}/panel0/" "offline reload stays on panel0"
-out="$("$PWCLI" eval 'async () => { await new Promise((resolve) => setTimeout(resolve, 2500)); const text = document.body.innerText || ""; return { core_down: !document.querySelector("#core-down")?.classList.contains("hidden"), has_text: text.includes("Core is unavailable") || text.includes("Core недоступен") }; }')"
+sleep 2.5
+out="$("$PWCLI" eval '() => { const text = document.body.innerText || ""; return { core_down: !document.querySelector("#core-down")?.classList.contains("hidden"), has_text: text.includes("Core is unavailable") || text.includes("Core недоступен") }; }')"
 assert_contains "$out" '"core_down": true' "core down placeholder visible"
 
 start_core
 wait_http_ok "http://127.0.0.1:${PROXY_PORT}/health"
-out="$("$PWCLI" eval 'async () => { await new Promise((resolve) => setTimeout(resolve, 13000)); return { core_down: !document.querySelector("#core-down")?.classList.contains("hidden"), path: location.pathname }; }')"
-if ! grep -Fq '"core_down": false' <<<"$out"; then
+if ! out="$(wait_panel0_state false "/panel0/" 15)"; then
   echo "[panel0-linux] auto recovery not observed in headless loop, checking reload recovery"
   "$PWCLI" reload >/dev/null
-  out="$("$PWCLI" eval 'async () => { await new Promise((resolve) => setTimeout(resolve, 2500)); return { core_down: !document.querySelector("#core-down")?.classList.contains("hidden"), path: location.pathname }; }')"
+  out="$(wait_panel0_state false "/panel0/" 5 || true)"
 fi
 assert_contains "$out" '"core_down": false' "placeholder hides after core recovery"
 assert_contains "$out" '"path": "/panel0/"' "route remains panel0 after recovery"

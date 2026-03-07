@@ -51,6 +51,17 @@ if [[ "$STRICT_EXTERNAL" -eq 1 ]]; then
   test -s "$EXT_CHECKLIST"
   test -s "$EXT_UI/package.json"
 
+  if ! git -C "$EXT_REPO" rev-parse HEAD >/dev/null 2>&1; then
+    echo "stage05: external REGART source must be a git checkout with pinned commit"
+    exit 1
+  fi
+  EXT_COMMIT="$(git -C "$EXT_REPO" rev-parse HEAD)"
+  if [[ -n "$(git -C "$EXT_REPO" status --porcelain)" ]]; then
+    echo "stage05: external REGART source must be clean; dirty checkout is forbidden"
+    exit 1
+  fi
+  echo "stage05: pinned external source commit $EXT_COMMIT"
+
   echo "stage05: install external ui dependencies"
   npm --prefix "$EXT_UI" ci
 
@@ -68,5 +79,7 @@ else
   echo "stage05: run local runtime wrapper smoke tests"
   npm --prefix "$LOCAL_UI" test -- test/multitab.e2e.test.js test/outbox.compression.test.js
 fi
+
+bash "$ROOT/scripts/ci/check_regart_adversarial_harness.sh"
 
 echo "stage05 wrapper gate: OK"

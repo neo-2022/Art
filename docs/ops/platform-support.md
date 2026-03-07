@@ -1,4 +1,4 @@
-# Platform Support Matrix (Art / REGART)
+# Матрица Поддержки Платформ (Art / REGART)
 
 ## Source of truth
 - `formats/platform_support.yaml`
@@ -15,13 +15,30 @@
 
 Полный перечень и методы установки определяются только в `formats/platform_support.yaml`.
 
-## CI сейчас
+## Контур установки Art Agent
+- допустимые модели установки:
+  - `systemd service`
+  - `container sidecar`
+  - `k8s DaemonSet`
+  - `air-gapped package`
+- допустимые topology/path модели:
+  - `single-site`
+  - `multi-site / WAN`
+  - `segmented network`
+  - `air-gapped relay/export`
+- для всех моделей действует единый закон доставки:
+  - `receiver -> normalizer -> pre-write redaction -> spool/outbox -> transport -> Core ingest -> ack`
+- подробная спецификация:
+  - `docs/source/agent_deployment_transport_v0_2.md`
+  - `docs/ops/agent_multisite_deploy.md`
+
+## CI Сейчас
 - Натурные тесты исполняются только на Ubuntu.
 - Docker execute-smoke и Kubernetes execute-smoke исполняются на Ubuntu runner как обязательные production runtime gates.
 - Для остальных дистрибутивов job-скелеты существуют и валидны, но отключены условием `ENABLE_NATURAL_MATRIX=false`.
 - Это сознательный режим до подключения выделенных runner-ов.
 
-## Текущий production scope
+## Текущий Production Scope
 - Production profile `v0.2.0-prod` подтверждается для:
   - Ubuntu native runtime;
   - Docker runtime execute-smoke;
@@ -29,27 +46,27 @@
 - VM matrix и non-Ubuntu native matrix остаются validate-only, пока не подключены выделенные образы/runner-ы.
 - Это значит, что прод-декларация не распространяется на неподтверждённые distro/VM поверхности.
 
-## VM-контур (не на хосте)
+## VM-Контур (Не На Хосте)
 - Для проверки боеготовности вне хостовой ОС заложен VM-harness: `tests/platform/vm/run_vm_smoke.sh`.
 - Профили по каждому дистрибутиву: `tests/platform/vm/profiles/<distro>.env`.
 - Это позволяет проверять разные Linux-версии в изолированных VM без изменения логики `core/agent/browser`.
 - Подробная инструкция: `docs/ops/platform-vm-testing.md`.
 
-## Docker/Kubernetes как платформы тестирования
+## Docker/Kubernetes Как Платформы Тестирования
 - Отдельный Docker harness: `tests/platform/container/run_docker_smoke.sh`.
 - Отдельный Kubernetes harness: `tests/platform/k8s/run_k8s_smoke.sh`.
 - Контуры включены в source-of-truth и CI-gates как обязательные platform surfaces.
 - Execute-path больше не placeholder: он обязан реально пройти `health -> ingest -> stream -> action(noop) -> audit verify`.
 - Подробная инструкция: `docs/ops/platform-container-k8s-testing.md`.
 
-## Release artifacts contract
+## Контракт Релизных Артефактов
 - `artcore-<version>-linux-x86_64-static.tar.gz`
 - `artagent-<version>-linux-x86_64-static.tar.gz`
-- `SHA256SUMS`
+- `checksums.txt`
 - `sbom.spdx.json`
 - Docker runtime skeletons: `docker/core.Dockerfile`, `docker/agent.Dockerfile` (`FROM scratch`, static binaries).
 
-## Nat testing после финала
+## Nat-Testing После Финала
 После включения `ENABLE_NATURAL_MATRIX=true` активируются натуральные install/smoke jobs:
 - `debian-smoke`
 - `fedora-smoke`

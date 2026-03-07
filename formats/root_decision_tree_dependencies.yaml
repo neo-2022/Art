@@ -1,0 +1,48 @@
+version: "1.0"
+status: "ACTIVE"
+last_updated: "2026-03-07"
+
+notes:
+  - "Корневые документы задают замысел и законы проекта. Их изменение без синхронного обновления зависимых документов запрещено."
+  - "Этот файл является machine-readable картой корня дерева решений и используется CI-gate для контроля синхронизации."
+
+common_dependents:
+  - docs/testing/defect_remediation_ladder_v0_2.md
+  - docs/testing/defect_remediation_control_matrix_v0_2.md
+  - formats/defect_remediation_control_matrix_v0_2.yaml
+  - docs/source/checklists/CHECKLIST_00_MASTER_ART_REGART.md
+  - docs/source/checklists/TRACEABILITY_V0_2.md
+  - docs/source/README.md
+  - docs/README.md
+  - docs/source/trust_boundary_hardening_v0_2.md
+  - docs/source/browser_surface_hardening_v0_2.md
+  - docs/source/protective_safeguards_catalog_v0_2.md
+  - docs/source/storage_pressure_protection_v0_2.md
+  - docs/source/startup_config_safety_validator_v0_2.md
+  - docs/source/queue_integrity_protection_v0_2.md
+  - docs/source/guard_self_observability_v0_2.md
+  - docs/source/regart_adversarial_integration_harness_v0_2.md
+  - docs/source/connected_system_visibility_v0_2.md
+  - docs/packs/source_coverage.md
+
+roots:
+  - path: docs/source/FOUNDATION_CONSTITUTION_V0_2.md
+    priority: 1
+    role: constitution
+    extra_dependents:
+      - docs/ARCHITECTURE.md
+  - path: docs/foundation/PROJECT_HISTORY_AND_CONCEPTS.md
+    priority: 2
+    role: historical_corpus
+    extra_dependents:
+      - docs/portal/INDEX.md
+  - path: docs/source/Art_v1_spec_final.md
+    priority: 3
+    role: domain_baseline
+    extra_dependents:
+      - docs/ARCHITECTURE.md
+  - path: docs/source/REGART -  LangGraph  взаимодействие с Art описание.md
+    priority: 4
+    role: regart_integration_root
+    extra_dependents:
+      - docs/INTEGRATION.md

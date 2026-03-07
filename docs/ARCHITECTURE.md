@@ -1,57 +1,100 @@
-# Art v1 Architecture
+# Архитектурный обзор Art
 
-Документ синхронизирован с:
-- `docs/source/Art_v1_spec_final.md`
-- `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
+## Source of truth
+- [Art_v1_spec_final.md](source/Art_v1_spec_final.md)
+- [FOUNDATION_CONSTITUTION_V0_2.md](source/FOUNDATION_CONSTITUTION_V0_2.md)
+- [UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md](foundation/UNIVERSAL_PROJECT_IDEOLOGY_TEMPLATE.md)
+- [CHECKLIST_00_MASTER_ART_REGART.md](source/checklists/CHECKLIST_00_MASTER_ART_REGART.md)
+- [REGART -  LangGraph  взаимодействие с Art описание.md](source/REGART -  LangGraph  взаимодействие с Art описание.md)
+- [defect_remediation_control_matrix_v0_2.md](testing/defect_remediation_control_matrix_v0_2.md)
+- [defect_remediation_ladder_v0_2.md](testing/defect_remediation_ladder_v0_2.md)
+- `formats/root_decision_tree_dependencies.yaml`
 
-## 1. Принципы v1
+## Общая картина
 
-1. `100% observability` по доступным сигналам (включая фиксирование `observability_gap.*`).
-2. `UI как экран`: источник правды в Core pipeline и инцидентах.
-3. `Store-and-forward`: ни один event не теряется без явного события о потере.
+Art строится как единый продукт с тремя архитектурными уровнями:
+- Tier A: аварийный и degraded-интерфейс
+- Tier B: основной операционный интерфейс расследования
+- Tier C: SaaS и governance-слой
 
-## 2. Компоненты и границы ответственности
+Базовый закон архитектуры: `Core` — единственный источник истины.  
+Все остальные слои являются либо проекцией, либо транспортом, либо derived-хранилищем.
 
-### 2.1 Art Core (Rust)
+## Базовые runtime-компоненты
 
-- Приём: `POST /api/v1/ingest`
-- Чтение: `GET /api/v1/snapshot`, `GET /api/v1/stream`, `GET /api/v1/incidents`
-- Управление: `POST /api/v1/incidents/{id}/ack`, `.../resolve`, `POST /api/v1/actions/execute`
-- Служебное: `GET /health`, `GET /metrics`
-- Pipeline: `parse -> validate -> quality gates -> fingerprint -> rules -> aggregate -> incident -> enrich -> store -> publish`
-- Storage v1: SQLite WAL, миграции, retention, уникальность `incident_key = rule.id + fingerprint`
+### art-core
+- ingest, validation, normalization, rules, incidents, actions, audit
+- snapshot и stream API
+- хост для встроенного `Panel0`
+- опорная точка release и certified profile
+- corrective baseline `stage11` уже полностью закрыл durable SQLite basement: не только `events/incidents/audit`, но и `fingerprint/source indexes`, `dna/evidence` и analytics/counters; hostile backup/restore proof для полного состояния уже получен, backup-root разведен по `db_path`, backup cadence `15 минут` enforced в runtime самого `Core`, live corruption/read_only contour материализован end-to-end, live `kill -9 during ingest` chaos доказан как отдельный runtime-proof, `storage pressure / disk exhaustion` contour materialized с high/critical watermarks, `storage_disk_full`, archive/prune discipline и recovery после увеличения budget, stage-level concurrency proof зафиксирован отдельным runtime-evidence `8/4/10000`, а production-proof `VACUUM/systemd` подтверждён отдельным runtime smoke; downstream continuation этого basement остаётся уже в `stage23` и `stage37`, где `tls_config_invalid` как fail-closed startup backlog уже materialized, а незакрытым остаётся только честный TLS hot-reload без простоя
 
-### 2.2 Art Agent (Rust)
+### art-agent
+- сбор сигналов на уровне ОС и сервисов
+- целевая модель — надёжная доставка через spool и outbox
+- фактический runtime-контур доставки и relay/TLS basement остаётся corrective-зоной следующих стадий и не считается закрытым
+- деградация должна фиксироваться явно, а не маскироваться
 
-- Receivers: journald, systemd, files, proc, ports, net_probe, OTLP
-- Надёжная доставка: spool/outbox (`write -> send -> ack -> delete confirmed`)
-- Режим по умолчанию: `never_drop_unacked`
-- При деградации: явные события `data_quality.*` и/или `observability_gap.*`
+### browser / Level0
+- браузерный backlog и capture path
+- мост для клиентских и runtime-сигналов
+- потеря доставки оформляется как evidence/gap, а не как тишина
 
-### 2.3 Browser Level0 (JS)
+## Продуктовые поверхности
 
-- Сбор ошибок runtime и UX-событий.
-- Локальный backlog (IndexedDB) для offline/temporary failures.
-- Отправка в Art Agent/Core с корреляцией, когда доступна.
-- При невозможности доставки: события о gap, а не молчаливая потеря.
+### Tier A: Panel0
+- аварийный встроенный UI внутри Core
+- доступен при отказе Console
+- показывает статус, gaps, evidence и fallback-путь операций
 
-## 3. Модель интеграции с REGART
+### Tier B: Console
+- находится в `apps/console-web`
+- использует только Core API и workspace packages
+- покрывает Command Center, Event River, Incident Room, Audit Explorer, Investigation Library и Visual Flow Mode
 
-В интеграции с REGART используются три канала:
-- `A (OS-level)` — через Agent (systemd/journald/ports/net probes)
-- `B (backend-level)` — события сервисов REGART (UI Proxy, LangGraph)
-- `C (browser-level)` — события из REGART Level0
+### Tier C: SaaS Layer
+- tenant isolation и policy boundary
+- quota, retention и compliance rules
+- release и операционное управление для hosted-модели
 
-Ключевой порядок запуска:
-1. Art Core
-2. Art Agent
-3. REGART services
+## Архитектурные законы
+- Core является единственным источником истины
+- evidence-first рендеринг обязателен
+- degraded-path встроен в основную архитектуру
+- переход к следующему этапу запрещён без подтверждённого закрытия текущего
+- архитектурная документация обязана быть человекочитаемой: любой критичный архитектурный механизм должен быть объяснён так, чтобы его понял новый инженер и оператор, а не только автор исходной реализации
+- платформенные различия разрешены только в packaging/install/runtime profiles, но не в бизнес-логике
+- порядок remediation определяется корневым деревом решений, дефектовочной контрольной ведомостью и дефектовочной лестницей, а не “следующим номером этапа”
+- defect-remediation control matrix задаёт поштучный corrective-контроль каждого дефекта, а дефектовочная лестница определяет порядок их исполнения по слоям
+- архитектурные решения принимаются только по пути `корень -> ствол -> крона`
+- hardcoding запрещён как архитектурный anti-pattern и допускается только как явно оформленный test fixture вне production baseline
+- internet-exposed deployment без ingress/perimeter shield запрещён как архитектурный anti-pattern
+- если нижний corrective-basement уже доведён и закрыт честно, активный corrective baseline обязан явно смещаться в следующий downstream stage; архитектурный обзор не имеет права оставлять проект “мысленно” в уже закрытом нижнем слое
+- high-risk монолитные entrypoint-файлы считаются архитектурным долгом и должны разрезаться после стабилизации basement по defect-линии `DEF-017`
+- рост высокорисковых entrypoint-файлов запрещён уже сейчас: до завершения `DEF-017/DEF-032` действует machine-readable budget и CI guard, который не позволяет дальше наращивать плотность в этих файлах
+- string/render-only test corpus не считается достаточным архитектурным доказательством поведения; hostile integration/e2e hardening обязателен по defect-линии `DEF-018`
 
-Так обеспечивается диагностика даже если REGART не поднялся.
+## Ingress / perimeter boundary
+- app-level backpressure внутри `art-core` обязателен, но не считается полноценной DDoS-защитой;
+- для internet-exposed и partner-exposed deployment-профилей обязателен front-door / edge / ingress shield;
+- hostile ingress scenarios должны материализоваться не только в release/docs, но и в runbooks, observability gaps и validate-path.
 
-## 4. Нормативная трассировка в документах
+## Trust boundary и browser surface
+- доверительный actor-context должен рождаться в trusted auth / edge / relay контуре, а не в клиентских заголовках;
+- `Core` не имеет права принимать `actor_role`, `mcp_mode`, `access_scope` и `client_ip` как security truth из недоверенного источника;
+- browser surface (Browser Level0, Panel0, Console, showcase) обязана иметь единый security baseline:
+  - CSP;
+  - frame restrictions;
+  - browser security headers;
+  - asset integrity/provenance;
+  - safe fallback при policy degradation.
+- Эти два protective contour считаются обязательной частью архитектуры hostile production среды, а не поздним hardening.
 
-- Полный норматив: `docs/source/Art_v1_spec_final.md`
-- Конкретно по REGART: `docs/source/REGART -  LangGraph  взаимодействие с Art описание.md`
-- Поэтапная реализация: `docs/source/checklists/README.md`
-- Рабочий план интеграции: `docs/INTEGRATION.md`
+## Граница с REGART
+- Art и REGART остаются отдельными репозиториями
+- границы контрактов, событий и runtime-поведения жёстко определены
+- Console не встраивается в REGART
+- интеграция идёт через transport, events, Level0 и операционные контракты
+- доказательство readiness этой границы допускается только через pinned external adversarial harness, а не через floating local checkout.
+
+Детальный интеграционный слой: [INTEGRATION.md](INTEGRATION.md)

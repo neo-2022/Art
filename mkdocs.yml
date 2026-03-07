@@ -36,6 +36,7 @@ plugins:
 nav:
   - Портал:
       - Главная: docs/portal/INDEX.md
+      - Дерево документации: docs/portal/DOCUMENTATION_TREE.md
       - Навигация: docs/portal/NAVIGATION.md
       - Стиль: docs/portal/DOC_STYLE_GUIDE.md
       - Авторитет документов: docs/portal/DOC_AUTHORITY.md

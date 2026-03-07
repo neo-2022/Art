@@ -1,0 +1,12 @@
+{
+  "writers": 8,
+  "readers": 4,
+  "ops_target": 10000,
+  "elapsed_seconds": 26.061,
+  "accepted": 10000,
+  "committed": 10000,
+  "db_count": 10000,
+  "write_errors": [],
+  "read_errors": [],
+  "database_locked_fatal": false
+}

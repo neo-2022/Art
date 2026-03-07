@@ -1,0 +1,81 @@
+version: "1.0"
+status: "ACTIVE"
+last_updated: "2026-03-07"
+
+notes:
+  - "Connected System View определяет, как Art показывает факт подключения внешней системы и какие данные от неё реально получает."
+  - "Зелёный статус разрешён только при наличии свежих observed signals; declared config сам по себе не является доказательством подключения."
+
+required_fields:
+  - system_id
+  - display_name
+  - integration_kind
+  - connection_status
+  - declared_data_kinds
+  - observed_data_kinds
+  - receiver_kinds
+  - telemetry_endpoints
+  - active_gap_events
+  - evidence_refs
+
+optional_fields:
+  - pack_id
+  - pack_version
+  - owner_component
+  - site_id
+  - segment_id
+  - regulatory_tags
+  - transport_paths
+  - first_seen_ts_ms
+  - last_seen_ts_ms
+  - freshness_threshold_ms
+  - status_reason
+
+status_values:
+  connected:
+    meaning: "Есть declared coverage и свежие observed signals; активные gap-события не ломают сам факт подключения."
+  degraded:
+    meaning: "Подключение подтверждено, но активные gap-события ослабляют доверие к полноте данных."
+  declared_only:
+    meaning: "Интеграция описана, но свежих observed signals ещё нет."
+  disconnected:
+    meaning: "Ранее observed signals были, но окно свежести вышло."
+  unknown:
+    meaning: "Runtime truth не определён."
+
+required_pack_fields:
+  - service_inventory
+  - receiver_examples
+  - signal_coverage_claims
+  - telemetry_endpoints
+  - regulatory_tags
+  - connected_system_projection
+
+required_ui_sections:
+  - connection_status
+  - declared_vs_observed_data_kinds
+  - receiver_kinds
+  - telemetry_endpoints
+  - active_gap_events
+  - evidence_refs
+
+required_gap_events:
+  - observability_gap.connected_system_not_visible
+  - observability_gap.connected_system_coverage_drift
+
+data_kind_examples:
+  - ui_runtime
+  - proxy_upstream
+  - langgraph_run
+  - debugger_state
+  - systemd_state
+  - journald_log
+  - process_probe
+  - net_probe
+  - otlp_log
+  - webhook_event
+
+declared_vs_observed_rules:
+  - "system считается connected только при observed signals в окне freshness_threshold_ms"
+  - "declared_data_kinds не могут подменять observed_data_kinds"
+  - "gap event обязателен при расхождении declared и observed"

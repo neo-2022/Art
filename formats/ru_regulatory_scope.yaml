@@ -1,0 +1,52 @@
+version: "1.0"
+source_of_truth: "formats/ru_regulatory_scope.yaml"
+profile_id: "ru_regulated"
+status:
+  certified_ready: true
+  certified: false
+  note: "Профиль prepared-for-certification. Заявление о реальной сертификации запрещено до фактического прохождения процедуры."
+scopes:
+  - id: "PDN"
+    name_ru: "Персональные данные"
+    legal_anchors:
+      - "152-ФЗ"
+      - "ПП РФ №1119"
+      - "ФСТЭК Приказ №21"
+  - id: "GIS"
+    name_ru: "Государственные информационные системы"
+    legal_anchors:
+      - "ФСТЭК Приказ №17"
+  - id: "KII"
+    name_ru: "Критическая информационная инфраструктура"
+    legal_anchors:
+      - "187-ФЗ"
+      - "ФСТЭК Приказ №239"
+  - id: "SZI_TRUST"
+    name_ru: "Контур доверия и сертификационной готовности"
+    legal_anchors:
+      - "certified_ready"
+rf_platforms:
+  mandatory_level_a:
+    - id: "astra_linux_se"
+      name_ru: "Astra Linux Special Edition"
+    - id: "redos"
+      name_ru: "RED OS"
+  mandatory_level_b:
+    - id: "alt_linux"
+      name_ru: "ALT Linux"
+    - id: "rosa_linux"
+      name_ru: "ROSA Linux"
+requirements:
+  mandatory_controls:
+    - "airgapped_install_update"
+    - "dependency_allowlist"
+    - "signed_release_hook"
+    - "reproducible_build_flags"
+    - "cross_border_export_blocked"
+    - "pii_access_audit_append_only"
+  evidence_bundle:
+    - "formats/platform_support.yaml"
+    - "docs/security/fstec-certified-profile.md"
+    - "docs/compliance/regulatory_evidence_pack.md"
+    - "docs/ru/profile_ru.md"
+    - "docs/ru/airgapped_install.md"

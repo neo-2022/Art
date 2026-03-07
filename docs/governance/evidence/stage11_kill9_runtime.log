@@ -1,0 +1,10 @@
+[stage11-kill9] build art-core
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
+[stage11-kill9] start core
+[stage11-kill9] warmup ingest
+[stage11-kill9] start background ingest load
+[stage11-kill9] kill -9 core during active ingest (accepted_before_kill=5)
+[stage11-kill9] restart core
+stage11-kill9-runtime: OK
+accepted_before_kill=5
+snapshot_contains_recovery_trace=stage11-recovery-1772909755

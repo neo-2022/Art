@@ -1,0 +1,131 @@
+{
+  "name": "main",
+  "commit": {
+    "sha": "1676a8a4c09be5067950aa45141e60c4aa315b2e",
+    "node_id": "C_kwDORem-GdoAKDE2NzZhOGE0YzA5YmU1MDY3OTUwYWE0NTE0MWU2MGM0YWEzMTViMmU",
+    "commit": {
+      "author": {
+        "name": "2art260679-rgb",
+        "email": "2art260679@gmail.com",
+        "date": "2026-03-06T17:55:38Z"
+      },
+      "committer": {
+        "name": "GitHub",
+        "email": "noreply@github.com",
+        "date": "2026-03-06T17:55:38Z"
+      },
+      "message": "Merge pull request #20 from neo-2022/prod/runtime-execute-hardening\n\nhardening(stage37): enforce real Docker/K8s runtime smoke",
+      "tree": {
+        "sha": "a28e93b282678295985ac40b44228017d4cba4c9",
+        "url": "https://api.github.com/repos/neo-2022/Art/git/trees/a28e93b282678295985ac40b44228017d4cba4c9"
+      },
+      "url": "https://api.github.com/repos/neo-2022/Art/git/commits/1676a8a4c09be5067950aa45141e60c4aa315b2e",
+      "comment_count": 0,
+      "verification": {
+        "verified": true,
+        "reason": "valid",
+        "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJpqxUaCRC1aQ7uu5UhlAAA7h4QAJjrihN6pqzXkl3PZyekEPpZ\nXLfgbnXgqVpJDSY5UcJUhjT4zHc2fczVYXrG5fKVD9be9Oa4W2BStPifUe+gLVJm\nlIwUtvumVCtyxQB+J6Ol9fHITi7ZRvZhy/IMFrH2U9RvDUuq6aZr7F6FyzaeQ0In\nTxL4N/NYDg1mc+S0R3l9lcTlrK8JyCPi/R40O8hqv/vTfF2HHmCBt0DQfd+O+bHZ\nfWA7QN2n53jOMoEbNQN+pWS8yjakyQwo58AzeDdn3M6vC9ePzcqLwG0fHLX2qzFb\nOiGAAnt8t81vOHhxwH1arTs2A7xAJprajFOIlvA0JN61Q60vP+Iega9e7/fKPA4f\nZ5HxTNFmkWVFX1k5tc7YkuOagpaE3qpQpwE0lMJGm2sNGZtJC122EaWSMe5XQMeD\ndEoOOLSTfELfrAWb5wvyr4F1D6QvypLsYxYBdd9bue6Dhg30pcgM94YyElRQl35f\nuKoiqvC07+AwajyPBhQueKvcRXhzqDIDXuYN7pqoiWH5OcV5Bi6uOfZ9CAatFrp2\n36GCxUY8xw2YsxgOXM9VdFnTDsau+B7c06U5a4TGozRprGmJIzt2eH2hpRDgTU2v\n3A4rgsp1ZEnhiRjXt0H+fUIIQtOxdu33kAWgoYSG/SNz+l7RVAvG3CPCEgumt/I6\nPFLXfcKeEb1z0fGz30st\n=QnKq\n-----END PGP SIGNATURE-----\n",
+        "payload": "tree a28e93b282678295985ac40b44228017d4cba4c9\nparent 81a2617bcbc2ff74a06632bd691a1b790fe86557\nparent 8114cd9d2378147d6aef7827631d9f9f057d067c\nauthor 2art260679-rgb <2art260679@gmail.com> 1772819738 +0300\ncommitter GitHub <noreply@github.com> 1772819738 +0300\n\nMerge pull request #20 from neo-2022/prod/runtime-execute-hardening\n\nhardening(stage37): enforce real Docker/K8s runtime smoke",
+        "verified_at": "2026-03-06T17:55:38Z"
+      }
+    },
+    "url": "https://api.github.com/repos/neo-2022/Art/commits/1676a8a4c09be5067950aa45141e60c4aa315b2e",
+    "html_url": "https://github.com/neo-2022/Art/commit/1676a8a4c09be5067950aa45141e60c4aa315b2e",
+    "comments_url": "https://api.github.com/repos/neo-2022/Art/commits/1676a8a4c09be5067950aa45141e60c4aa315b2e/comments",
+    "author": {
+      "login": "2art260679-rgb",
+      "id": 265724936,
+      "node_id": "U_kgDOD9akCA",
+      "avatar_url": "https://avatars.githubusercontent.com/u/265724936?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/2art260679-rgb",
+      "html_url": "https://github.com/2art260679-rgb",
+      "followers_url": "https://api.github.com/users/2art260679-rgb/followers",
+      "following_url": "https://api.github.com/users/2art260679-rgb/following{/other_user}",
+      "gists_url": "https://api.github.com/users/2art260679-rgb/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/2art260679-rgb/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/2art260679-rgb/subscriptions",
+      "organizations_url": "https://api.github.com/users/2art260679-rgb/orgs",
+      "repos_url": "https://api.github.com/users/2art260679-rgb/repos",
+      "events_url": "https://api.github.com/users/2art260679-rgb/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/2art260679-rgb/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "web-flow",
+      "id": 19864447,
+      "node_id": "MDQ6VXNlcjE5ODY0NDQ3",
+      "avatar_url": "https://avatars.githubusercontent.com/u/19864447?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/web-flow",
+      "html_url": "https://github.com/web-flow",
+      "followers_url": "https://api.github.com/users/web-flow/followers",
+      "following_url": "https://api.github.com/users/web-flow/following{/other_user}",
+      "gists_url": "https://api.github.com/users/web-flow/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/web-flow/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/web-flow/subscriptions",
+      "organizations_url": "https://api.github.com/users/web-flow/orgs",
+      "repos_url": "https://api.github.com/users/web-flow/repos",
+      "events_url": "https://api.github.com/users/web-flow/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/web-flow/received_events",
+      "type": "User",
+      "user_view_type": "public",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "81a2617bcbc2ff74a06632bd691a1b790fe86557",
+        "url": "https://api.github.com/repos/neo-2022/Art/commits/81a2617bcbc2ff74a06632bd691a1b790fe86557",
+        "html_url": "https://github.com/neo-2022/Art/commit/81a2617bcbc2ff74a06632bd691a1b790fe86557"
+      },
+      {
+        "sha": "8114cd9d2378147d6aef7827631d9f9f057d067c",
+        "url": "https://api.github.com/repos/neo-2022/Art/commits/8114cd9d2378147d6aef7827631d9f9f057d067c",
+        "html_url": "https://github.com/neo-2022/Art/commit/8114cd9d2378147d6aef7827631d9f9f057d067c"
+      }
+    ]
+  },
+  "_links": {
+    "self": "https://api.github.com/repos/neo-2022/Art/branches/main",
+    "html": "https://github.com/neo-2022/Art/tree/main"
+  },
+  "protected": true,
+  "protection": {
+    "enabled": true,
+    "required_status_checks": {
+      "enforcement_level": "everyone",
+      "contexts": [
+        "sdlc-gate",
+        "sast",
+        "sca",
+        "license",
+        "secrets"
+      ],
+      "checks": [
+        {
+          "context": "sdlc-gate",
+          "app_id": 15368
+        },
+        {
+          "context": "sast",
+          "app_id": 15368
+        },
+        {
+          "context": "sca",
+          "app_id": 15368
+        },
+        {
+          "context": "license",
+          "app_id": 15368
+        },
+        {
+          "context": "secrets",
+          "app_id": 15368
+        }
+      ]
+    }
+  },
+  "protection_url": "https://api.github.com/repos/neo-2022/Art/branches/main/protection"
+}

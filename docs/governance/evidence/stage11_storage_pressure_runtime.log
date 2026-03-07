@@ -1,0 +1,17 @@
+[stage11-pressure] build art-core
+[stage11-pressure] filesystem free bytes before start: 1154120192000
+[stage11-pressure] CORE_STORAGE_RESERVED_FREE_SPACE_MB=1100590
+[stage11-pressure] trigger high watermark
+[stage11-pressure] trigger critical watermark
+[stage11-pressure] recover after free space return
+[stage11-pressure] prepare archive/prune baseline
+[stage11-pressure] restart core with hard db limit for disk full contour
+[stage11-pressure] recover from hard db limit
+stage11-storage-pressure-runtime: OK
+reserved_free_space_mb=1100590
+high_filler_mb=52
+critical_filler_mb=72
+hard_limit_start_bytes=262144
+hard_limit_recovery_bytes=8388608
+backups_before_prune=8
+backups_after_prune=2
