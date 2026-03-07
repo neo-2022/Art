@@ -108,6 +108,7 @@ required_files=(
   "docs/en/ARCHITECTURE.md"
   "docs/en/INTEGRATION.md"
   "docs/en/portal/INDEX.md"
+  "docs/en/portal/DOCUMENTATION_TREE.md"
   "docs/en/portal/NAVIGATION.md"
   "docs/en/portal/DOC_STYLE_GUIDE.md"
   "docs/en/portal/DOC_AUTHORITY.md"

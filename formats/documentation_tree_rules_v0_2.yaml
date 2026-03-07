@@ -2,6 +2,7 @@ version: "1.0"
 status: "ACTIVE"
 root: "README.md"
 output_markdown: "docs/portal/DOCUMENTATION_TREE.md"
+output_markdown_en: "docs/en/portal/DOCUMENTATION_TREE.md"
 output_yaml: "formats/documentation_tree_v0_2.yaml"
 allowed_extensions:
   - ".md"

@@ -2,8 +2,7 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
-import json
+import os
 import re
 import subprocess
 import sys
@@ -121,6 +120,7 @@ def build_tree(root_dir: Path, rules: dict) -> Tuple[dict, str]:
 
     root_children = nodes[root_file].children if root_file in nodes else []
     total_file_links_in_tree = sum(len(node.children) for node in nodes.values())
+    total_lines_in_tree = sum(node.lines for node in nodes.values())
     tree = {
         'version': '1.0',
         'status': 'ACTIVE',
@@ -128,6 +128,7 @@ def build_tree(root_dir: Path, rules: dict) -> Tuple[dict, str]:
         'total_documents': len(nodes),
         'total_markdown_links_scanned': total_links,
         'total_file_links_in_tree': total_file_links_in_tree,
+        'total_lines_in_tree': total_lines_in_tree,
         'root_direct_children': len(root_children),
         'root_influence_documents': sorted(root_influence),
         'excluded_from_graph': sorted(excluded),
@@ -162,27 +163,33 @@ def build_tree(root_dir: Path, rules: dict) -> Tuple[dict, str]:
     return tree, mermaid
 
 
-def build_tree_lines(root: str, nodes_by_path: Dict[str, dict], prefix: str = '', visited: Set[str] | None = None) -> List[str]:
+
+
+def rel_link(output_rel: str, target_rel: str) -> str:
+    start = Path(output_rel).parent.as_posix()
+    return os.path.relpath(target_rel, start=start).replace('\\', '/')
+
+def build_tree_lines(root: str, nodes_by_path: Dict[str, dict], output_rel: str, prefix: str = '', visited: Set[str] | None = None) -> List[str]:
     if visited is None:
         visited = set()
     node = nodes_by_path[root]
     marker = ' `ROOT-INFLUENCE`' if node['root_influence'] else ''
-    line = f"{prefix}- [`{root}`](../../{root}) — `{node['lines']}` строк{marker}"
+    line = f"{prefix}- [`{root}`]({rel_link(output_rel, root)}) — `{node['lines']}` строк{marker}"
     lines = [line]
     if root in visited:
         lines[-1] += ' `REUSED-LINK`'
         return lines
     visited.add(root)
     for child in node['children']:
-        lines.extend(build_tree_lines(child, nodes_by_path, prefix + '  ', visited.copy()))
+        lines.extend(build_tree_lines(child, nodes_by_path, output_rel, prefix + '  ', visited.copy()))
     return lines
 
 
-def render_markdown(tree: dict, mermaid: str) -> str:
+def render_markdown(tree: dict, mermaid: str, output_rel: str, lang: str = "ru") -> str:
     nodes_by_path = {node['path']: node for node in tree['nodes']}
     root = tree['root']
     root_node = nodes_by_path[root]
-    tree_lines = build_tree_lines(root, nodes_by_path)
+    tree_lines = build_tree_lines(root, nodes_by_path, output_rel)
     omitted = tree.get('omitted_directory_links', {})
     missing = tree.get('missing_targets', {})
     excluded = tree.get('excluded_from_graph', [])
@@ -190,7 +197,7 @@ def render_markdown(tree: dict, mermaid: str) -> str:
     for path in tree['root_influence_documents']:
         node = nodes_by_path.get(path)
         if node:
-            root_influence_lines.append(f"- [`{path}`](../../{path}) — `{node['lines']}` строк")
+            root_influence_lines.append(f"- [`{path}`]({rel_link(output_rel, path)}) — `{node['lines']}` строк")
         else:
             root_influence_lines.append(f"- `{path}` — `НЕ ПОПАЛ В ДЕРЕВО`")
 
@@ -200,11 +207,11 @@ def render_markdown(tree: dict, mermaid: str) -> str:
     return f"""# Графическое дерево документации Art
 
 ## Source of truth
-- [`../../README.md`](../../README.md)
-- [`../../formats/documentation_tree_rules_v0_2.yaml`](../../formats/documentation_tree_rules_v0_2.yaml)
-- [`../../formats/documentation_tree_v0_2.yaml`](../../formats/documentation_tree_v0_2.yaml)
-- [`../../scripts/ci/generate_documentation_tree.py`](../../scripts/ci/generate_documentation_tree.py)
-- [`../../scripts/ci/check_documentation_tree_sync.sh`](../../scripts/ci/check_documentation_tree_sync.sh)
+- [`{rel_link(output_rel, 'README.md')}`]({rel_link(output_rel, 'README.md')})
+- [`{rel_link(output_rel, 'formats/documentation_tree_rules_v0_2.yaml')}`]({rel_link(output_rel, 'formats/documentation_tree_rules_v0_2.yaml')})
+- [`{rel_link(output_rel, 'formats/documentation_tree_v0_2.yaml')}`]({rel_link(output_rel, 'formats/documentation_tree_v0_2.yaml')})
+- [`{rel_link(output_rel, 'scripts/ci/generate_documentation_tree.py')}`]({rel_link(output_rel, 'scripts/ci/generate_documentation_tree.py')})
+- [`{rel_link(output_rel, 'scripts/ci/check_documentation_tree_sync.sh')}`]({rel_link(output_rel, 'scripts/ci/check_documentation_tree_sync.sh')})
 
 ## Назначение
 Это отдельный навигационно-контрольный слой документации.
@@ -224,9 +231,10 @@ def render_markdown(tree: dict, mermaid: str) -> str:
 - контроль того, что изменения смыслообразующих документов не проходят мимо корневого `README.md`.
 
 ## Сводка
-- Корень дерева: [`../../{root}`](../../{root})
+- Корень дерева: [`{rel_link(output_rel, root)}`]({rel_link(output_rel, root)})
 - Строк в корневом `README.md`: `{root_node['lines']}`
 - Уникальных документов в дереве: `{tree['total_documents']}`
+- Общих строк во всём дереве: `{tree['total_lines_in_tree']}`
 - Всех файловых связей в дереве: `{tree['total_file_links_in_tree']}`
 - Просканированных markdown-ссылок: `{tree['total_markdown_links_scanned']}`
 - Прямых дочерних ссылок у корня: `{tree['root_direct_children']}`
@@ -286,6 +294,49 @@ def write_if_changed(path: Path, content: str) -> bool:
     return True
 
 
+def load_existing_tree(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    return yaml.safe_load(path.read_text(encoding='utf-8')) or {}
+
+
+def node_map(tree: dict) -> Dict[str, dict]:
+    return {node['path']: node for node in tree.get('nodes', [])}
+
+
+def format_dependency_targets(path: str, new_nodes: Dict[str, dict]) -> str:
+    incoming = new_nodes.get(path, {}).get('incoming', [])
+    if not incoming:
+        return 'нет входящих зависимостей в дереве'
+    return ', '.join(incoming[:5]) + (' ...' if len(incoming) > 5 else '')
+
+
+def report_tree_drift(current_tree: dict, new_tree: dict) -> None:
+    current_nodes = node_map(current_tree)
+    new_nodes = node_map(new_tree)
+    current_total_lines = current_tree.get('total_lines_in_tree', sum(node.get('lines', 0) for node in current_nodes.values()))
+    new_total_lines = new_tree.get('total_lines_in_tree', sum(node.get('lines', 0) for node in new_nodes.values()))
+    print(f' - total_lines_in_tree: {current_total_lines} -> {new_total_lines}')
+
+    changed_paths = []
+    for path in sorted(set(current_nodes) | set(new_nodes)):
+        old_lines = current_nodes.get(path, {}).get('lines')
+        new_lines = new_nodes.get(path, {}).get('lines')
+        if old_lines != new_lines:
+            changed_paths.append((path, old_lines, new_lines))
+
+    if not changed_paths:
+        print(' - line counts changed indirectly (структура дерева или root-influence набор)')
+        return
+
+    print(' - changed document line counts:')
+    for path, old_lines, new_lines in changed_paths[:25]:
+        deps = format_dependency_targets(path, new_nodes)
+        print(f'   * {path}: {old_lines} -> {new_lines}; зависит от/влияет через: {deps}')
+    if len(changed_paths) > 25:
+        print(f'   ... ещё {len(changed_paths) - 25} файлов')
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument('--check', action='store_true')
@@ -294,33 +345,40 @@ def main() -> int:
     root_dir = Path(__file__).resolve().parents[2]
     rules = read_rules(root_dir)
     tree, mermaid = build_tree(root_dir, rules)
-    md = render_markdown(tree, mermaid)
+    md = render_markdown(tree, mermaid, rules['output_markdown'], 'ru')
+    md_en = render_markdown(tree, mermaid, rules['output_markdown_en'], 'en')
     yaml_content = yaml.safe_dump(tree, sort_keys=False, allow_unicode=True)
 
     out_md = root_dir / rules['output_markdown']
+    out_md_en = root_dir / rules['output_markdown_en']
     out_yaml = root_dir / rules['output_yaml']
 
     if args.check:
         current_md = out_md.read_text(encoding='utf-8') if out_md.exists() else ''
+        current_md_en = out_md_en.read_text(encoding='utf-8') if out_md_en.exists() else ''
         current_yaml = out_yaml.read_text(encoding='utf-8') if out_yaml.exists() else ''
-        if current_md != md or current_yaml != yaml_content:
+        current_tree = load_existing_tree(out_yaml)
+        if current_md != md or current_md_en != md_en or current_yaml != yaml_content:
             print('documentation tree sync check: FAIL')
             print(' - generated documentation tree is out of date')
+            report_tree_drift(current_tree, tree)
             return 1
 
         changed = git_changed_files(root_dir)
-        root_influence = set(rules.get('root_influence', []))
+        root_influence = (set(rules.get('root_influence', [])) | read_root_tree_dependencies(root_dir)) - set(rules.get('excluded_from_graph', []))
         if changed & root_influence and rules['root'] not in changed:
             print('documentation tree sync check: FAIL')
             print(' - root-influence documents changed without README.md update:')
             for path in sorted(changed & root_influence):
-                print(f'   * {path}')
+                deps = format_dependency_targets(path, node_map(tree))
+                print(f'   * {path} -> проверить зависимости: {deps}')
             return 1
 
         print('documentation tree sync check: OK')
         return 0
 
     write_if_changed(out_md, md)
+    write_if_changed(out_md_en, md_en)
     write_if_changed(out_yaml, yaml_content)
     print('documentation tree generated')
     return 0

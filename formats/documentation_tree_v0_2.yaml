@@ -4,6 +4,7 @@ root: README.md
 total_documents: 59
 total_markdown_links_scanned: 138
 total_file_links_in_tree: 122
+total_lines_in_tree: 8477
 root_direct_children: 33
 root_influence_documents:
 - docs/INTEGRATION.md
