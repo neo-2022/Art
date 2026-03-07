@@ -111,3 +111,13 @@
 | `scripts/tests/stage32_audit_ux_anti_breakage_e2e.sh` | REVIEWED | MISMATCH | Тест может завершиться `PASS (fallback)` и подложить placeholder PNG, то есть anti-breakage success допускает отсутствие реального browser path. При реальном запуске gate зелёный, но это не отменяет ложный fallback-green path. | 32, 38 |
 | `scripts/tests/stage33_action_flow_anti_breakage_e2e.sh` | REVIEWED | MISMATCH | Аналогично stage32: placeholder fallback разрешает PASS без реального e2e исполнения. Дополнительно выявлена хрупкость test harness: при повторном запуске возможен `EADDRINUSE` на playwright socket. | 33, 38 |
 | `tests/platform/contract/generate_evidence_bundle.sh` | REVIEWED | MISMATCH | Evidence bundle всё ещё генерирует `status=placeholder` для большой части natural surfaces; это не production-grade evidence semantics. | 24, 37, 38 |
+
+## Слой 5 — Core / Agent / Panel0 / UI-law code entry layer
+
+| Файл | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `core/src/main.rs` | REVIEWED | WEAK | Кодовая база сильная: много runtime и property/replay tests, OTLP, v2 DNA, audit/merkle, analytics. Но entry-layer всё ещё несёт loosely typed `Incident`/snapshot incidents и не материализует approved differentiators из исторического корпуса на runtime-уровне. | 14, 29, 32, 33, 34, 42, 44 |
+| `agent/src/main.rs` | REVIEWED | MISMATCH | Runtime receiver surface ограничен `file_tail`, `journald`, `stdout_stderr`; это противоречит уже утверждённому coverage (`systemd_unit`, `proc_probe`, `net_probe`, `otlp_logs`). Тесты зелёные, но покрывают только этот урезанный контур. | 18, 23, 37, 38 |
+| `core/embedded/panel0/bootstrap.html` | REVIEWED | MISMATCH | Fallback/bootstrap path рабочий и stage16 runtime зелёный, но двуязычность неполная: title/часть EN-строк остаются жёстко вшитыми. | 16, 28 |
+| `packages/ui-laws/src/index.ts` | REVIEWED | OK | Runtime law layer сильный: truth modes, RTP, semantic token discipline, evidence-link invariants уже пришиты кодом. Нерешённой остаётся не библиотека, а отсутствие AST/static enforcement слоя. | 28, 30, 41 |
+| `packages/evidence-linking/src/index.ts` | REVIEWED | WEAK | Пакет пока очень тонкий: только href builders. Для заявленного evidence-linking differentiator этого недостаточно. | 28, 30, 45 |
