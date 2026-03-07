@@ -51,3 +51,27 @@
 | `docs/testing/test_system_audit_v0_2.md` | REVIEWED | WEAK | Уже честно признаёт слабые зоны, но это пока meta-audit; сам проект ещё не приведён к заявленному стандарту. | 00, all |
 | `docs/testing/full_line_by_line_audit_program_v0_2.md` | REVIEWED | OK | Корректно фиксирует приказ на буквальный построчный аудит. | 00 |
 | `docs/testing/full_line_by_line_audit_registry_v0_2.md` | REVIEWED | OK | Рабочий реестр ретро-аудита, используется как текущий артефакт программы. | 00 |
+
+## Слой 3 — Contracts, formats, generated, API/schemas
+
+| Файл | Статус | Класс | Риски/заметки | Checklist impact |
+|---|---|---|---|---|
+| `docs/contracts/v2/openapi.yaml` | REVIEWED | WEAK | Базовые v2 endpoints уже есть, но утверждённые differentiators из исторического корпуса (`Proof Completeness Score`, `DNA Drift Radar`, `Counterfactual Action Simulator`, `Incident Capsule`, `Deterministic Incident Twin`) в contract surface не материализованы. | 29, 30, 31, 33, 34, 42, 43, 44 |
+| `docs/contracts/v2/schemas/claim_v2.json` | REVIEWED | WEAK | Truth modes и lineage зафиксированы хорошо, но нет machine-readable поля для `Proof Completeness Score` и related explanation payload. | 30, 42 |
+| `docs/contracts/v2/schemas/dialog_message_v2.json` | REVIEWED | OK | Есть `lineage_hash`, `evidence_refs`, `audit_refs`, truth modes и typed dialog model; это соответствует dialogic baseline. | 30, 31, 33 |
+| `docs/contracts/v2/schemas/dna_cluster.json` | REVIEWED | WEAK | Канонический `dna_id` и truth modes есть, но нет drift/twin hooks, нет machine-readable поля для drift fingerprint или deterministic twin parity metadata. | 29, 34, 42, 44 |
+| `docs/contracts/v2/schemas/evidence_item.json` | REVIEWED | OK | Union/oneOf evidence model и truth metadata соответствуют evidence-first baseline. | 30, 31, 32 |
+| `docs/contracts/v2/schemas/gap_event.json` | REVIEWED | OK | Gap event имеет truth metadata; базовый hostile-runtime контур закреплён. | 18, 29, 37 |
+| `docs/contracts/v2/schemas/investigation_doc_v1.json` | REVIEWED | WEAK | Базовый InvestigationDoc есть, но нет capsule/twin-ready machine-readable envelope и формального replay portability contract. | 31, 44 |
+| `docs/contracts/v2/schemas/raw_event_v2.json` | IN_REVIEW | TBD | TBD | TBD |
+| `docs/contracts/v2/schemas/snapshot_v2.json` | REVIEWED | WEAK | Snapshot содержит truth modes, gap/slo arrays, но `incidents` остаётся нетипизированным `object`, а capsule/twin/proof-carrying extensions отсутствуют. | 29, 31, 32, 42, 44 |
+| `docs/contracts/v2/schemas/slo_violation.json` | REVIEWED | OK | Есть truth metadata и evidence linkage; соответствует SLOViolation baseline. | 30, 34 |
+| `docs/contracts/v2/migrations_v2.md` | IN_REVIEW | TBD | TBD | TBD |
+| `docs/contracts/v2/dna_model/dna_core_clusterization.tla` | IN_REVIEW | TBD | TBD | TBD |
+| `docs/api/openapi.yaml` | REVIEWED | WEAK | v1 API слишком тонкий и partly permissive (`additionalProperties: true`), слабо отражает evidence-first и typed hostile-runtime philosophy. | 08, 14, 24 |
+| `docs/api/schema_compliance.md` | IN_REVIEW | TBD | TBD | TBD |
+| `docs/schemas/v1/raw_event.json` | IN_REVIEW | TBD | TBD | TBD |
+| `formats/platform_support.yaml` | REVIEWED | OK | Machine-readable OS/platform matrix сильная, учитывает РФ и международные Linux-дистрибутивы, VM/container surfaces и evidence IDs. | 26, 37 |
+| `formats/ru_regulatory_scope.yaml` | REVIEWED | OK | РФ нормативный контур материализован корректно, включая certified-ready boundary и mandatory controls. | 25, 26, 37 |
+| `generated/ts/src/index.ts` | REVIEWED | WEAK | Generated TS слой покрывает только ingest primitives; он не представляет реальный breadth contract surface проекта. | 08, 29, 30 |
+| `generated/rust/src/lib.rs` | REVIEWED | WEAK | Generated Rust слой аналогично урезан до ingest primitives, что создаёт ложное ощущение полноты generated clients. | 08, 29, 30 |
